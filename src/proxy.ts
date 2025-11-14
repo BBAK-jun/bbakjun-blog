@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
  
 // This function can be marked `async` if using `await` inside
-export async function middleware() {
+export async function proxy() {
   const response = NextResponse.next()
 
   response.cookies.set('sessionId',  uuidv4(), {
