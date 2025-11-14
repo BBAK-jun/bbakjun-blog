@@ -1,0 +1,1007 @@
+---
+title: HTML 직렬화는 무겁다
+date: '2025-10-11T10:44:03.284Z'
+tags: ['DEV']
+summary: 서버사이드 렌더링과 Hydration
+---
+
+# 들어가며
+
+서버사이드 렌더링(SSR)을 이해하려면 HTML 직렬화와 Hydration을 이해해야한다. 특히 직렬화 과정에서 `renderToString()`과 `renderToPipeableStream()`을 사용하는데 이 두 함수가 왜 성능 병목이 되는지 이해하는것이 중요하다.
+
+# HTML 직렬화
+
+## 서버사이드 렌더링
+
+주로 사용하는 NextJS는 서버에서 React 컴포넌트를 HTML 문자열로 변환한다. 이 과정을 직렬화(Serialization)라고 한다.
+
+```js
+import { renderToString } from 'react-dom/server'
+
+const html = renderToString(<App />)
+
+console.log(html)
+```
+
+## renderToString()이 블로킹 요소인 이유
+
+`renderToString()`은 블로킹 요소이다. 즉, 동기적(Synchronous)으로 수행되고 블로킹의 원인이 된다.
+
+### Node.js의 이벤트 루프와 libuv
+
+먼저 Node.js의 아키텍처를 이해해야한다.
+
+```
+Node.js 구조:
+┌─────────────────────────────────┐
+│   JavaScript 코드 (단일 스레드)     │
+│   renderToString() 실행 ←────────┼─── 여기서 블로킹 발생!
+└──────────────┬──────────────────┘
+               │
+        ┌──────▼──────┐
+        │  V8 Engine  │ (JavaScript 실행)
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │ Node.js API │
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │   libuv     │ (이벤트 루프, I/O 관리)
+        └─────────────┘
+```
+
+### libuv의 역할
+
+- C로 작성된 크로스 플랫폼 Asynchronous I/O 라이브러리
+- 이벤트 루프 구현
+- 파일 시스템, 네트워크, 타이머 등 비동기 작업 처리
+- 스레드 풀 관리(기본 4개 워커 스레드)
+
+#### 이벤트 루프의 단계
+
+```
+   ┌───────────────────────────┐
+┌─>│         timers            │ setTimeout, setInterval
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │     pending callbacks     │ I/O 콜백
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │       idle, prepare       │ 내부용
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │           poll            │ 새로운 I/O 이벤트
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │          check            │ setImmediate
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │      close callbacks      │ socket.on('close')
+│  └─────────────┬─────────────┘
+└────────────────┘
+```
+
+### 동기적 실행의 문제점
+
+```js
+const http = require('http');
+const { renderToString } = require('react-dom/server');
+
+const server = http.createServer((req, res) => {
+  console.log('요청 받음:', new Date().toISOString());
+
+  // ⚠️ 이벤트 루프를 블로킹하는 동기 작업
+  const html = renderToString(<ComplexApp />);
+  // 이 시간 동안 이벤트 루프는 멈춤
+  // → 다른 요청 처리 불가
+  // → 타이머 콜백 실행 불가
+  // → I/O 이벤트 처리 불가
+
+  res.send(html);
+  console.log('응답 완료:', new Date().toISOString());
+});
+```
+
+### 블로킹이 발생하는 이유
+
+1. 싱글 스레드 특성
+
+```js
+// 이벤트 루프 = 싱글 스레드
+while (true) {
+  const task = eventQueue.shift();
+  task.execute(); // 동기 작업이면 여기서 블로킹
+}
+```
+
+2. 콜스택 점유
+
+```
+   Call Stack:
+   ┌────────────────────────┐
+   │ renderToString()       │ ← 5초 동안 여기 머물러 있음
+   │   ├─ Component1()      │
+   │   ├─ Component2()      │
+   │   └─ Component3()      │
+   └────────────────────────┘
+
+   Event Queue:
+   [요청2 대기] [요청3 대기] [타이머 대기] ...
+   → Call Stack이 비어야 처리 가능
+```
+
+```md
+요청 1 시작 ━━━━━━━━━━━━━━━━━ (5초) ━━━━━━━━━━━━━━━━━ 완료
+                              ↓
+                    요청 2는 대기 중... ⏰
+                    요청 3는 대기 중... ⏰
+```
+
+3. 컴포넌트 트리를 평가하고 렌더링하는 동안 브라우저는 블로킹 상태가 됨
+4. 전체 HTML 문자열이 메모리에 완성될때까지 누적됨
+
+
+## Cpu 집약적 작업인 이유
+
+React의 렌더링 과정은 본질적으로 **CPU 집약적(Cpu-intensive)** 이다.
+
+### 컴포넌트 트리 순회
+
+각 컴포넌트마다 함수를 실행하며, Props를 계산하고, 조건부 렌더링을 평가하며, 자식 컴포넌트를 재귀호출한다.
+
+```jsx
+// 컴포넌트 구조
+<App>
+  <Header>
+    <Navigation>
+      <MenuItem /> // 100개
+    </Navigation>
+  </Header>
+  <Content>
+    <ProductList>
+      <Product /> // 1000개
+    </ProductList>
+  </Content>
+  <Footer />
+</App>
+```
+
+### 가상 DOM 생성
+
+```js
+function Component () {
+  // 1. React Element 객체 생성(메모리에 할당한다)
+  const element = {
+    type: 'div',
+    props: {
+      className: 'container',
+      children: [...]
+    }
+  };
+
+  // 2. 문자열 변환
+  return `<div class="container">...</div>`
+}
+```
+
+### 문자열 연결 연산
+
+```js
+// HTML 문자열 생성 과정
+let html = '';
+html += '<div>';
+html += '<span>' + escapeHtml(data) + '</span>'; // 이스케이프 처리
+html += '<ul>';
+for (let item of items) {
+  html += '<li>' + escapeHtml(item) + '</li>'; // 반복적 연결
+}
+html += '</ul>';
+html += '</div>';
+```
+
+문자열 연결은 불변(immutable)이므로 매번 새로운 문자열 생성 → 메모리 복사 발생
+
+## renderToString의 Hydration 과정
+
+`renderToString()` 을 사용하면 전체 HTML이 한번에 전송되고, 전체 앱을 한번에 Hydration합니다.
+
+```js
+// 서버
+import { renderToString } from 'react-dom/server';
+
+const html = renderToString(<App />);
+
+const fullHtml = /* html */`
+  <!DOCTYPE html>
+  <html>
+    <body>
+      <div id="root">${html}</div>
+      <script src="/bundle.js"></script>
+    </body>
+  </html>
+`;
+
+res.send(fullHtml); // 전체 HTML 한 번에 전송
+
+// 클라이언트
+import { hydrateRoot } from 'react-dom/client';
+
+// 1. 전체 HTML이 로드될 때까지 대기
+// 2. JavaScript 번들 로드 완료 대기
+// 3. 전체 앱을 한 번에 Hydration 시작
+
+hydrateRoot(document.getElementById('root'), <App />);
+
+// Hydration 과정:
+// - 루트부터 시작해서 전체 트리 순회
+// - 모든 컴포넌트에 이벤트 리스너 연결
+// - 모든 상태 복원
+// - 전체 완료될 때까지 인터랙티브 불가능
+```
+
+### 문제점
+
+All or Nothing 방식
+
+Header의 버튼을 클릭하고 싶어도, Footer까지 모든 컴포넌트가 Hydration되어야 인터랙티브 상태가 된다. Hydration이 되는동안 사용자가 보이는 UI를 클릭해도 반응이 없다
+
+```
+타임라인:
+0초 ─────────────────────────────────────────────
+     [HTML 로드] (서버에서 렌더링 완료 후 전송)
+1초 ─────────────────────────────────────────────
+     [JS 다운로드]
+3초 ─────────────────────────────────────────────
+     [JS 파싱]
+4초 ─────────────────────────────────────────────
+     [Hydration 시작]
+     ├─ Header Hydration (0.5초)
+     ├─ Navigation Hydration (0.5초)
+     ├─ Content Hydration (1초)
+     └─ Footer Hydration (0.5초)
+6.5초 ───────────────────────────────────────────
+     [전체 인터랙티브 가능] ← TTI (Time to Interactive)
+```
+
+## renderToPipeableStream()의 개선점
+
+React 18에서 도입된 `renderToPipeableStream()`은 스트리밍 방식으로 작동한다.
+
+```js
+// 서버
+import { renderToPipeableStream } from 'react-dom/server';
+
+function handleRequest(req, res) {
+  const { pipe } = renderToPipeableStream(<App />, {
+    onShellReady() {
+      // Shell(기본 레이아웃)이 준비되면 즉시 전송
+      res.setHeader('Content-Type', 'text/html');
+      pipe(res);
+    },
+    onAllReady() {
+      // 모든 컴포넌트가 준비됨
+    }
+  });
+}
+```
+
+```html
+<!-- 1단계: Shell 즉시 전송 -->
+<!DOCTYPE html>
+<html>
+  <body>
+    <div id="root">
+      <header>...</header>
+      <div id="content">
+        <!--$?--> <!-- Suspense 경계 -->
+        <template id="B:0"></template>
+        <!--/$-->
+      </div>
+    </div>
+
+<!-- 2단계: 나중에 추가 HTML 스트리밍 -->
+<div hidden id="S:0">
+  <div>실제 콘텐츠</div>
+</div>
+<script>
+  // 템플릿을 실제 콘텐츠로 교체하는 스크립트
+  document.getElementById('B:0').replaceWith(
+    document.getElementById('S:0').content
+  );
+</script>
+```
+
+### TTFB(Time to First Byte)가 개선된다.
+
+TTFB는 브라우저가 서버에 요청을 보낸 후 **첫번째 바이트를 받기까지의 시간**이다.
+
+#### renderToString()이 TTFB가 느린 이유
+
+```js
+// 서버 코드
+function handleRequest(req, res) {
+  // 1. 요청 받음 (0ms)
+
+  // 2. 전체 앱을 렌더링 (동기적)
+  const html = renderToString(
+    <App>
+      <Header />
+      <MainContent>
+        <ProductList products={1000개} />
+      </MainContent>
+      <Comments comments={500개} />
+      <Footer />
+    </App>
+  );
+  // 3. 모든 컴포넌트 렌더링 완료까지 대기 (5000ms)
+
+  // 4. 완성된 HTML을 한 번에 전송 시작 (5000ms 후)
+  res.send(html); // ← 첫 번째 바이트 전송 시작!
+});
+```
+
+```
+클라이언트                              서버
+   │                                    │
+   │────── HTTP 요청 ──────────────────> │ 0ms
+   │                                    │
+   │                                    │ [전체 렌더링 중...]
+   │                                    │ ├─ Header 렌더링
+   │                                    │ ├─ ProductList 렌더링 (1000개)
+   │                                    │ ├─ Comments 렌더링 (500개)
+   │                                    │ └─ Footer 렌더링
+   │                                    │
+   │                                    │ 5000ms
+   │<────── 첫 바이트 수신 ────────────────│ ← TTFB = 5000ms
+   │<────── HTML 계속 수신 ───────────────│
+   │<────── HTML 수신 완료 ───────────────│ 5500ms
+```
+
+#### 왜 느릴까?
+
+위에서 말했던 문제점과 동일하다.
+
+1. 전체 렌더링 완료대기
+2. 메모리에 전체 HTML 문자열 누적
+3. 동기적 블로킹
+
+#### renderToPipeableStream()이 TTFB를 개선하는 이유
+
+```js
+// 서버 코드
+function handleRequest(req, res) {
+  // 1. 요청 받음 (0ms)
+
+  const { pipe } = renderToPipeableStream(
+    <App>
+      <Header />
+      <Suspense fallback={<Spinner />}>
+        <MainContent>
+          <ProductList products={1000개} />
+        </MainContent>
+      </Suspense>
+      <Suspense fallback={<Spinner />}>
+        <Comments comments={500개} />
+      </Suspense>
+      <Footer />
+    </App>,
+    {
+      onShellReady() {
+        // 2. Shell(기본 구조)만 렌더링되면 즉시 실행 (500ms)
+        res.setHeader('Content-Type', 'text/html');
+        pipe(res); // ← 즉시 전송 시작!
+
+        // 3. 나머지는 백그라운드에서 계속 렌더링
+        //    렌더링되는 대로 스트리밍
+      }
+    }
+  );
+});
+```
+
+```
+클라이언트                              서버
+   │                                    │
+   │────── HTTP 요청 ──────────────────> │ 0ms
+   │                                    │
+   │                                    │ [Shell만 렌더링]
+   │                                    │ ├─ Header 렌더링
+   │                                    │ └─ 기본 레이아웃 렌더링
+   │                                    │ 500ms
+   │<────── 첫 바이트 수신 ─────────────────│ ← TTFB = 500ms (10배 빠름!)
+   │<────── HTML Shell 수신 ──────────────│
+   │                                    │
+   │ [브라우저가 Shell 렌더링 시작]           │ [백그라운드 렌더링 계속...]
+   │ - Header 표시 ✓                     │ └─ ProductList 렌더링 중
+   │ - Spinner 표시 ✓                    │
+   │                                    │ 2000ms
+   │<────── ProductList HTML 수신 ────────│
+   │ [ProductList 업데이트] ✓             │
+   │                                    │ 3500ms
+   │<────── Comments HTML 수신 ──────────│
+   │ [Comments 업데이트] ✓                │
+```
+
+
+### Shell 이란?
+
+shell은 앱의 기본 골격(뼈대)라고 보면된다.
+
+```html
+// Shell에 포함되는 것
+<html>
+  <head>...</head>
+  <body>
+    <Header />              // ✓ Shell에 포함
+    <div id="main">
+      <Suspense>           // ✓ Fallback만 Shell에 포함
+        <Spinner />        // ✓ 즉시 렌더링
+        <!-- 실제 콘텐츠는 나중에 -->
+      </Suspense>
+    </div>
+    <Footer />             // ✓ Shell에 포함
+  </body>
+</html>
+```
+
+#### 왜 Shell만 렌더링해도 전송할 수 있나?
+
+```js
+// renderToPipeableStream의 내부 동작 (개념적)
+
+function renderToPipeableStream(element, options) {
+  const stream = new WritableStream();
+
+  // 1. Shell 렌더링 (빠름, 간단한 레이아웃만)
+  const shell = renderShell(element); // 500ms
+
+  // 2. Shell 준비되면 즉시 콜백 호출
+  options.onShellReady();
+  // → 여기서 pipe(res) 호출
+  // → 클라이언트에게 즉시 전송! (TTFB 개선)
+
+  // 3. 나머지는 비동기로 계속 렌더링
+  setTimeout(() => {
+    const content = renderContent(); // 무거운 작업
+    stream.write(content); // 준비되는 대로 추가 전송
+  }, 0);
+
+  return { pipe: () => stream.pipe(res) };
+}
+```
+
+#### 정리하자면
+
+renderToString()은 전체 HTML을 한번에 렌더링하고 전송하기 때문에 TTFB가 느리다.
+
+renderToPipeableStream()은 Shell만 렌더링하고 즉시 전송하기 때문에 TTFB가 개선된다.
+
+또한, renderToPipeableStream()은 나머지는 비동기로 계속 렌더링하기 때문에 전체 렌더링 완료 대기가 필요없다.
+
+### 점진석 Hydration(Progressive Hydration)
+
+```
+// renderToString()
+[Header] [Content] [Comments] [Footer]
+   ↓         ↓         ↓         ↓
+   모두 동시에 Hydration 시작
+   모두 완료되어야 인터랙티브
+
+// renderToPipeableStream()
+[Header] → Hydrate → Interactive! ✓
+[Content] → 준비되면 Hydrate → Interactive! ✓
+[Comments] → 준비되면 Hydrate → Interactive! ✓
+```
+
+#### 왜 좋을까?
+
+- **TTI 단축**: 먼저 보이는 영역(Above-the-fold)부터 상호작용 가능해져 체감 성능이 좋아진다.
+- **자원 분배 최적화**: 거대한 트리를 한 번에 초기화하지 않고, 경계 단위로 CPU/메모리 부담을 나눈다.
+- **선택적 Hydration(Selective Hydration)**: 사용자가 먼저 상호작용한 컴포넌트 경계를 우선적으로 복원한다(이벤트 리플레이로 UX 지연을 최소화).
+
+#### 경계 설계는 어떤 단위로해야할까?
+
+- **경계는 “의미 단위”로**: 화면상 독립적으로 대기/업데이트해도 되는 덩어리로 쪼갠다.
+- **너무 잘게 쪼개지 않기**: 경계가 과도하면 HTML/JS 오버헤드가 늘고 관리가 어려워진다.
+- **상호작용 우선 경계 상단 배치**: 상단 내비, 검색창, 필터 등 먼저 써야 하는 요소는 별도 경계로 분리.
+- **Fallback의 정보성**: 단순 스피너 대신 스켈레톤/요약 정보를 제공하면 지각 성능이 좋아진다.
+
+
+## 하지만 여전히 Cpu Intensive한 작업이다.
+
+`renderToString()`과 `renderToPipeableStream()`은 여전히 CPU 집약적인 작업이다.
+
+### 왜일까?
+
+정확히는 HTML/JSON 변환과 대형 트리 처리 과정이 모두 CPU/메모리 부담을 만든다.
+
+예를 들어 `JSON.stringify()`는 문자열 이스케이프, 깊은 순회, 큰 문자열 생성으로 비용이 크며, 순환 참조가 있으면 예외를 유발하여 별도 처리(replacer/사전 변환)가 필요하다. 서버와 클라이언트 각각에서 다음 요소들이 비용을 키운다.
+
+#### 서버(SSR) 단계의 비용
+
+- 컴포넌트 실행과 props 계산, 조건 분기 평가, 자식 재귀 호출(트리 깊이·폭 비례)
+- JSX → 가상 트리 → HTML 문자열 생성 과정에서의 대량 문자열 할당/복사
+- HTML 이스케이프 처리(`&`, `<`, `>`, `\"`, `\\'` 등)
+- 스트리밍이라도 Suspense 경계 관리·청크 조립 오버헤드
+- 큰 문자열로 인한 메모리 압력과 GC 일시 중지(Stop-the-world) 리스크
+
+#### 클라이언트(Hydration) 단계의 비용
+
+- 전달받은 HTML 파싱 및 DOM 구성(문서가 클수록 파싱 비용 증가)
+- React가 서버 마크업과 내부 트리를 매칭(불일치 시 보정 비용과 경고)
+- 이벤트 리스너 연결, 상태 복원, 일부 컴포넌트 로직 재실행
+- 대형 리스트/차트는 리스너 연결만으로도 체감 비용 큼
+
+#### 특히 비용을 키우는 패턴
+
+- Above-the-fold에 대형 리스트/차트/그래프를 즉시 렌더링
+- 거대한 객체를 props로 직렬화하여 주고받음(중복 필드, 비정규화 데이터)
+- 경계 없이 하나의 트리로 통째로 Hydration(선택적 Hydration 미활용)
+
+#### 간단 측정 예시
+
+```js
+// Node(SSR)에서 SSR 렌더 시간 측정
+import { performance } from 'node:perf_hooks'
+import { renderToString } from 'react-dom/server'
+
+const t0 = performance.now()
+const html = renderToString(<App />)
+console.log('SSR render(ms):', performance.now() - t0)
+```
+
+```js
+// 클라이언트 측 대략적인 Hydration 시간 근사치(참고용)
+import { hydrateRoot } from 'react-dom/client'
+
+const t0 = performance.now()
+hydrateRoot(document.getElementById('root'), <App />)
+requestIdleCallback(() => {
+  console.log('Hydration (rough, ms):', performance.now() - t0)
+})
+```
+
+정확한 체감 개선은 TTFB, TTI, INP 같은 RUM 지표와 함께, 사용자 흐름(검색/필터/스크롤) 기준으로 전후 비교하여 확인하는 것이 좋다.
+
+# 그렇다면 어떻게 성능을 끌어올릴수있을까?
+
+## 정적 페이지 캐싱
+
+```jsx
+// app/blog/[slug]/page.js
+export async function generateStaticParams() {
+  const posts = await db.posts.findAll();
+  return posts.map(post => ({ slug: post.slug }));
+}
+
+export default async function BlogPost({ params }) {
+  const post = await db.posts.findOne(params.slug);
+
+  return <Article {...post} />;
+}
+
+// 빌드 시 미리 렌더링:
+// 1. 모든 블로그 포스트를 미리 HTML로 변환
+// 2. 디스크에 저장
+// 3. 런타임에는 파일만 읽어서 전송 (렌더링 X)
+```
+
+```md
+캐싱 없음 (매 요청마다):
+요청 → [DB 조회 100ms] → [렌더링 50ms] → 응답
+       총: 150ms
+
+Full Route Cache (빌드 시 생성):
+요청 → [캐시된 HTML 읽기 1ms] → 응답
+       총: 1ms (150배 빠름!)
+```
+
+다르게 말하면, 정적 페이지 캐싱은 서버가 “빌드 타임에 미리 렌더링한 결과물(HTML)”을 그대로 서빙하는 방식이다. 요청 시점에는 DB 조회나 React 렌더링이 일어나지 않기 때문에 서버 CPU/메모리, 데이터베이스 부하 모두가 크게 줄어든다. 결과적으로 TTFB/TTI가 개선되고, 트래픽 급증 시에도 안정적으로 응답하기 쉽다.
+
+- 왜 빠른가?
+  - **렌더링 제거**: 런타임 렌더링(SSR)을 생략하고 파일 I/O만 수행한다.
+  - **네트워크 친화적**: CDN 엣지에 배포해 지리적으로 가까운 곳에서 응답할 수 있다.
+  - **일관성**: 같은 URL은 같은 HTML을 주므로 캐시 효율이 높다.
+- 언제 쓰면 좋은가?
+  - 블로그 글/문서처럼 **변경 빈도가 낮고 사용자별로 달라지지 않는** 페이지.
+  - 검색/필터 같은 인터랙션이 있더라도, 첫 페인트까지는 정적 HTML로 충분한 경우.
+- 주의할 점
+  - **신선도 관리**: 컨텐츠가 자주 바뀌면 다시 빌드하거나 ISR(증분 정적 재생성)의 revalidate를 활용해야 한다.
+  - **개인화 한계**: 로그인 사용자 정보처럼 **요청자별로 달라지는 영역**은 클라이언트에서 후처리하거나, 서버 액션/동적 경계로 분리해야 한다.
+  - **경로 설계**: `generateStaticParams()`의 결과가 많을수록 빌드 시간이 증가하므로, 목록이 매우 클 때는 페이징/상위 카테고리 수준만 정적으로 만들고 상세는 ISR을 고려한다.
+
+## 부분 렌더링 캐싱
+
+```jsx
+// app/dashboard/page.js
+import { unstable_cache } from 'next/cache';
+
+// 무거운 컴포넌트를 캐싱
+const getCachedProducts = unstable_cache(
+  async () => {
+    const products = await db.products.findMany();
+    return products;
+  },
+  ['products'], // 캐시 키
+  {
+    revalidate: 3600, // 1시간마다 갱신
+    tags: ['products'] // 수동 무효화용 태그
+  }
+);
+
+export default async function Dashboard() {
+  const products = await getCachedProducts();
+
+  return (
+    <div>
+      <UserInfo /> {/* 매번 렌더링 (사용자별 다름) */}
+      <ProductList products={products} /> {/* 캐시됨 */}
+    </div>
+  );
+}
+```
+
+```md
+// 첫 번째 요청
+1. getCachedProducts() 호출
+2. DB 쿼리 실행 (100ms)
+3. 결과를 메모리/Redis에 캐싱
+4. 컴포넌트 렌더링 (50ms)
+5. 총: 150ms
+
+// 두 번째 요청 (캐시 히트)
+1. getCachedProducts() 호출
+2. 캐시에서 즉시 반환 (1ms)
+3. 컴포넌트 렌더링 (50ms)
+4. 총: 51ms (3배 빠름)
+```
+
+전체 페이지를 정적으로 만들기 어렵다면, **데이터 조회나 특정 컴포넌트 결과만 선택적으로 캐싱**해도 큰 이득을 얻을 수 있다. `unstable_cache()`는 동일한 입력에 대해 동일한 출력을 반환하는 순수(fetch-like) 함수에 이상적이며, “서버 컴포넌트의 비동기 데이터 의존성”을 캐시한다.
+
+- 장점
+  - **부분 최적화**: 사용자 정보 등 개인화 영역은 동적 처리하면서, 상품 목록·태그 클라우드 등 **비개인화·고정성 높은 데이터**만 캐시.
+  - **유연한 무효화**: `revalidate`, `tags`를 이용해 시간 기반/이벤트 기반으로 갱신을 제어.
+  - **스케일 친화적**: Redis 같은 외부 캐시를 붙이면 다중 서버/엣지 환경에서도 일관된 성능을 낸다.
+- 주의할 점
+  - **캐시 키 설계**: 입력 파라미터가 결과를 결정한다면 키에 반영해야 한다(예: `['products', categoryId]`).
+  - **일관성 관리**: 백오피스에서 데이터가 바뀔 때 `revalidateTag('products')` 같은 명시적 무효화가 필요할 수 있다.
+  - **I/O와 렌더 분리**: 캐시는 보통 “데이터 조회” 경계에 두고, 렌더 로직은 캐시 결과를 소비하도록 분리하면 테스트와 추적이 쉬워진다.
+
+## React.cache 사용(컴포넌트 레벨)
+
+```jsx
+import { cache } from 'react';
+
+// 동일한 요청 내에서 중복 호출 방지
+const getUser = cache(async (id) => {
+  console.log('DB 조회:', id);
+  return await db.user.findById(id);
+});
+
+async function UserProfile({ userId }) {
+  const user = await getUser(userId); // DB 조회
+  return <div>{user.name}</div>;
+}
+
+async function UserPosts({ userId }) {
+  const user = await getUser(userId); // 캐시에서 반환!
+  return <div>{user.posts.length}개 포스트</div>;
+}
+
+export default function Page() {
+  return (
+    <>
+      <UserProfile userId={1} />
+      <UserPosts userId={1} /> {/* DB 조회 없음! */}
+    </>
+  );
+}
+```
+
+```md
+Without cache():
+UserProfile → getUser(1) → DB 쿼리 (100ms)
+UserPosts   → getUser(1) → DB 쿼리 (100ms)
+총: 200ms
+
+With cache():
+UserProfile → getUser(1) → DB 쿼리 (100ms) → 메모리 캐싱
+UserPosts   → getUser(1) → 메모리에서 반환 (0.1ms)
+총: 100ms
+```
+
+`react`의 `cache()`는 같은 요청 컨텍스트 안에서 **동일 인자**로 호출되는 함수의 결과를 메모리에 저장해, 불필요한 중복 호출을 제거한다. 서버 컴포넌트 트리 안에서 동일한 데이터를 여러 컴포넌트가 공유할 때(예: 사용자 정보, 환경설정) 특히 효과적이다.
+
+- 언제 유용한가?
+  - 동일 요청 동안 같은 fetch/DB 호출이 **여러 위치에서 반복**될 때.
+  - 상위/하위가 같은 데이터 소스에 의존하지만 **직접 prop으로 전달하기 어려운** 경우.
+- 동작 특성
+  - **요청 범위 캐시** 성격이 강하다. 요청이 끝나면 캐시는 사라진다고 생각하면 이해가 쉽다(프로세스 전역 캐시가 아님).
+  - 인자 기반으로 캐시 키가 결정되므로, 객체 인자를 쓸 때는 **참조 동일성**에 주의하거나 원시/직렬화 가능한 키로 정규화한다.
+- 주의할 점
+  - **부작용 함수 비권장**: `cache()`로 감싼 함수는 가능한 순수해야 한다. 로깅·메일 발송처럼 부작용이 있는 로직은 캐시에 묶지 않는다.
+  - **오래가는 캐시가 필요**하면 `unstable_cache()` 같은 영속 캐시(메모리/Redis)를 검토한다.
+  - 에러도 캐시될 수 있으므로, 에러가 일시적인 외부 요인이라면 재시도·백오프 전략을 별도 적용한다.
+
+## 어떤 전략을 언제 선택할까?
+
+- **정적 페이지 캐싱**: 변경 빈도가 낮고 사용자별로 달라지지 않는 페이지(블로그 글, 문서). 가장 저렴하고 가장 빠른 첫 응답을 원할 때. 대규모 트래픽/글래시 세일에도 강함.
+- **부분 렌더링 캐싱(데이터/컴포넌트)**: 페이지 안에 동적 영역이 섞여 있고, 그중 일부는 비개인화·재사용 가능한 데이터일 때. `revalidate`/`tags`로 신선도를 제어해야 하는 경우.
+- **React.cache(요청 범위 중복 제거)**: 동일 요청 안에서 같은 데이터 호출이 여러 번 반복될 때. 전역 영속 캐시가 아닌, 중복 계산 제거용 최적화로 이해하면 쉽다.
+
+Tip: 조합이 가능하다. 예를 들어, 페이지 프레임은 정적으로, 리스트 데이터는 `unstable_cache()`로, 동일 요청 내 반복 조회는 `cache()`로 제거하면 상호보완적으로 성능을 끌어올릴 수 있다.
+
+## 멀티 프로세스로 CPU 코어 활용하기
+
+Node.js를 싱글 프로세스로 실행하는 Next.js standalone 모드를 사용하면 한 번에 하나의 CPU 코어만 사용한다.
+
+```js
+// standalone 서버 실행
+node server.js
+
+// 문제:
+// - 8코어 CPU가 있어도 1개만 사용
+// - 다른 7개 코어는 유휴 상태
+// - 병목 현상 발생
+```
+
+### 왜 멀티 프로세스가 필요한가?
+
+- SSR/직렬화는 CPU 바운드 작업이라 단일 이벤트 루프에 몰리면 코어가 남아도 처리량이 늘지 않는다.
+- 프로세스를 코어 수만큼 늘리면 동일한 코드로 동시 처리량이 즉시 증가하고, 한 워커 장애 시에도 나머지 워커로 서비스가 지속된다.
+
+### CPU Usage
+
+```
+8코어 서버:
+CPU 0: [████████████████████] 100% ← Next.js 프로세스
+CPU 1: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 2: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 3: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 4: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 5: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 6: [░░░░░░░░░░░░░░░░░░░░]   0%
+CPU 7: [░░░░░░░░░░░░░░░░░░░░]   0%
+
+실제 활용: 12.5% (1/8)
+
+// 단일 프로세스에서 동시 요청 처리
+요청 1: [━━━━━ 렌더링 5초 ━━━━━] 완료
+요청 2:                        [━━━━━ 5초 ━━━━━] 완료
+요청 3:                                          [━━━━━ 5초 ━━━━━]
+
+동시 처리량: 1 RPS (Request Per Second)
+```
+
+## 해결책1 : Cluster Mode
+
+PM2는 Node.js 프로세스 매니저로 클러스터 모드를 제공한다. 혹은 Node.js의 Cluster 모듈을 직접사용하면된다.
+
+#### 이게 어떤 방법인가?
+
+- 마스터-워커 구조로 하나의 포트를 공유하는 다중 Node.js 프로세스를 실행하고, 마스터가 연결을 워커에 분산한다.
+- 워커 수를 CPU 코어 수에 맞춰 병렬로 SSR/직렬화 작업을 처리해 단일 이벤트 루프 병목을 줄인다.
+
+#### 왜 이 방법을 쓰나?
+
+- 코드 수정 없이 프로세스 수만으로 코어 활용도를 극대화할 수 있어 단일 호스트에서 가장 간단하게 처리량을 끌어올린다.
+- 마스터 프로세스가 워커를 감시·재시작해 자기치유가 가능하므로, 장애 시 회복력이 좋다.
+
+아래의 예시는 PM2를 사용하는 경우다
+
+```js
+// ecosystem.config.js
+module.exports = {
+  apps: [{
+    name: 'nextjs-app',
+    script: './server.js',
+    instances: 'max', // CPU 코어 수만큼 프로세스 생성
+    exec_mode: 'cluster', // 클러스터 모드
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    }
+  }]
+};
+```
+
+### CPU Usage
+
+```
+8코어 서버:
+CPU 0: [████████████████░░░░] 80%
+CPU 1: [████████████████░░░░] 80%
+CPU 2: [████████████████░░░░] 80%
+CPU 3: [████████████████░░░░] 80%
+CPU 4: [████████████████░░░░] 80%
+CPU 5: [████████████████░░░░] 80%
+CPU 6: [████████████████░░░░] 80%
+CPU 7: [████████████████░░░░] 80%
+
+실제 활용: 80% (모든 코어 활용)
+
+PM2 클러스터 (8 워커):
+요청 1: [━━━━━ 5초 ━━━━━]  (Worker 1)
+요청 2: [━━━━━ 5초 ━━━━━]  (Worker 2)
+요청 3: [━━━━━ 5초 ━━━━━]  (Worker 3)
+요청 4: [━━━━━ 5초 ━━━━━]  (Worker 4)
+요청 5: [━━━━━ 5초 ━━━━━]  (Worker 5)
+요청 6: [━━━━━ 5초 ━━━━━]  (Worker 6)
+요청 7: [━━━━━ 5초 ━━━━━]  (Worker 7)
+요청 8: [━━━━━ 5초 ━━━━━]  (Worker 8)
+처리량: ~1.6 RPS (8배 개선!)
+```
+
+### 해결책2 : Nginx + 멀티 인스턴스
+
+#### 이게 어떤 방법인가?
+
+- Nginx를 리버스 프록시/로드밸런서로 두고, 백엔드에 떠 있는 여러 Next.js 인스턴스로 요청을 분산한다.
+- 업스트림 풀과 라운드로빈/least_conn 알고리즘으로 트래픽을 균등 배분하고, 헬스체크로 불량 인스턴스를 자동 배제한다.
+
+#### 왜 이 방법을 쓰나?
+
+- 포트/호스트 단위로 인스턴스를 분산해 단일 프로세스 병목을 제거하고, 실패 격리·롤링 재시작으로 가용성을 높인다.
+- Nginx의 라우팅/캐시/압축 등 엣지 최적화를 함께 활용해 전체 응답 성능과 운영 편의가 향상된다.
+
+```nginx
+# nginx.conf
+upstream nextjs_backend {
+    # 라운드 로빈 방식
+    server localhost:3000 weight=1;
+    server localhost:3001 weight=1;
+    server localhost:3002 weight=1;
+    server localhost:3003 weight=1;
+    server localhost:3004 weight=1;
+    server localhost:3005 weight=1;
+    server localhost:3006 weight=1;
+    server localhost:3007 weight=1;
+
+    # 또는 least_conn (연결 수가 가장 적은 서버로)
+    # least_conn;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://nextjs_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```
+                    ┌──────────┐
+       요청 ───────▶ │  Nginx   │
+                    │(로드밸런서) │
+                    └────┬─────┘
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+   ┌─────────┐      ┌─────────┐      ┌─────────┐
+   │ Next.js │      │ Next.js │      │ Next.js │
+   │ :3000   │      │ :3001   │ ...  │ :3007   │
+   └─────────┘      └─────────┘      └─────────┘
+```
+
+### 해결책3 : Docker + 컨테이너 오케스트레이션
+
+#### 이게 어떤 방법인가?
+
+- 애플리케이션을 컨테이너 이미지로 표준화해 동일한 실행 환경에서 여러 레플리카를 선언적으로 운영한다.
+- Compose/Swarm/Kubernetes 같은 오케스트레이터가 서비스 디스커버리·로드밸런싱·롤링 업데이트를 자동 관리한다.
+
+#### 왜 이 방법을 쓰나?
+
+- 컨테이너 이미지를 표준 배포 단위로 사용해 환경 차이를 제거하고, 어디서나 동일하게 재현·배포할 수 있다.
+- 오케스트레이터가 자동 스케일링·자가치유·롤링 업데이트를 제공해 트래픽 변동과 장애에 유연하게 대응한다.
+- 단일 호스트/코어를 넘어 여러 노드·리전에 수평 확장해 처리량과 안정성을 동시에 확보한다.
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  nextjs:
+    image: nextjs-app:latest
+    deploy:
+      replicas: 8  # 8개 컨테이너 실행
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+    environment:
+      - NODE_ENV=production
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - nextjs
+```
+
+```yaml
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextjs-deployment
+spec:
+  replicas: 8  # 8개 Pod 실행
+  selector:
+    matchLabels:
+      app: nextjs
+  template:
+    metadata:
+      labels:
+        app: nextjs
+    spec:
+      containers:
+      - name: nextjs
+        image: nextjs-app:latest
+        resources:
+          requests:
+            cpu: "1"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextjs-service
+spec:
+  selector:
+    app: nextjs
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+```
+
+<hr />
+
+# 결론
+
+서버사이드 렌더링의 핵심 병목은 **HTML 직렬화 과정**에 있다.
+`renderToString()`은 전체 HTML을 동기적으로 한 번에 생성하기 때문에 이벤트 루프를 블로킹하고, CPU 부하와 메모리 사용량이 커지는 구조적 한계를 가진다. 반면, React 18의 `renderToPipeableStream()`은 **스트리밍 렌더링(streaming rendering)** 과 **점진적 하이드레이션(progressive hydration)** 을 통해 이러한 한계를 완화한다.
+Shell을 먼저 전송해 **TTFB(Time to First Byte)** 를 단축하고, 이후 준비된 컴포넌트부터 점진적으로 인터랙티브하게 만들어 **체감 성능(TTI, INP)** 을 개선할 수 있다.
+
+하지만 스트리밍 렌더링이라 해도, HTML 직렬화와 컴포넌트 트리 평가라는 **CPU 집약적 특성 자체는 사라지지 않는다.**
+즉, 서버가 한 번에 많은 렌더링 요청을 처리하면 여전히 병목이 발생한다.
+따라서 **렌더링을 줄이고, 캐싱을 극대화하며, 인프라 계층에서 부하를 제어하는 전략**이 함께 필요하다.
+
+### 애플리케이션 레벨에서의 접근
+
+* **정적 페이지 캐싱(Static Rendering)** 으로 변하지 않는 페이지를 빌드 타임에 미리 생성하고,
+* **부분 렌더링 캐싱(Partial Rendering Cache)** 으로 재사용 가능한 UI 조각을 재활용하며,
+* **ISR(Incremental Static Regeneration)** 이나 **Dynamic Segment 분리**를 통해 데이터 신선도와 성능을 균형 있게 유지한다.
+* 또한 **Suspense Boundaries**를 세분화해 병렬 렌더링 단위를 최적화하고, **backpressure 제어**를 통해 렌더링 스트림의 폭주를 방지한다.
+
+
+### 인프라 레벨에서의 접근
+
+* **Edge Rendering** 또는 **Region 분산(Regional SSR)** 으로 사용자와 가까운 곳에서 HTML을 전송해 네트워크 레이턴시를 최소화한다.
+* **Node.js 워커 풀(Worker Threads / Cluster)** 을 활용해 CPU 연산을 병렬화하고, 단일 이벤트 루프에 모든 요청이 몰리지 않게 분산시킨다.
+* **렌더링 서버와 API 서버를 분리(BFF 구조)** 하여 데이터 fetching 병목이 SSR 흐름을 지연시키지 않도록 하고,
+* **CDN 캐싱**과 **Edge Cache-Control 헤더 튜닝**을 통해 재요청 시 서버 부하를 줄인다.
+* 롤링 업데이트나 graceful shutdown 시에는 **Keep-Alive 연결 관리**를 주의하여 스트리밍이 중단되지 않게 해야 한다. (특히 Safari의 `Transfer-Encoding: chunked` 전송 불안정성 고려)
+
+
+요약하자면,
+
+> **“SSR의 병목은 HTML 직렬화와 CPU 연산량에서 비롯되고, 네트워크 지연과 서버 리소스 한계에서 증폭된다. 따라서 직렬화를 최소화하고, 캐싱·분산·백프레셔로 부하를 제어하라.”**
+
+이것이 React 기반 SSR 환경에서 **애플리케이션 수준과 인프라 수준을 모두 고려한 근본적인 성능 최적화 방향**이라고 생각한다.

@@ -1,0 +1,269 @@
+---
+title: 'useSyncExternalStore Deep dive'
+date: '2024-10-12T16:00:03.284Z'
+summary: 'Tearing과 리액트 동시성모드에 대하여'
+tags: ['REACT']
+---
+
+# useSyncExternalStore의 기본 개념
+
+`useSyncExternalStore`는 React 18에서 도입된 훅으로, 외부세계와 React 컴포넌트를 동기화 하는데 주로 사용됩니다.
+
+## 목적
+
+- 외부 상태 관리 시스템과 React 컴포넌트 간의 동기화합니다.
+- 동시성 기능과 호환되는 안전한 상태 관리 방식을 제공합니다.
+- 외부 세계의 변경사항을 React 컴포넌트 렌더링 사이클과 일관되게 동기화합니다.
+
+## 도입배경
+
+- React 18의 동시성 렌더링 도입 : 동시성 렌더링을 도입했는데, 이는 렌더링 작업을 중단하고 재시작할 수 있도록 합니다.
+  이로 인해 기존의 외부 상태 구독방식이 일관성 문제를 일으킬 수 있습니다.
+- Tearing 현상 방지 : Tearing은 UI의 서로 다른 부분이 동일한 데이터의 서로 다른 버전을 표시하는 현상입니다. useSyncExternalStore는 이러한 Tearing 현상을 방지하여 일관된 UI를 보장합니다.
+- 외부 상태 관리 라이브러리와의 호환성 : 외부 상태 관리 라이브러리들이 React의 새로운 동시성 모델과 호환되도록 하기 위해 도입되었습니다.
+
+# 기존의 외부상태 구독방식의 문제점
+
+기존의 외부 상태를 직접 읽어오는 방식은 다음과 같은 문제를 가지고 있습니다
+
+```tsx
+const NetworkStatusDisplay = () => {
+  const start = Date.now()
+  while (Date.now() - start < 50) {
+    // force yielding to main thread in concurrent mode
+  }
+
+  const network = getNetworkStatus()
+
+  return <div>{network}</div>
+}
+```
+
+이 컴포넌트는 외부 상태(networkStatus)를 직접 읽어와 표시합니다. 이러한 방식에는 다음과 같은 문제가 있습니다
+
+1. **동시성 렌더링 문제 (concurrent rendering)**
+
+동시성 모드에서 렌더링 도중 외부 상태가 변경되면, 렌더링 결과가 일관되지 않을 수 있습니다. 여러 NetworkStatusDisplay 컴포넌트가 렌더링될 때, 각 인스턴스가 서로 다른 네트워크 상태를 표시할 수 있습니다.
+
+2. **일관성 없는 UI**
+
+외부 상태가 변경되면, 컴포넌트가 렌더링되는 동안 일관성 없는 UI를 보여줄 수 있습니다.
+
+3. **레이스 컨디션(race condition)**
+
+렌더링 시간이 길어질수록 (예: 50ms 지연), 상태 불일치가 발생할 가능성이 높아집니다.
+
+4. **서버 사이드렌더링 어려움**
+
+이 방식은 서버 사이드 렌더링에서 외부 상태를 적절히 처리하기 어렵습니다.
+
+# Tearing 현상
+
+Tearing 현상은 React의 동시성 렌더링 환경에서 발생할 수 있는 UI 불일치 문제입니다. 이는 동일한 데이터에 대해 UI의 여러 부분이 서로 다른 버전을 표시하는 현상을 말합니다.
+
+## Tearing이 발생하는 주요원인
+
+- 동시성 렌더링: React가 렌더링 작업을 여러 개의 청크로 나누어 처리합니다.
+- 외부 상태의 비동기적 업데이트: React 렌더링 사이클과 독립적으로 변경되는 외부 상태
+- 렌더링 중 상태 변경: 긴 렌더링 과정 중에 외부 상태가 변경될 때 발생합니다.
+
+> 예를 들어, 다음과 같은 상황에서 Tearing이 발생할 수 있습니다:
+
+```tsx
+export default function TearingExample() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    startTransition(() => setVisible(true))
+  }, [])
+
+  return (
+    <>
+      <p>Example of tearing</p>
+      {visible ? (
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <NetworkStatusDisplay />
+          <NetworkStatusDisplay />
+          <NetworkStatusDisplay />
+          <NetworkStatusDisplay />
+        </div>
+      ) : (
+        <p>preparing..</p>
+      )}
+    </>
+  )
+}
+```
+
+1. 여러 개의 NetworkStatusDisplay 컴포넌트가 렌더링됩니다.
+2. 각 컴포넌트의 렌더링은 약 50ms 동안 지연됩니다.
+3. 렌더링 과정 중 (100ms 후) 네트워크 상태가 변경됩니다.
+4. 결과적으로, 일부 컴포넌트는 'disconnected' 상태를, 다른 컴포넌트는 'connected' 상태를 표시할 수 있습니다.
+
+이처럼 같은 데이터를 표시해야 할 UI의 여러 부분이 서로 다른 상태를 보여주는 것이 Tearing 현상입니다. 이는 다음과 같은 문제를 야기합니다:
+
+- 사용자 경험 저하 : UI의 일관성이 깨지면 사용자 경험이 저하됩니다.
+- 버그 유발 : 애플리케이션 로직이 일관되지 않은 상태를 가지면 버그가 발생할 수 있습니다.
+- 디버깅 어려움 : Tearing 현상은 렌더링 과정에서 발생하므로 재현하고 추적하기 어렵습니다.
+
+이러한 문제들을 해결하기 위해 React는 useSyncExternalStore와 같은 새로운 API를 도입하여 외부 상태와 React 컴포넌트 간의 안전하고 일관된 동기화를 가능하게 합니다.
+
+# useSyncExternalStore 구조
+
+```ts
+const state = useSyncExternalStore(subscribe, getSnapshot[, getServerSnapshot])
+```
+
+## 주요 매개변수
+
+- subscribe: 외부 스토어의 변경을 감지하는 구독 함수
+- getSnapshot: 현재 스토어의 상태를 반환하는 함수
+- getServerSnapshot: (선택적) 서버 렌더링 시 초기 상태를 제공하는 함수
+
+## 내부 구현
+
+> React 18.2.0 버전 기준의 코드입니다.
+
+```ts
+export function useSyncExternalStore<T>(
+  subscribe: (() => void) => () => void,
+  getSnapshot: () => T,
+  getServerSnapshot?: () => T,
+): T {
+  // Read the current snapshot from the store on every render. Again, this
+  // breaks the rules of React, and only works because store updates are
+  // always synchronous.
+  const value = getSnapshot();
+
+  // To implement the synchronous read source contract, we need to track when
+  // we're calling getSnapshot. On the server, we allocate a new object ref
+  // every time.
+  const isHydrating = (getIsHydrating && getIsHydrating()) || false;
+
+  useEffect(() => {
+    if (isHydrating) {
+      // Snapshot might have changed between render and mount
+      if (!Object.is(value, getSnapshot())) {
+        throw new Error('HookSnapshot changed between render and mount');
+      }
+      return;
+    }
+
+    // Subscribe to the store and return the unsubscribe function
+    return subscribe(() => {
+      // Use a state update to trigger a re-render if the snapshot changes
+      forceStoreRerender();
+    });
+  }, [subscribe, value, isHydrating]);
+
+  // Use a ref to store the current snapshot between renders, so we can
+  // compare to detect when it changes.
+  useEffect(() => {
+    prevGetSnapshot.current = getSnapshot;
+    prevValue.current = value;
+  });
+
+  // If the store updates, re-render the component
+  useEffect(() => {
+    if (!Object.is(value, getSnapshot())) {
+      forceStoreRerender();
+    }
+  });
+
+  // Return the current snapshot
+  return value;
+}
+```
+
+## 내부 동작 원리
+
+> 위의 내부 구현을 통해 useSyncExternalStore의 동작 원리를 알아보겠습니다.
+
+1. 초기화
+
+   - 컴포넌트가 처음 렌더링 될때, useSyncExternalStore는 getSnapshot을 호출하여 초기 상태를 가져옵니다.
+   - subscribe을 사용하여 외부 스토어의 변경을 구독합니다.
+
+2. 상태 변경 감지
+
+   - 외부 스토어의 상태가 변경되면 subscribe 함수가 이를 감지하고 내부 매커니즘을 트리깅 합니다.
+
+3. 스냅샷 비교
+
+   - 상태 변경이 감지되면 새로운 getSnapshot 결과와 이전 스냅샷을 비교합니다.
+   - `Object.is`를 사용하여 동일성(동등성X)을 비교합니다.
+
+4. 리렌더링 결정
+
+   - 새로운 스냅샷이 이전과 다르다면 리렌더링을 예약합니다.
+   - 같다면 리렌더링을 하지않습니다.
+
+5. 동시성 처리
+   - 동시성 모드에서, 렌더링 중 외부 상태가 변경되면 즉시 새로운 렌더링을 시작합니다.
+   - 이를 통해 Tearing 현상을 방지하고 일관된 UI를 보장합니다.
+
+## Taering을 방지
+
+useSyncExternalStore는 React의 동시성 렌더링 모델과 함께 사용할 수 있도록 설계되었습니다. 이를 통해 Tearing 현상을 방지하고 일관된 UI를 보장합니다.
+
+1. 동기화된 스냅샷 : 렌더링 시작시 상태의 스냅샷을 만들어 전체 렌더링 과정에서 일관된 상태를 유지합니다.
+2. 자동 재시도 : 렌더링 중 상태 변경을 감지하면 자동으로 새로운 렌더링을 시작하여 Tearing 현상을 방지합니다.
+3. 최적화된 구독 : 불필요한 리렌더링을 방지하면서도 상태변경을 추적합니다.
+
+<iframe
+  src="https://codesandbox.io/embed/x8y7l4?view=preview&module=%2Fsrc%2Findex.tsx"
+  style={{
+    width: '100%',
+    height: '500px',
+    border: 0,
+    borderRadius: '4px',
+    overflow: 'hidden',
+  }}
+  title="useSyncExternalStore"
+  allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+  sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+/>
+
+> 위의 샌드박스 코드를 통해 설명합니다.
+
+### TearingExample.tsx
+
+- **startTransition**을 사용하여 setVisible(true)를 호출하며 **React 동시성 모드가 활성화하여 렌더링 작업을 청크단위로 나누어 처리합니다.**
+- **setTimeout**을 통해 100ms 이후 `networkStatus`가 **disconnected**에서 **connected**로 변경됩니다.
+- NetworkStatusDisplay 컴포넌트 내의 While 루프가 각 컴포넌트의 렌더링을 약 50ms(추정치) 지연시킵니다.
+- 동시성 모드에서 NetworkStatusDisplay 컴포넌트를 순차적으로 렌더링합니다.
+- 전체 렌더링 과정중 networkStatus가 변경되기때문에 일부 컴포넌트는 **disconnected**를 표시하고 일부 컴포넌트는 **connected**를 표시됩니다.
+
+위의 예제에서 동시성 렌더링 환경에서 외부상태가 변경되기때문에 UI의 일관성이 깨지는 Tearing 현상을 확인할 수 있습니다.
+
+### NonTeaingExample.tsx
+
+- 이전 예제의 getNetworkStatus 함수 직접 호출 대신 useSyncExternalStore를 사용합니다.
+  ```ts
+  const network = useSyncExternalStore(() => {
+    return () => {}
+  }, getNetworkStatus)
+  ```
+  - 첫번째 인자로 빈 구독함수를 전달합니다. (상기 예제에서는 구독이 필요없기 때문에 빈함수를 전달합니다.)
+  - 두번째 인자로 getNetworkStatus 함수를 전달합니다.
+- 모든 NetworkStatusDisplay 컴포넌트는 처음에 **'**disconnected**'** 상태로 렌더링을 시작합니다.
+- 100ms 이후 networkStatus가 **connected**로 변경됩니다.
+- 렌더링 도중 networkStatus가 변경되어도, 모든 컴포넌트는 렌더링 시작 시점의 동일한 상태값을 사용합니다.
+
+> 어떻게 Tearing이 발생하지않은것일까?
+
+useSyncExternalStore는 전달받은 스냅샷의 상태가 변경이 감지되면 해당 훅을 사용하는 모든 컴포넌트에 대해 리렌더링을 트리깅합니다.
+
+Tearing이 발생한 예제에서 첫번째 NetworkStatusDisplay와 두번째 NetworkStatusDisplay 컴포넌트는 이미 렌더링을 마쳤을수도있지만, **스냅샷의 변경으로 인해 리렌더링 대상이 됩니다.** 이때 세번째와 네번째 컴포넌트는 아직 초기 렌더링일 수 도 있습니다.
+
+위의 예제에서와 같은 `while문에 인해 렌더링이 지연 이라는 제약사항`이 존재하더라도 useSyncExternalStore는 **동시성 렌더링 환경에서 Tearing 현상을 방지하고 일관된 UI를 보장합니다.**
+
+# 마무리
+
+useSyncExternalStore의 등장은 React 생태계에 새로운 가능성을 열어주었습니다. 이 훅은 단순히 외부 상태를 동기화하는 도구를 넘어, React의 동시성 모드와 외부 세계를 잇는 다리 역할을 합니다.
+
+특히 주목할 점은 Zustand, Valtio와 같은 인기 있는 상태 관리 라이브러리들이 이미 useSyncExternalStore를 적극적으로 활용하고 있다는 것입니다. 이는 React 생태계 전반에 걸쳐 이 훅의 중요성과 유용성을 잘 보여줍니다.
+
+더 나아가, useSyncExternalStore는 React 외부의 세계와의 상호작용 가능성을 크게 확장시켰습니다. 이제 개발자들은 React 컴포넌트 트리 바깥의 상태나 시스템과도 효율적으로 동기화할 수 있게 되었습니다. 이는 React 애플리케이션의 확장성과 유연성을 한층 더 높여줍니다.
+
+물론, useSyncExternalStore의 사용이 모든 상황에서 필수적인 것은 아닙니다. 간단한 애플리케이션이나 성능 최적화가 크게 필요하지 않은 경우에는 기존의 방식으로도 충분할 수 있습니다. 하지만 복잡한 상태 관리나 외부 시스템과의 통합이 필요한 프로젝트에서는 이 훅이 제공하는 이점을 적극 활용해 볼 만합니다.

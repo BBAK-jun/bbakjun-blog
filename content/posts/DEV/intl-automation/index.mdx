@@ -1,0 +1,320 @@
+---
+title: 국제화 언어팩 자동화
+date: '2025-02-09T10:44:03.284Z'
+tags: ['DEV']
+summary: 국제화 언어팩 자동화
+---
+
+국제화(i18n)는 글로벌 서비스를 운영하는데 필수적인 요소입니다. 국제화를 위해서는 번역팀과 개발팀 간의 원활한 협업이 필수적입니다. 하지만 많은 서비스에서 번역 데이터를 매번 직접 반영해야 하거나, 배포 과정이 필요해 업데이트 속도가 느려지는 문제가있습니다.
+
+# 정적 번역 데이터 관리의 환계와 동적 관리의 개선 효과
+
+이전 회사의 프로덕트는 온프레미스 환경에서 운영이 되었었습니다. 이때 번역 데이터는 정적으로 관리가 되었었습니다. 이러한 환경에서 잘못된 번역 혹은 유저가 민감하게 받아들일 수 있는 번역 데이터라면 빠르게 재번역을 해야하는 문제가 있었습니다.
+
+매끄럽지는 않지만, 클라우드 환경에서는 번역 데이터를 변경한 후 배포를 하여 번역 데이터를 최신 상태로 유지할 수 있었습니다. 하지만 온프레미스 환경에서는 번역 데이터를 변경한 후 필드 엔지니어가 다시 업체로가서 직접 재 배포해야하는 문제가 있었습니다.
+
+### 정적 방식의 문제점 : 업데이트 속도 저하
+
+번역 데이터를 저장소안의 파일로 관리하는 경우 번역 데이터를 변경한 후 필드 엔지니어가 다시 업체로가서 직접 재 배포해야하는 문제가 있었습니다.
+
+```tsx
+import translations from '../locales/en.json';
+
+export function getTranslation(key: string) {
+  return translations[key] || key;
+}
+```
+
+번역 데이터가 **코드베이스 내부**에 포함되며 새로운 번역이 추가될 때마다 배포 과정이 필요했습니다.
+
+> 배포가 필요하다는 제약사항은 업데이트의 속도가 저하되는 원인이었습니다.
+
+그리고 번역 데이터가 많아질수록 JSON파일의 크기는 커지며, 모든 언어 데이터를 한번에 로드하면 앱 번들의 크기가 증가하게됩니다.
+
+> 초기 페이지 로딩시 불필요한 데이터까지 다운로드하게 되어 초기 로딩 속도가 저하됩니다.
+
+이때문에 동료들과도 번역 데이터를 서버에서 관리하고 재배포가 가능한 캐싱 시스템을 도입해보자 했었지만, 여건 상 도입하지 못했습니다.
+
+이제는 이직을 하였고 이전직장에서 느꼈었던 국제화 데이터의 동적관리의 니즈를 충족하기 위해 그리고 자동화 시스템을 통해 개발부서의 부하를 줄이기 위해 국제화 데이터 동기화 프로세스를 도입해보았습니다.
+
+이번 포스팅에서는 Google Sheet를 활용하여 번역 데이터를 관리하고 Google App Script를 활용하여 개발부서가 아닌 번역 팀에서 손쉽게 국제화 데이터를 관리할 수 있도록 도와주는 방법을 소개합니다.
+
+# 국제화 데이터 동기화 프로세스
+
+번역팀에서 국제화 데이터를 업데이트하면, 이를 JSON으로 변환하고 AWS S3에 업로드하는 과정을 거칩니다. 이후 번역데이터의 소비자 프론트엔드 팀에서 이를 최신 상태로 유지하는것을 목표로합니다.
+
+## Goggle Spread Sheet에서 번역 데이터 관리
+
+번역팀이 직접 Google Spread Sheet에서 번역 데이터를 관리합니다. 각 행(row)은 특정 텍스트의 키(key)와 다국어 번역 값을 포함합니다.
+
+<table>
+  <thead>
+    <th>key</th>
+    <th>korean</th>
+    <th>english</th>
+    <th>japanese</th>
+  </thead>
+  <tbody>
+    <tr>
+      <td>greeting</td>
+      <td>안녕하세요</td>
+      <td>Hello</td>
+      <td>こんにちは</td>
+    </tr>
+    <tr>
+      <td>farewell</td>
+      <td>안녕히 가세요</td>
+      <td>Goodbye</td>
+      <td>さようなら</td>
+    </tr>
+  </tbody>
+</table>
+
+위의 표처럼 번역 데이터가 저장되면 이를 자동으로 JSON으로 변환하는 작업이 필요합니다.
+
+## JSON 변환 및 업로드와 스크립트
+
+Google Spread Sheet를 사용하면 Google App Script를 통해 번역 데이터를 손쉽게 스크립트로 관리 가능합니다.
+
+```javascript
+function convertSpreadSheetToJson() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+
+  const translations = { ko: {}, en: {}, ja: {} };
+
+  // ...대충 S3 업로드를 위한 초기화 로직
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const key = row[0];
+
+    if (!!key) {
+      convertFlattenToNested(translations.ko, key, row[1] || ''); // 한국어
+      convertFlattenToNested(translations.en, key, row[3] || ''); // 영어
+      convertFlattenToNested(translations.ja, key, row[5] || ''); // 일본어
+    }
+  }
+
+  // ...대충 JSON 변환 로직
+
+  // ...대충 S3 업로드 로직
+}
+```
+
+번역 0번째 행은 키(key)를 저장하고 1번째 행은 한국어, 3번째 행은 영어, 5번째 행은 일본어를 저장합니다. 이렇게 변환된 번역데이터는 JSON으로 변환하여 S3에 업로드합니다.
+
+현재 프론트엔드에서는 다음과 같은 코드로 S3 저장소에 저장된 번역데이터를 요청해옵니다. nextJS를 사용하고있고, next-intl로 국제화 데이터를 관리합니다.
+
+```ts
+// i18n/request.ts
+export default getRequestConfig(async () => {
+  const cookieStore = await cookies()
+  let locale = cookieStore.get('NEXT_LOCALE')?.value ?? defaultLocale
+
+  if (!isLocale(locale)) {
+    locale = defaultLocale
+  }
+
+  try {
+    const { data: messages } = await 최신_언어팩_페칭_함수_with_cache(locale)
+
+    return { locale, messages }
+  } catch (error) {
+    console.error('Failed to fetch language pack:', error)
+    notFound()
+  }
+})
+
+const 최신_언어팩_페칭_함수_with_cache = async (locale: Locale) => {
+  try {
+    const 언어팩 = S3_버킷으로부터_언어팩을_가져오는_함수()
+
+    if (!언어팩) {
+      throw new Error(`언어팩 파일을 찾을 수 없습니다`)
+    }
+
+    return {
+      data: JSON.parse(언어팩 || '{}'),
+    }
+  } catch (error) {
+    console.error(`❌ [${new Date().toISOString()}] Error loading language pack for ${locale}:`, error)
+    throw error
+  }
+}
+```
+
+번역 데이터는 번역팀에서 수동으로 업데이트도하며, 수동으로 업데이트 하지않았더라도 매주 월요일 오전 6-7시에 자동으로 업데이트 됩니다.
+
+번역팀에서 번역 데이터를 업데이트 하지않아도 프론트엔드 팀에서는 자동으로 업데이트 된다는 뜻입니다.
+
+하지만 S3에는 시간이 지나면 지날수록 많은 언어팩이 쌓이게 될것입니다. 이러한 문제를 해결하기 위해 번역데이터에도 메타데이터를 심어두는 방법은 어떨까라고 생각했습니다.
+
+## 번역데이터의 메타데이터
+
+그렇다면 어떻게 메타데이터를 쌓아야할까를 생각해보았습니다.
+
+메타데이터는 단일진실공급원 원칙을 만족시켜주어야합니다.
+
+프론트엔드 번역데이터 소비자는 번역데이터의 메타데이터를 통해 번역데이터의 최신 상태를 확인할 수 있어야합니다.
+
+또한 번역데이터의 메타데이터는 번역데이터의 최신 상태를 확인할 수 있어야합니다.
+
+그렇다면 App Script에서 번역데이터를 새롭게 생성하거나 업데이트할때 메타데이터를 쌓아야합니다. 그리고 메타데이터는 항상 **유니크한 값**을 가져야합니다.
+
+가장 쉬운 방법은 **타임스탬프**를 사용하는 방법이겠구나 싶어 적용했습니다.
+
+번역데이터의 메타데이터는 다음과 같습니다.
+```json
+{
+  "lastUpdated": 마지막으로_업데이트된_타임스탬프(number),
+  "files": {
+    "ko": {
+      "path": "/intl/ko_마지막으로_업데이트된_타임스탬프(number).json",
+      "timestamp": 마지막으로_업데이트된_타임스탬프(number),
+      "size": 4160
+    },
+    "en": {
+      "path": "/intl/en_마지막으로_업데이트된_타임스탬프(number).json",
+      "timestamp": 마지막으로_업데이트된_타임스탬프(number),
+      "size": 5149
+    },
+    "ja": {
+      "path": "/intl/ja_마지막으로_업데이트된_타임스탬프(number).json",
+      "timestamp": 마지막으로_업데이트된_타임스탬프(number),
+      "size": 4147
+    }
+  }
+}
+```
+
+
+```ts
+// i18n/request.ts
+export default getRequestConfig(async () => {
+  ... 기존과 동일
+  try {
+    const metadata = await 메타데이터_요청_함수()
+
+    const { data: messages } = await 최신_언어팩_페칭_함수_with_cache(metadata.files[locale].path, locale)
+
+    return { locale, messages }
+  } catch (error) {
+    console.error('Failed to fetch language pack:', error)
+    notFound()
+  }
+})
+
+const 메타데이터_요청_함수 = async () => {
+  const metadata = await S3_버킷으로부터_메타데이터를_가져오는_함수()
+
+  return JSON.parse(metadata || '{}')
+}
+
+const 최신_언어팩_페칭_함수_with_cache = async (pathname: string, locale: Locale) => {
+  ... 기존 로직과 동일 하지만 메타데이터의 pathname을 가지고 버킷에서 언어팩을 가져옵니다.
+}
+```
+
+이렇게 메타데이터를 쌓아두면 프론트엔드 팀에서는 메타데이터를 통해 번역데이터의 최신 상태를 확인할 수 있습니다.
+
+## 캐시 구현과 무효화 전략
+
+번역 데이터의 특성을 고려해보면:
+- 번역팀에서 Google Spread Sheet에서 번역데이터를 업데이트를 하기도합니다. 하지만 번역팀에서 번역데이터를 업데이트 하는 경우는 많지 않습니다.
+- 번역데이터는 매주 월요일 오전 6-7시에 배칭시스템에 의해 업데이트 됩니다.
+
+이러한 특성을 봤을 때, 번역 데이터는 자주 변경되지 않는 정적인 성격을 가지고 있습니다. 따라서 다음과 같은 전략이 효과적일 것으로 판단했습니다:
+
+1. 기본적으로는 번역 데이터를 캐시하여 서버 부하를 줄입니다.
+2. 실제 데이터가 업데이트될 때만 선택적으로 캐시를 무효화합니다.
+
+### 캐시 구현
+
+NextJS의 unstable_cache를 활용하여 다음과 같이 구현했습니다:
+
+```ts
+export const getLatestLanguagePackByLocale = async (pathname: string, locale: Locale) => {
+  const getCachedLanguagePack = unstable_cache(
+    ...기존 로직,
+    [`languagePack-${locale}`],
+    {
+      tags: [`languagePack-${locale}`],
+      revalidate: false,
+    },
+  )
+
+  return await getCachedLanguagePack()
+}
+```
+
+이렇게 구현된 캐시는 효과적이지만, 적절한 시점에 캐시를 무효화하는 것도 중요합니다. NextJS에서 제공하는 두 가지 캐시 무효화 방식을 비교해보겠습니다.
+
+## 캐시 무효화 전략 선택: Time-based vs On-demand
+
+NextJS는 두 가지 주요 캐시 무효화 방식을 제공합니다:
+
+### Time-based-revalidation
+
+Time-based-revalidation는 일정 시간 이후 캐시를 무효화하는 방법입니다.
+
+```ts
+// 1번째 방법
+const res = fetch('/intl/ko.json', { next : { revalidate: 60 * 60 * 24 }})
+
+// 2번째 방법
+export const revalidate = 60 * 60 * 24
+
+const res = fetch('/intl/ko.json')
+```
+
+### On-demand-revalidation
+
+On-demand-revalidation는 새로운 데이터가 추가 되었거나 특정 이벤트가 발생한 경우에만 캐시를 무효화하고 새로운 데이터를 가져오는 방법입니다.
+
+이렇기때문에 번역데이터의 캐시는 On-demand-revalidation을 사용하는것이 효과적이므로 선택하게 되었습니다.
+
+캐시 무효화가 되는 시점은 번역데이터가 업데이트되는 시점이므로 번역데이터가 업데이트되는 시점에 캐시를 무효화하는 것이 효과적입니다.
+
+NextJS 애플리케이션 내부에서 캐시를 무효화하는것이 아닌 외부시스템(App Script)에서 캐시를 무효화해야합니다. 그러므로 API 라우트를 통해 캐시를 무효화합니다.
+
+```ts
+export async function POST(request: NextRequest) {
+  try {
+    for (const locale of locales) {
+      revalidateTag(`languagePack-${locale}`)
+    }
+
+    return NextResponse.json({ revalidated: true, now: Date.now() }, { status: 200 })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 })
+  }
+}
+```
+
+## 모니터링 시스템
+
+번역 데이터의 자동화된 업데이트 과정에서 가장 중요한 것은 안정성입니다. 특히 글로벌 서비스에서 잘못된 번역이나 누락된 번역은 사용자 경험에 직접적인 영향을 미칠 수 있습니다.
+
+이러한 위험을 최소화하기 위해 슬랙 웹훅을 통한 모니터링 시스템을 구축했습니다
+
+![slack_monitoring](/static/images/DEV/intl-automation/slack_monitoring.png)
+
+이 로깅 시스템은 다음과 같은 정보를 제공합니다:
+- 언어팩 업데이트 시간
+- 각 언어별 업로드된 파일 경로와 크기
+- 환경별(DEV/STAGING/PROD) 캐시 무효화 상태
+
+이러한 정보들을 실시간으로 모니터링함으로써, 문제가 발생했을 때 신속하게 대응할 수 있게 되었습니다.
+
+# 결론
+
+Google Spread Sheet와 App Script를 활용한 국제화 데이터 자동화 시스템을 통해 다음과 같은 이점을 얻을 수 있었습니다
+
+1. 번역팀이 직접 번역 데이터를 관리할 수 있어 개발팀의 부담이 줄어들었습니다
+2. 자동화된 배포 프로세스로 번역 업데이트가 신속하게 이루어집니다
+3. 캐싱 시스템을 통해 서버 부하를 최소화하면서도 최신 데이터를 제공할 수 있습니다
+4. 슬랙 웹훅을 통한 모니터링으로 번역 데이터 업데이트 현황을 실시간으로 파악할 수 있습니다
+
+이러한 시스템은 특히 글로벌 서비스를 운영하는 팀에게 매우 유용할 것으로 생각되어 공유합니다.

@@ -1,0 +1,268 @@
+---
+title: '웹브라우저에서 네이티브 앱 설치 확인 및 앱 진입 유도하기'
+summary: '유저 납치하기'
+date: '2025-04-11'
+tags: ['DEV', 'FRONTEND', 'UX']
+draft: false
+---
+
+웹브라우저에서 네이티브 앱으로의 전환 유도는 사용자 경험에 중요한 부분이라고 생각됩니다. 특히 인앱브라우저나 웹브라우저에서 사용자 여정(Journey)이 이루어질 때, 앱이 설치되어 있는지 확인하고 자연스럽게 앱으로 진입을 유도하는 것은 매출과 리텐션에 직접적인 영향을 미칩니다.
+
+이 글에서는 사용자 경험을 해치지 않으면서 효과적으로 네이티브 앱으로 진입을 유도하기 위한 접근법과 실제 구현 방법을 공유합니다.
+
+# 브라우저 지원 여부에 따른 전략적 접근
+
+## 1. getInstalledRelatedApps API 활용하기
+
+`navigator.getInstalledRelatedApps()` API는 웹 브라우저에서 네이티브 앱 설치 여부를 확인할 수 있는 표준화된 방법입니다. 이 API를 지원하는 브라우저에서는 이를 활용하여 앱으로 자연스럽게 유도하고, 지원하지 않는 브라우저에서는 웹 경험을 계속 제공할 수 있습니다.
+
+```ts
+type Options = {
+  appId: string;
+  appScheme: string;
+  appStoreUrl: string;
+  playStoreUrl: string;
+}
+
+const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUrl }: Options) => {
+  const navigateToStore = () => {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    window.location.href = isAndroid ? playStoreUrl : appStoreUrl;
+  }
+
+
+  if ('getInstalledRelatedApps' in navigator) {
+    try {
+      const relatedApps = await navigator.getInstalledRelatedApps();
+      const isAppInstalled = relatedApps.some(app => app.id === appId);
+
+      if(isAppInstalled) {
+        window.location.href = appScheme;
+        return { installed: true, method: 'getInstalledRelatedApps' };
+      } else {
+        navigateToStore()
+        return { installed: false, method: 'getInstalledRelatedApps' };
+      }
+    } catch(error) {
+      console.error('앱 설치 확인 중 오류:', error);
+      return { installed: null, method: 'getInstalledRelatedApps' };
+    }
+  }
+
+  // 브라우저 지원 여부에 따른 처리
+  return new Promise((resolve) => {
+    const isIOS = /iPad|iPhone/.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+
+    window.location.href = appScheme
+  })
+}
+```
+
+이런 API를 사용하기 위해서는 웹앱과 네이티브 앱 간의 관계를 명시적으로 설정해야합니다.
+
+```json
+{
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "PlayStoreAppId",
+      "url": "https://play.google.com/store/apps/details?id=PlayStoreAppId"
+    },
+    {
+      "platform": "itunes",
+      "id": "AppStoreAppId",
+      "url": "https://apps.apple.com/app/AppStoreAppId"
+    }
+  ]
+}
+```
+
+네이티브 앱에서도 웹앱과 관계를 설정해야합니다.
+
+- Android 앱의 경우 Digital Asset Links 시스템을 통해 연결
+- iOS 앱의 경우 Universal Links를 통해 연결
+
+하지만 이 API는 모든 브라우저에서 지원하지않고, Chrome / Edge와 같은 Chromium 기반 브라우저에서만 지원합니다. 따라서 모든 브라우저에서 작동하는 대체 방법도 함께 구현하는것이 필요합니다.
+
+## 2. 딥링크를 활용한 앱 설치 확인(대체 방법)
+
+`getInstalledRelatedApps API`가 지원되지 않는 브라우저에서는 딥링크를 활용한 방법으로 앱 설치 여부를 간접적으로 확인할 수 있습니다. 이 방법은 앱으로 이동을 시도한 후, 사용자의 상태 변화를 감지하는 기법입니다.
+
+```ts
+type Options = {
+  appId: string;
+  appScheme: string;
+  appStoreUrl: string;
+  playStoreUrl: string;
+}
+
+const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUrl }: Options) => {
+  ...이전 코드
+
+  // 브라우저 지원 여부에 따른 처리
+  return new Promise((resolve) => {
+    const isIOS = /iPad|iPhone/.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+
+    // 시작 시간 기록
+    const startTime = Date.now();
+    let timeout: number;
+
+    // 앱이 열렸는지 감지하는 이벤트 리스너
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 앱이 열렸음 (설치되어 있음)
+        clearTimeout(timeout);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        resolve({ installed: true, method: 'deeplink' });
+      }
+    };
+
+    // 페이지 가시성 변화 감지 리스너 등록
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 블러 이벤트도 함께 감지 (일부 브라우저에서 더 효과적)
+    window.addEventListener('blur', () => {
+      clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      resolve({ installed: true, method: 'deeplink-blur' });
+    }, { once: true });
+
+    // 앱 열기 시도
+    window.location.href = appScheme;
+
+    // 타임아웃 설정 (앱이 없으면 결과 반환)
+    timeout = window.setTimeout(() => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+      // 현재 시간과 시작 시간의 차이가 작으면 앱이 열리지 않은 것
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < 1500) {
+        // 앱이 설치되어 있지 않음
+        resolve({ installed: false, method: 'deeplink-timeout' });
+
+        // 앱 스토어로 리다이렉션
+        if (isAndroid) {
+          window.location.href = playStoreUrl;
+        } else if (isIOS) {
+          window.location.href = appStoreUrl;
+        }
+      } else {
+        // 불명확한 상황 (추가 처리 필요 시)
+        resolve({ installed: null, method: 'deeplink-unclear' });
+      }
+    }, 2000);
+  })
+}
+```
+
+이 접근법은 브라우저 지원 여부에 따른 처리를 해주지 않아도 되기 때문에 모든 브라우저에서 작동합니다.
+
+하지만 앱이 열렸는지 감지하는 기법이기 때문에 앱이 열리지 않을 경우 앱 스토어로 리다이렉션 되는 시간이 조금 늦을 수 있습니다.
+
+## 3.통합 접근법: 브라우저 지원 여부에 따른 분기 처리
+
+위의 두 방법을 조합하여 최적의 사용자 경험을 제공하는 통합 접근법을 구현할 수 있습니다.
+
+```ts
+const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUrl }: Options) => {
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isInAppBrowser = /KAKAOTALK|Instagram|NAVER|Facebook|Line/i.test(navigator.userAgent);
+
+  // 인앱브라우저 처리
+  if (isInAppBrowser) {
+    return handleInAppBrowser();
+  }
+
+  // API 지원 확인
+  if ('getInstalledRelatedApps' in navigator) {
+    try {
+      const relatedApps = await navigator.getInstalledRelatedApps();
+      const isAppInstalled = relatedApps.some(app => app.id === appId);
+
+      return {
+        method: 'getInstalledRelatedApps',
+        installed: isAppInstalled,
+        openApp: () => window.location.href = appScheme,
+        goToStore: () => {
+          window.location.href = isAndroid ? playStoreUrl : appStoreUrl;
+        }
+      };
+    } catch (error) {
+      console.error('API 오류:', error);
+      // API 오류 시 대체 방법으로 전환
+    }
+  }
+
+  // API 미지원 또는 오류 시 딥링크 방식 사용
+  return checkAppWithDeeplink(appScheme, appStoreUrl, playStoreUrl);
+}
+
+const handleInAppBrowser = () => {
+  return {
+    method: 'inapp-browser',
+    installed: null, // 확인 불가
+    openExternal: () => {
+      // 현재 URL을 클립보드에 복사 또는 외부로 공유
+      if (navigator.share) {
+        navigator.share({ url: window.location.href });
+      } else {
+        navigator.clipboard.writeText(window.location.href)
+          .then(() => alert('URL이 클립보드에 복사되었습니다. 외부 브라우저에 붙여넣어 주세요.'));
+      }
+    }
+  };
+}
+```
+
+### 결제 완료 페이지에서 앱으로 전환 유도
+
+사용자가 상품을 결제한 후, 결제 완료 페이지에서 앱으로 전환은 중요한 프로세스입니다. 이 페이지에서 앱으로 전환을 유도하는 것은 사용자 경험을 해치지 않고 앱으로 유도하는 좋은 방법입니다.
+
+앱내에서 결제를 완료한 유저의 경우에는 결제완료 이후의 플로우를 따라가기 때문에 앱으로 전환을 유도하는 것은 사용자 경험을 해치지 않습니다.
+
+또한 앱내에서 결제를 완료한 유저의 경우에는 결제완료 이후의 플로우를 따라가기 때문에 앱으로 전환을 유도하는 것은 사용자 경험을 해치지 않습니다.
+
+앱내에서 결제를 하지않고, 모바일 웹에서 결제를 진행한 유저의 경우 앱으로 전환을 유도하여 앱 설치를 유도할 수 있습니다. 그리고 데스크톱 웹에서는 QR코드를 통해 앱으로 전환을 유도할수 있습니다. QR코드의 링크는 UserAgent를 통해 안드로이드 디바이스인지, IOS 디바이스인지 확인하여 링크를 제공합니다.
+
+```ts
+const QrCodeStoreLink = () => {
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone/.test(navigator.userAgent);
+
+  return isAndroid ? playStoreUrl : appStoreUrl;
+}
+```
+
+### 스크롤 감지를 통해 콘텐츠 소비 중 유도
+
+사용자가 콘텐츠를 소비하는 중에 앱으로 전환을 유도하는 것은 매출과 리텐션에 도움이 될 수 있습니다. 이 방법은 사용자 경험을 해치지 않고 앱으로 유도하는 좋은 방법입니다.
+
+간단하게 IntersectionObserver를 통해 스크롤 감지를 통해 콘텐츠 소비 중 유도할 수 있습니다. 특정 화면에서 사용자가 특정요소에 스크롤이 닿아있는지 확인하여 앱으로 전환을 유도할 수 있습니다.
+
+```ts
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      // 앱으로 전환을 유도
+    }
+  });
+});
+
+observer.observe(document.querySelector('.scroll-target'));
+```
+
+# 결론 및 주의사항
+
+웹 브라우저에서 네이티브 앱으로의 유도는 사용자 경험을 해치지 않는 범위 내에서 이루어져야합니다.
+
+1. **브라우저 지원 여부에 따른 적절한 전략 선택**: `getInstalledRelatedApps()` API가 지원되면 이를 활용하고, 그렇지 않다면 딥링크 방식으로 대체
+2. **인앱브라우저 특성 고려**: 인앱브라우저에서는 외부 브라우저로 열기를 유도
+3. **맥락에 맞는 메시지와 타이밍**: 사용자 여정의 적절한 시점에 맞춤형 메시지로 앱 유도
+4. **사용자 선택권 존중**: 앱으로 강제 전환이 아닌, 선택권을 제공하고 '다시 보지 않기' 옵션 지원
+
+## 참고자료
+
+- [Navigator.getInstalledRelatedApps() - MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getInstalledRelatedApps)
+- [Is your app installed? getInstalledRelatedApps() will tell you!](https://web.dev/articles/get-installed-related-apps)

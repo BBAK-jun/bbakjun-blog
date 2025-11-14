@@ -1,0 +1,212 @@
+---
+title: '단순한 알림톡 링크 복잡한 리다이렉트 게이트웨이로'
+summary: '요구사항과 설계의 진화'
+date: '2025-05-10'
+tags: ['DEV', 'FRONTEND', 'MARKETING']
+draft: false
+---
+# OAuth2 인증 플로우에서 복잡한 리다이렉션 처리하기
+
+카카오톡 알림톡으로 특정 페이지 링크를 보내는 단순한 요구사항이 어떻게 Redis를 활용한 리다이렉트 게이트웨이 시스템으로 발전했는지 그 과정을 정리했습니다.
+
+## 시작점: 단순한 링크 리다이렉션
+
+처음 요구사항은 간단했습니다. 카카오톡 알림톡으로 링크를 전송하면, 사용자가 클릭했을 때 특정 페이지로 이동하는 것. 일반적인 마케팅 링크와 다를 게 없어 보였죠.
+
+```
+// 초기 요구사항
+https://our-service.com/promo/my-page/coupons
+→ 발급받은 쿠폰목록 페이지로 이동
+```
+
+개발자라면 누구나 "링크 하나 만들면 끝"이라고 생각했을 겁니다.
+
+## 첫 번째 도전: 인증이 필요한 페이지
+
+하지만 실제 요구사항은 조금 더 복잡했습니다. 우리 서비스의 대부분 페이지는 로그인이 필요했거든요.
+
+"비로그인 사용자도 로그인 후에 해당 페이지로 이동되게 해주세요."
+
+OAuth2를 사용하고 있던 우리 시스템에서는 이런 흐름이 필요했습니다:
+
+```mermaid
+sequenceDiagram
+    participant User as 사용자
+    participant Link as 알림톡 링크
+    participant Service as 우리 서비스
+    participant OAuth as OAuth 제공자
+
+    User->>Link: 링크 클릭
+    Link->>Service: 페이지 요청
+    Service->>Service: 미인증 확인
+    Service->>OAuth: 인증 요청 (state에 목적지 정보)
+    OAuth->>User: 로그인 페이지
+    User->>OAuth: 로그인
+    OAuth->>Service: 인증 완료 (state 전달)
+    Service->>Service: state에서 목적지 정보 추출
+    Service->>User: 목적지 페이지로 리다이렉트
+```
+
+OAuth2의 state 파라미터를 활용해서 목적지 정보를 전달하기로 했습니다. state는 원래 CSRF 공격을 방지하기 위한 파라미터지만, 추가 정보를 담는 용도로도 사용할 수 있거든요.
+
+## 두 번째 도전: 상세한 위치 정보 전달
+
+개발을 끝낸 줄 알았는데, 새로운 요구사항이 추가되었습니다.
+
+"페이지 내에서 특정 섹션으로 이동하게 해주세요. 예를 들어 수업 리스트에서 레벨 5의 25분 수업 섹션이 바로 보이게요."
+
+이제 단순한 페이지 URL만으로는 부족해졌습니다. 레벨, 수업 시간, 언어 타입 등 다양한 파라미터를 전달해야 했죠.
+
+```
+// 요구사항이 복잡해짐
+https://our-service.com/lesson?level=5&duration=25&lang=EN&section=intermediate
+```
+
+문제는 OAuth2 state 파라미터의 한계였습니다:
+- URL 길이 제한으로 인해 담을 수 있는 정보가 제한적
+- 복잡한 JSON 구조를 URL-safe하게 인코딩하면 길이가 더 길어짐
+- 일부 OAuth 제공자는 state 길이를 제한하기도 함
+
+### OAuth2 state 파라미터의 원래 역할
+
+OAuth2 RFC 6749에서 state 파라미터는 두 가지 주요 목적으로 설계되었습니다:
+
+1. **CSRF(Cross-Site Request Forgery) 공격 방지**: 인증 요청과 콜백 사이의 상태를 유지하여 요청의 무결성 확인
+2. **애플리케이션 상태 유지**: 인증 전후의 애플리케이션 상태 정보 전달
+
+RFC에서는 다음과 같이 명시하고 있습니다:
+```
+The authorization server SHOULD require the client to provide the
+complete redirection URI (the client MAY use the "state" request
+parameter to achieve per-request customization).
+```
+
+즉, OAuth2 표준은 동적인 리다이렉션 요구사항을 state 파라미터로 처리하도록 권장합니다. 하지만 실제로는 state 파라미터의 크기 제한으로 인해 복잡한 데이터를 전달하기 어렵습니다.
+
+## 해결 방안: Redis를 활용한 임시 저장소
+
+고민 끝에 Redis를 활용한 해결책을 찾았습니다. 핵심 아이디어는 다음과 같았죠:
+
+1. **세션 ID 발급**: 미들웨어에서 모든 요청에 대해 UUID 형태의 세션 ID 발급
+2. **Redis에 상세 정보 저장**: 세션 ID와 목적지를 조합한 키로 파라미터 저장
+3. **OAuth state에 세션 ID 전달**: state에는 이 세션 ID만 담아서 전달
+4. **인증 후 복원**: 인증 완료 후 Redis에서 파라미터를 다시 읽어와 사용
+
+```typescript
+// 리다이렉트 시작 시
+const sessionId = cookies().get('sessionId')?.value; // 미들웨어에서 발급받은 세션 ID
+const destination = searchParams.get('destination');
+const redisKey = `redirect-${destination}-${sessionId}`;
+
+// Redis에 상세 파라미터 저장 (TTL 300초)
+await redis.setex(redisKey, 300, JSON.stringify({
+  level: 5,
+  duration: 25,
+  language: 'EN',
+  section: 'intermediate'
+}));
+
+// OAuth state에는 세션 ID만 전달
+const oauthUrl = `${OAUTH_URL}?state=${sessionId}`;
+```
+
+```typescript
+// 인증 완료 후
+const sessionId = extractFromOAuthCallback(state);
+const redisKey = `redirect-${destination}-${sessionId}`;
+
+// Redis에서 파라미터 복원
+const params = JSON.parse(await redis.get(redisKey));
+await redis.del(redisKey); // 일회성 사용 후 삭제
+
+// 최종 목적지 URL 생성
+const finalUrl = buildDestinationUrl(destination, params);
+redirect(finalUrl);
+```
+
+## 시스템 아키텍처의 진화
+
+단순한 링크 리다이렉션에서 시작해서, 이제는 다음과 같은 구조를 가진 시스템이 되었습니다:
+
+```mermaid
+flowchart TD
+    A[알림톡/마케팅 링크] --> B[미들웨어: 세션ID 발급]
+    B --> C[리다이렉트 게이트웨이]
+    C --> D{인증 확인}
+    D -->|인증됨| E[목적지로 바로 이동]
+    D -->|미인증| F[Redis에 파라미터 저장<br/>키: redirect-{destination}-{sessionId}]
+    F --> G[OAuth 인증 플로우<br/>state: sessionId]
+    G --> H[인증 완료]
+    H --> I[Redis에서 파라미터 복원]
+    I --> E
+```
+
+### 목적지별 파라미터 스키마 관리
+
+다양한 목적지가 추가되면서, 각 목적지별로 필요한 파라미터를 체계적으로 관리할 필요가 생겼습니다:
+
+```typescript
+interface DestinationParams {
+  HOME: {};
+  LESSON_VIEW: {
+    level?: number;
+    duration?: number;
+    language?: 'EN' | 'JP' | 'KR';
+  };
+  USER_PROFILE: {
+    userId: string;
+    tab?: 'achievements' | 'history';
+  };
+  // ... 기타 목적지들
+}
+
+// 타입 안전한 파라미터 처리
+function processRedirect<T extends keyof DestinationParams>(
+  destination: T,
+  params: DestinationParams[T]
+) {
+  // 목적지별 파라미터 검증 및 처리
+}
+```
+
+## 구현 시 주요 고려사항
+
+### 보안 관련
+- Redis 키에 TTL 설정 (300초) - 사용자가 로그인하고 목적지까지 도달하는데 충분한 시간 확보
+- 세션 ID는 미들웨어에서 통일되게 관리하여 예측 불가능성 보장
+- 일회성 사용 후 즉시 삭제로 재사용 공격 방지
+- 파라미터 검증 및 sanitization 적용
+
+### 확장성 관련
+- 목적지별 파라미터 타입 정의로 타입 안전성 확보
+- 새로운 목적지 추가가 용이한 구조 설계
+- 모니터링 및 로깅 시스템 통합
+
+## 실무에서 배운 점들
+
+### 요구사항은 점진적으로 복잡해진다
+"단순한 링크 리다이렉션"이라고 생각했던 기능이 결국 복잡한 시스템으로 발전했습니다. 처음부터 어느 정도의 확장성을 고려한 설계가 필요합니다.
+
+### 기존 시스템의 제약을 창의적으로 해결하기
+OAuth2 state 파라미터의 한계를 Redis라는 외부 저장소로 우회하여 해결했습니다. 때로는 프로토콜의 제약을 그대로 받아들이기보다는, 실용적인 해결책을 찾는 것이 중요합니다.
+
+### 타입 안전성의 중요성
+TypeScript를 활용해 목적지별 파라미터를 타입으로 정의함으로써, 런타임 에러를 줄이고 개발 경험을 개선할 수 있었습니다.
+
+## 현재 시스템의 활용 사례
+
+이제 이 리다이렉트 게이트웨이는 다양한 곳에서 활용되고 있습니다:
+
+- 카카오톡 알림톡 마케팅 링크
+- 이메일 캠페인 링크
+- SMS 문자 링크
+- QR 코드 기반 오프라인 마케팅
+- 외부 제휴사 연동 링크
+
+[![](https://mermaid.ink/img/pako:eNqVlG9P00Acx9_K5R5pMhfWrcvWByRGEp-oDzDExOzJuR6jydZid0WRkGxaiGxTIRkGx0aK2ZiYGQaijoRXxN29B-_ausnKA-2D5tp-P78_39_11mDe0jHUYBk_d7CZx3MGKtiolDOBuJaRTYy8sYxMAhbK2AaoDNjrAWsds4PtqOQRIsYKliLqdlnnnNeHdNQAbPc0qn2Cn_nR9i-A0NDOJWsNmVeJCu8jgl-gVT_q0YDWZWDqbfHaCFydNWSW2ojtfxGLKDuPdaMsSX8R_X7XIUt-FZ0RO-oA5rbphctq3ahyDpeJX8LXY-ZVWb8C-KcmPRY5A610587sbOCAJlsGrN7lH7cA3dumtSagzR7tV3l1AHj1nB59u4YJMzTfCubtsM13Y6b_ll1WeGMD3IAGd1QkEbMB67vsYCMQyCuoSuQJvdSALtoxTPHaMgFvSPvpyYi7Q1GAS-uDAMXFMg6qmoonyv3_YKb-d90hLML4oxHd_2xeDSvTfIUd9MAtHC_EY6CIV3Dx9jQuR6iNB9hqsrOoPyej4PukA0kJWNqvAXrYvvolJYC_3xNO-tPdabN6ewKEgwqyTQDm7dLv50C4Q73ejY2GmcZmhZXyTY9Xrzv0b5YcDnmrMQ3I3Sn0P9rs8wZYmH8A2JsOc08BHX6Y_mkCVAKT_qf2dNg8jMEStkvI0MXxsCa5HCRLuIRzUBNLHS8ip0hyMGeuCylyiPV41cxDjdgOjkHbcgpLUFtEYhPFoLOsi2LDs-WPRPxYTy1r_FiwZaaQFi5i-57lmARqqbSvhdoafAm1hJKOJzKqklZTqUxWzWSzMbgqXieUeCY9oyhqUlHVbDKdXY_BV374mbiaUjPJjJJNpxLJlJIQ8YTDxLIfBmeffwSu_wa-LDAD?type=png)](https://mermaid.live/edit#pako:eNqVlG9P00Acx9_K5R5pMhfWrcvWByRGEp-oDzDExOzJuR6jydZid0WRkGxaiGxTIRkGx0aK2ZiYGQaijoRXxN29B-_ausnKA-2D5tp-P78_39_11mDe0jHUYBk_d7CZx3MGKtiolDOBuJaRTYy8sYxMAhbK2AaoDNjrAWsds4PtqOQRIsYKliLqdlnnnNeHdNQAbPc0qn2Cn_nR9i-A0NDOJWsNmVeJCu8jgl-gVT_q0YDWZWDqbfHaCFydNWSW2ojtfxGLKDuPdaMsSX8R_X7XIUt-FZ0RO-oA5rbphctq3ahyDpeJX8LXY-ZVWb8C-KcmPRY5A610587sbOCAJlsGrN7lH7cA3dumtSagzR7tV3l1AHj1nB59u4YJMzTfCubtsM13Y6b_ll1WeGMD3IAGd1QkEbMB67vsYCMQyCuoSuQJvdSALtoxTPHaMgFvSPvpyYi7Q1GAS-uDAMXFMg6qmoonyv3_YKb-d90hLML4oxHd_2xeDSvTfIUd9MAtHC_EY6CIV3Dx9jQuR6iNB9hqsrOoPyej4PukA0kJWNqvAXrYvvolJYC_3xNO-tPdabN6ewKEgwqyTQDm7dLv50C4Q73ejY2GmcZmhZXyTY9Xrzv0b5YcDnmrMQ3I3Sn0P9rs8wZYmH8A2JsOc08BHX6Y_mkCVAKT_qf2dNg8jMEStkvI0MXxsCa5HCRLuIRzUBNLHS8ip0hyMGeuCylyiPV41cxDjdgOjkHbcgpLUFtEYhPFoLOsi2LDs-WPRPxYTy1r_FiwZaaQFi5i-57lmARqqbSvhdoafAm1hJKOJzKqklZTqUxWzWSzMbgqXieUeCY9oyhqUlHVbDKdXY_BV374mbiaUjPJjJJNpxLJlJIQ8YTDxLIfBmeffwSu_wa-LDAD)
+
+## 결론
+
+단순해 보이는 요구사항도 실제 구현 과정에서는 예상치 못한 복잡성을 만날 수 있습니다. 중요한 것은 이러한 복잡성을 체계적으로 관리하고, 확장 가능한 구조로 발전시키는 것입니다.
+
+OAuth2 state 파라미터의 제약을 Redis를 활용해 우회한 이 접근 방식은, 비슷한 제약을 가진 다른 시스템에서도 활용할 수 있을 것입니다. 완벽한 해결책은 아닐 수 있지만, 주어진 제약 조건 내에서 실용적인 해결책을 찾은 사례라고 할 수 있습니다.

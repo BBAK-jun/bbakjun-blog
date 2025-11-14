@@ -1,0 +1,222 @@
+---
+title: Effective React Query With Key
+date: '2023-12-03T20:34:03.284Z'
+tags: ['DEV', 'React', 'React Query']
+images: ['/static/images/DEV/effective_querykey/tanstack.png']
+draft: false
+summary: '효율적인 구조적 React Query Key 사용법'
+---
+
+![](/static/images/DEV/effective_querykey/tanstack.png)
+
+# Effective React Query Key
+
+**react-query**를 사용하게 됐던 이유는 간단합니다
+
+- 클라이언트 상태와 분리
+- API 요청 관련한 인터페이스 제공의 편안함
+- 쿼리키를 이용하여 캐시 무효화 지원
+- 쿼리키를 이용한 캐시 기능 지원
+
+클라이언트 상태와 분리는 zustand를 사용하게 되면서 zustand에서도 비동기 상태에 대한 제어가 가능했지만, 리액트쿼리가 제공하는 패러다임과 인터페이스보다는 생태계가 작아 선택하지않게 되었습니다.
+
+리액트쿼리의 자세한 내용은 아래의 글에 정리해두었으니 참고하시면 좋습니다 :)
+
+[Tanstack Query Deep dive](https://www.notion.so/Tanstack-Query-Deep-dive-9585b95dfe5244ba80f1e8dfd73b6048?pvs=21)
+
+![쿼리 업데이트 코드](/static/images/DEV/effective_querykey/queryObserver.png)
+
+## **쿼리키**는 왜 중요할까요?
+
+- React Query가 내부적으로 데이터를 올바르게 캐시하기위해
+- Query에 대한 dependency가 변경될 때 자동으로 refetch하도록 하기 위해
+- 필요한 QueryCache와 직접 상호 작용하기 위해 → ???
+
+> Mutation 이후에 Mutation의 응답 데이터를 활용하여 캐시 데이터를 업데이트하거나 특정 Query를 직접 무효화 하는 경우를 말합니다.
+
+쿼리키를 상수로 관리하다가 오류가 빈번하게 발생하다는것을 알게되었습니다. 쿼리키 상수에 다른 수준의 세분성을 추가하려는 변경을 더 어렵다는 점이 있었습니다.
+
+```tsx
+const QUERY_KEYS = {
+	LIST : ['LIST'],
+	DETAIL : ['DETAIL']
+}
+
+// 세분화가 필요없는 쿼리의 경우 이렇게 가능합니다
+const { data } = useQuery({
+	queryKey: QUERY_KEYS.LIST,
+	queryFn: () => fetchList()
+})
+
+const mutate = useMutation({
+	...
+	onSuccess: () => {
+		queryClient.invalidateQuries({ queryKey : QUERY_KEYS.LIST })
+	}
+})
+
+// 세분화가 필요한 쿼리의 경우엔 불편함이 다가옵니다
+const { data } = useQuery({
+	queryKey: [...QUERY_KEYS.DETAIL, id],
+	queryFn: () => fetchDetailByID(id)
+})
+
+const mutate = useMutation({
+	...
+	onSuccess: () => {
+		queryClient.invalidateQuries({ queryKey : [...QUERY_KEYS.DETAIL, id] })
+	}
+})
+
+```
+
+쿼리와 뮤테이션이 한 소스내에 존재한다면 정확한 쿼리키 무효화로 오류없이 개발이 가능할 것 입니다. 하지만 한 소스내에 존재하지않고 멀리 떨어져있다면 실수할 가능성이 존재합니다.
+
+사람이 실수하는것은 당연합니다. 하지만 이를 구조적으로 방지할 수 있다면 방지하는것이 좋다 생각하고 `QueryKey Factory`가 이를 해결해줄것이라고 생각합니다.
+
+**QueryKey Factory**를 만들기전에 **Query Key**를 특정 규칙을 기준으로 구조화를 할 필요가있다고 생각이 됩니다.
+
+## **Query Key**를 구조화 할 수 있는 이유
+
+React Query는 Query Key를 배열이나 객체로 구조화고도 매끄럽게 일치하는 Query Key를 찾아내는데, 이것이 가능한 이유는 Query Cache와 `Fuzzy Matching` 때문입니다.
+
+내부적으로 `Query Cache`는 직렬화된 Query Key인 key와 메타데이터를 더한 Query Data인 value로 이루어진 Javascript 객체입니다. Query Key들은 `deterministic` 한 방법으로 해시 처리되기에 key에 객체를 사용해도 됩니다.
+
+> **Deterministic way** 란 객체가 들어왔을때 객체 프로퍼티의 순서에 상관없이 프로퍼티들이 동일하다면 같은 Query Key로 보는 방법을 말합니다.
+
+![](/static/images/DEV/effective_querykey/hashQueryKey.png)
+
+![](/static/images/DEV/effective_querykey/queryCache.png)
+
+더욱 자세한것은 공식문서([Query Keys | TanStack Query Docs](https://tanstack.com/query/v4/docs/react/guides/query-keys#query-keys-are-hashed-deterministically))에서 확인하실 수 있습니다.
+
+### **Fuzzy Matching**
+
+**React Query**는 일치하는 **Query Key**를 찾을 때 **Fuzzy** 하게 찾는다고 합니다.
+
+**Fuzzy**란 `유사`나 `흐릿`하다고 직역이 가능합니다.
+
+예를들어 `['hutom', '휴톰', 'Hutom']` 와 같은 Query Key가 존재할때,
+
+`queryClient.invalidateQueries` 에 `['hutom']` 만 전달하더라도
+**React Query**가 찾아내는 **Query Key** 목록안에 `['hutom', '휴톰', 'Hutom']` 가 포함되게 됩니다.
+
+[아래의 소스코드는 해당 링크에서 확인 가능합니다.](https://github.com/TanStack/query/blob/9e414e8b4f3118b571cf83121881804c0b58a814/src/core/utils.ts#L321-L338)
+
+```tsx
+// fuzzy matching을 수행하는 partialDeepEqual 함수입니다.
+// 구현체가 궁금하다면 아래의 링크를 참고하시길 바랍니다
+
+export function partialDeepEqual(a: any, b: any): boolean {
+  if (a === b) {
+    return true
+  }
+
+  if (typeof a !== typeof b) {
+    return false
+  }
+
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    return !Object.keys(b).some((key) => !partialDeepEqual(a[key], b[key]))
+  }
+}
+```
+
+| 기능             | EndPoint         | 로그인유무 |
+| ---------------- | ---------------- | ---------- |
+| Task 리스트 조회 | `/tasks`         | O          |
+| Task 단일 조회   | `/tasks/:taskId` | O          |
+
+위와 같은 API 명세서가 존재한다고 할경우 QueryKey가 사용할 요소들을 생각해봅시다. 아주 일반적인것부터, 아주 구체적인것까지 구조화 해야합니다.
+
+여기서는 `task` 라는 키워드를 대분류(`scope`)로 잡겠다. 엔드포인트를 중분류(`entity`)로 잡을 필요가 있고, 만약 유니크한 식별자가 필요한 경우에는 소분류(`uniqueValues`)로 잡겠습니다.
+
+### Scope, Entitiy 그리고 UniqueValues
+
+| 기능             | scope | entity           | uniqueValues |
+| ---------------- | ----- | ---------------- | ------------ |
+| Task 리스트 조회 | task  | `/tasks`         |              |
+| Task 단일 조회   | task  | `/tasks/:taskId` | `taskId`     |
+
+### Query Key Structure
+
+| 기능             | Query Key                                                             |
+| ---------------- | --------------------------------------------------------------------- |
+| Task 리스트 조회 | `[{ scope: 'task', entity: '/task' }`]                                |
+| Task 단일 조회   | `[{ scope: 'task', entity: '/tasks/:taskId', uniqueValues: taskId }]` |
+
+위에서 React Query는 Query Key를 Fuzzy 하게 찾는다고했습니다.
+
+만약 task에 관련된 모든 데이터를 새롭게 요청해야하는 경우 아래의 메서드를 실행하여 task와 관련된 모든 API를 무효화 할수도있습니다.
+
+`queryClient.invalidateQueries({ queryKey : [{ scope: ‘task’ }]})`
+
+또 task 리스트를 조회하는 엔드포인트인 **/tasks** 과 관련된 모든 데이터를 새롭게 요청해야하는 경우에는 아래처럼 무효화하면 됩니다.
+
+`queryClient.invalidateQueries({ queryKey : [{ entity: ‘/tasks’ }]})`
+
+### Query Key를 어떻게 구조화할지는 정해보았으니, Query Key Factory를 만들어봅시다.
+
+```ts
+type QueryKey = { scope: string; entity: string; uniqueValues?: any };
+
+interface QueryKeyFactory {
+  queries: Record<string, (uniqueValues?: any) => readonly QueryKey[]>;
+}
+
+class HutomQueryFactory implements QueryKeyFactory {
+	private readonly scope = 'task'
+
+	queries: {
+		list: () => [{ scope: this.scope,	entity: 'fetchList' }] as const,
+		detail: (id: string) => [{
+			scope: this.scope,
+			entity: 'fetchDetailByID',
+			uniqueValues: id
+		}] as const
+	},
+
+    invalidateQueries: (queryClient: QueryClient) => ({
+        scope : queryClient.invalidateQueries({ queryKey : [{ scope: this.scope }] }),
+        list : queryClient.invalidateQueries({ queryKey : this.queries.list() })
+        detail : (id: string) => queryClient.invalidateQueries({ queryKey : this.queries.detail(id) })
+    })
+}
+
+export default new HutomQueryFactory()
+```
+
+만약 특정 Mutation이 발생했을때, QueryKeyFactory의 scope 전체를 무효화하고 싶다면 아래와 같이 사용하면 됩니다.
+
+```tsx
+const { data } = useQuery({
+    queryKey: HutomQueryFactory.queries.list(),
+    queryFn: () => fetchList()
+})
+
+const mutate = useMutation({
+    ...
+    onSuccess: () => {
+        HutomQueryFactory.invalidateQueries(queryClient).scope()
+    }
+})
+```
+
+위와 같이 Query Key Factory를 사용하면, Query Key를 사용하는 모든 곳에서 Query Key를 생성할때마다 일관성있는 구조로 생성할 수 있습니다.
+
+그리고 특정 Mutation이 발생했을때, 해당 Mutation이 영향을 미치는 Query Key를 무효화 할때도 일관성있게 무효화 할 수 있습니다.
+
+```tsx
+// 아래의 예시는 mutation이 발생했을때, 해당 mutation이 영향을 미치는 Query Key를 무효화하는 코드입니다.
+const { data } = useQuery({
+    queryKey: HutomQueryFactory.queries.list(),
+    queryFn: () => fetchList()
+})
+
+const mutate = useMutation({
+    ...
+    onSuccess: () => {
+        HutomQueryFactory.invalidateQueries(queryClient).list()
+    }
+})
+```

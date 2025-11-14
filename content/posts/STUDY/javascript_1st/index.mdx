@@ -1,0 +1,472 @@
+---
+title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 1회'
+date: '2022-12-31T10:48:03.284Z'
+summary: '자바스크립트 스터디 1장 ~ 5장'
+tags: ['STUDY','JS']
+---
+
+# 1장
+
+## var let const
+
+ECMAScript2015 부터 let const가 도입되었다.
+
+### var
+
+var 키워드로 선언된 변수는 함수 스코프에 종속된다.<br/>
+for 루프내에서 var 키워드로 변수 선언하면 루프 밖에서도 사용할 수 있다.
+
+```js
+for (var i = 0; i < 10; i++) {
+  var description = 'Hello var in loop'
+}
+
+console.log(description) // Hello var in loop
+
+function sayHello() {
+  var descriptionInFunction = 'Hello var in function'
+  console.log(descriptionInFunction) // Hello var in function
+}
+
+sayHello() // Hello var in function
+
+console.log(descriptionInFunction) // ReferenceError : descriptionInFunction is not defined
+```
+
+for loop 안에있는 var 의 값이 블럭 스코프를 벗어나도 loop 외부에서 접근이 가능하지만,<br/>
+함수안에있는 var는 함수 스코프에 내에서 제한되어 외부에서 접근이 불가능하다.
+
+### let
+
+let 으로 선언된 변수는 블록 스코프로 종속된다.
+
+변수가 선언된 블록과 하위 블록 내에서만 사용이 가능하다.
+
+```js
+let x = 'global'
+
+if (x === 'global') {
+  let x = 'block-scoped'
+
+  console.log(x) // block-scoped
+}
+
+console.log(x) // global
+
+var y = 'global'
+
+if (y === 'global') {
+  var y = 'block-scoped'
+
+  console.log(y) // block-scoped
+}
+
+console.log(y) // block-scoped
+```
+
+블록 스코프 내에서 let으로 선언한 변수에 새 값을 할당하면 블록스코프 바깥에서는 그값이 변경되지 않는다.
+
+반면에 var로 선언된 변수는 동일한 작업을 하면 블록 스코프 외부에서 접근이 가능하므로 블록 바깥에서도 값이 변경된다.
+
+### const
+
+let과 마찬가지로 블록 스코프에 종속된다.<br/>
+재할당을 통해 값이 변경될 수 없고, 다시 선언될수도 없단는 차이점이 있다.
+
+`const`로 선언된 변수가 불변이라는 의미는 아니다.
+
+```js
+let currentYear = 2022
+const person = {
+  name: '빡준',
+  age: 27,
+}
+
+currentYear = 2023
+
+person.age = 28
+console.log(person.age) // 28
+```
+
+2022의 빡준은 27세였지만, 2023년의 빡준은 28세가 된다는 문맥이다.
+
+이 경우에 변수 전체를 재할당하는것이 아닌, 그 속성 중 하나만 재할당하므로 문제가없다.<br/>
+객체의 내용을 변경할 수 없게 const 객체를 고정할 수는 있다.
+
+```js
+const person = {
+  name: '빡준',
+  age: 27,
+}
+
+console.log(person.age) // 27
+
+Object.freeze(person)
+
+person.age = 28
+
+console.log(person.age) // 27
+```
+
+> 그렇다고 오류를 뱉지는 않는다.
+
+## TDZ (Temporal dead zone)
+
+```js
+console.log(i) // undefined
+var i = '나는 변수'
+
+console.log(j) // ReferenceError : can't access lexical declaration 'j' before initialization
+let j = '나도 변수'
+
+console.log(k) // ReferenceError : can't access lexical declaration 'j' before initialization
+const k = '나도 변수'
+```
+
+var는 정의되기전에 접근할수있지만, 그 값에는 접근이 불가하다.
+
+let과 const는 정의하기 이전에 접근할 수 없다.
+
+var, let, const 모두 다른 소스에서 읽을 수 있는 내용임에도 호이스팅의 대상이 된다. 즉 코드가 실행되기 전에 처리되고 해당 스코프 상단으로 올라간다.
+
+var가 가지는 가장 큰 차이점은 정의도기 전에도 접근할 수 있다.
+
+var는 정의되기이전에는 undefined이다.<br/>
+반면 let은 변수가 선얼될때까지 일시적으로 TDZ에 있게된다. 따라서 초기화 전에 변수에 접근하면 오류를 발생한다.
+
+<hr />
+
+# 2장
+
+## 화살표함수
+
+ECMAScript 2015에서 화살표함수가 처음으로 도입되었다.
+
+이전에는 아래와 같은 방법이 일반적이었다.
+
+```js
+const greeting = function (name) {
+  return 'Hello' + name
+}
+```
+
+이를 화살표 함수로 변경하면
+
+```js
+const greeting = (name) => {
+  return `Hello ${name}`
+}
+
+// 매개변수가 하나일경우 괄호를 생략하고 작성가능
+const greeting = (name) => {
+  return `Hello ${name}`
+}
+
+// 매개변수가 없을 경우 빈괄호를 사용해야함
+const greeting = () => {
+  return `Hello`
+}
+
+// 아래와 같이 암시적반환이 가능하다
+const greeting = (name) => `Hello ${name}`
+```
+
+화살표 함수는 익명함수다.<br/>
+참조할 이름이 필요하다면 함수를 변수에 할당하면 된다.
+
+### 화살표 함수와 this
+
+화살표 함수 내부에서 this 키워드를 사용할때에는 일반 함수와 다르게 동작하므로 주의해야한다.
+
+화살표 함수를 사용할때 this는 상위 스코프에서 상속된다.
+
+```html
+<div class="box">This is box</div>
+
+<style>
+  .box {
+    background-color: red;
+  }
+</style>
+```
+
+```js
+const box = document.querySelector('div.box')
+
+box.addEventListener('click', function () {
+  this.classList.toggle('opening') // 첫번째 this
+
+  setTimeout(function () {
+    this.classList.toggle('opening') // 두번째 this
+  }, 500)
+})
+```
+
+위 코드의 문제는 첫번째 this가 box에 할당되었지만, setTimeout 함수 내부에서의 this는 window객체로 설정되어 오류가 발생한다.
+`Uncaught TypeError : cannot read property "toggle" of undefined`
+
+화살표 함수가 부모 스코프에서 this 값을 상속한다는 것을 알고있으므로, 아래와 같이 작성하면 오류는 없다.
+
+```js
+const box = document.querySelector('div.box')
+
+box.addEventListener('click', function () {
+  this.classList.toggle('opening')
+  setTimeout(() => {
+    this.classList.toggle('opening')
+  }, 500)
+})
+```
+
+> 그렇다면 화살표함수를 조심해서 사용해야하는 때는 언제인가?
+
+상위스코프가 window객체이므로 window를 가리키게 된다.
+
+```js
+const box = document.querySelector('div.box')
+
+box.addEventListener('click', () => {
+  this.classList.toggle('opening') // this는 window객체를 가리킨다.
+})
+```
+
+```js
+const BBAK_JUN = {
+  age: 27,
+  grow: function () {
+    this.age = this.age + 1
+  },
+}
+
+BBAK_JUN.grow()
+console.log(BBAK_JUN.age) // 28
+
+const _BBAK_JUN = {
+  age: 27,
+  grow: () => {
+    // this는 상위스코프인 window객체를 가리킨다.
+    this.age = this.age + 1
+  },
+}
+
+_BBAK_JUN.grow()
+console.log(_BBAK_JUN.age) // 28
+```
+
+<hr />
+
+# 3장
+
+## 함수 기본값 인수
+
+ECMAScript 2015 이전에는 함수 매개변수에 기본값을 지정하는것이 어려웠다.
+
+```js
+class User {
+  constructor() {
+    this.name = null
+  }
+
+  static createInstance() {
+    return new User()
+  }
+
+  // 이전 방법
+  setUserName(name) {
+    if (!name) name = 'BBAK_JUN'
+    this.name = name
+  }
+
+  getUserName() {
+    return this.name
+  }
+}
+
+const user = User.createInstance()
+user.setUserName()
+user.getUserName() // BBAK_JUN
+```
+
+하지만 ECMAScript 2015 이후부터 매개변수에 기본값을 지정할수있는 방법이 도입되었다.
+
+```js
+class User {
+  constructor() {
+    this.name = null
+  }
+
+  static createInstance() {
+    return new User()
+  }
+
+  // 새로운 방법
+  setUserName(name = 'BBAK_JUN') {
+    this.name = name
+  }
+
+  getUserName() {
+    return this.name
+  }
+}
+
+const user = User.createInstance()
+user.setUserName()
+user.getUserName() // BBAK_JUN
+```
+
+<hr />
+
+# 4장
+
+## 템플릿 리터럴
+
+ECMAScript 2015 이전에는 문자열 삽입하기 위해 아래 `sayUserNameBefore` 메서드같이 불편하게 코드를 작성했었다.<br/>
+하지만 ECMAScript 2015 이후에는 템플릿 리터럴이 도입되며 `sayUserNameAfter` 메서드와 같이 깔끔하게 코드 작성이 가능하게 되었다.
+
+```js
+class User {
+  constructor() {
+    this.name = null
+  }
+
+  static createInstance() {
+    return new User()
+  }
+
+  setUserName(name) {
+    this.name = name
+  }
+
+  // ECMAScript 2015 이전
+  sayUserNameBefore() {
+    return 'Hello my name is' + this.name
+  }
+
+  // ECMAScript 2015 이후
+  sayUserNameAfter() {
+    return `Hello my name is ${this.name}`
+  }
+}
+
+const user = User.createInstance()
+user.setUserName('BBAK_JUN')
+user.sayUserNameBefore() // Hello my name is BBAK_JUN
+user.sayUserNameAfter() // Hello my name is BBAK_JUN
+```
+
+### 중첩 템플릿
+
+템플릿 리터럴을 사용하면 아래와 같이 템플릿안에 템플릿을 중첩하는것도 간단해진다.
+
+```js
+const getUserList = async () => {
+  return ['BBAK_JUN', 'bbak_jun', 'Park Jun Hyeong']
+}
+
+const userList = getUserList().then((res) => res)
+
+const markupUserList = `
+  <ul>
+    ${userList.map((user) => `<li>${user}</li>`).join(',')}
+  </ul>
+`
+
+console.log(markupUserList)
+/*
+ * <ul>
+ *   <li>BBAK_JUN</li>
+ *   <li>bbak_jun</li>
+ *   <li>Park Jun Hyeong</li>
+ * </ul>
+ */
+```
+
+### 삼항연산자와 함께사용
+
+프론트엔드에서 상태에 따른 텍스트를 보여줘야할때가있다.
+
+예를들어 로그인 유저의 경우 유저이름을, 비로그인 유저의 경우 로그인유도 안내문을 보여야할때도있다.
+
+자주사용하는 리액트로 예시를 들어보겠다.
+
+```js
+const App = () => {
+  const [userInfo, isLoggedIn] = useContext(authContext)
+
+  return (
+    <div>
+      <span>{isLoggedIn ? `${userInfo.userName}님 안녕하세요` : `로그인이 필요합니다.`}</span>
+    </div>
+  )
+}
+```
+
+<hr />
+
+# 5장
+
+## 문자열 메서드
+
+### indexOf
+
+문자열에서 지정된 값이 처음 나타나는 위치의 인덱스를 반환한다.
+
+```js
+const string = 'this is a short sentence'
+console.log(string.indexOf('short')) // 10
+```
+
+### slice
+
+문자열의 지정된 부분을 새 문자열로 반환한다.
+
+```js
+const string = 'pizza, hamburger, chicken'
+console.log(string.slice(0, 5)) // pizza
+```
+
+### toUpperCase
+
+문자열 모든 문자를 대문자로 변환
+
+### toLowerCase
+
+문자열 모든 문자를 소문자로 변환
+
+> 아래부터는 ECMAScript 2015 이후에 도입된 문자열 메서드다.
+
+### startsWith
+
+문자열이 매개변수로 받은 문자열로 시작하는지 확인한다.
+
+```js
+const string = 'Hello my name is BBAK_JUN'
+console.log(string.startsWith('Hello')) // true
+```
+
+### endsWith
+
+문자열이 매개변수로 받은 문자열로 끝나는지 확인한다.
+
+```js
+const string = 'Hello my name is BBAK_JUN'
+console.log(string.endsWith('BBAK_JUN')) // true
+```
+
+### includes
+
+문자열이 매개변수로 받은 문자열을 포함하는지 확인한다.
+
+```js
+const string = 'Hello my name is BBAK_JUN'
+console.log(string.includes('Hello')) // true
+```
+
+### repeat
+
+매개변수로 받은 수만큼 문자열을 반복한다.
+
+```js
+const string = 'Hello'
+console.log(string.repeat(2)) // HelloHello
+```

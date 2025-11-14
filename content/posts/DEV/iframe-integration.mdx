@@ -1,0 +1,350 @@
+---
+title: 'Iframe 통합 마이크로 프론트엔드'
+summary: 'Vue2 기반의 웹앱에서 React의 Dialog 컴포넌트 띄우기'
+date: '2025-04-23'
+tags: ['DEV', 'FRONTEND']
+draft: false
+---
+
+# Vue 앱에서 React Dialog 컴포넌트 통합하기
+
+Vue 애플리케이션 내에서 React로 개발된 Dialog 컴포넌트를 iframe을 통해 통합한 사례를 중심으로, 서로 다른 프레임워크 간 UI 재사용을 가능케 하는 마이크로 프론트엔드 접근법의 실제 구현 과정을 공유합니다.
+이 방식은 다른 프레임워크로 개발된 UI 컴포넌트를 효과적으로 재사용할 수 있는 마이크로프론트엔드 접근법의 한 예입니다.
+
+## 직면한 문제와 해결 방안
+
+우리 팀은 Vue2기반의 Nuxt.js와 Php기반으로 이루어진 웹 애플리케이션을 운영하고 있습니다. 애플리케이션은 수년간 개발되어 왔으며, 다양한 기능과 복잡한 비즈니스 로직을 포함하고 있습니다. 그러나 프론트엔드 생태계의 빠른 변화로 인해 React로의 점진적인 마이그레이션을 결정했습니다.
+
+전체 애플리케이션을 한 번에 마이그레이션하는 것은 위험했기 때문에, 비즈니스 연속성을 보장하기 위해 점진적인 접근이 필요했습니다.
+
+신규 기능 요청이 완전히 독립적인 기능이라면 React로 개발하여 별도 앱으로 분리하는 접근이 가능하지만, 실제로는 기존 Vue 앱 화면 위에 기능을 얹어야 하는 경우도 많아 복잡도가 증가합니다.
+
+> Vue에서 개발된 화면 위에 다이얼로그를 띄우는 신규 기능요청이 들어왔습니다.
+
+- 신규 기능을 Vue로 개발: 향후 마이그레이션 비용 증가
+- 신규 기능을 React로 개발: 기존 Vue 애플리케이션과의 통합 문제
+
+특히 문제가 된 것은 다이얼로그/Dialog 컴포넌트였습니다. 우리는 새로운 Dialog UI가 필요했지만, 이를 Vue로 개발하게 되면 향후 마이그레이션 과정에서 React로 다시 작성해야 하는 비효율이 발생할 것이었습니다.
+
+```plaintext
+┌──────────────────────────────────────────────┐
+│              Vue 애플리케이션 화면               │
+│                                              │
+│  ┌────────────────────────────────────────┐  │
+│  │           ExternalDialog 컴포넌트        │  │
+│  │                                        │  │
+│  │  ┌──────────────────────────────────┐  │  │
+│  │  │           iframe 요소             │  │  │
+│  │  │  (React Dialog 앱이 로드됨)         │  │  │
+│  │  └──────────────────────────────────┘  │  │
+│  └────────────────────────────────────────┘  │
+│                                              │
+└──────────────────────────────────────────────┘
+```
+
+여러 대안을 검토한 끝에 iframe을 활용한 마이크로프론트엔드 접근법을 선택했습니다. 이런 선택을 하기 전, 다양한 마이크로프론트엔드 통합 방법을 비교 분석했습니다.
+
+### 다른 마이크로프론트엔드 통합 방법들
+
+마이크로프론트엔드 통합은 크게 두 가지 접근법으로 분류할 수 있습니다:
+
+#### 런타임 통합 방식
+런타임 통합은 애플리케이션 실행 중에 서로 다른 마이크로프론트엔드를 동적으로 로드하고 결합하는 방식입니다.
+
+- **장점**:
+  - **독립적인 배포**: 각 마이크로프론트엔드를 독립적으로 배포 가능
+  - **팀 자율성**: 각 팀이 자신의 코드베이스와 배포 주기 유지 가능
+  - **동적 로딩**: 필요할 때만 특정 마이크로프론트엔드 로드 가능
+  - **기술 스택 다양성**: 각 팀이 원하는 프레임워크/라이브러리 선택 가능
+
+- **단점**:
+  - **초기 로딩 지연**: 여러 리소스 로딩으로 인한 성능 저하 가능성
+  - **중복 의존성**: 각 마이크로프론트엔드가 유사한 라이브러리 중복 로드
+  - **런타임 오류 위험**: 통합 시점에 발견되는 오류 증가 가능성
+  - **상태 관리 복잡성**: 공유 상태 관리가 어려움
+
+#### 빌드타임 통합 방식
+빌드타임 통합은 애플리케이션을 빌드하는 시점에 서로 다른 마이크로프론트엔드를 정적으로 결합하는 방식입니다.
+
+- **장점**:
+  - **최적화된 번들**: 중복 코드 제거로 번들 크기 감소
+  - **성능 우수**: 초기 로딩 성능 향상
+  - **정적 분석**: 빌드 단계에서 통합 오류 조기 발견
+  - **일관된 버전 관리**: 모든 컴포넌트가 동일한 의존성 버전 사용
+
+- **단점**:
+  - **독립성 감소**: 팀 간 높은 결합도
+  - **빌드 복잡성**: 빌드 프로세스 복잡화 및 빌드 시간 증가
+  - **전체 재배포**: 작은 변경에도 전체 애플리케이션 재배포 필요
+  - **기술 제약**: 동일하거나 호환되는 기술 스택 사용 필요
+
+이러한 큰 카테고리 아래 다양한 구체적인 구현 방법들이 있습니다:
+
+1. **Web Components**
+   - **장점**: 표준 기술, 프레임워크 독립적, 재사용성 높음
+   - **단점**: IE 지원 제한적, 상태 관리 복잡, 스타일 캡슐화 이슈
+
+2. **Module Federation (Webpack 5)**
+   - **장점**: 런타임에서 코드 공유, 중복 의존성 방지, 성능 최적화
+   - **단점**: Webpack에 의존적, 설정 복잡, 다른 빌드 도구와 호환성 문제
+
+3. **NPM 패키지 활용**
+   - **장점**: 익숙한 배포 방식, 버전 관리 용이, 개발 환경 통합 쉬움
+   - **단점**: 배포 주기 길어짐, 독립 배포 불가, 기술 스택 제약
+
+4. **ESI(Edge-Side Includes)/SSI(Server-Side Includes)**
+   - **장점**: 서버 사이드 통합으로 성능 좋음, CDN 캐싱 가능
+   - **단점**: 동적 통합 제한적, 서버 인프라 의존성, 클라이언트 상호작용 어려움
+
+### iframe 통합 방식의 한계점
+
+iframe 통합 방식은 다음과 같은 한계점을 가지고 있습니다:
+
+1. **성능 이슈**
+   - 각 iframe이 별도의 브라우징 컨텍스트를 생성하여 메모리 사용량 증가
+   - 부모-자식 간 통신 오버헤드로 인한 지연 발생 가능
+
+2. **UX 제한**
+   - iframe 내부와 외부 간 스크롤, 포커스, 키보드 탐색 등의 불연속성
+   - 화면 크기 변화에 따른 반응형 대응이 어려움
+   - 모바일 환경에서 iframe 처리의 비일관성
+
+3. **기술적 제약**
+   - 브라우저 보안 정책(Same-Origin Policy)으로 인한 제약
+   - 공유 상태 관리의 복잡성
+   - SEO에 불리함 (iframe 내부 콘텐츠는 검색 엔진에 제대로 인덱싱되지 않음)
+
+### iframe을 선택한 이유
+
+이러한 한계점에도 불구하고, 우리의 특수한 상황(Dialog UI)에서는 iframe 통합이 가장 적합한 선택이었습니다:
+
+1. **완전한 격리**: CSS와 JavaScript 실행 환경이 완전히 격리되어 프레임워크 충돌 방지
+2. **간단한 구현**: 다른 마이크로프론트엔드 기술에 비해 구현이 단순함
+3. **독립적 배포**: React 컴포넌트를 별도로 개발하고 배포 가능
+4. **점진적 마이그레이션에 적합**: 기존 시스템 변경 없이 새로운 기술 스택 도입 가능
+5. **사용 사례 적합성**: Dialog와 같은 UI는 iframe 제약사항의 영향을 덜 받음
+6. **팀 독립성**: 각 팀이 원하는 기술 스택과 개발 주기를 유지할 수 있음
+
+특히 Dialog UI의 경우, 전체 화면 대신 화면의 일부만 차지하고 주로 정보 표시와 간단한 상호작용에 사용되기 때문에, iframe의 한계점이 크게 부각되지 않았습니다. 또한 임시적인 솔루션으로서, 전체 마이그레이션이 완료될 때까지의 가교 역할을 충분히 수행할 수 있다고 판단했습니다.
+
+## 구현 방법: Vue와 React의 통합
+
+iframe을 통한 Vue-React 통합은 크게 세 부분으로 나누어 구현했습니다:
+
+1. Vue 애플리케이션의 iframe 컨테이너 (ExternalDialog.vue)
+2. React로 개발된 Dialog 컴포넌트 (React App)
+3. 두 프레임워크 간의 통신 계층 (window.postMessage API)
+
+### 상태 흐름도
+
+사용자 상호작용부터 Dialog 종료까지의 전체 흐름은 다음과 같습니다:
+
+![Vue 앱 내 React Dialog 예시](/static/images/DEV/iframe-integration/flow-diagram.png)
+
+### 통신 프로토콜
+
+Vue와 React 간 통신은 `window.postMessage` API를 통해 이루어집니다. 다음과 같은 표준화된 메시지 타입을 정의했습니다
+
+#### 부모(Vue) → 자식(React) 메시지
+- `부모_자식_다이얼로그_열기`: Dialog 열기
+- `부모_자식_다이얼로그_닫기`: Dialog 닫기
+- `부모_자식_다이얼로그_타입`: Dialog 타입 지정
+- `부모_자식_다이얼로그_높이_설정`: Dialog 높이 요청
+
+#### 자식(React) → 부모(Vue) 메시지
+- `자식_부모_다이얼로그_열림`: Dialog 열림 상태 알림
+- `자식_부모_다이얼로그_닫힘`: Dialog 닫힘 상태 알림
+- `자식_부모_다이얼로그_타입`: Dialog 타입 응답
+- `자식_부모_다이얼로그_높이_설정`: Dialog 높이 전달
+- `자식_부모_페이지_이동`: 페이지 이동 요청
+
+### Vue 측 구현 (ExternalDialog.vue)
+
+Vue 애플리케이션에서는 `ExternalDialog` 컴포넌트를 만들어 iframe을 관리합니다.
+
+```html
+<template>
+  <div v-show="isVisible" class="dimmed">
+    <iframe
+      ref="dialogIframe"
+      :src="dialogUrl"
+      class="iframe"
+    />
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    dialogUrl: String,
+    isVisible: Boolean
+  },
+  mounted() {
+    window.addEventListener('message', this.handleChildMessage)
+  },
+  beforeDestroy() {
+    window.removeEventListener('message', this.handleChildMessage)
+  },
+  methods: {
+    sendMessageToIframe(messageType, payload = {}) {
+      this.$refs.dialogIframe.contentWindow.postMessage(
+        { type: messageType, payload },
+        '*'
+      )
+    },
+    handleChildMessage(event) {
+      const { type, payload } = event.data
+
+      switch (type) {
+        case '자식_부모_다이얼로그_닫힘':
+          this.$emit('dialogClose')
+          break
+        case '자식_부모_다이얼로그_높이_설정':
+          this.$refs.dialogIframe.style.height = `${payload.height}px`
+          break
+      }
+    }
+  },
+  watch: {
+    isVisible(value) {
+      if (value) {
+        this.sendMessageToIframe('부모_자식_다이얼로그_열기')
+      } else {
+        this.sendMessageToIframe('부모_자식_다이얼로그_닫기')
+      }
+    }
+  }
+}
+</script>
+```
+
+### React 측 구현 (useExternalDialog.ts)
+
+React 애플리케이션에서는 `useExternalDialog` 훅을 만들어 부모 컨테이너와의 통신을 관리합니다.
+
+```typescript
+// 핵심 구현 컨셉만 표시한 의사 코드입니다
+export const useExternalDialog = (options = {}) => {
+  const { dialogHeight = 380 } = options;
+
+  // 다이얼로그 열기
+  const handleOpen = useCallback(() => {
+    window.parent.postMessage({
+      type: '자식_부모_다이얼로그_열림'
+    }, '*')
+  }, [])
+
+  // 다이얼로그 닫기
+  const handleClose = useCallback(() => {
+    window.parent.postMessage({
+      type: '자식_부모_다이얼로그_닫힘'
+    }, '*')
+  }, [])
+
+  // 부모 창에 높이 전달
+  const updateHeight = useCallback(() => {
+    window.parent.postMessage({
+      type: '자식_부모_다이얼로그_높이_설정',
+      payload: { height: dialogHeight }
+    }, '*')
+  }, [dialogHeight])
+
+  // 부모 메시지 리스너 설정
+  useEffect(() => {
+    const handleParentMessage = (event) => {
+      const { type } = event.data;
+
+      if (type === '부모_자식_다이얼로그_열기') {
+        handleOpen();
+      } else if (type === '부모_자식_다이얼로그_닫기') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('message', handleParentMessage);
+    updateHeight(); // 초기 높이 설정
+
+    return () => window.removeEventListener('message', handleParentMessage);
+  }, [handleOpen, handleClose, updateHeight]);
+
+  return [handleOpen, handleClose];
+}
+```
+
+### 사용 예시: React Dialog 컴포넌트
+
+React Dialog 컴포넌트에서 useExternalDialog 훅을 활용한 간단한 예:
+
+```jsx
+// 핵심 구현 컨셉만 표시한 의사 코드입니다
+function Dialog() {
+  const [handleOpen, handleClose] = useExternalDialog({
+    dialogHeight: 400
+  });
+
+  return (
+    <div>
+      <div className="dialog-content">
+        <div className="dialog-header">
+          <h2>Dialog 제목</h2>
+          <button onClick={handleClose}>닫기</button>
+        </div>
+        <div className="dialog-body">
+          <p>Dialog 내용...</p>
+        </div>
+        <div className="dialog-footer">
+          <button onClick={handleClose}>확인</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## 보안 고려사항 및 향후 계획
+
+iframe 통합 방식은 구현이, 단순하지만 보안 측면에서 몇 가지 고려해야 할 사항이 있습니다.
+
+### 보안 위험 및 대응 방안
+
+1. **XSS(Cross-Site Scripting) 공격 방지**
+   - iframe의 `sandbox` 속성을 사용하여 필요한 권한만 부여해야 합니다.
+   - 예: `<iframe sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`
+
+2. **출처 검증**
+   - `postMessage` 메시지 수신 시 발신자의 origin을 항상 검증해야 합니다.
+   ```javascript
+   window.addEventListener('message', (event) => {
+     // 알려진 출처에서만 메시지 수신
+     if (event.origin !== 'https://trusted-domain.com') return;
+
+     // 메시지 처리...
+   });
+   ```
+
+3. **데이터 보안**
+   - iframe에 전달되는 데이터를 최소화하고, 민감한 정보는 암호화된 토큰을 통해 전달해야 합니다.
+
+현재 구현에서는 보안을 위해 다음과 같은 개선을 계획하고 있습니다:
+
+1. **보안 강화**
+   - 현재는 `postMessage`의 origin을 '*'로 설정하여 모든 출처를 허용하고 있으나, 향후 특정 도메인만 허용하도록 변경 예정
+   - 암호화된 토큰을 통한 안전한 파라미터 전달 구현
+
+2. **성능 최적화**
+   - iframe 로딩 지연 최소화
+   - 리소스 사용량 모니터링 및 최적화
+
+3. **사용자 경험 개선**
+   - 모바일 환경에서의 반응형 디자인 개선
+   - iframe 로딩 중 스켈레톤 UI 표시
+
+### 마이그레이션 완료 후 계획
+
+우리의 목표는 전체 Vue 애플리케이션을 React로 마이그레이션하는 것입니다. 이 과정이 완료되면 iframe 통합 계층은 제거하고 직접적인 React 컴포넌트로 대체할 예정입니다. 이는 성능 향상과 코드 복잡성 감소에 기여할 것입니다.
+
+## 결론
+
+이번 iframe 기반의 React Dialog 통합 사례는, Vue 중심의 레거시 시스템 내에서 React 생태계를 유연하게 도입할 수 있는 실용적인 접근 방식을 제시하였습니다. 기존 시스템의 구조나 스타일에 영향을 최소화하면서도 새로운 기술 스택을 점진적으로 수용할 수 있었으며, 이는 안정적인 마이그레이션의 기반이 되었습니다.
+
+본 경험을 통해 확인한 바와 같이, 새로운 기술의 도입 여부는 기술적 우수성뿐만 아니라, 조직과 팀이 수용 가능한 변화의 범위와 속도를 함께 고려하는 것이 중요합니다. 향후에는 Module Federation 또는 Web Component 등의 기술도 검토하여, 프론트엔드 아키텍처의 독립성과 확장성을 지속적으로 강화해 나갈 계획입니다.

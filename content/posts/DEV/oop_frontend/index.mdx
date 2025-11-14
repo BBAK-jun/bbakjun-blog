@@ -1,0 +1,579 @@
+---
+title: 'Frontend의 객체지향 프로그래밍'
+date: '2024-10-10T15:33:03.284Z'
+summary: 'Valtio를 사용하여 상태관리합니다. 근데 이제 객체지향을 곁들인..'
+tags: ['DEV', 'React', 'OOP']
+---
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+    <rect width="800" height="400" fill="#f0f0f0" />
+    <rect x="50" y="50" width="300" height="300" rx="10" fill="#4a90e2" />
+    <rect x="50" y="80" width="300" height="270" rx="10" fill="#ffffff" />
+    <circle cx="70" cy="65" r="5" fill="#ff6b6b" />
+    <circle cx="90" cy="65" r="5" fill="#feca57" />
+    <circle cx="110" cy="65" r="5" fill="#48dbfb" />
+
+    <circle cx="550" cy="200" r="80" fill="#ff6b6b" opacity="0.7" />
+    <circle cx="650" cy="150" r="60" fill="#feca57" opacity="0.7" />
+    <circle cx="600" cy="300" r="70" fill="#48dbfb" opacity="0.7" />
+
+    <line x1="350" y1="200" x2="470" y2="200" stroke="#333333" strokeWidth="3" />
+
+  <text
+    x="400"
+    y="380"
+    fontFamily="Arial, sans-serif"
+    fontSize="24"
+    fill="#333333"
+    textAnchor="middle"
+  />
+</svg>
+
+프론트엔드 개발에서 상태 관리를 접근하는 방식은 크게 두 가지로 나눌 수 있습니다: 함수형 프로그래밍과 객체지향 프로그래밍입니다.
+
+1. 함수형 프로그래밍: 이 방식에서는 상태를 직접 관리하지 않고, 순수 함수를 통해 데이터를 변환합니다.
+   함수는 입력에 따른 출력만을 생성하며, 외부 상태를 변경하지 않습니다.
+   이는 코드의 예측 가능성을 높이고 부작용을 줄이는 데 도움이 됩니다.
+2. 객체지향 프로그래밍: 이 방식은 데이터(상태)와 그 데이터를 조작하는 메서드(행동)를 하나의 객체로 캡슐화합니다.
+   객체는 자신의 상태를 직접 관리하며, 다른 객체와 상호작용을 통해 전체 시스템의 동작을 구현합니다.
+
+한편, 자바스크립트의 클로저는 함수와 그 함수가 선언된 렉시컬 환경의 조합으로, 함수형과 객체지향 모두에서 사용될 수 있는 강력한 기능입니다.
+클로저는 간결하고 함수 내부에서 변수를 은닉할 수 있어, 작은 스코프나 임시적인 상태 유지에 적합합니다.
+그러나 복잡한 상태나 여러 개의 연관된 데이터 조작에는 구조가 부족할 수 있습니다.
+
+각 방식은 고유의 장점이 있지만, 복잡한 상태 관리가 필요한 대규모 애플리케이션에서는 객체지향적 접근이 더 효과적일 수 있습니다.
+객체지향 프로그래밍은 관련된 데이터와 행동을 하나의 단위로 묶어 관리하므로, 복잡한 상태 로직을 더 직관적으로 모델링하고 관리할 수 있게 해줍니다.
+
+이런 이유로, 저는 Valtio를 사용해 객체지향적인 방식으로 상태 관리를 시도해보려 합니다.
+Valtio는 React 기반 상태 관리 라이브러리로, 상태를 객체로 다루고 Proxy를 통해 변경 사항을 추적하는 방식이기 때문에 OOP(객체지향 프로그래밍)와 잘 맞다고 생각합니다.
+Valtio의 기본 구조가 객체를 상태로 삼기 때문에, 객체지향적인 패러다임을 통해 상태 관리를 더욱 명확하고 직관적으로 할 수 있는 도구입니다.
+
+이를 통해 상태와 행동을 하나의 객체로 묶어 관리하는 방식의 장점을 극대화하려고 합니다.
+
+# TL;DR
+
+이러한 목적을 바탕으로, 객체지향적 상태 관리를 학습하기 위한 예제로 간단한 SNS 애플리케이션을 만들어보려 합니다.
+이 애플리케이션은 Next.js의 Route Handler와 JSON 파일을 활용해 간단한 데이터베이스를 구축하며, 상태 관리를 위해 Valtio를 적용할 예정입니다.
+
+Next.js의 route handler를 사용해 API 엔드포인트를 만들고, JSON 파일을 데이터베이스처럼 활용하여 게시물 생성, 조회, 수정 등을 구현할 계획입니다.
+이를 통해 상태 관리가 필요한 복잡한 상호작용을 객체지향적으로 다루고, Valtio를 사용해 객체 기반의 상태 관리가 얼마나 유용한지 보여줄 수 있는 좋은 예제가 될 것입니다.
+
+# Valtio
+
+우선 상태관리 라이브러리인 Valtio에 대해 간단히 소개하겠습니다.
+
+[**프록시 상태를 간단하게 만듭니다.**](https://valtio.dev/docs/introduction/getting-started)
+
+## Proxy
+
+상태를 만들기 위해서는 proxy 함수를 사용하여 객체를 감싸야합니다. 이렇게 하면 객체의 모든 속성이 리액티브 상태로 변환됩니다.
+
+```tsx
+import { proxy } from 'valtio'
+
+type Status = 'pending' | 'completed'
+type Filter = Status | 'all'
+type Todo = {
+  description: string
+  status: Status
+  id: number
+}
+
+export const store = proxy<{ filter: Filter; todos: Todo[] }>({
+  filter: 'all',
+  todos: [],
+})
+```
+
+## 스냅샷
+
+위에서 proxy로 감싼 객체의 데이터에 엑세스하려면 `useSnapshot` 함수를 사용합니다.
+
+> todos / filter 속성이 업데이트 되면 리렌더링이 발생합니다.
+
+```tsx
+const Todos = () => {
+  const snap = useSnapshot(store)
+  return (
+    <ul>
+      {snap.todos
+        .filter(({ status }) => status === snap.filter || snap.filter === 'all')
+        .map(({ description, status, id }) => {
+          return (
+            <li key={id}>
+              <span data-status={status} className="description">
+                {description}
+              </span>
+              <button className="remove">x</button>
+            </li>
+          )
+        })}
+    </ul>
+  )
+}
+```
+
+이처럼 Valtio는 프록시를 사용해 상태를 객체로 다루고, 스냅샷을 통해 상태의 변경을 추적하는 방식으로 상태 관리를 제공합니다.
+
+<hr />
+
+이제부터 본격적으로 Valtio를 사용해 객체지향적 상태 관리를 학습하기 위한 SNS 애플리케이션을 만들어보겠습니다.
+
+# OOP
+
+OOP(Object-Oriented Programming)에서 레이어(layer) 는 애플리케이션을 논리적으로 분리하여 각 레이어가 특정한 역할을 수행하도록 만드는 설계 방식입니다.
+레이어를 나누는 이유는 코드의 재사용성, 유지보수성, 테스트 용이성을 높이기 위해서입니다.
+
+SNS 게시글 작성을 예시로 들어 OOP의 레이어 구조를 설명해보겠습니다.
+게시글을 작성하고 관리하는 과정에서 애플리케이션은 세 가지 주요 레이어로 나누어집니다.
+`프레젠테이션 레이어`, `비즈니스 로직 레이어`, `데이터 접근 레이어`, `모델 레이어` 각 레이어는 서로 분리되어 있으며, 각자의 책임을 명확히 합니다.
+
+## Presentation Layer (프레젠테이션 레이어)
+
+- `역할` : 사용자와 상호작용하는 레이어입니다. UI(User Interface) 및 UX(User Experience)에 해당하며, 사용자가 요청을 보낼 수 있게 하고, 그에 대한 응답을 표시합니다.
+- `구성요소` : HTML, CSS, JS(프론트엔드), 또는 웹 애플리케이션에서는 React, Angular 같은 프레임워크가 사용됩니다. 주로 컴포넌트가 해당됩니다.
+- `예시` : 사용자가 게시글을 작성할 수 있는 폼과 "작성" 버튼을 제공합니다. 폼에 데이터를 입력한 후 사용자가 "작성" 버튼을 클릭하면 이 데이터는 서버로 전송되어 게시글이 저장됩니다.
+
+## Business Logic Layer (비즈니스 로직 레이어)
+
+- `역할` : 사용자가 입력한 데이터를 처리하고, 비즈니스 규칙을 적용합니다. 이 레이어에서 게시글 작성, 수정, 삭제 등의 로직이 수행됩니다. 또한, 게시글의 길이, 금칙어 필터링 등의 유효성 검사를 여기서 처리합니다.
+- `구성요소` : View Model 계층이 해당됩니다. View Model은 사용자 인터페이스와 비즈니스 로직 사이의 중간 계층으로, 사용자 인터페이스에 표시할 데이터를 준비하고, 사용자 입력을 처리합니다.
+- `예시` : 사용자가 작성한 게시글의 내용이 규정된 길이를 초과하지 않는지, 특정 금칙어가 포함되지 않았는지 확인합니다. 이후 데이터를 데이터베이스에 저장하거나, 필요시 알림 기능을 호출하는 등의 작업을 수행합니다.
+
+## Data Access Layer (데이터 접근 레이어)
+
+- `역할` : 프론트엔드에서는 API 서버로부터 데이터를 호출하는 역할을 담당합니다. 서버에서 제공하는 API를 통해 게시글 데이터를 가져오거나, 새로운 게시글을 저장하는 요청을 보냅니다. 이 레이어는 API 호출을 추상화하여 비즈니스 로직 레이어가 구체적인 API 요청 방식에 의존하지 않도록 합니다.
+- `구성요소` : API 호출을 처리하는 함수들 또는 레포지토리 객체가 이 레이어를 담당합니다.
+- `예시` : 게시글을 작성하거나 수정하는 데이터를 API 서버에 전달하고, 서버에서 제공하는 게시글 데이터를 받아오는 작업을 처리합니다. API와의 구체적인 상호작용은 이 레이어에서만 이루어집니다.
+
+## Data Transfer Object Layer (데이터 전송 객체 레이어)
+
+- `역할` : API 서버와의 데이터 교환을 위한 객체를 정의합니다. API 서버와의 통신을 위해 데이터를 전송할 때 사용하는 객체로, 데이터의 구조를 정의하고, 데이터를 변환하는 역할을 합니다.
+- `구성요소` : DTO(Data Transfer Object)가 이 레이어에 해당합니다. DTO는 데이터를 전송하기 위한 객체로, API 서버와의 통신을 위해 데이터를 변환하거나, 데이터의 유효성을 검사하는 등의 작업을 수행합니다.
+- `예시` : 사용자가 작성한 게시글 데이터를 API 서버로 전송하기 위해, 게시글의 제목, 내용, 작성자 등의 데이터를 포함하는 객체를 정의합니다. 이 객체는 API 서버와의 통신을 위해 사용됩니다.
+
+## Model Layer (모델 레이어)
+
+- `역할` : 애플리케이션에서 사용되는 데이터를 **엔티티(Entity)**로 정의하고, 해당 데이터의 구조와 동작 방식을 정의하는 역할을 담당합니다. 이 레이어는 데이터를 객체로 표현하며, 각 객체는 애플리케이션 내에서 사용되는 데이터의 필드를 포함하고, 비즈니스 규칙에 따라 동작할 수 있습니다.
+- `구성요소` : 데이터 모델(Entity), 데이터 검증 로직, 데이터와 관련된 간단한 유틸리티 메소드 등이 포함됩니다.
+- `예시` : SNS 게시글의 데이터 구조를 정의하고, 각 게시글이 가져야 할 속성(예: 내용, 작성자, 생성 시간 등)을 규정합니다. 또한, 데이터 유효성 검증이나 기본 값 설정 등을 처리할 수 있습니다.
+
+### 레이어 구조 적용 예시
+
+1. Presentation Layer
+
+   - 대시보드 페이지에서 게시글 조회와 작성 폼을 제공합니다.
+   - `/app/dashboard/page.tsx` 파일에 해당 컴포넌트를 구현합니다.
+
+   ```tsx
+   export default function DashboardPage() {
+     // 게시글 데이터를 가져오는 로직
+
+     return (
+       <div>
+         <h1>Dashboard</h1>
+         <form onSubmit={handleSubmit}>
+           <input name="title" placeholder="Title" required />
+           <textarea name="content" placeholder="Content" required />
+           <button type="submit">Add Post</button>
+         </form>
+         {isLoading && <p>Loading...</p>}
+         <ul>
+           {posts.map((post) => (
+             <li key={post.id}>
+               <h2>{post.title}</h2>
+               <p>{post.content}</p>
+               <p>By: {post.author}</p>
+             </li>
+           ))}
+         </ul>
+       </div>
+     )
+   }
+   ```
+
+2. Business Logic Layer
+
+   - 게시글 작성, 수정, 삭제 로직을 처리합니다.
+   - `/view-models/post.view-model.ts` 파일에 게시글 데이터를 관리하는 객체를 구현합니다.
+
+   ```ts
+   export class PostViewModel {
+     // 상태를 정의하며 초기화합니다.
+     private readonly _state = proxy<State>(initialState)
+
+     // 의존성 주입을 통해 데이터 접근 레이어의 객체를 전달받습니다.
+     constructor(private readonly postRepository: PostRepository) {}
+
+     get state() {
+       return this._state
+     }
+
+     public async fetchPosts() {
+       const posts = await this.postRepository.getPosts()
+
+       this._state.posts.length = 0
+       this._state.posts.push(...posts)
+       this._state.isLoading = false
+     }
+
+     public async addPost(post: Post) {
+       const newPost = await this.postRepository.createPost(post)
+
+       this._state.posts.push(newPost)
+     }
+   }
+   ```
+
+   > `proxy`는 valtio에서 사용하는 핵심 개념입니다. 객체를 감싸서 리액티브 상태로 만들어주는 역할을 해. 즉, 객체의 상태가 변경될 때 이를 자동으로 추적하고 리액트 컴포넌트와 같은 소비자에게 상태 변경을 알리는 기능을 합니다.
+
+3. Data Access Layer
+
+   - API 서버와의 상호작용을 처리합니다.
+   - `/repositories/post.repository.ts` 파일에 게시글 저장소를 관리하는 객체를 구현합니다.
+
+   ```ts
+   export class PostRepository {
+     public async getPosts(): Promise<PostEntity[]> {
+       const response = await fetch('/api/posts', {
+         method: 'GET',
+         headers: { 'Content-Type': 'application/json' },
+       })
+
+       const fromPlainPosts = (await response.json().then(({ data }) => data)) as Post[]
+
+       return plainToInstance(PostEntity, fromPlainPosts)
+     }
+
+     public async createPost(postRequest: Post): Promise<PostEntity> {
+       const response = await fetch('/api/posts', {
+         method: 'POST',
+         body: JSON.stringify(postRequest),
+         headers: { 'Content-Type': 'application/json' },
+       })
+
+       const fromPlainPost = (await response.json().then(({ data }) => data)) as Post
+
+       return plainToInstance(PostEntity, fromPlainPost)
+     }
+   }
+   ```
+
+   > plainToInstance를 사용한 이유는 API 서버에서 받아온 데이터를 Entity로 변환하기 위함입니다. Entity는 모델 레이어에서 정의한 데이터 구조를 따르는 객체입니다.
+
+4. Data Transfer Object(DTO) Layer
+
+   - API 서버와의 데이터 교환을 위한 객체를 정의합니다.
+   - `/dtos/post.dto.ts` 파일에 게시글 데이터 전송 객체를 정의합니다.
+
+   ```ts
+   export class CreatePostDto {
+     constructor(
+       public readonly title: string,
+       public readonly content: string,
+       public readonly author: string
+     ) {}
+
+     static fromPlain(plain: Pick<Post, 'title' | 'content' | 'author'>): CreatePostDto {
+       return new CreatePostDto(plain.title, plain.content, plain.author)
+     }
+   }
+   ```
+
+5. Model Layer
+
+   - 게시글 데이터의 구조를 정의합니다.
+   - `/models/post.model.ts` 파일에 게시글 데이터 모델을 정의합니다.
+
+   ```ts
+   export interface Post {
+     id: number
+     title: string
+     content: string
+     author: string
+   }
+
+   export class PostEntity implements Post {
+     constructor(
+       public readonly id: number,
+       public readonly title: string,
+       public readonly content: string,
+       public readonly author: string
+     ) {}
+
+     static fromPlain(plain: Post): PostEntity {
+       return new PostEntity(plain.id, plain.title, plain.content, plain.author)
+     }
+
+     static fromPlains(plains: Post[]): PostEntity[] {
+       return plains.map(PostEntity.fromPlain)
+     }
+
+     static toPlain(entity: PostEntity): Post {
+       return {
+         id: entity.id,
+         title: entity.title,
+         content: entity.content,
+         author: entity.author,
+       }
+     }
+
+     static toPlains(entities: PostEntity[]): Post[] {
+       return entities.map(PostEntity.toPlain)
+     }
+   }
+   ```
+
+### 어떻게 Presentation Layer와 Business Logic Layer를 연결할까?
+
+정답은 `useSnapshot`입니다. Business Logic Layer에서 정의한 State는 valtio의 proxy로 감싸져 있기 때문에, `useSnapshot`을 통해 상태를 가져올 수 있습니다.
+
+```tsx
+export default function DashboardPage() {
+  const state = useSnapshot(postViewModel.state)
+
+  useEffect(() => {
+    postViewModel.fetchPosts()
+  }, [])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const createPostDto = CreatePostDto.fromPlain({
+      title: event.target.title.value,
+      content: event.target.content.value,
+      author: 'Author',
+    })
+
+    await postViewModel.addPost(createPostDto)
+  }
+
+  return (
+    ...기존 코드
+  )
+}
+```
+
+## 조금 더 나아가기
+
+왜 Valtio가 OOP와 잘 어울리는지 조금 더 알아보겠습니다.
+
+### Valtio의 Snapshot과 Adapter 패턴
+
+Adapter 패턴이란 서로 다른 인터페이스를 가진 객체들이 상호작용할 수 있도록 변환하는 데 사용되는 디자인 패턴입니다.
+
+valtio의 `useSnapshot`은 proxy 객체를 React 애플리케이션에서 사용 가능하도록 해주는 함수로, Adapter 패턴의 역할을 해준다고 볼 수 있습니다.
+이 함수는 상태를 React 컴포넌트의 상태와 연결해주어, 리액티브하게 상태가 변경할 때마다 UI를 업데이트할 수 있도록 도와줍니다.
+
+### View Model의 역할 강화와 Manager 객체 등장
+
+ViewModel의 UI와 상호작용을 처리하며 상태관리를 담당해야 합니다. 하지만 ViewModel이 너무 많은 책임을 갖게 되면, 코드가 복잡해지고 유지보수가 어려워질 수 있습니다.
+
+이러한 문제를 해결하고 코드의 구조를 개선하기 위해 새로운 패턴을 도입할 필요가 있습니다. 그 해결책 중 하나가 바로 Manager 객체의 도입입니다.
+
+Manager 객체는 ViewModel의 역할을 보완하고 확장하는 역할을 합니다. 이는 다음과 같은 이점을 제공합니다:
+
+1. 책임 분산: ViewModel의 과도한 책임을 Manager 객체로 분산시켜 각 객체의 역할을 명확히 합니다.
+2. 코드 재사용성 증가: 여러 ViewModel에서 공통으로 사용되는 로직을 Manager 객체로 추출하여 재사용성을 높입니다.
+3. 테스트 용이성: Manager 객체의 도입으로 각 컴포넌트를 독립적으로 테스트하기 쉬워집니다.
+4. 확장성 개선: 새로운 기능 추가 시 기존 코드의 수정을 최소화하면서 Manager 객체를 통해 쉽게 확장할 수 있습니다.
+
+이제 Manager 객체를 어떻게 구현하고 활용할 수 있는지 구체적인 예시를 통해 살펴보겠습니다.
+
+예를 들어, 게시글을 작성하는 페이지와 댓글을 작성하는 페이지가 있다고 가정해봅시다.
+
+각 페이지는 고유의 ViewModel을 사용하고, 이들을 관리하는 Manager 객체를 통해 서로의 상태를 효율적으로 관리할 수 있습니다.
+
+> 아래는 PostViewModel과 CommentViewModel의 예시 코드입니다
+
+```ts
+export class PostViewModel {
+  private readonly _state = proxy<{ posts: PostEntity[] }>({ posts: [] })
+
+  constructor(private readonly postRepository: PostRepository) {}
+
+  get state() {
+    return this._state
+  }
+
+  public async fetchPosts() {
+    const posts = await this.postRepository.getPosts()
+    this._state.posts = posts
+  }
+
+  public async addPost(createPostDto: CreatePostDto) {
+    const post = await this.postRepository.createPost(createPostDto)
+    this._state.posts.push(post)
+  }
+}
+```
+
+위의 **PostViewModel**에서는 게시글의 상태를 관리하고, 게시글을 추가하는 등의 메소드를 포함하고 있습니다. **CommentViewModel**도 유사한 구조로 작성되어 댓글을 관리합니다.
+
+```ts
+export class CommentViewModel {
+  private readonly _state = proxy<{ comments: CommentEntity[] }>({ comments: [] })
+
+  constructor(private readonly commentRepository: CommentRepository) {}
+
+  get state() {
+    return this._state
+  }
+
+  public async fetchComments(postId: number) {
+    const comments = await this.commentRepository.getComments(postId)
+    this._state.comments = comments
+  }
+
+  public async addComment(postId: number, comment: Comment) {
+    const newComment = await this.commentRepository.createComment(postId, comment)
+    this._state.comments.push(newComment)
+  }
+
+  public toggleLike(commentId: number) {
+    const comment = this._state.comments.find((c) => c.id === commentId)
+    if (comment) {
+      comment.likes += 1
+    }
+  }
+}
+```
+
+이렇게 각각의 ViewModel이 독립적으로 역할을 수행하면서, Manager 객체가 이들을 조율합니다. Manager 객체는 상태 접근과 데이터 로딩, 그리고 CRUD 작업을 조합하여 UI의 다양한 요구를 처리합니다.
+
+```ts
+export class PostManager {
+  constructor(
+    private readonly postViewModel: PostViewModel,
+    private readonly commentViewModel: CommentViewModel
+  ) {}
+
+  // 게시물 상태 접근
+  get posts() {
+    return this.postViewModel.state.posts
+  }
+
+  // 댓글 상태 접근
+  get comments() {
+    return this.commentViewModel.state.comments
+  }
+
+  // 게시물 데이터 로드
+  public async loadPostData() {
+    await this.postViewModel.fetchPosts()
+  }
+
+  // 특정 게시물의 댓글 데이터 로드
+  public async loadCommentData(postId: number) {
+    await this.commentViewModel.fetchComments(postId)
+  }
+
+  // 게시물 추가
+  public async addPost(post: Post) {
+    await this.postViewModel.addPost(post)
+  }
+
+  // 댓글 추가
+  public async addComment(postId: number, comment: Comment) {
+    await this.commentViewModel.addComment(postId, comment)
+  }
+
+  // 댓글 좋아요 처리
+  public likeComment(commentId: number) {
+    this.commentViewModel.toggleLike(commentId)
+  }
+
+  // 게시물 삭제 시 해당 댓글도 모두 삭제
+  public async deletePost(postId: number) {
+    await this.postViewModel.deletePost(postId)
+    await this.commentViewModel.deleteCommentsByPost(postId) // 해당 게시물의 모든 댓글 삭제
+  }
+}
+```
+
+이 구조는 코드의 확장성을 높이고, 각 ViewModel의 책임을 명확히 하여 유지보수를 용이하게 만듭니다.
+
+이처럼 Manager 객체를 도입함으로써 애플리케이션의 상태 관리를 더욱 체계적이고 효율적으로 할 수 있습니다.
+
+## UI와의 의사소통
+
+Manager 객체를 도입한 후, UI 컴포넌트와 상태 관리 로직 간의 의사소통은 더욱 간결하고 효율적으로 이루어집니다. React 컴포넌트에서 Manager 객체를 사용하는 방법을 살펴보겠습니다.
+
+먼저, Manager 객체를 생성하고 필요한 곳에서 사용할 수 있도록 Context API를 활용할 수 있습니다
+
+```tsx
+const PostManagerContext = createContext(null)
+
+export const PostManagerProvider: React.FC = ({ children }) => {
+  return { children }
+}
+
+export const usePostManager = () => {
+  const context = useContext(PostManagerContext)
+  if (!context) {
+    throw new Error('usePostManager must be used within a PostManagerProvider')
+  }
+  return context
+}
+```
+
+이제 UI 컴포넌트에서 `usePostManager` 훅을 사용하여 Manager 객체에 접근할 수 있습니다
+
+```tsx
+export default function DashboardPage() {
+  const postManager = usePostManager()
+  const { posts } = useSnapshot(postManager.postViewModel.state)
+
+  useEffect(() => {
+    postManager.loadPostData()
+  }, [postManager])
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      // ...기존 코드
+      <ul>
+        {posts.map((post) => (
+          <li key={post.id}>
+            <h2>{post.title}</h2>
+            <p>{post.content}</p>
+            <p>By: {post.author}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+```
+
+이 구조에서 UI 컴포넌트는 Manager 객체를 통해 상태에 접근하고 액션을 디스패치합니다. `useSnapshot`을 사용하여 상태 변경을 감지하고 자동으로 리렌더링됩니다.
+
+## 마무리
+
+이러한 객체지향적 접근 방식을 통해 우리는 다음과 같은 이점을 얻을 수 있습니다:
+
+1. **관심사의 분리**: 각 객체(ViewModel, Repository, Manager)는 특정 책임을 가지고 있어, 코드의 구조가 명확해집니다.
+
+2. **재사용성**: ViewModel과 Repository는 다른 상황에서도 쉽게 재사용할 수 있습니다.
+
+3. **테스트 용이성**: 각 객체를 독립적으로 테스트할 수 있어, 단위 테스트 작성이 쉬워집니다.
+
+4. **유지보수성**: 코드의 구조가 명확하고 각 부분의 역할이 분명하여 유지보수가 용이해집니다.
+
+5. **확장성**: 새로운 기능을 추가하거나 기존 기능을 수정할 때, 영향을 받는 부분을 쉽게 파악하고 변경할 수 있습니다.
+
+Valtio와 같은 상태 관리 라이브러리를 객체지향 프로그래밍 패러다임과 결합함으로써, 우리는 더 구조화되고 관리하기 쉬운 프론트엔드 애플리케이션을 만들 수 있습니다. 이는 특히 규모가 큰 프로젝트나 복잡한 상태 로직을 다루는 애플리케이션에서 큰 이점을 제공합니다.
+
+더불어, Valtio를 활용한 상태 관리는 이러한 객체지향적 접근 방식과 시너지 효과를 발휘합니다:
+
+1. **간결한 코드**: Valtio의 proxy 기반 API를 통해 상태 업데이트 로직을 간결하게 작성할 수 있습니다.
+
+2. **성능 최적화**: Valtio는 필요한 부분만 리렌더링하도록 최적화되어 있어, 대규모 애플리케이션에서도 효율적인 성능을 제공합니다.
+
+3. **투명한 상태 관리**: Valtio의 스냅샷 기능을 통해 상태 변화를 쉽게 추적하고 디버깅할 수 있습니다.
+
+4. **리액트 생태계와의 통합**: Valtio는 리액트의 기본 원칙과 잘 어울리며, 다른 리액트 라이브러리들과도 쉽게 통합됩니다.
+
+Valtio와 객체지향 프로그래밍을 결합함으로써, 우리는 더 구조화되고, 유지보수가 용이하며, 성능이 최적화된 프론트엔드 애플리케이션을 구축할 수 있습니다. 이는 현대의 복잡한 웹 애플리케이션 개발에서 큰 이점을 제공하며, 개발자들이 더 효율적으로 작업할 수 있도록 돕습니다.
+
+이러한 접근 방식은 초기에는 약간의 추가 작업이 필요할 수 있지만, 장기적으로는 코드의 품질과 개발 효율성을 크게 향상시킬 수 있습니다. 프론트엔드 개발에서도 객체지향 프로그래밍의 원칙을 적용함으로써, 우리는 더 견고하고 유지보수가 용이한 애플리케이션을 구축할 수 있습니다.

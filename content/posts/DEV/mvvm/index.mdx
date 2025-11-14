@@ -1,0 +1,210 @@
+---
+title: 'MVVM 디자인 패턴이란'
+date: '2023-11-16T15:33:03.284Z'
+summary: 'React에서 Model View ViewModel'
+tags: ['DEV', 'React', 'MVVM']
+---
+
+# React - MVVM pattern
+
+MVVM 패턴
+
+`MVVM`의 핵심은 **ViewModel**과 **Binder**입니다. 자세한 내용은 [황준일 님의 MVVM](https://junilhwang.github.io/TIL/CodeSpitz/Object-Oriented-Javascript/02-MVVM/#mvvm%E1%84%8B%E1%85%B4-%E1%84%80%E1%85%A2%E1%84%82%E1%85%A7%E1%86%B7) 아티클을 보시면 좋습니다.
+
+`MVVM`에는 **Model**, **View**, **ViewModel** 객체간 유기적인 관계를 가집니다. 주요 목적은 관심의 분리입니다.
+웹 프론트엔드에서는 Data(비지니스) ↔ UI(화면)이 존재하는데, 이 둘의 관계를 분리하여 테스트, 유지보수, 재사용을 올려줍니다.
+
+![](/static/images/DEV/mvvm/mvvm.png)
+
+- **View**
+  - 화면을 그리고있는 객체입니다.
+  - 항상 선언적으로 정의되어있고, 뷰모델로부터 데이터바인딩이 되어 화면을 정의합니다.
+- **View Model**
+  - 화면에 필요한 상태를 정의하고 화면에 맞게 변경하는 객체입니다
+  - **viewModel**은 **view**의 추상화이자 용어 의미 그대로 **view**의 **model**입니다
+- **Model**
+  - 상태를 들고있는 객체입니다.
+  - 애플리케이션의 상태(데이터)를 저장하고 도메인의 처리 및 유효성 검사를 수행하는 UI와 독립적인 데이터 또는 비지니스 로직입니다.
+
+**viewModel**이 하는 역할이 모호하게 느껴집니다. **viewModel**이 수행해야 할 역할은 아래와 같습니다.
+
+- **view**에서 보여야하는 상태를 **model**로부터 받아 **view**에서 필요한 데이터로 가공합니다.
+- **view**에서 일어나는 이벤트 로직을 들고있습니다.
+- **view**에서 이벤트가 트리깅되면 **model**에게 상태를 변경하라고 전달합니다.
+
+**점선 화살표**와 **실선 화살표**의 관계를 확인해봅시다
+
+### view ↔ viewModel
+
+**viewModel**과 **view**의 관계는 1:N 관계입니다.
+
+**viewModel**은 **view**의 존재를 알지못합니다. **view**의 추상화이므로 재사용이 가능합니다.
+
+**view**는 **viewModel**을 구독합니다.
+**viewModel**의 데이터가 변경되면 **view**는 변경된 데이터를 다시 **Data Binding**을 합니다.
+
+![](/static/images/DEV/mvvm/view.png)
+
+view는 viewModel의 존재를 모른다고했습니다. 존재를 모르게하는 방법은 두가지가 존재합니다.
+
+### 1. viewModel 훅 정의 및 사용
+
+```tsx
+const useHutomViewModel = () => {
+  const [company, setCompany] = useState({ name: '휴톰' })
+
+  return {
+    states: { company },
+    actions: { setCompany },
+  }
+}
+
+const HutomView = () => {
+  const viewModel = useHutomViewModel()
+
+  return (
+    <p onClick={() => viewModel.actions.setCompany('hutom')}>{viewModel.states.company.name}</p>
+  )
+}
+```
+
+**view**에서 **viewModel hook을** 호출했습니다
+
+- **DataBinding** : 상태(data)를 `viewModel`로부터 전달받아 상태(data)를 포함한 화면을 그립니다.
+- **Command** : `view`에서 **event**가 트리깅되어 상태를 변경 요청합니다.
+- **Send Notification** : `view`에서 `viewModel`로 **Command** 요청이 들어오면 상태를 변경합니다.
+
+### 2. 컴포넌트 구현부와 리턴부의 관계 사용
+
+```tsx
+const HutomView = () => {
+  const [company, setCompany] = useState({ name: '휴톰' })
+
+  return <p onClick={() => setCompany('hutom')}>{company.name}</p>
+}
+```
+
+컴포넌트 구현부를 **viewModel**로 정의하고 리턴부(**JSX**)를 **view**로 정의했습니다.
+
+**DataBinding**, **Command**, **Send Notification**은 위에서 설명한것과 동일합니다.
+
+다만 다른점은 한 컴포넌트에 **viewModel**과 **view**가 공존한다는것입니다.
+
+보기에는 **viewModel**이 **view**의 존재를 안다고 볼수있지만, **컴포넌트 구현부**는 **리턴부**의 존재를 알고있지않습니다. **리턴부**는 **구현부**에 정의되어있는 상태의 존재를 알고있습니다.
+
+### 1번은 언제 사용하고 2번은 언제 사용하는가?
+
+viewModel과 view의 관계는 1:N이라고 했습니다. 1:N의 관계에서는 1번의 방법을 사용합니다.
+
+예를들겠습니다.
+`A`와 `B`라는 도메인 데이터가 존재합니다. `B`데이터는 `A`데이터를 생성하는데 필요한 데이터입니다.
+
+```tsx
+const View = () => {
+  const viewModel = useViewModel()
+
+  const {
+    states: { A, B },
+  } = viewModel
+
+  return (
+    <Wrapper>
+      <AListTable data={A} />
+      <CreateAForm data={B} />
+    </Wrapper>
+  )
+}
+```
+
+**view**에는 `A`를 필요로하는 자식컴포넌트가 1개, `B`를 필요로하는 자식컴포넌트가 1개로 총 두개의 컴포넌트가 존재합니다.
+
+이런 경우 **viewModel : view = 1 : 2** 의 관계가 성립되므로 hooks로 따로 상태를 정의합니다.
+이유는 2개 이상의 관계가 설정될경우 해당 **view**에서 정의해야할 상태와 이벤트 핸들러가 많아져 **view**를 순수한 형태로 정의하지 못하기 때문입니다.
+
+![](/static/images/DEV/mvvm/code_1.png)
+
+1번 h-vat 예시코드
+
+반대로 1:1 관계의 경우엔 2번을 사용하면됩니다.
+
+![](/static/images/DEV/mvvm/code_2.png)
+
+2번 h-vat 예시코드
+
+### viewModel ↔ model
+
+![](/static/images/DEV/mvvm/model.png)
+
+**viewModel**과 **model**의 관계는 1:N 관계입니다
+
+**viewModel**은 **model**을 구독합니다.
+
+**viewModel**은 **model**의 데이터를 **view**가 쉽게 사용할수 있는 형식의 데이터로 가공해 제공합니다.
+
+**viewModel**는 **model**의 존재를 알지만, **model**은 **view**와 **viewModel**의 존재를 알지못합니다. 이로써 **model**은 **view**와 독립적으로 **발전**이 가능해집니다.
+
+**model**이 **view**의 존재를 모른다는것은 화면과 **강결합 되지않는다**는 것을 의미합니다. **model**이 발전하더라도 **view**는 **viewModel**을 통해 필요한 데이터(상태)를 받아 **Binding** 하기때문에 **view**와 독립적으로 발전이 가능합니다.
+
+**viewModel**은 **view**에서 **Send Notification**을 날리면 **Model**에게 **ViewModel Updates the Model** 라고 요청을 날립니다.
+
+**model**은 요청을 받고 데이터를 변경하고 **viewModel**에게 **Send Notifications** 요청을 날리고, **viewModel**은 구독하고있는 **model**의 변경된 데이터가 변경되었다고 **view**에게 **Send Notification** 요청을 날립니다.
+
+```tsx
+const useViewModel = () => {
+  const authStore = useAuthStore()
+
+  const user = useUserQuery({
+    onSueccess: (data) => {
+      authStore.setState((prevState) => ({ isLoggedIn: true, ...prevState }))
+    },
+  })
+
+  return {
+    states: {
+      isLoggedIn: authStore.state.isLoggedIn,
+      user: user,
+    },
+  }
+}
+
+const View = () => {
+  const viewModel = useViewModel()
+
+  return (
+    <div>
+      {viewModel.states.isLoggedIn ? (
+        <p onClick={() => navigage('/login')}>로그인 하러가기</p>
+      ) : (
+        <Profile user={user} />
+      )}
+    </div>
+  )
+}
+```
+
+위의 코드를 보면 **useViewModel**에서 **useAuthStore**와 **useUserQuery** 훅을 호출했습니다.
+
+**useAuthStore**는 클라이언트 상태관리를 해주는 **model**입니다.
+
+**useUserQuery**는 서버 상태관리를 해주는 **model**입니다.
+
+**viewModel : view = 1 : 2** / **viewModel : model = 1 : 2** 관계입니다.
+
+view는 viewModel의 존재를 알고, viewModel은 view의 존재를 모릅니다.
+
+viewModel은 modeld의 존재를 알고, model은 viewModel의 존재를 모릅니다.
+
+해당 컴포넌트의 라이프사이클을 고려한 실행순서입니다.
+
+- **view** 컴포넌트가 마운트 되며 **useViewModel**을 호출합니다
+- **viewModel**에게 받아온 상태로 **DataBinding**을 한 후 화면을 렌더합니다.
+- **viewModel**에서 **useAuthStore**와 **useUserQuery**를 호출합니다.
+- **useUserQuery**의 요청이 성공하면 user 데이터가 `undefiend`에서 변경(**ViewModel Updates the Model**)되고 **viewModel**에게 데이터가 변경되었다고 알립니다(**Send Notification**)
+  - **onSueccss** 콜백 옵션에 따라 **AuthStore**의 **isLoggedIn** 데이터가 `true`로 변경(**ViewModel Updates the Model**)되고 viewModel에게 데이터가 변경되었다고 알립니다(**Send Notification**)
+- **viewModel**은 상태가 변경되었으니 **view**에게 데이터가 변경되었다고 알립니다(**Send Notification)**
+- **view**는 **viewModel**에게 받아온 상태로 다시 **DataBinding**을 한 후 화면을 렌더합니다.
+
+- 변경요청 : view → viewModel → model
+- 데이터 바인딩 : model → viewModel → view
+
+이를 이해하게된다면 react의 상태의 흐름이 단방향인 이유를 알게되고, 단방향 데이터 바인딩인것을 알게됩니다.

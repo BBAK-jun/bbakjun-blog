@@ -1,0 +1,533 @@
+---
+title: EKS에서 좀비 POD가 생기는 이유
+date: '2025-10-22T10:44:03.284Z'
+tags: ['DEV', 'Node.js', 'Kubernetes', 'Performance']
+summary: JSON.stringify가 일부 POD만 느리게 만드는 과정
+---
+
+# EKS에서 좀비 POD가 생기는 이유
+
+EKS에 배포해둔 서버를 모니터링하다가 이상한 걸 발견했다.
+
+대부분의 POD는 정상인데, **몇 개의 POD만 응답이 느리다.** 똑같은 이미지, 똑같은 설정인데 왜 일부만 느릴까?
+
+```
+POD-1: p99 50ms  (정상)
+POD-2: p99 60ms  (정상)
+POD-3: p99 3000ms (?) ← 얘만 왜?
+POD-4: p99 55ms  (정상)
+```
+
+DB 쿼리는 빠르고, 네트워크도 정상이다. 로드밸런서 분산도 잘 되고 있다. 근데 유독 특정 POD로 간 요청만 느리다.
+
+좀 더 들여다보니 패턴이 보였다. **트래픽이 몰리는 시간대**에 일부 POD가 "좀비화"된다. 요청은 받는데 처리가 안 된다. 헬스체크는 통과하는데 실제로는 응답이 느리다.
+
+"혹시 메모리 부족?" 아니다. 메모리는 여유롭다.
+
+"CPU 스로틀링?" 그것도 아니다. CPU 사용률은 정상이다.
+
+알고 보니 **`JSON.stringify()`가 이벤트 루프를 블로킹**하고 있었다.
+
+한 POD가 큰 데이터를 직렬화하는 동안, 그 POD로 들어오는 다른 요청들은 전부 대기. 이게 반복되면서 특정 POD만 느려지고, 결국 "좀비 POD"가 되는 거였다.
+
+"Node.js는 비동기인데 왜?"라고 생각했던 과거의 나에게 말해주고 싶다. **비동기 I/O**랑 **동기 CPU 작업**은 다르다고.
+
+# 내가 착각했던 것
+
+처음엔 이렇게 생각했다.
+
+```
+Kubernetes = 분산 환경
+→ 여러 POD가 로드밸런싱됨
+→ 한 POD가 느려도 다른 POD가 처리하겠지
+→ 전체적으로는 괜찮을 거야
+```
+
+**틀렸다.**
+
+한 POD 내부에서 Node.js는 이렇게 동작한다.
+
+```
+메인 스레드 (하나!)
+├─ V8 (JavaScript 실행)
+└─ libuv (이벤트 루프)
+
+백그라운드 스레드 (여러 개)
+├─ 파일 I/O
+├─ DNS 조회
+├─ zlib/crypto
+└─ 기타 네이티브 연산
+```
+
+**핵심은 이거다. V8과 libuv는 같은 메인 스레드에서 돌아간다.**
+
+그래서 V8이 바쁘면(예: JSON.stringify 실행 중) libuv도 못 돈다. 이벤트 루프가 멈춘 것처럼 보이는 이유다.
+
+## 좀비 POD가 되는 과정
+
+1. 로드밸런서가 요청을 여러 POD에 분산
+2. **POD-3에 큰 데이터 요청이 들어옴**
+3. JSON.stringify가 100ms 동안 메인 스레드 점유
+4. 그 사이 POD-3로 들어온 다른 요청들은 큐에서 대기
+5. 대기 중인 요청들도 처리되면서 다시 블로킹
+6. **POD-3만 계속 느림** (다른 POD는 정상)
+
+## 이벤트 루프는 이렇게 돈다
+
+libuv의 이벤트 루프는 여러 단계를 계속 빙글빙글 돈다.
+
+```
+   ┌───────────────────────────┐
+┌─>│         timers            │ ← setTimeout, setInterval
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │     pending callbacks     │ ← I/O 콜백
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │       idle, prepare       │
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │           poll            │ ← 새로운 I/O 이벤트
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │          check            │ ← setImmediate
+│  └─────────────┬─────────────┘
+│  ┌─────────────▼─────────────┐
+│  │      close callbacks      │
+│  └─────────────┬─────────────┘
+└────────────────┘
+```
+
+각 단계마다 콜백 큐를 확인하고, 있으면 하나씩 실행한다. **근데 콜백이 오래 걸리면?** 다음 단계로 못 간다.
+
+내 경우가 딱 이랬다.
+
+```js
+// 타이머 단계에서 실행되는 콜백
+function timerCallback() {
+  const data = fetchFromCache(); // 1ms - 빠름
+
+  const json = JSON.stringify(hugeData); // 500ms - 여기서 멈춤!
+
+  res.send(json);
+}
+```
+
+500ms 동안 타이머 단계에 갇혀있으니까:
+- poll 단계로 못 감 → I/O 이벤트 처리 지연
+- check 단계로 못 감 → setImmediate 지연
+- 다른 타이머도 지연
+
+그래서 다른 요청들이 전부 밀린 거였다.
+
+## 스레드풀에 대한 오해
+
+처음엔 이렇게 생각했다. "Node.js는 스레드풀이 있잖아? 거기서 처리하면 되는 거 아냐?"
+
+**완전히 착각이었다.**
+
+libuv 스레드풀이 처리하는 것:
+- `fs.*` (파일 시스템)
+- `dns.lookup()` (DNS 조회)
+- `zlib.*` (압축/해제)
+- `crypto.*` (암호화)
+- C++ 네이티브 바인딩
+
+libuv 스레드풀이 처리 **안** 하는 것:
+- **JavaScript 함수 실행** ← 여기!
+- 순수 JS 계산
+- `JSON.stringify()`
+- `Array.map()`, `reduce()` 등
+
+왜 JS 실행은 스레드풀로 못 가냐고?
+
+**V8 Heap은 스레드 안전하지 않기 때문이다.** V8의 메모리는 단일 스레드 전용으로 설계됐다. 여러 스레드에서 동시에 접근하면 망가진다.
+
+그래서 `UV_THREADPOOL_SIZE`를 아무리 늘려도 `JSON.stringify()` 블로킹은 해결 안 된다. 이걸 깨닫는 데 한참 걸렸다... ㅠㅠ
+
+# JSON.stringify는 본질적으로 동기다
+
+ECMAScript 사양을 찾아봤다. `JSON.stringify()`의 알고리즘은 **동기적으로** 정의되어 있다.
+
+```
+대략적인 흐름:
+
+1. 순환 참조 감지 초기화
+2. 타입 확인
+   - Primitive? → 문자열 변환
+   - Object? → 재귀 순회
+   - Array? → 각 요소 재귀
+3. 각 속성마다
+   - 키 직렬화
+   - 값 직렬화 (재귀)
+   - 이스케이프 처리
+4. 문자열 결합
+5. 최종 문자열 반환
+```
+
+이 과정 어디에도 `await`가 없다. 중간에 이벤트 루프로 제어권을 양보하지 않는다. **시작하면 끝날 때까지 계속 실행한다.**
+
+## V8의 최적화? 빠르긴 한데...
+
+V8은 JSON.stringify를 많이 최적화했다.
+
+**Fast Path 조건:**
+- 순수 객체/배열 (프로토타입 변경 없음)
+- 순환 참조 없음
+- toJSON() 메서드 없음
+- replacer/space 인자 없음
+
+이 조건을 만족하면 C++ 네이티브 직렬화를 쓴다. 훨씬 빠르다.
+
+하지만...
+
+```
+작은 객체 (1KB):
+├─ 최적화 전: 0.5ms
+└─ 최적화 후: 0.1ms (5배 빠름!)
+
+큰 객체 (10MB):
+├─ 최적화 전: 500ms
+└─ 최적화 후: 100ms (5배 빠름!)
+
+→ 여전히 100ms 블로킹!
+```
+
+빠르긴 한데, **동기라는 본질은 그대로**다. 큰 객체를 직렬화하면 블로킹은 피할 수 없다.
+
+# 블로킹의 순간을 그려보자
+
+내 상황을 타임라인으로 그려보면 이랬다.
+
+```mermaid
+sequenceDiagram
+    participant Timer as Timers 단계
+    participant V8 as V8 (메인 스레드)
+    participant Loop as Event Loop
+    participant OS as OS/네트워크
+
+    Note over V8: HTTP 요청 도착
+    Timer->>V8: 타이머 콜백 실행
+    V8->>V8: DB 조회 (10ms) - 빠름
+
+    V8->>V8: JSON.stringify(big) 시작
+
+    Note over V8,Loop: 메인 스레드 점유<br/>이벤트 루프 정지!
+
+    OS-->>Loop: 다른 I/O 완료 신호
+    Note over Loop: 처리 못 함 (V8 바쁨)
+
+    V8->>V8: JSON.stringify 계속...
+    V8->>V8: 완료 (500ms 후)
+
+    V8->>Timer: 콜백 완료
+    Timer->>Loop: 다음 단계로
+
+    Note over Loop: 이제야 밀린 이벤트 처리
+    Loop->>V8: poll 단계 실행
+```
+
+**핵심 포인트:**
+- 메인 스레드가 stringify 동안 **묶여있다**
+- 그 시간만큼 타이머/소켓/파일 I/O 콜백이 **밀린다**
+- 백그라운드에서 I/O는 완료되지만 **콜백 실행은 못 함**
+
+이게 POD 레벨에서 발생하면?
+
+```
+POD-3 내부:
+요청 1: [─ 10ms ─][━━ 100ms ━━][─ 10ms ─] 완료 (120ms)
+요청 2:                           [─ 10ms ─][━━ 100ms ━━] 완료 (230ms)
+요청 3:                                                   [─ 10ms ─][━━ 100ms ━━] 완료 (340ms)
+
+→ POD-3만 계속 느림
+→ 다른 POD는 정상이라 전체 p50은 괜찮음
+→ 하지만 p99는 튐 (POD-3로 간 요청들 때문에)
+```
+
+헬스체크는 통과한다. CPU/메모리도 정상이다. 하지만 **실제 요청은 느리다.** 이게 좀비 POD다.
+
+# 문자열 불변성의 함정
+
+JavaScript 문자열은 **불변(immutable)** 이다.
+
+```js
+let str = "hello";
+str[0] = "H";  // 작동 안 함
+console.log(str);  // "hello" (그대로)
+```
+
+JSON.stringify가 문자열을 만들 때도 마찬가지다.
+
+```js
+// 의사코드
+result = "";
+result += "{";           // 새 메모리 할당, 기존 복사
+result += '"id":';       // 새 메모리 할당, 기존 복사
+result += "1";           // 새 메모리 할당, 기존 복사
+// ...
+```
+
+**매 `+=` 연산마다:**
+1. 새 메모리 할당
+2. 기존 문자열 전체 복사
+3. 새 내용 추가
+
+시간 복잡도가 O(n²)에 가까워진다. 속성이 많으면 복사 비용이 커진다.
+
+V8은 **Rope** 자료구조로 이걸 완화하지만, 최종적으로는 평탄화가 필요하다.
+
+# 그래서 어떻게 고쳤나
+
+이제 해결책을 찾아야 했다. 여러 방법을 시도해봤다.
+
+## 방법 1: 직렬화량 줄이기
+
+제일 먼저 한 건 **불필요한 데이터 제거**였다.
+
+```js
+// Before
+{
+  id: 1,
+  name: "상품A",
+  price: 10000,
+  _internal_id: "abc123",
+  _debug_info: {...},
+  created_at: "2024-01-01",
+  updated_at: "2024-01-01",
+  deleted_at: null,
+  // ... 불필요한 필드들
+}
+
+// After
+{
+  id: 1,
+  name: "상품A",
+  price: 10000
+}
+```
+
+**이것만으로 직렬화 시간이 40% 감소했다.**
+
+replacer 함수로 내부 필드와 null 값을 제외했다.
+
+```js
+JSON.stringify(obj, (key, value) => {
+  if (key.startsWith('_')) return undefined;
+  if (value === null) return undefined;
+  return value;
+});
+```
+
+## 방법 2: 스트리밍
+
+큰 배열을 한 번에 JSON으로 만들지 말고, **줄 단위로 쪼개서** 보낸다.
+
+```
+NDJSON (Newline Delimited JSON):
+
+{"id":1,"name":"A"}
+{"id":2,"name":"B"}
+{"id":3,"name":"C"}
+```
+
+**장점:**
+- 각 줄이 작은 JSON → 빠른 직렬화
+- 즉시 전송 → 블로킹 분산
+
+```js
+// Before
+const items = await db.getItems();
+const json = JSON.stringify(items);
+res.send(json);
+
+// After
+const stream = db.getItemStream();
+for await (const item of stream) {
+  res.write(JSON.stringify(item) + '\n');
+}
+res.end();
+```
+
+**효과:**
+```
+블로킹: 100ms (한 번에) → 0.1ms × N (분산)
+→ 각 블로킹이 짧아서 체감 없음
+```
+
+## 방법 3: POD 수평 확장
+
+EKS에서는 POD를 늘리는 게 답이었다.
+
+한 POD가 블로킹되더라도, 다른 POD들이 트래픽을 받아준다. HPA(Horizontal Pod Autoscaler)로 자동 스케일링을 설정했다.
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+**효과:**
+```
+3 POD → 10 POD (피크 시)
+한 POD가 느려져도 나머지 9개가 처리
+전체 처리량 향상, p99 안정화
+```
+
+한 POD의 블로킹은 피할 수 없지만, **분산 처리로 영향을 최소화**했다.
+
+## 방법 4: Worker Threads는 보류
+
+Worker로 JSON.stringify를 별도 스레드로 보내는 것도 고려했다.
+
+장점은 메인 스레드가 안 막힌다는 것. 하지만 **데이터 전달 비용**을 고려해야 한다.
+
+```
+작은 데이터: 복사 비용 > stringify 시간
+→ 워커 불필요
+
+큰 데이터: 복사 비용도 상당함
+→ 효과 애매
+```
+
+내 경우는 **페이로드 다이어트 + 멀티프로세스** 조합으로 충분했다.
+
+# 모니터링도 설정했다
+
+문제를 해결하고 나서, **지속적인 모니터링**을 설정했다.
+
+Node.js의 `perf_hooks`로 이벤트 루프 지연을 측정한다.
+
+```js
+import { monitorEventLoopDelay } from 'node:perf_hooks';
+
+const h = monitorEventLoopDelay({ resolution: 20 });
+h.enable();
+
+setInterval(() => {
+  console.log(`
+    평균: ${(h.mean / 1e6).toFixed(1)}ms
+    p95: ${(h.percentile(95) / 1e6).toFixed(1)}ms
+    p99: ${(h.percentile(99) / 1e6).toFixed(1)}ms
+  `);
+  h.reset();
+}, 10000);
+```
+
+**정상 vs 블로킹 비교:**
+
+```
+정상 (최적화 후):
+평균: 0.5ms
+p95: 2ms
+p99: 5ms
+
+블로킹 (최적화 전):
+평균: 50ms
+p95: 200ms
+p99: 500ms
+```
+
+이제 p99가 10ms를 넘으면 알림이 온다. 새로운 블로킹이 생기면 바로 잡을 수 있다.
+
+# 깨달은 것들
+
+## 1. Kubernetes ≠ 만능 해결사
+
+POD를 늘린다고 해서 모든 문제가 해결되는 건 아니다. **POD 내부의 블로킹**은 여전히 발생한다.
+
+## 2. "비동기" ≠ "블로킹 없음"
+
+Node.js는 I/O가 비동기일 뿐, CPU 작업은 여전히 동기다. JSON.stringify, 암호화, 이미지 처리... 이런 건 메인 스레드를 점유한다.
+
+## 3. V8과 libuv는 같은 스레드
+
+V8이 바쁘면 libuv도 못 돈다. 이벤트 루프가 "멈춘 것처럼" 보이는 이유다.
+
+## 4. 좀비 POD의 정체
+
+헬스체크는 통과하고, CPU/메모리도 정상인데 느린 POD. 이건 좀비가 아니라 **이벤트 루프 블로킹**이다.
+
+## 5. 최적화 우선순위
+
+```
+1. 데이터 다이어트 (가장 효과적)
+2. 스트리밍 (블로킹 분산)
+3. POD 수평 확장 (영향 최소화)
+4. Worker Threads (복사 비용 고려)
+```
+
+# 마무리
+
+처음엔 "왜 일부 POD만 느릴까?" 이해가 안 갔다.
+
+Kubernetes가 알아서 분산 처리해주니까 괜찮을 거라 생각했다. 하지만 **POD 내부의 Node.js 이벤트 루프는 단일 스레드**다. 이걸 제대로 이해하지 못했던 거다.
+
+이제는 데이터를 다룰 때 항상 생각한다:
+- 데이터를 줄일 수 있을까?
+- 나눠서 처리할 수 있을까?
+- POD를 늘릴 수 있을까?
+
+"좀비 POD"는 좀비가 아니었다. 그냥 **이벤트 루프가 블로킹된 정상 POD**였다.
+
+---
+
+## 여담: HTML 직렬화도 같은 문제
+
+이 문제는 서버사이드 렌더링(SSR)의 **HTML 직렬화**와 본질적으로 같다.
+
+둘 다 **메인 스레드에서 동기적으로 거대한 문자열을 만드는 작업**이고, 수행 동안 이벤트 루프가 멈춘다.
+
+```
+공통점:
+├─ 메인 스레드 점유
+├─ 이벤트 루프 블로킹
+├─ CPU 바운드
+└─ 문자열 불변성 문제
+
+차이점:
+HTML이 더 무겁다
+├─ 컴포넌트 함수 실행
+├─ 가상 DOM 생성
+└─ 마크업 변환
+```
+
+해법도 비슷하다.
+
+```
+JSON:
+├─ 페이로드 다이어트
+├─ 스트리밍 (NDJSON)
+├─ 워커/멀티프로세스
+
+HTML:
+├─ 페이로드 다이어트 (불필요한 컴포넌트 제거)
+├─ 스트리밍 (renderToPipeableStream)
+├─ 멀티프로세스 + ISR/정적 생성
+```
+
+> **한 줄 정리**: 큰 **동기 문자열 생성**(JSON이든 HTML이든)은 모두 이벤트 루프의 적이다. "작게, 나눠서, 미리/다른 곳에서" 만들어라.
+
+---
+
+## 참고 자료
+
+- [Node.js Event Loop 공식 문서](https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/)
+- [libuv 설계 문서](http://docs.libuv.org/en/v1.x/design.html)
+- [V8 String 최적화](https://v8.dev/blog/string-optimizations)
+- [JSON.stringify ECMAScript 사양](https://tc39.es/ecma262/#sec-json.stringify)

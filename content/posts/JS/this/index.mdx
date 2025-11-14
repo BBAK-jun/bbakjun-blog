@@ -1,0 +1,436 @@
+---
+title: '자바스크립트의 this'
+date: '2023-02-07T19:38:03.284Z'
+summary: 'this를 알아보자'
+tags: ['JS']
+---
+
+# this
+
+객체지향 프로그래밍에서 객체는 상태를 나타내는 프로퍼티와 동작을 나타내는 메서드를 하나의 논리적인 다위로 묶은 복합적인 자료구조라고 설명한다.
+
+동작을 나타내는 메서드는 자신이 속한 객체의 상태를 참조하고 변경할 수 있어야 한다. 자신이 속한 객체의 프로퍼티를 참조하려면 우선 자신이 속한 객체를 가리키는 식별자를 참조할 수 있어야한다.
+
+객체 리터럴로 생성한 객체는 매세드 내부에서 자신이 속한 객체를 가리키는 식별자를 재귀적으로 참조가 가능하다.
+
+```js
+const person = {
+  // 프로퍼티 - 객체 고유의 상태 데이터
+  name: 'bbakjun',
+
+  // 메서드 - 상태 데이터를 참조하고 조작하는 동작
+  greet() {
+    return `Hello ${person.name}`
+  },
+}
+
+console.log(person.greet()) // "Hello bbakjun"
+```
+
+`greet` 메서드 내에서 메서드 자신이 속한 객체를 가리키는 person 식별자를 참조하고있다. **이 참조 표현식이 평가되는 시점은 `greet` 메서드가 호출되어 함수 몸체가 실행되는 시점이다.**
+
+person에 할당될 객체리터럴은 할당되기 직전에 평가된다. 따라서 greet 메서드가 호출되는 시점에는 이미 객체 리터럴의 평가가 완료되어 객체가 생성되었고 person 식별자에 생성된 객체가 할당된 이후다.
+
+하지만 재귀적으로 참조하는 방법은 일반적이지않고 바람직하지도 않다.
+
+```js
+function Person(name) {
+  // 이 시점에는 생성자 함수 자신이 생성할 인스턴스를 가리키는 식별자를 알 수 없다.
+  ???.name = name
+}
+
+Person.prototype.greet = function () {
+  // 이 시점에는 생성자 함수 자신이 생성할 인스턴스를 가리키는 식별자를 알 수 없다.
+  return `Hello ${???.name}`;
+}
+
+// 생성자 함수로 인스턴스를 생성하려면 먼저 생성자 함수를 정의해야한다.
+const person = new Person('bbakjun')
+```
+
+생성자 함수 내부에서는 프로퍼티 또는 매서드를 추가하기 위해 자신이 생성할 인스턴스를 참조할 수 있어야한다. 하지만 생성자 함수에 의한 객체 생성 방식은 먼저 생성자 함수를 정의한 이후 new 연산자와 함께 생성자 함수를 호출하는 단계가 추가로 필요하다. 다시 말해 생성자 함수로 인스턴스를 생성하려면 먼저 생성자 함수가 필요하다.
+
+생성자 함수를 정의하는 시점에는 아직 인스턴스를 생성하기 이전이므로 생성자 함수가 생성할 인스턴스를 가리키는 식별자를 알 수 없다. 따라서 자신이 속한 객체 또는 자신이 생성할 인스턴스를 가리키는 특수한 식별자가 필요해서 this를 제공한다.
+
+**this는 자신이 속한 객체 또는 자신이 생성할 인스턴스를 가리키는 자기 참조 변수다. this를 통해 자신이 속한 객체 또는 자신이 생성할 인스턴스의 프로퍼티나 메서들르 참조 할 수있다.**
+
+this는 JSEngine에 의해 암묵적으로 생성되며, 코드 어디서든 참조할 수 있다.
+
+함수를 호출하면 arguments 객체와 this가 암묵적으로 생성되며 함수 내부에서 arguments 객체를 지역 변수처럼 사용할수있는 것처럼 this도 지역 변수처럼 사용이 가능하다.
+
+단, **this가 가리키는 값 즉 this 바인딩은 함수 호출 방식에 의해 동적으로 결정된다.**
+
+> this 바인딩 : 바인딩이란 식별자와 값을 연결하는 과정을 의미하며 this와 this가 가리킬 객체를 바인딩하는 것이다.
+
+위에서 살펴보았던 객체 리터럴과 생성자 함수의 에제를 this를 사용해서 수정해보자.
+
+```js
+const person = {
+  name: 'bbakjun',
+  greet() {
+    return `Hello ${this.name}`
+  },
+}
+
+console.log(person.greet()) // "Hello bbakjun"
+```
+
+객체 리터럴 메서드 내부에서 this는 메서드를 호출한 객체 즉 person을 가리킨다.
+
+```js
+function Person(name) {
+  this.name = name
+}
+
+Person.prototype.greet = function () {
+  return `Hello ${this.name}`
+}
+
+const person = new Person('bbakjun')
+console.log(person.greet()) // "Hello bbakjun"
+```
+
+생성자 함수 내부의 this는 생성자 함수가 생성할 인스턴스를 가리킨다. 이처럼 this는 상황에 따라 가리키는 대상이 다르다.
+
+## 함수 호출 방식과 this 바인딩
+
+this바인딩은 함수호출 방식, 즉 함수가 어떻게 호출되었는지에 따라 동적으로 결정된다.
+
+> 렉시컬 스코프와 this 바인딩은 결정 시기가 다르다.
+
+함수의 상위 스코플르 결정하는 방식인 렉시컬 스코프는 함수 정의가 평가되어 함수 객체가 생성되는 시점에 상위 스코프를 결정하지만, this 바인딩은 함수 호출 시점에 결정된다.
+
+주의할점은 동일 함수도 다양한 방식으로 호출할 수 있다는 점이다.
+
+- 일반함수 호출
+- 메서드 호출
+- 생성자 함수 호출
+- Function.prototype.apply/call/bind 메서드에 의한 간접 호출
+
+```js
+const foo = function () {
+  console.log(this)
+}
+
+// 1. 일반함수 호출
+foo() // window
+
+// 2. 메서드 호출
+const obj = { foo }
+obj.foo() // obj
+
+// 3. 생성자 함수 호출
+new foo() // foo
+
+// 4. apply/call/bind 메서드에 의한 간접호출
+const bar = { name: 'bar' }
+foo.apply(bar) // bar
+foo.call(bar) // bar
+foo.bind(bar) // bar
+```
+
+> 일반함수로 호출시에는 전역객체 window를 가리킨다.<br/>
+> 메서드로 호출시에는 메서드를 호출한 객체 obj를 가리킨다.<br/>
+> 생성자 함수로 호출시에는 생성자 함수가 생성한 인스턴스를 가리킨다.<br/>
+> foo 함수 내부의 this는 인수에 의해 결정된다.
+
+### 일반함수 호출
+
+기본적으로 this에는 전역객체가 바인딩된다.
+
+```js
+function foo() {
+  console.log(this) // window
+
+  function bar() {
+    console.log(this) // window
+  }
+
+  bar()
+}
+
+foo()
+```
+
+위에서 this가 가리키는 객체는 호출될때 결정된다고 말했었다.
+
+위의 예제처럼 전역함수는 물론이고 전역함수 내부의 함수(중첩함수) 또한 일반함수로 호출하면 함수 내부의 this에는 전역 객체가 바인딩된다. 다만 this는 객체의 프로퍼티나 메서드를 참조하기 위한 자기 참조 변수이므로 객체를 생성하지 않는 일반 함수에서 this는 의미가없다. 따라서 Strict Mode가 적용된 일반 함수내부의 this에는 undefined가 바인딩된다.
+
+```js
+function foo() {
+  'use strict'
+  console.log(this) // undefined
+
+  function bar() {
+    console.log(this) // undefined
+  }
+
+  bar()
+}
+
+foo()
+```
+
+```js
+let score = 100
+
+const person = {
+  score: 99,
+  getScore() {
+    console.log(this) // {score:99, getScore: f}
+    console.log(`person's score is ${this.score}.`) // 99
+
+    function fn() {
+      console.log(this) // window
+      console.log(this.score) // 100
+    }
+    fn()
+  },
+}
+
+person.getScore()
+```
+
+메서드 내부에서 정의한 중첩함수도 일반함수로 호출되면 중첨함수 내부의 this에는 전역 객체가 바인딩된다.
+
+```js
+let score = 100
+
+const person = {
+  score: 99,
+  getScore() {
+    console.log(this) // {score:99, getScore: f}
+    console.log(`person's score is ${this.score}.`) // 99
+
+    setTimeout(function () {
+      console.log(this) // window
+      console.log(this.score) // 100
+    }, 100)
+  },
+}
+
+person.getScore()
+```
+
+콜백함수가 일반함수로 호출된다면 콜백 함수 내부의 this에도 전역 객체가 바인딩된다. 어떠한 함수라도 일반함수로 호출되면 this에 전역 객체가 바인딩된다.
+
+위의 예제 2개처럼 일반함수로 호출된 모든 함수 내부 this에는 전역객체(globalThis)가 바인딩된다.
+
+메서드내에서 정의한 중첩함수 또는 메서드에게 전달한 콜백 함수가 일반함수로 호출될때 메서드 내의 중첩함수 또는 콜백함수가 globalThis를 바인딩하는것은 문제가 있다. 중첩함수 또는 콜백함수는 외부함수를 돕는 Helper Function의 역할을 해야하기때문에 외부함수의 일부 로직을 대신하는 경우가 대부분이기 때문이다.
+
+```js
+let score = 100
+
+const person = {
+  score: 99,
+  getScore() {
+    const _this = this
+
+    setTimeout(function () {
+      console.log(_this.score) // 99
+    }, 100)
+  },
+}
+
+person.getScore()
+```
+
+위와 같은 방법으로 this를 일반함수 호출또는 콜백함수내부에 같은 this를 바라보게 만들수도있다.
+
+getScore 메서드의 지역스코프안에 setTimeOut 콜백함수의 지역스코프도 포함되어있으니 콜백함수 내부에서 \_this를 콜백함수 지역스코프에서 찾아보게된다. 지역스코프내에 없으니 상위스코프인 getScore 메서드 지역스코프에서 \_this를 찾는다. getScore 메서드 지역스코프에 \_this가 존재하므로 해당 변수를 참조하게된다.
+
+위 방법말고도 `call`, `apply`, `bind`, `arrow function`을 사용하는 방법이 있지만, 조금이따 call apply bind에 대해 다루고 arrow function은 다음에 다루겠다.
+
+### 메서드 호출
+
+메서드 내부의 this에는 메서드를 호출한 객체, 즉 메서드를 호출할때 메서드를 가리키는 객체가 바인딩된다. 주의해야하는것은 내부의 this는 메서드를 소유한 객체가 아닌 메서드를 호출한 객체에 바인딩된다는 것이다.
+
+```js
+const person = {
+  name: 'bbakjun',
+  greet() {
+    return `Hello ${this.name}!`
+  },
+}
+
+const anotherPerson = {
+  name: 'anotherPerson',
+}
+
+console.log(person.greet()) // "Hello bbakjun!"
+
+anotherPerson.greet = person.greet
+
+console.log(anotherPerson.greet()) // 결과는 뭘까?
+```
+
+위 예제에서 greet 메서드는 person 객체의 메서드로 정의되었다.<br/>
+그리고 `antherPerson` 객체를 선언해주고 할당해주었다. 할당해준 객체 리터럴안에는 `greet`메서드가 없어서 person객체의 greet 메서드를 참조시켜 `another.greet`에 할당해주었다.
+
+그렇다면 anotherPerson.greet() 의 결과는 뭘까?
+
+아까 말했듯 메서드로 호출할때의 this바인딩은 메서드를 호출한 객체를 가리키게 된다고했다.<br/>
+`anotherPerson.greet`의 this는 anotherPerson 객체를 가리키게 되어 `"Hello anotherPerson"`이 출력되게 된다.
+
+프로토타입 메서드 내부에서 사용된 this도 일반 메서드와 마찬가지로 해당 메서드를 호출한 객체에 this 바인딩이 된다.
+
+```js
+function Person(name) {
+  this.name = name
+}
+
+Person.prototype.getName = function () {
+  return this.name
+}
+
+const bbakjun = Person('BBAKJUN')
+
+console.log(bbakjun.getName()) // "BBAKJUN" - 1
+
+console.log(Person.prototype.name) // "BBAKJUN" - 2
+
+console.log(Person.prototype.getName()) // "BBAKJUN" - 3
+```
+
+1번의 경우 getName메서드를 호출한 객체는 bbakjun이므로 생성자함수로 생성해준 객체 인스턴스를 가리키게 되므로 getName 메서드 내부의 this는 인스턴스 bbakjun을 가리키게된다.
+
+2번의 경우 getName메서드를 호출한 객체는 Person.prototype 이다. Person.prototype도 객체이므로 직접 메서드를 호출할 수 있다. 따라서 getName 메서드 내부의 this는 Person.prototype을 가리키게된다. (3번도 동일)
+
+### 생성자 함수 호출
+
+```js
+function Person(name) {
+  this.name = name
+  this.getName = function () {
+    return this.name
+  }
+}
+
+const personOne = new Person('person1')
+const personTwo = new Person('person2')
+
+console.log(personOne.getName()) // 'person1'
+console.log(personTwo.getName()) // 'person2'
+```
+
+생성자 함수는 인스턴스를 생성하는 함수다. 일반 함수와 동일한 방법으로 생성자 함수를 정의하고 new 연산자와 함께 호출하면 해당함수는 생성자 함수로 동작한다.
+
+**만약 new 연산자와 함께 생성자 함수를 호출하지 않으면, 일반함수로 호출되어 this바인딩이 전역객체로 된다.**
+
+```js
+function Person(name) {
+  this.name = name
+  this.getName = function () {
+    return this.name
+  }
+}
+
+const person = Person('BBAKJUN')
+
+console.log(person) // undefined
+```
+
+new 연산자와 생성자 함수로 호출하지않은 함수는 일반함수로 호출된다. 그러므로 객체인스턴스가 없기에 undefined를 가리키게 되는것이다.
+
+### apply, call, bind 메서드에 의한 간접 호출
+
+`apply`, `call`, `bind` 메서드는 `Function.prototype`의 메서드다. 이들 메서드는 모든 함수가 상속받아 사용할수있다.
+
+#### apply, call
+
+```js
+function getThisBinding() {
+  return this
+}
+
+const thisArg = { name: 'BBAKJUN' }
+
+console.log(getThisBinding()) // window
+
+console.log(getThisBinding.apply(thisArg)) // { name: "BBAKJUN" }
+console.log(getThisBinding.call(thisArg)) // { name: "BBAKJUN" }
+```
+
+apply와 call 메서드의 본질적인 기능은 함수를 호출하는 것이다. apply, call 메서드는 함수를 호출하면서 첫번째 인자로 전달한 특정 객체를 호출한 함수의 this에 바인딩한다.
+
+이 메서드들은 인수를 전달하는 방식만 다를뿐 동일하게 동작한다.
+
+```js
+function getThisBinding() {
+  console.log(arguments)
+  return this
+}
+
+const thisArg = { name: 'BBAKJUN' }
+
+console.log(getThisBinding.apply(thisArg, [1, 2, 3]))
+// Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
+// { name: "BBAKJUN" }
+console.log(getThisBinding.call(thisArg, 1, 2, 3))
+// Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
+// { name: "BBAKJUN" }
+```
+
+apply 메서드는 호출할 함수의 인수를 배열로 묶어 전달한다. call 메서드는 호출할 함수의 인수를 쉼표로 구분한 리스트 형식으로 전달한다.
+
+대표적인 용도는 arguments 객체와 같은 유사 배열객체에 배열 메서드를 사용하는 경우다. arguments객체는 배열이 아니기때문에 Array.prototype.slice 같은 배열의 메서드를 사용할수없으나 apply or call 메서드를 사용하면 가능해진다.
+
+```js
+function convertArgsToArray() {
+  console.log(arguments)
+  return Array.prototype.slice.call(arguments)
+}
+
+console.log(convertArgsToArray(1, 2, 3, 4, 5)) // [1, 2, 3, 4, 5]
+```
+
+#### bind
+
+bind메서드는 apply call 메서드와 달리 함수를 호출하지 않는다. 다만 첫 인자로 전달한 값으로 this 바인딩이 교체된 함수를 새롭게 생성해 반환한다.
+
+```js
+function getThisBinding() {
+  return this
+}
+
+const thisArg = { name: 'BBAKJUN' }
+
+console.log(getThisBinding.bind(thisArg)) // getThisBinding - 함수객체
+
+console.log(getThisBinding.bind(thisArg)()) // { name: "BBAKJUN" }; - 함수실행값
+```
+
+bind 메서드는 메서드의 this와 메서드 내부의 중첩 함수 또는 콜백함수의 this가 불일치하는 문제를 해결하기위해 사용되곤한다.
+
+```js
+const person = {
+  name: 'BBAKJUN',
+  greet(callbackFn) {
+    console.log(this) // 1 - person
+    setTimeout(callbackFn, 3000) // 2 - globalThis
+  },
+}
+
+person.greet(function () {
+  console.log(`Hello ${this.name}`)
+})
+```
+
+person.greet의 콜백함수가 이전인 1번에서는 person객체 자신을 가리킨다.
+
+그렇지만 일반함수로 호출된 callbackFn의 내부에서는 this가 전역객체인 globalThis가 되어버린다. 따라서 callbackFn 내부에서 this.name 은 globalThis.name이 되어버린다.
+
+이때 위 예제에서 person.greet 의 콜백함수는 외부 함수 person.greet을 돕는 헬퍼함수의 역할을 하기 때문에 외부함수 person.greet 내부의 this와 콜백함수내부의 this가 상이하면 문맥상 문제가 발생하게된다. 이때 bind를 사용하면된다.
+
+```js
+const person = {
+  name: 'BBAKJUN',
+  greet(callbackFn) {
+    setTimeout(callbackFn.bind(this), 3000) // 2 - person
+  },
+}
+
+person.greet(function () {
+  console.log(`Hello ${this.name}`) // "Hello BBAKJUN"
+})
+```

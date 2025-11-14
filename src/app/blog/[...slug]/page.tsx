@@ -1,0 +1,186 @@
+import { notFound } from 'next/navigation'
+import { getPostBySlug, getAllPosts } from '@/lib/posts'
+import ViewCounter from '@/components/ViewCounter'
+import ShareButton from '@/components/ShareButton'
+import Link from 'next/link'
+import { Metadata } from 'next'
+import { processMarkdown } from '@/lib/markdown'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import Comments, { CommentsConfig } from '@/components/Comments'
+
+interface PostPageProps {
+  params: Promise<{
+    slug: string[]
+  }>
+}
+
+// 정적 경로 생성
+export async function generateStaticParams() {
+  const posts = getAllPosts()
+  return posts.map((post) => ({
+    slug: post.slug.split('/'),
+  }))
+}
+
+// 메타데이터 생성
+export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const slugString = slug.join('/')
+  const post = getPostBySlug(slugString)
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+    }
+  }
+
+  const { frontMatter } = post
+
+  return {
+    title: `${frontMatter.title} | DEV_BBAK 블로그`,
+    description: frontMatter.description,
+    authors: [{ name: frontMatter.author || 'bbakjun' }],
+    keywords: frontMatter.tags?.join(', '),
+    openGraph: {
+      title: frontMatter.title,
+      description: frontMatter.description,
+      type: 'article',
+      publishedTime: frontMatter.date,
+      authors: [frontMatter.author || 'bbakjun'],
+      tags: frontMatter.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: frontMatter.title,
+      description: frontMatter.description,
+    },
+  }
+}
+
+export default async function PostPage({ params }: PostPageProps) {
+  const { slug } = await params
+  const slugString = slug.join('/')
+  const post = getPostBySlug(slugString)
+
+  if (!post) {
+    notFound()
+  }
+
+  const { frontMatter, content, readingTime } = post
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const htmlContent = await processMarkdown(content)
+
+  return (
+    <article className="max-w-4xl mx-auto">
+      {/* 포스트 헤더 */}
+      <header className="mb-10">
+        <div className="mb-6">
+          <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary/80 -ml-4">
+            <Link href="/blog">
+              ← 포스트 목록으로 돌아가기
+            </Link>
+          </Button>
+        </div>
+
+        <h1 className="text-4xl md:text-5xl font-bold mb-6 text-foreground leading-tight">
+          {frontMatter.title}
+        </h1>
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 text-muted-foreground">
+          <div className="flex items-center space-x-4 mb-4 md:mb-0 text-sm">
+            <time dateTime={frontMatter.date} className="font-medium">
+              {formatDate(frontMatter.date)}
+            </time>
+            <span className="text-muted-foreground/60">•</span>
+            <span>{readingTime}</span>
+            <span className="text-muted-foreground/60">•</span>
+            <ViewCounter slug={slugString} increment={true} />
+          </div>
+
+          {frontMatter.author && (
+            <div className="text-sm">
+              by <span className="font-medium text-foreground">{frontMatter.author}</span>
+            </div>
+          )}
+        </div>
+
+        {frontMatter.tags && frontMatter.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {frontMatter.tags.map((tag) => (
+              <Link key={tag} href={`/tags/${tag}`}>
+                <Badge
+                  variant="secondary"
+                  className="hover:bg-secondary/80 transition-colors cursor-pointer"
+                >
+                  #{tag}
+                </Badge>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <Separator className="my-8" />
+      </header>
+
+      {/* 포스트 내용 */}
+      <div
+        className="prose prose-lg dark:prose-invert max-w-none mb-12 prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground"
+        dangerouslySetInnerHTML={{ __html: htmlContent }}
+      />
+
+      {/* 포스트 푸터 */}
+      <footer>
+        <Separator className="mb-8" />
+
+        <div className="flex items-center justify-between mb-12">
+          <div className="text-sm text-muted-foreground">
+            마지막 수정: <span className="font-medium">{formatDate(frontMatter.date)}</span>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <ShareButton title={frontMatter.title} description={frontMatter.description} />
+          </div>
+        </div>
+
+        {/* 관련 포스트 (간단한 구현) */}
+        <div className="text-center space-y-4 mb-16">
+          <h3 className="text-xl font-bold text-foreground">
+            다른 포스트 둘러보기
+          </h3>
+          <Button asChild size="lg" className="font-medium">
+            <Link href="/blog">
+              모든 포스트 보기
+            </Link>
+          </Button>
+        </div>
+
+        {/* 댓글 섹션 */}
+        <section className="space-y-6">
+          <Separator />
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-foreground">💬 댓글</h3>
+
+            {/* giscus 환경 변수가 없으면 설정 안내 표시, 있으면 댓글 표시 */}
+            {!process.env.NEXT_PUBLIC_GISCUS_REPO_ID ? (
+              <CommentsConfig />
+            ) : (
+              <Comments identifier={slugString} title={frontMatter.title} />
+            )}
+          </div>
+        </section>
+      </footer>
+    </article>
+  )
+}
+

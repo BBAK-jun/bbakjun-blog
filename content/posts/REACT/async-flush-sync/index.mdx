@@ -1,0 +1,598 @@
+---
+title: 'Asynchronous Flush Sync'
+date: '2025-03-01T22:11:03.284Z'
+summary: '비동기 렌더링 프로세스'
+tags: ['REACT']
+---
+
+# 리액트의 상태 업데이트와 비동기 처리
+
+리액트로 애플리케이션을 개발하다 보면 상태 업데이트와 비동기 처리에 관련된 여러 복잡한 상황을 마주치게됩니다.
+
+이번 포스트에서는 리액트의 배치 업데이트 메커지즘, `flushSync` 그리고 Javascript의 비동기 함수와 Promise해결 과정이 어떻게 상호작용이 되는지 대해 다룹니다.
+
+## 리액트의 배치 업데이트
+
+배치 업데이트란 여러 상태 업데이트를 그룹화하여 한번의 렌더링 사이클에서 처리하는 렌더링 최적화 기법입니다.
+
+```tsx
+const handleClick = () => {
+  setCount(count + 1); // 첫번째 업데이트
+  setVisible((visible) => !visible); // 두번째 업데이트
+}
+```
+
+위 코드에서 `handleClick` 함수는 두 개의 상태 업데이트를 포함합니다. 이 경우, 두 개의 업데이트가 모두 동시에 적용되지 않고, 한번의 렌더링 사이클에서 순서대로 처리됩니다.
+
+이러한 배치 업데이트는 성능을 향상시키고 불필요한 렌더링을 방지합니다.
+
+리액트 18 이전에는 이벤트 핸들러 내에서만 배치가 작동했습니다. Promise, setTimeout, 네이티브 이벤트 핸들러와 같은 비동기 콜백에서는 배치가 적용되지 않았습니다.
+
+```tsx
+// 리액트 18 이전에는 두번의 리렌더링이 발생합니다.
+setTimeout(() => {
+  setCount(count + 1);
+  setVisible((visible) => !visible);
+}, 1000)
+```
+
+리액트 18 이후에는 모든 비동기 콜백에서도 배치가 작동합니다.
+
+```tsx
+// 리액트 18 이후에는 한번의 리렌더링이 발생합니다.
+setTimeout(() => {
+  setCount(count + 1);
+  setVisible((visible) => !visible);
+}, 1000)
+```
+
+리액트는 내부적으로 `executionContext` 라는 개념을 사용하여 배치 업데이트를 관리합니다. 이벤트 핸들러가 시작되면 `BatchedContext` 플래그가 설정되고, 모든 상태 업데이트는 큐에 추가됩니다. 이벤트 핸들러가 종료되면 `NoBatchingContext` 가 설정됩니다.
+
+리액트의 상태 업데이트 배치 처리는 [dispatchAction](https://github.com/facebook/react/blob/12adaffef7105e2714f82651ea51936c563fe15c/packages/react-reconciler/src/ReactFiberHooks.old.js#L1645) 함수에서 이루어집니다.
+
+이 함수는 `useState`, `useReducer` 훅에서 반환되는 상태 업데이트 함수가 호출될때 내부적으로 실행됩니다.
+
+```js
+function dispatchAction(fiber, queue, action) {
+  // 업데이트를 위한 이벤트 시간과 우선순위 레인 얻기
+  const eventTime = requestEventTime();
+  const lane = requestUpdateLane(fiber);
+
+  // 업데이트 객체 생성
+  const update = {
+    lane,
+    action,
+    eagerReducer: null,
+    eagerState: null,
+    next: null,
+  };
+
+  // 업데이트를 연결 리스트의 끝에 추가
+  const pending = queue.pending;
+  if (pending === null) {
+    // 첫 번째 업데이트인 경우 원형 연결 리스트 생성
+    update.next = update;
+  } else {
+    update.next = pending.next;
+    pending.next = update;
+  }
+  queue.pending = update;
+
+  const alternate = fiber.alternate;
+
+  // 현재 렌더링 중인지 확인
+  if (fiber === currentlyRenderingFiber ||
+      (alternate !== null && alternate === currentlyRenderingFiber)) {
+    // 렌더 단계 업데이트로 표시
+    didScheduleRenderPhaseUpdateDuringThisPass = didScheduleRenderPhaseUpdate = true;
+  } else {
+    // 상태 업데이트 최적화: 변경이 없으면 렌더링 생략
+    if (fiber.lanes === NoLanes &&
+        (alternate === null || alternate.lanes === NoLanes)) {
+      const lastRenderedReducer = queue.lastRenderedReducer;
+      if (lastRenderedReducer !== null) {
+        try {
+          const currentState = queue.lastRenderedState;
+          const eagerState = lastRenderedReducer(currentState, action);
+
+          // 미리 계산한 상태와 리듀서 저장
+          update.eagerReducer = lastRenderedReducer;
+          update.eagerState = eagerState;
+
+          // 상태가 동일하면 렌더링 생략
+          if (is(eagerState, currentState)) {
+            return;
+          }
+        } catch (error) {
+          // 오류 발생 시 무시
+        }
+      }
+    }
+
+    // 업데이트 스케줄링
+    scheduleUpdateOnFiber(fiber, lane, eventTime);
+  }
+}
+```
+
+이 함수는 업데이트를 큐에 추가하고, 이벤트 핸들러가 종료되면 스케줄링된 업데이트를 처리합니다.
+
+1. 업데이트 큐 관리 : 모든 상태 업데이트는 원형 연결 리스트로 관리됩니다.
+2. 렌더 단계 업데이트 감지 : 렌더링 도중 상태 업데이트가 발생하면 렌더 단계 업데이트로 표시됩니다.
+3. 최적화된 상태 계산 : 가능한 경우 상태 변화를 미리 계산하여 변경이 없다면 렌더링을 생략합니다.
+4. 우선순위 기반 스케줄링 : 각 업데이트는 우선순위 레인(lane)과 함께 스케줄링됩니다.
+
+이 메커니즘을 통해 React는 여러 업데이트를 효율적으로 처리하고, 불필요한 렌더링을 방지합니다.
+
+## flushSync 함수
+
+`flushSync` 함수는 동기적으로 업데이트를 처리하고, 모든 업데이트가 완료될때까지 대기합니다.
+
+이 말은 리액트의 배치 업데이트를 우회하고 상태 업데이트를 강제로 즉시 적용하도록 하는 API입니다.
+
+```tsx
+const handleClick = () => {
+  flushSync(() => {
+    setCount(count + 1);
+    setVisible((visible) => !visible);
+  });
+
+  // 이 시점에서 DOM은 이미 업데이트되어 있습니다.
+
+  // 이 업데이트는 별도로 배치 처리됩니다.
+  setFlag(flag => !flag);
+  setName('John');
+}
+```
+
+## 다양한 업데이트 메커니즘
+
+리액트는 상태 업데이트를 처리하기 위한 다양한 메커니즘을 제공합니다. 이러한 메커니즘들은 다양한 상황에서 최적의 사용자 경험과 성능을 제공하기 위해 설계되었습니다.
+
+### 배치 업데이트 함수들
+
+```js
+// 일반적인 배치 업데이트
+export function batchedUpdates<A, R>(fn: A => R, a: A): R {
+  const prevExecutionContext = executionContext;
+  executionContext |= BatchedContext;
+  try {
+    return fn(a);
+  } finally {
+    executionContext = prevExecutionContext;
+    if (executionContext === NoContext) {
+      // 이 배치 동안 예약된 즉시 콜백을 플러시
+      resetRenderTimer();
+      flushSyncCallbackQueue();
+    }
+  }
+}
+
+// 이벤트 핸들러를 위한 배치 업데이트
+export function batchedEventUpdates<A, R>(fn: A => R, a: A): R {
+  const prevExecutionContext = executionContext;
+  executionContext |= EventContext;
+  try {
+    return fn(a);
+  } finally {
+    executionContext = prevExecutionContext;
+    if (executionContext === NoContext) {
+      resetRenderTimer();
+      flushSyncCallbackQueue();
+    }
+  }
+}
+
+// 개별(discrete) 이벤트 업데이트
+export function discreteUpdates<A, B, C, D, R>(
+  fn: (A, B, C) => R,
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+): R {
+  const prevExecutionContext = executionContext;
+  executionContext |= DiscreteEventContext;
+
+  // 우선순위 처리 로직...
+  try {
+    return runWithPriority(
+      UserBlockingSchedulerPriority,
+      fn.bind(null, a, b, c, d),
+    );
+  } finally {
+    executionContext = prevExecutionContext;
+    if (executionContext === NoContext) {
+      resetRenderTimer();
+      flushSyncCallbackQueue();
+    }
+  }
+}
+
+// 배치 처리 없는 업데이트
+export function unbatchedUpdates<A, R>(fn: (a: A) => R, a: A): R {
+  const prevExecutionContext = executionContext;
+  executionContext &= ~BatchedContext;
+  executionContext |= LegacyUnbatchedContext;
+  try {
+    return fn(a);
+  } finally {
+    executionContext = prevExecutionContext;
+    if (executionContext === NoContext) {
+      resetRenderTimer();
+      flushSyncCallbackQueue();
+    }
+  }
+}
+```
+
+### 동기식 및 제어된 업데이트 함수들
+
+```js
+// 동기식 업데이트 - flushSync
+export function flushSync<A, R>(fn: A => R, a: A): R {
+  const prevExecutionContext = executionContext;
+  // 렌더링 중이거나 커밋 중인 경우 경고
+  if ((prevExecutionContext & (RenderContext | CommitContext)) !== NoContext) {
+    if (__DEV__) {
+      console.error(
+        'flushSync was called from inside a lifecycle method. React cannot ' +
+          'flush when React is already rendering. Consider moving this call to ' +
+          'a scheduler task or micro task.',
+      );
+    }
+    return fn(a);
+  }
+  executionContext |= BatchedContext;
+
+  if (decoupleUpdatePriorityFromScheduler) {
+    const previousLanePriority = getCurrentUpdateLanePriority();
+    try {
+      setCurrentUpdateLanePriority(SyncLanePriority);
+      if (fn) {
+        return runWithPriority(ImmediateSchedulerPriority, fn.bind(null, a));
+      } else {
+        return (undefined: $FlowFixMe);
+      }
+    } finally {
+      setCurrentUpdateLanePriority(previousLanePriority);
+      executionContext = prevExecutionContext;
+      // 이 배치 동안 예약된 즉시 콜백을 플러시
+      flushSyncCallbackQueue();
+    }
+  } else {
+    try {
+      if (fn) {
+        return runWithPriority(ImmediateSchedulerPriority, fn.bind(null, a));
+      } else {
+        return (undefined: $FlowFixMe);
+      }
+    } finally {
+      executionContext = prevExecutionContext;
+      flushSyncCallbackQueue();
+    }
+  }
+}
+
+// 제어된 플러시 업데이트
+export function flushControlled(fn: () => mixed): void {
+  const prevExecutionContext = executionContext;
+  executionContext |= BatchedContext;
+
+  // 우선순위 처리 로직...
+  try {
+    runWithPriority(ImmediateSchedulerPriority, fn);
+  } finally {
+    executionContext = prevExecutionContext;
+    if (executionContext === NoContext) {
+      resetRenderTimer();
+      flushSyncCallbackQueue();
+    }
+  }
+}
+```
+
+### 개별 업데이트 플러시
+
+```js
+// 개별 업데이트 플러시
+export function flushDiscreteUpdates() {
+  // 이미 렌더링 중인 경우 처리
+  if (
+    (executionContext & (BatchedContext | RenderContext | CommitContext)) !==
+    NoContext
+  ) {
+    if (__DEV__) {
+      if ((executionContext & RenderContext) !== NoContext) {
+        console.error(
+          'unstable_flushDiscreteUpdates: Cannot flush updates when React is ' +
+            'already rendering.',
+        );
+      }
+    }
+    return;
+  }
+  flushPendingDiscreteUpdates();
+  flushPassiveEffects();
+}
+
+// 보류 중인 개별 업데이트 플러시
+function flushPendingDiscreteUpdates() {
+  if (rootsWithPendingDiscreteUpdates !== null) {
+    // 보류 중인 개별 업데이트가 있는 각 루트에 대해
+    // 즉시 플러시하는 콜백 예약
+    const roots = rootsWithPendingDiscreteUpdates;
+    rootsWithPendingDiscreteUpdates = null;
+    roots.forEach(root => {
+      markDiscreteUpdatesExpired(root);
+      ensureRootIsScheduled(root, now());
+    });
+  }
+  // 이제 즉시 큐를 플러시
+  flushSyncCallbackQueue();
+}
+```
+
+## flushSync의 실제 동작
+
+리액트의 소스코드에서 볼 수 있듯이, `flushSync`는 동기식 업데이트를 강제하기 위해 다음과 같은 작업을 수행합니다.
+
+1. 현재 상태 확인 : 현재 렌더링 중이거나 커밋 중인 경우 경고를 표시하고 일반 함수로 실행됩니다.
+2. 배치 컨텍스트 설정 : `executionContext` 변수를 `BatchedContext`로 설정하여 배치 업데이트 모드로 전환합니다.
+3. 우선순위 설정 : `SyncLanePriority`와 `ImmediateSchedulerPriority`를 설정하여 최고 우선순위로 실행합니다.
+4. 콜백 실행 : 주어진 함수를 최고 우선순위로 실행합니다.
+5. 동기 큐 플러시 : `flushSyncCallbackQueue` 함수를 호출하여 모든 업데이트를 즉시 처리합니다.
+6. 원래 상태 복원 : 실행 컨텍스트와 우선순위를 원래 상태로 복원합니다.
+
+이 구현에서 핵심은 `flushSync`가 동기 작업에 대해 설계되었다는 것입니다. 콜백이 Promise를 반환하는 비동기 함수인 경우, 완료를 기다리지 않고 콜백이 즉시 반환 후 동기 큐를 플러시합니다.
+
+이것이 flushSync 함수를 async await 함수와 함께 사용할때 문제가 발생하는 근본적인 이유입니다.
+
+다음 예시를 통해 이 문제를 더 잘 이해할 수 있습니다.
+
+```tsx
+const syncFunction = () => {
+  flushSync(() => {
+    setCount((count) => count + 1)
+  })
+
+  setText('Hello syncFunction')
+}
+
+const asyncFunctionWithoutFlushSync = async () => {
+  await delay(1000)
+  setCount((count) => count + 1)
+  setText('Hello asyncFunctionWithoutFlushSync')
+}
+
+const asyncFunctionWithFlushSync = async () => {
+  flushSync(async () => {
+    await delay(1000)
+    setCount((count) => count + 1)
+  })
+
+  setText('Hello asyncFunctionWithFlushSync')
+}
+```
+
+여기서 주목해야할 차이점은 `flushSync` 내부에서 동기 처리 컨텍스트 밖에서 실행되는 것입니다.
+
+### SyncFunction(동기 함수)
+
+- flushSync 내부의 setCount가 즉시 처리되고 DOM에 반영됩니다.
+- setText는 flushSync 외부에서 실행되므로 렌더링 중에 반영되지 않습니다.
+- 사용자는 카운트 증가와 텍스트 변경을 동시에 보게됩니다.
+
+### asyncFunctionWithoutFlushSync(비동기 함수)
+
+- 1초후 delay promise가 해결되면 상태 업데이트 처리를 배치 처리합니다.
+- flushSync를 사용하지 않기 때문에 delay후에 상태 업데이트 처리를 배치 처리합니다.
+- 사용자는 1초후 카운트 증가와 텍스트 변경을 동시에 보게됩니다.
+
+### asyncFunctionWithFlushSync(비동기 함수)
+
+- flushSync 내부의 setCount가 비동기 처리 컨텍스트 내에서 실행되므로 렌더링 중에 반영되지 않습니다.
+- 리액트는 이 Promise가 해결되기를 기다리지 않고 곧바로 다음 setText를 실행합니다.
+- 사용자는 텍스트 변경을 먼저보고 그 다음 카운트 증가를 보게됩니다.
+
+![](/static/images/REACT/async-flush-sync/record.gif)
+
+이 문제를 해결하기 위해서는 `flushSync` 내부에서 모든 비동기 작업이 완료될 때까지 대기해야합니다.
+
+## 비동기 함수(async/await)의 동작 원리
+
+### async/await 구문
+
+`async/await` 구문은 Promise 기반 비동기 코드를 동기 코드처럼 작성할 수 있게해주는 JavaScript 문법입니다.
+
+```js
+async function foo(x) {
+   let y = x + 5;
+   let a = await somethingAsync(y);
+   let b = await somethingAsync2(a);
+   return b;
+}
+```
+
+### 내부 동작
+
+JavaScript 엔진에서 async 함수는 실제로 "상태 머신(State Machine)"이라는 패턴으로 변환되어 처리됩니다.
+
+이 상태 머신은 함수의 실행 흐름을 여러 상태로 나누고, await 지점에서 실행을 일시 중단했다가 나중에 다시 재개할 수 있게 합니다.
+
+> 참고자료 : [What is a state machine in terms of JavaScript promises and C# asyc-await?](https://stackoverflow.com/questions/42412145/what-is-a-state-machine-in-terms-of-javascript-promises-and-c-sharp-asyc-await)
+
+예를 들어, 다음과 같은 간단한 async 함수가 있다고 가정해 봅시다
+
+```js
+async function foo(x) {
+   let y = x + 5;
+   let a = await somethingAsync(y);
+   let b = await somethingAsync2(a);
+   return b;
+}
+```
+
+이 함수는 내부적으로 다음과 같은 상태를 가진 상태 머신으로 변환됩니다.
+
+1. 초기 상태 : 함수의 시작부터 첫번째 await 지점까지
+2. 첫번째 await 이후 : 첫번째 await 이후부터 두번째 await 지점까지
+3. 두번째 await 이후 : 두번째 await 이후부터 함수의 끝까지
+4. 완료 상태 : 함수의 끝까지 실행되고 결과를 반환
+
+이 상태 머신은 다음과 같은 코드로 구현될 수 있습니다.
+
+```js
+function foo(x) {
+  // 상태 머신으로 구현된 함수
+  return new Promise((resolve, reject) => {
+    // 현재 상태를 추적하는 변수
+    let state = 1;
+    // 함수 내부에서 사용되는 변수들
+    let y, a, b;
+    // 현재 대기 중인 Promise
+    let waitedFor = null;
+
+    // 상태 머신을 진행시키는 함수
+    function nextStep(value) {
+      try {
+        switch (state) {
+          case 1: // 초기 상태
+            y = x + 5;
+            waitedFor = somethingAsync(y);
+            state = 2; // 다음 상태로 전환
+            return waitedFor.then(nextStep, reject);
+
+          case 2: // 첫 번째 await 이후
+            a = value; // await의 결과값
+            waitedFor = somethingAsync2(a);
+            state = 3; // 다음 상태로 전환
+            return waitedFor.then(nextStep, reject);
+
+          case 3: // 두 번째 await 이후
+            b = value; // await의 결과값
+            resolve(b); // 최종 결과 반환
+            return;
+        }
+      } catch (error) {
+        reject(error);
+      }
+    }
+
+    // 상태 머신 시작
+    nextStep();
+  });
+}
+```
+
+이러한 예시에서 볼수 있듯이
+
+1. `async` 함수는 부적으로 Promise를 반환하는 일반 함수로 변환됩니다.
+2. 함수 내부에는 현재 실행 상태를 추적하는 `state` 변수가 있습니다.
+3. 각 `await` 표현식은 상태 전환을 유발하며, Promise가 해결되면 해당 값과 함께 다음 상태로 진행합니다.
+4. 오류 처리를 위한 try-catch 블록이 포함됩니다.
+
+이러한 상태 머신 패턴이 flushSync와 async 함수 사이의 상호작용을 이해하는 데 중요한 이유는, flushSync가 동기적인 실행을 기대하는 반면, async 함수는 상태 머신을 통해 비동기적으로 실행되기 때문입니다.
+
+`flushSync(async () => {...})` 형태로 호출하면, flushSync는 내부 콜백이 즉시 반환하는 Promise만 받을 뿐, 그 Promise가 실제로 해결될 때까지 기다리지 않습니다. 즉, async 함수의 상태 머신은 시작되지만 flushSync의 컨텍스트 외부에서 실행됩니다.
+
+이것이 바로 flushSync와 async 함수를 함께 사용할 때 예상치 못한 동작이 발생하는 근본적인 이유입니다.
+
+## flushSync와 async await의 충돌
+
+이제 `flushSync와` `async/await`의 상호작용을 살펴보겠습니다
+
+```tsx
+const handleClick = () => {
+  flushSync(async () => {
+    const data = await fetchData();
+    setData(data); // 이 상태 업데이트는 flushSync의 동기 처리 컨텍스트 밖에서 발생
+  });
+
+  // 이 코드는 setData 전에 실행됨
+}
+```
+
+위 코드의 실행 순서는 다음과 같습니다
+
+1. flushSync가 콜백 함수를 호출합니다.
+2. 콜백 함수는 async 함수이므로 즉시 Promise를 반환합니다.
+3. flushSync는 콜백이 반환한 Promise를 특별하게 처리하지 않고, 콜백이 완료되었다고 간주합니다.
+4. flushSync 이후 코드가 실행됩니다.
+
+## 사례
+
+실제로 저는 업무를 진행하며 flushSync와 async await를 함께 사용하는 경우가 있습니다.
+
+### 카드 파킹 기능 구현
+
+`카드 파킹`이란 사용자가 신용카드를 등록하면 다음 결제부터 해당 카드를 자동으로 사용할수 있도록 유도하는 기능입니다. 구현 요구사항은 아래와 같았습니다.
+
+1. 사용자가 결제를 시도할때 등록된 결제 수단이 없으면 카드 파킹을 진행
+2. 카드 파킹이 완료되면 즉시 해당카드로 결제 진행
+
+### 문제의 코드
+
+```tsx
+const handlePayment = async () => {
+  // 등록된 결제 수단이 없는 경우
+  if (!registeredPaymentMethod) {
+    try {
+      // 카드 등록 API 호출 (비동기)
+      flushSync(async () => {
+        const cardId = await registerCard(cardInfo);
+        setBillingKey(cardId); // 상태 업데이트: 빌링키 저장
+      });
+
+      // 이 시점에서 빌링키가 업데이트되어 있을 것으로 기대
+      processPayment(billingKey); // 결제 처리 함수 호출
+    } catch (error) {
+      showErrorMessage('카드 등록에 실패했습니다.');
+    }
+  } else {
+    // 이미 등록된 카드가 있는 경우
+    processPayment(billingKey);
+  }
+};
+```
+
+위 코드는 예상대로 작동하지 않습니다.
+
+저는 flushSync를 사용하여 `setBillingKey` 상태 업데이트가 즉시 반영되기를 기대했습니다. 하지만 예상과 다르게 `processPayment`가 호출될때 여전히 billingKey는 undefined였습니다.
+
+이 문제는 앞서 설명했던 flushSync와 async await의 상호작용 문제로 인해 발생했습니다.
+
+1. flushSync에 전달된 콜백은 async 함수이므로 Promise를 반환하고 즉시 완료됩니다.
+2. flushSync는 이 Promise가 해결될 때까지 기다리지 않고 즉시 완료됩니다.
+3. 따라서 `setBillingKey` 상태 업데이트는 즉시 반영되지 않고, 나중에 처리됩니다.
+4. 이 문제를 해결하기 위해서는 flushSync 내부에서 모든 비동기 작업이 완료될 때까지 대기해야합니다.
+
+사실 이 문제를 해결하기 위해서는 flushSync를 사용하지 않는것이 최선이었습니다.
+
+```tsx
+const handlePayment = async () => {
+  // 등록된 결제 수단이 없는 경우
+  if (!registeredPaymentMethod) {
+    try {
+      // 카드 등록 API 호출 (비동기)
+      const cardId = await registerCard(cardInfo);
+
+      processPayment(cardId); // 결제 처리 함수 호출
+      setBillingKey(cardId); // 상태 업데이트: 빌링키 저장
+    } catch (error) {
+      showErrorMessage('카드 등록에 실패했습니다.');
+    }
+  } else {
+    // 이미 등록된 카드가 있는 경우
+    processPayment(billingKey);
+  }
+};
+```
+
+### 결론
+
+flushSync는 동기 처리를 기대하는 코드에서 사용되어야 합니다. 비동기 처리를 기대하는 코드에서 사용하면 예상치 못한 동작이 발생할 수 있습니다.
+
+따라서 비동기 처리를 기대하는 코드에서는 flushSync를 사용하지 않는것이 최선입니다.
+
+또한 비동기 처리를 기대하는 코드에서는 async await를 사용하는것이 최선입니다.

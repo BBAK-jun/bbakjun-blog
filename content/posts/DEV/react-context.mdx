@@ -1,0 +1,469 @@
+---
+title: '격리 레이어'
+summary: '개발자의 자유를 박탈하는 방법'
+date: '2025-07-24'
+tags: ['DEV', 'FRONTEND', 'REACT']
+draft: false
+---
+
+항해플러스 6기 3주차 과제를 진행하던 중 `컨텍스트와 상태관리에 대한 나의 생각을 적어주세요.`라는 문제가 있었다. 머리속으로 혼자 그리고 지인들에게 입으로만 말하며 지냈던 나의 생각을 이번기회에 정리해보기로했다.
+
+나는 react context를 **컴포넌트의 관심사 범위를 제한해주는 격리 레이어**에 가깝다고 본다.
+
+Redux의 메인테이너인 Mark Erikson도 이와 비슷한 관점을 제시한다. 그는 Context를 "Dependency Injection Tool"이라고 표현하는데, 이 관점이 훨씬 정확한 것 같다.
+
+이는 내가 [이전에 다뤘던 객체지향 프론트엔드](https://www.dev-bbak.site/blog/DEV/oop_frontend)의 아키텍처 철학과 맥을 같이 한다. 프론트엔드에서도 레이어를 분리하고 의존성을 주입하는 객체지향적 접근이 복잡한 애플리케이션에서는 더 효과적일 수 있다는 것이다.
+
+## 진정한 상태관리 도구의 조건
+
+실제로 진정한 상태관리 도구라면 다음 4가지 요구사항을 만족해야 한다:
+
+1. **초기값 저장** - 상태의 초기값을 정의하고 저장할 수 있어야 한다
+2. **현재값 읽기** - 현재 상태값을 조회할 수 있어야 한다
+3. **값 업데이트** - 상태값을 변경할 수 있는 메커니즘을 제공해야 한다
+4. **변경 알림** - 상태가 변경되었을 때 관련 컴포넌트에 알림을 보낼 수 있어야 한다
+
+그런데 React Context는 이 중에서 **값 업데이트 기능이 빠져있다**. Context의 값을 바꾸려면 결국 외부 시스템(`useState`, `useReducer` 등)에 의존해야 한다.
+
+```jsx
+// Context만으로는 상태를 업데이트할 수 없다
+const ThemeContext = createContext();
+
+function App() {
+  const [theme, setTheme] = useState('light'); // 결국 useState에 의존
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      <MainComponent />
+    </ThemeContext.Provider>
+  );
+}
+```
+
+## 라이브러리들이 Context를 사용하는 방식
+
+흥미로운 건 유명한 상태관리 라이브러리들을 보면 모두 Context를 **의존성 주입 용도**로 사용한다는 점이다:
+
+- **Redux**: Store 인스턴스와 Subscription 객체를 Context로 전달한다
+- **React Query**: QueryClient 객체를 Context로 넘긴다
+- **Apollo Client**: GraphQL Client 객체를 Context로 주입한다
+- **MobX**: Observable 객체를 Context로 전달한다
+- **Valtio**: Proxy 상태 객체를 Context를 통해 주입한다
+
+이들은 모두 Context를 통해 관찰 가능한 객체나 구독 가능한 컨테이너를 컴포넌트 트리에 주입시키고, **실제 상태관리는 각 라이브러리 자체에서 처리**한다.
+
+```jsx
+// React Query의 실제 구현 방식
+function QueryClientProvider({ client, children }) {
+  return (
+    <QueryClientContext.Provider value={client}>
+      {children}
+    </QueryClientContext.Provider>
+  );
+}
+
+// Context는 단순히 QueryClient 인스턴스를 주입하는 역할만 함
+function useQuery(key, fn) {
+  const client = useContext(QueryClientContext);
+  return client.useQuery(key, fn); // 실제 로직은 QueryClient가 처리
+}
+```
+
+## 객체지향과 Context의 시너지
+
+이전에 Valtio를 사용한 객체지향 상태관리를 다뤘었다.
+
+### OOP 레이어 아키텍처와 Context
+
+객체지향에서 말하는 레이어 분리와 Context의 격리 개념은 정확히 일치한다.
+
+```jsx
+// Data Access Layer - 데이터 접근 로직
+class PostRepository {
+  async getPosts() {
+    return await fetch('/api/posts').then(res => res.json());
+  }
+
+  async createPost(post) {
+    return await fetch('/api/posts', {
+      method: 'POST',
+      body: JSON.stringify(post)
+    });
+  }
+}
+
+// ViewModel Layer - 비즈니스 로직과 상태 관리
+class PostViewModel {
+  constructor(repository) {
+    this.repository = repository;
+    this.state = proxy({
+      posts: [],
+      loading: false,
+      error: null
+    });
+  }
+
+  async loadPosts() {
+    this.state.loading = true;
+    try {
+      this.state.posts = await this.repository.getPosts();
+    } catch (error) {
+      this.state.error = error.message;
+    } finally {
+      this.state.loading = false;
+    }
+  }
+}
+
+// Context를 통한 의존성 주입
+const DependencyContext = createContext();
+
+function DependencyProvider({ children }) {
+  const postRepository = useMemo(() => new PostRepository(), []);
+  const postViewModel = useMemo(() => new PostViewModel(postRepository), []);
+
+  return (
+    <DependencyContext.Provider value={{ postViewModel }}>
+      {children}
+    </DependencyContext.Provider>
+  );
+}
+
+// Presentation Layer - UI 로직에만 집중
+function PostList() {
+  const { postViewModel } = useContext(DependencyContext);
+  const { posts, loading, error } = useSnapshot(postViewModel.state);
+
+  useEffect(() => {
+    postViewModel.loadPosts();
+  }, []);
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMessage message={error} />;
+
+  return (
+    <div>
+      {posts.map(post => (
+        <PostCard key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+```
+
+이 구조에서 Context는 단순히 ViewModel 인스턴스를 주입하는 역할만 하고, 실제 상태관리와 비즈니스 로직은 객체지향적으로 캡슐화된 ViewModel이 담당한다.
+
+## 격리 레이어가 주는 가치
+
+### 1. 강제적 격리와 런타임 보호
+
+Context의 가장 명확한 격리 특성은 Provider 밖에서 사용할 때 발생하는 런타임 에러다.
+
+```jsx
+const UserContext = createContext();
+
+function useUser() {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+}
+
+function UserProfile() {
+  const user = useUser(); // Provider 없으면 런타임 에러!
+  return <div>{user.name}</div>;
+}
+
+// 이렇게 사용하면 에러 발생
+function App() {
+  return <UserProfile />; // Error: useUser must be used within a UserProvider
+}
+
+// 올바른 사용
+function App() {
+  return (
+    <UserProvider>
+      <UserProfile /> {/* 정상 작동 */}
+    </UserProvider>
+  );
+}
+```
+
+이는 단순한 불편함이 아니라 **아키텍처적 의도**다. Context는 특정 범위 내에서만 사용되도록 강제함으로써:
+
+- **명확한 경계**를 만든다 - 어떤 컴포넌트가 어떤 의존성에 접근할 수 있는지 명시적으로 정의
+- **의존성 누수**를 방지한다 - 전역 import로 인한 무분별한 의존성 사용을 막음
+- **테스트 격리**를 보장한다 - 각 Provider 단위로 독립적인 테스트 환경 구성 가능
+
+전역 변수나 싱글톤 패턴과 달리, Context는 "사용할 수 있는 범위"를 명시적으로 제한한다. 이는 개발자의 자유를 박탈하지만, 그 대가로 더 안전하고 예측 가능한 코드 구조를 제공한다.
+
+**이런 강제적 격리가 왜 좋은가?**
+
+Context의 런타임 에러는 단순한 방어적 프로그래밍이 아니라 **관심사 분리를 강제하는 아키텍처 도구**다.
+
+```jsx
+// 나쁜 예 - 전역 import로 인한 관심사 혼재
+import { userAPI } from '@/api/user';
+import { analyticsService } from '@/services/analytics';
+import { cacheManager } from '@/cache/manager';
+
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  // 컴포넌트가 너무 많은 걸 알고 있다
+  useEffect(() => {
+    userAPI.getUser(userId).then(userData => {
+      setUser(userData);
+      analyticsService.track('user_viewed', userData.id);
+      cacheManager.set(`user:${userId}`, userData);
+    });
+  }, [userId]);
+
+  return <div>{user?.name}</div>;
+}
+```
+
+위 코드의 문제점:
+- **Presentation Layer**가 API, Analytics, Cache에 대해 직접 알고 있음
+- 테스트하려면 모든 외부 의존성을 모킹해야 함
+- 의존성 변경 시 컴포넌트도 함께 변경해야 함
+
+Context를 사용하면 이런 관심사 혼재를 **강제로 방지**할 수 있다:
+
+```jsx
+// 좋은 예 - Context를 통한 관심사 분리 강제
+function UserProfile({ userId }) {
+  const { userService } = useUserContext(); // Provider 없으면 에러!
+  const [user, setUser] = useState(null);
+
+  // 컴포넌트는 오직 userService만 알면 됨
+  useEffect(() => {
+    userService.loadUser(userId).then(setUser);
+  }, [userId]);
+
+  return <div>{user?.name}</div>;
+}
+
+// UserService 내부에서 복잡한 로직 처리
+class UserService {
+  constructor(api, analytics, cache) {
+    this.api = api;
+    this.analytics = analytics;
+    this.cache = cache;
+  }
+
+  async loadUser(userId) {
+    const userData = await this.api.getUser(userId);
+    this.analytics.track('user_viewed', userData.id);
+    this.cache.set(`user:${userId}`, userData);
+    return userData;
+  }
+}
+```
+
+Context의 런타임 에러는 개발자가 "편의상" 전역 import를 사용하려는 순간 이를 막아선다. 불편하지만, 결과적으로:
+
+1. **레이어 간 의존성이 명확**해진다
+2. **테스트 격리**가 자연스럽게 이뤄진다
+3. **의존성 변경의 영향 범위**가 제한된다
+4. **팀 협업 시 아키텍처 규칙**이 자동으로 강제된다
+
+Context는 "편한 길"을 막고 "올바른 길"로 강제하는 아키텍처 가드레일 역할을 한다.
+
+### 2. 테스트 용이성
+
+Context를 통한 의존성 주입은 테스트를 용이하게 만든다.
+
+```jsx
+// 프로덕션 코드
+function Products() {
+  const { productService } = useDependencies();
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    productService.lookupAllProducts().then(setProducts);
+  }, []);
+
+  return (
+    <div>
+      {products.map(product => (
+        <div key={product.id}>{product.title}</div>
+      ))}
+    </div>
+  );
+}
+
+// 테스트 코드
+test('loads products', async () => {
+  const mockProductService = {
+    async lookupAllProducts() {
+      return [{ id: 1, title: 'Test Product' }];
+    }
+  };
+
+  render(
+    <DepsProvider productService={mockProductService}>
+      <Products />
+    </DepsProvider>
+  );
+
+  await waitFor(() => {
+    expect(screen.getByText('Test Product')).toBeInTheDocument();
+  });
+});
+```
+
+### 3. 관심사 분리
+
+객체지향의 레이어 아키텍처와 Context의 격리 개념이 합쳐져 완벽한 관심사 분리가 이뤄진다.
+
+- **Presentation Layer**: 렌더링과 사용자 상호작용에만 집중
+- **Business Layer**: 복잡한 비즈니스 로직을 객체로 캡슐화
+- **Data Access Layer**: HTTP, GraphQL, 캐싱 같은 구현 세부사항을 숨김
+
+```jsx
+// Manager 객체를 통한 복잡한 상태 관리
+class PostManager {
+  constructor(postViewModel, commentViewModel) {
+    this.postViewModel = postViewModel;
+    this.commentViewModel = commentViewModel;
+  }
+
+  async createPostWithNotification(postData) {
+    const post = await this.postViewModel.createPost(postData);
+    await this.notificationService.sendNotification(`새 게시물: ${post.title}`);
+    return post;
+  }
+
+  async togglePostLike(postId) {
+    await this.postViewModel.toggleLike(postId);
+    // 좋아요 상태에 따른 추가 비즈니스 로직
+  }
+}
+
+// Context를 통해 Manager 주입
+function PostManagerProvider({ children }) {
+  const manager = useMemo(() => {
+    const postRepo = new PostRepository();
+    const commentRepo = new CommentRepository();
+    const postVM = new PostViewModel(postRepo);
+    const commentVM = new CommentViewModel(commentRepo);
+    return new PostManager(postVM, commentVM);
+  }, []);
+
+  return (
+    <PostManagerContext.Provider value={manager}>
+      {children}
+    </PostManagerContext.Provider>
+  );
+}
+```
+
+## 자유의 박탈이 가져다주는 질서
+
+이걸 보면서 클린 아키텍처의 저자 Robert Cecil Martin이 한 말이 떠올랐다.
+
+> 패러다임은 개발자의 권한을 박탈한다
+
+- **구조적 프로그래밍**은 `goto`문 사용 권한을 박탈했고
+- **객체지향 프로그래밍**은 함수 포인터의 직접 사용을 막았으며
+- **함수형 프로그래밍**은 할당문 사용을 제한했다
+
+Context와 객체지향 패러다임의 조합도 마찬가지다. 개발자의 여러 권한을 박탈한다.
+
+1. **전역 모듈을 import해서 컴포넌트 내에서 직접 사용할 권한**
+2. **데이터를 원하는 대로 props로 전달할 권한**
+3. **Presentation 레이어와 Business 레이어를 한 곳에서 처리할 권한**
+4. **상태와 행동을 분리해서 관리할 권한**
+5. **Provider 범위를 벗어나서 Context를 사용할 권한**
+
+마지막 항목이 특히 중요하다. Context는 런타임 에러를 통해 "잘못된 사용"을 강제로 막는다.
+
+```jsx
+// 개발자가 실수로 이렇게 작성하면
+function SomeComponent() {
+  const data = useContext(SomeContext); // Provider 없음
+  return <div>{data.value}</div>; // 런타임 에러!
+}
+
+// Context는 "안전한 범위에서만 사용하라"고 강제한다
+function App() {
+  return (
+    <SomeProvider> {/* 반드시 Provider로 감싸야 함 */}
+      <SomeComponent />
+    </SomeProvider>
+  );
+}
+```
+
+이런 제약은 불편해 보이지만, 실제로는 **"언제 어디서 무엇을 사용할 수 있는지"에 대한 명확한 규칙**을 제공한다. 개발자가 마음대로 어디서든 Context를 사용할 수 없게 함으로써, 의존성의 범위와 생명주기를 명시적으로 관리하게 만든다.
+
+### 함수형 vs 객체지향의 선택
+
+이전 글에서 언급했듯이, 프론트엔드 상태 관리에는 크게 두 가지 접근이 있다.
+
+1. **함수형**: 상태를 직접 관리하지 않고 순수 함수로 데이터 변환
+2. **객체지향**: 데이터와 행동을 하나의 객체로 캡슐화
+
+복잡한 상태 관리가 필요한 대규모 애플리케이션에서는 객체지향적 접근이 더 효과적이다. 그리고 Context는 이런 객체지향적 구조를 컴포넌트 트리에 주입하는 완벽한 도구다.
+
+```jsx
+// 나쁜 예 - 직접 의존성 생성 (함수형 스타일)
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/users/${userId}`)
+      .then(res => res.json())
+      .then(setUser);
+  }, [userId]);
+
+  return <div>{user?.name}</div>;
+}
+
+// 좋은 예 - 객체지향 + Context 의존성 주입
+function UserProfile({ userId }) {
+  const { userManager } = useContext(DependencyContext);
+  const { user, loading } = useSnapshot(userManager.state);
+
+  useEffect(() => {
+    userManager.loadUser(userId);
+  }, [userId]);
+
+  if (loading) return <Spinner />;
+  return <div>{user?.name}</div>;
+}
+```
+
+## 제약이 만드는 가치
+
+처음에는 이런 제약들이 불편해 보이지만, 결과적으로는 다음과 같은 가치를 만들어준다.
+
+- **예측 가능한 코드 구조**를 만들고
+- **테스트 용이성**을 높이며
+- **유지보수성**을 개선하고
+- **팀 협업 효율성**을 증대시킨다
+- **재사용 가능한 비즈니스 로직**을 만들 수 있다
+
+Context와 객체지향 패러다임의 조합은 이런 문제들을 해결하기 위한 강력한 수단이다. 단순히 전역 상태 저장소로 보는 관점에서 벗어나서, **개발자의 자유를 의도적으로 제한함으로써 더 나은 소프트웨어 구조를 강제하는 아키텍처 도구**로 봐야 한다.
+
+## 마치며
+
+결국 좋은 아키텍처란 개발자가 "할 수 있는 일"을 늘리는 게 아니라, "하지 말아야 할 일"을 명확히 하는 것이다.
+
+Context는 그런 의미에서 React 생태계에서 의존성 관리와 관심사 분리를 강제하는 훌륭한 도구다. 그리고 Valtio 같은 proxy 기반 상태관리와 객체지향 패러다임을 결합하면, 더욱 강력한 아키텍처를 만들 수 있다.
+
+상태관리 도구로서의 Context가 아니라, **격리 레이어이자 의존성 주입 도구**로서의 Context를 이해할 때, 그리고 이를 객체지향적 아키텍처와 결합할 때 비로소 React 애플리케이션의 구조가 한 단계 발전할 수 있지 않을까 싶다.
+
+복잡한 상태 로직을 다루는 대규모 애플리케이션에서는 함수형보다 객체지향이, props drilling보다는 Context를 통한 의존성 주입이 더 효과적일 수 있다. 중요한 건 각 패러다임의 장단점을 이해하고 상황에 맞는 선택을 하는 것이다.
+
+---
+
+**참고자료**
+
+- [Mark Erikson: Why React Context is Not a State Management Tool](https://blog.isquaredsoftware.com/2021/01/context-redux-differences/)
+- [Tommy Groshong: React Context for dependency injection not state management](https://testdouble.com/insights/react-context-for-dependency-injection-not-state-management)
+- [Clean Architecture - Robert C. Martin](https://product.kyobobook.co.kr/detail/S000001033082)
+- [Frontend의 객체지향 프로그래밍](https://www.dev-bbak.site/blog/DEV/oop_frontend)
+

@@ -1,0 +1,266 @@
+---
+title: 'Vanilla Extract Deep dive'
+date: '2024-11-04'
+tags: ['DEV']
+summary: 'RSC 그리고 Single Source Of Truth (Design)'
+---
+# **런타임과 제로런타임 CSS-in-JS**
+
+프론트엔드 스타일링 기법은 웹의 발전과 함께 단계적으로 진화해왔다.
+
+각 단계에서 개발자들이 직면한 문제를 해결하기 위해 새로운 기술과 접근법이 도입되었고, 그 과정에서 성능, 유지보수, 확장성 등의 측면이 꾸준히 개선되었다.
+
+1. **Pure CSS**
+
+웹 초창기에는 모든 스타일이 CSS 파일에 작성되었다. 스타일링은 HTML 문서와 분리되어 `<link/>` 태그를 통해 외부 CSS 파일을 가져오는 방식으로 이루어졌다. 이 방식은 간단하고 이해하기 쉬웠지만, 스타일이 복잡해지면 다음과 같은 문제들이 발생했다.
+
+- 중복된 코드: 큰 프로젝트에서는 동일한 스타일이 여러 번 반복되곤 했다.
+- 전역 범위: 모든 스타일이 전역적으로 적용되기 때문에 이름 충돌과 같은 문제가 잦았다.
+- 유지보수의 어려움: 스타일이 많아질수록 관리가 어려워졌다.
+
+2. **CSS 전처리기 (Sass, LESS 등)**
+
+CSS 전처리기는 이러한 문제를 해결하기 위해 등장했다. Sass와 LESS 같은 전처리기를 사용하면 변수, 중첩된 규칙, 믹스인, 상속 등 기능을 활용해 보다 구조적이고 유지보수하기 쉬운 CSS를 작성할 수 있었다.
+
+- 장점: 코드 재사용성이 높아지고, 프로젝트 구조를 더 효율적으로 관리할 수 있었다.
+- 단점: 여전히 CSS는 빌드 타임에 생성된 정적 파일로 남아 있어, 컴포넌트 기반 개발과의 연계성이 부족했다.
+
+3. **Runtime CSS-in-JS (Styled Components, Emotion 등)**
+
+컴포넌트 기반 프레임워크인 React의 등장과 함께 CSS-in-JS 기법이 인기를 끌기 시작했다. 스타일을 JavaScript 코드 안에서 정의함으로써, 스타일이 컴포넌트와 긴밀하게 연계되고, 동적 스타일링이 가능해졌다.
+
+- 장점:
+    - 동적 스타일링: JavaScript 변수와 조건에 따라 스타일을 변경할 수 있다.
+    - 범위 제한: 각 컴포넌트에 고유한 스타일을 적용하여 이름 충돌 문제를 방지한다.
+- 단점: 런타임에 스타일이 생성되므로 성능 문제가 발생할 수 있으며, 특히 초기 렌더링 속도에 부정적인 영향을 미친다.
+
+웹 애플리케이션이 성장할 수록 성능은 중요해진다. SPA 환경에서의 성능 문제가 대두되며 SSR환경이 중요해졌으며 Runtime Css in JS는 컴포넌트의 라이프사이클과 스타일이 함께 한다는 장점이 존재했지만, 점차 성능 문제가 대두되기도 했다. 이러한 성능 문제들은 서버에서 템플릿을 엔진을 사용한 시절처럼 되돌아 가는것처럼 빌드 시점에 스타일을 생성하던 방법으로 되돌아가는것으로 이야기가 나오고있다.
+
+**RunTime Css In JS**는 어떤 방법으로 문제를 해결했으며 어떤 단점을 가졌으며, Build Time에 스타일을 생성하는 **Zero Runtime Css In JS**는 어떤것인지 알아보겠다.
+
+---
+
+# 브라우저와 CSS
+
+![webkit flow](https://cloud.mo4tech.com/images/ldWYtlmLrJXYtJXZ0F2dtA3YmBnYmFTdzsWL2xGc053Y2IjMjR2NmNmM1EDZyQTYjFzY0Q2M5cDOwADNlZTMx8CcjZGciZWM1NzatkWLuNWLz9Gdv02bj5yZtlWZ0lnYu4WaqVWdq1yMw9yL6MHc0RHa/37480b51f2da0bfed9eabeb525870a10.image)
+
+![gecko flow](https://cloud.mo4tech.com/images/ldWYtlmLrJXYtJXZ0F2dtA3YmBnYmFTdzsWL2xGc053Y2IjMjR2NmNmM1EDZyQTYjFzY0Q2M5cDOwADNlZTMx8CcjZGciZWM1NzatkWLuNWLz9Gdv02bj5yZtlWZ0lnYu4WaqVWdq1yMw9yL6MHc0RHa/37480b51f2da0bfed9eabeb525870a10.image)
+
+렌더링 프로세스는 HTML를 DOM 트리 구조로 파싱하고 CSS를 CSSOM으로 파싱한다. DOM 과 CSSOM을 결합하여 렌더 트리를 생성한뒤 Layout 과정이 수행되며 화면의 각 노드들의 정확한 좌표가 결정된후 브라우저 화면에 렌더 트리를 표시한다. 그다음 각 노드를 화면에 그리기 시작한다.
+
+브라우저 렌더링 과정을 보더라도 CSS 로딩은 DOM 파싱을 차단하지않고 병렬로 진행된다. 하지만 렌더 트리는 DOM과 CSSOM의 의존적이므로 두 트리가 파싱완료될때까지 기다린다.
+
+브라우저 렌더링 과정에서 CSS를 어떻게 정의하느냐에 따라 성능에 영향을 미칠수가있다. CSS가 브라우저에 적용되려면 3가지 정도의 방법이 존재하며, 이 방법들은 혼재할수도 하나의 방법만 사용할 수 도있다.
+
+- Inline CSS
+    - HTML은 문서를 전달하기 위한 파일 포맷으로, 컨텐츠에 강조 표시를 하거나 레이아웃을 다르게할때 `style` attribute를 작성하여 스타일을 입힐 수 있다.
+    ```html
+    <p>
+        이것은 
+        <span style="color: red; font-weight: 700;">글</span>
+        입니다
+    </p>
+    ```
+- Internal CSS
+    - Inline CSS로 스타일을 입히는 방식은 중복이 많아지며 가독성이 떨어지기때문에 나타난 개념이다.
+    - style 태그를 작성하고 접근자를 사용하여 스타일을 입힐 수 있다.
+    ```html
+    <head>
+        <style>
+            span {
+                color: red;
+                font-weight: 700;
+            }
+        </style>
+    </head>
+    ```
+- External CSS
+    - CSS 파일을 외부 리소스로 빼는 방법으로 Internal CSS는 모든 스타일이 style 태그에 정의되어야해서 어느 부분이 스타일이 입혀지고 있는지 파악하기 어렵다.
+    - 따라서 여러개의 CSS 파일을 만들어 link 태그로 외부경로를 작성하여 다운로드시킨다.
+    ```html
+    <head>
+        <link rel="stylesheet" type="text/css" href="./style.css"/>
+    </head>
+    ```
+
+## CSS-in-JS
+CSS-in-JS는 자바스크립트 파일 안에서 CSS를 정의하고 스타일을 적용한다. 대표적인 경우는 아래와 같다.
+
+- 런타임 스타일시트 (보통 런타임 CSS-in-JS에서 사용)
+- 정적 CSS 추출 (보통 빌드 타임 CSS-in-JS에서 사용)
+
+### **런타임 CSS-in-JS**
+
+CSS-in-JS는 자바스크립트 파일이 브라우저에서 실행되며 스타일이 입혀진다.
+
+대표적으로 `styled-component`와 `emotion`이 있다. 두 라이브러리는 자바스크립트 코드 내부에 탬플릿 리터럴을 통해 스타일을 정의하고 컴포넌트에 적용한다. 
+이 코드는 브라우저로 번들링된 소스 코드에 포함되어 **런타임**에 평가된다. 
+
+HTML 파일이 브라우저에 로드되었을때 Internal CSS 및 External CSS가 없는 상태로 로드된후 일련의 과정을 거친 후 스타일이 입혀진다.
+
+`style 태그를 추가하후 엘리먼트에 스타일을 밀어넣는 방법`과 `CSSStyleSheet.insertRule을 통해 스타일을 추가하는 방법`이 있다.
+
+런타임 CSS-in-JS는 브라우저에서 자바스크립트 코드가 모두 로드 완료된후 스타일을 생성하기때문에 스타일을 생성하는 코드가 번들파일에 포함이 되어야한다.
+
+모던 웹 프론트엔드 프레임워크가 대부분 컴포넌트 기반의 개발 방법론을 채택하고 있기때문에 컴포넌트 단위로 CSS를 작성할 수 있는데 많은 역할을 하게 되었다. 
+
+하지만 이런 방법들은 다음과 같은 한계점을 가지고 있다.
+
+### **런타임 CSS-in-JS의 한계**
+
+런타임 CSS-in-JS는 다음과 같은 주요 한계점을 가지고 있다
+
+1. **번들 사이즈 증가**
+   - 스타일 생성 로직이 JavaScript 번들에 포함되어 전체 번들 크기가 커진다
+   - 스타일 처리를 위한 라이브러리 코드도 함께 번들링되어야 한다
+
+2. **초기 렌더링 지연**
+   - JavaScript가 실행되어야 스타일이 적용되므로 초기 페이지 로딩이 느려진다
+   - First Paint와 First Contentful Paint 지표에 부정적 영향을 미친다
+
+3. **서버 사이드 렌더링(SSR) 복잡성**
+   - SSR 환경에서 스타일 추출과 주입을 위한 추가 설정이 필요하다
+   - 클라이언트와 서버의 스타일 불일치 문제가 발생할 수 있다
+
+4. **런타임 오버헤드**
+   - 동적 스타일 생성과 주입 과정에서 추가적인 연산이 필요하다
+   - 특히 많은 컴포넌트가 마운트되는 경우 성능 저하가 두드러진다
+
+5. **메모리 사용량**
+   - 동적으로 생성된 스타일 정보를 메모리에 유지해야 한다
+   - 대규모 애플리케이션에서 메모리 사용량이 증가할 수 있다
+
+### **빌드 타임 CSS-in-JS**
+
+Runtime CSS-in-JS는 런타임에 스타일을 생성하기때문에 이러한 작업이 오버헤드가 존재한다는 것을 알수있다. 
+
+이를 개선하기위해서는 정말 간단하게도 시점을 옮기는 방법이 답이 된다. 
+
+사실 빌드 타임에 스타일을 생성하는 방법은 이미 존재했었다. SCSS등의 전처리기를 사용하는 방법이 있었다. 
+
+이런 방법이 잘 쓰이지않던 이유는 SPA라는 웹프론트엔드의 변화가 오며 빌드타임에 스타일을 만드는 방법이 효율적(?)이지 않았기 때문이다. 하지만 SSR환경이 중요해지며 빌드타임에 스타일을 만드는 방법이 효율적이라는 것이 증명되면서 빌드 타임 CSS-in-JS가 주목을 받기 시작했다.
+
+정적 CSS 추출은 서버에서 정의되어있는 CSS 파일을 빌드시점에 생성하여 브라우저에서는 External CSS 파일을 다운로드 받아 사용하는 방법이다. 
+이러한 방법은 HTML, CSS, JS파일을 웹서버에서 정적으로 서빙하는 방법이며 런타임 추출 비용이 전혀 들지않는다.
+
+Runtime CSS-in-JS는 Developer Experience(DX)를 향상시키기 위해 등장했지만, 성능 문제로 인해 트레이드 오프가 꽤나 많이 발생한다. 그래서 요즘은 번들크기와 성능 등의 문제로 Sass 또는 테일윈드로 많이 돌아가고있는 추세로 보인다.
+
+## **Vanilla Extract**
+
+Zeron Runtime CSS-in-TS, Vanilla Extractd은 스타일을 빌드 프로세스 동안 미리 생성하여 브라우저에 전달하므로, 런타임 오버헤드가 줄어든다
+
+Vanilla Extract가 빌드타임에 스타일을 추출하는 과정은 아래와 같다.
+
+1. 타입스크립트 파일을 파싱하여 AST를 생성한다.
+2. Vanilla Extract의 style API 호출을 찾아 스타일 정의를 수집한다.
+3. 수집한 스타일 정의를 기반으로 CSS 파일을 생성한다.
+4. 생성된 CSS 파일을 번들링 프로세스에 포함시킨다.
+
+```ts
+// style.css.ts
+import { style } from '@vanilla-extract/css';
+
+export const button = style({
+  backgroundColor: 'blue',
+  padding: '10px',
+  ':hover': {
+    backgroundColor: 'darkblue'
+  }
+});
+```
+
+```css
+/* 자동 생성된 고유한 클래스명 */
+.button_xyz123 {
+  background-color: blue;
+  padding: 10px;
+}
+
+.button_xyz123:hover {
+  background-color: darkblue;
+}
+```
+
+---
+
+## **Sprinkles로 디자인의 단일 진실 공급 원칙 지키기**
+
+디자인 시스템의 핵심은 일관성이다. Vanilla Extract는 Sprinkles라는 유틸리티를 통해 디자인 토큰을 활용해 단일 진실 공급 원칙(Single Source of Truth)을 지킨다. Sprinkles는 스타일 속성을 정의하고 관리할 수 있는 강력한 도구다.
+
+### **디자인 토큰의 중요성**
+디자인 토큰은 색상, 간격, 타이포그래피 등 재사용 가능한 디자인 요소들을 의미한다. Sprinkles는 이러한 토큰을 기반으로 컴포넌트 스타일을 생성함으로써, 전체 디자인 시스템의 일관성을 유지한다. 예를 들어, 색상 팔레트나 간격 값이 변경될 때, 모든 스타일이 동기화된다.
+
+### **실제 사용 사례**
+Sprinkles를 사용해 디자인 토큰을 정의하고 활용하는 코드 예제는 다음과 같다:
+
+```ts
+// sprinkles.css.ts
+import { createSprinkles, defineProperties } from '@vanilla-extract/sprinkles';
+
+const space = {
+  small: '4px',
+  medium: '8px',
+  large: '16px'
+};
+
+const colors = {
+  primary: '#007bff',
+  secondary: '#6c757d',
+  success: '#28a745'
+};
+
+const responsiveProperties = defineProperties({
+  conditions: {
+    mobile: {},
+    tablet: { '@media': 'screen and (min-width: 768px)' },
+    desktop: { '@media': 'screen and (min-width: 1024px)' }
+  },
+  defaultCondition: 'mobile',
+  properties: {
+    padding: space,
+    margin: space,
+    backgroundColor: colors
+  }
+});
+
+export const sprinkles = createSprinkles(responsiveProperties);
+```
+
+```tsx
+// Button.tsx
+import { sprinkles } from './sprinkles.css.ts';
+
+const buttonStyles = sprinkles({
+  padding: {
+    mobile: 'small',
+    desktop: 'medium'
+  },
+  backgroundColor: 'primary'
+});
+
+const Button = () => <button className={buttonStyles}>Click me</button>;
+```
+
+### **Sprinkles의 장점**
+
+1. **타입 안정성**
+   - TypeScript와 완벽하게 통합되어 디자인 토큰 사용 시 타입 체크 가능
+   - 잘못된 값 사용을 빌드 타임에 방지
+
+2. **반응형 디자인 용이**
+   - 브레이크포인트별로 다른 스타일을 쉽게 정의
+   - 일관된 방식으로 반응형 스타일 관리
+
+3. **성능 최적화**
+   - 빌드 타임에 모든 스타일이 생성되어 런타임 오버헤드 없음
+   - 중복 스타일 제거와 최적화된 CSS 생성
+
+4. **유지보수성**
+   - 중앙 집중식 디자인 토큰 관리로 일관성 유지
+   - 변경 사항을 한 곳에서 관리 가능
+
+## **결론**
+
+Vanilla Extract와 Sprinkles는 현대 웹 개발에서 마주치는 스타일링 문제들에 대한 효과적인 해결책을 제시한다. 빌드 타임 CSS-in-JS의 장점과 디자인 시스템의 체계적인 관리를 결합하여, 성능과 개발자 경험 모두를 개선한다.
+
+특히 React Server Components(RSC)와 같은 최신 아키텍처에서는 런타임 CSS-in-JS의 한계가 더욱 두드러지는데, Vanilla Extract는 이러한 환경에서도 완벽하게 작동한다. 디자인 토큰을 통한 단일 진실 공급원칙을 지키면서도, 타입 안정성과 성능 최적화를 동시에 달성할 수 있는 현대적인 스타일링 솔루션이다.

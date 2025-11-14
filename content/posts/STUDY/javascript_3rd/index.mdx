@@ -1,0 +1,359 @@
+---
+title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 3회'
+date: '2023-01-17T19:04:03.284Z'
+summary: '자바스크립트 스터디 11장 ~ 15장'
+tags: ['STUDY','JS']
+---
+
+# 11장
+
+## 심볼
+
+새로운 원시 자료형인 Symbol이 ES6 부터 추가되었다.
+
+심볼은 항상 고유하며 객체 속성의 식별자로 사용할 수 있다.
+
+```js
+const me = Symbol('BBAK_JUN')
+
+console.log(me)
+
+// Symbol(BBAK_JUN)
+```
+
+심벌은 항상 고유하다고 했는데 그렇다면 같은 값을 가진 두 심벌은 같을까?
+
+```js
+const me = Symbol('BBAK_JUN')
+const copyMe = Symbol('BBAK_JUN')
+
+console.log(me === copyMe) // false
+```
+
+두 심벌의 값은 동일하지만, 각 심벌은 항상 고유하므로 다른 심벌과 겹치지 않는다.
+
+원시형태의 자료형이며 참조형태의 느낌을 가지는듯하다.
+
+```js
+const personObject = {
+  name: 'BBAK_JUN',
+  age: 28,
+}
+
+const personObjectWithSymbol = {
+  [Symbol('name')]: 'BBAK_JUN',
+  [Symbol('age')]: 28,
+}
+
+for (info in personObject) {
+  console.log(info) // "BBAK_JUN", 28
+}
+
+for (info in personObjectWithSymbol) {
+  console.log(info) // undefined
+}
+```
+
+심벌은 열거 가능하지 않기 때문에 for in 으로는 심벌에대해 반복할 수 없다.
+
+객체 속성의 배열을 얻기 위해서는 Object.getOwnPropertySymbols()를 사용해야한다.
+
+```js
+const personObjectWithSymbol = {
+  [Symbol('name')]: 'BBAK_JUN',
+  [Symbol('age')]: 28,
+}
+const symbols = Object.getOwnPropertySymbols(personObjectWithSymbol)
+
+console.log(symbols)
+// 0 : "BBAK_JUN"
+// 1 : 28
+```
+
+<hr />
+
+# 12장
+
+## 클래스
+
+Class는 객체를 생성하기 위한 템플릿이다. 클래스는 데이터와 이를 조작하는 코드를 하나로 추상화한다. <br/>
+자바스크립트에서 클래스는 프로토타입을 이용해서 만들어졌지만 ES5의 클래스 의미와는 다른 문법과 의미를 가진다.
+
+Class는 사실 특별한 함수다. 함수를 함수 표현식과 함수 선언으로 정의할 수 있듯이 Class 문법도 class 표현식과 class 선언 두 방법을 제공한다.
+
+클래스를 보기전 프로토타입 상속을 먼저 보자
+
+```js
+function Person(name, age) {
+  this.name = name
+  this.age = age
+}
+
+Person.prototype.sayHello = function () {
+  console.log('Hello, my name is' + this.name)
+}
+const bbakjun = new Person('BBAK_JUN', 28)
+
+bbakjun.sayHello() // Hello, my name is BBAK_JUN"
+```
+
+Person의 프로토타입에 새 메서드를 추가하여 Person 객체의 인스턴스들이 접근 가능하도록 만들었다.
+
+### class생성
+
+선언과 표현식 두 방법이 있다.
+
+```js
+class Person {} // 선언
+
+const person = class Person {} // 표현식
+```
+
+선언 및 클래스 표현식은 호이스팅되지 않는다.
+
+클래스 접근하기전에 클래스를 선언하지 않으면 ReferenceError가 발생한다.
+
+```js
+const bbakjun = new Person('박준형', 28) // ReferenceError Person is not defined
+
+class Person {
+  constructor(name, age) {
+    this.name = name
+    this.age = age
+  }
+
+  greet() {
+    console.log(`Hi my name is ${this.name}, and i am ${this.age} years old`)
+  }
+
+  fareWell() {
+    console.log('잘부탁한다')
+  }
+}
+
+const bbakjun = new Person('박준형', 28)
+
+bbakjun.greet() //Hi my name is 박준형, and i am 28 years old
+bbakjun.fareWell() // 잘부탁한다
+```
+
+보면 함수 선언과 다를게 없이 동작한다. 이래서 자바스크립트의 클래스는 문법적 설탕이라고 표현한다.
+
+### 정적메서드 사용
+
+보통 싱글턴 디자인 패턴을 사용할떄에 인스턴스가 있는지 없는지 확인후 없다면 인스턴스를 생성해주곤한다.
+
+```js
+
+class Model {
+  constructor(){...}
+  static createInstance = () => new Model()
+}
+
+let instance = null
+const App = () => {
+  if(!instance) instance = Model.createInstance()
+
+  console.log(instance) // Model
+}
+```
+
+<hr />
+
+# 13장
+
+## Promise
+
+Javascript는 동기적으로 작동한다.
+
+```js
+const data = fetch(URL) // 1
+console.log('fetching is finished') // 2
+console.log(data) // 3
+```
+
+위의 예제가 동기 코드일 경우 1 작업이 완료된다음에 2 작업이 호출되고 3 작업까지 호출된다음 종료할것이라고 예상이된다.
+
+하지만 실제 결과는
+
+1번 작업이 호출된 직후 2,3 작업이 실행되고 3번에서 data 는 undefined가 출력된다.
+
+이 이유는 fetch가 비동기적으로 수행하기 때문이다. 즉 해당 행에서 완료될때까지 코드가 블라킹이 되는것이 아니라 계속해서 다음 행을 실행한다.
+
+이문제를 해결하기위해 콜백 혹은 프로미스를 사용하면 1번 작업이 무언가를 반환하는 시점까지 기다리게 할 수 있다.
+
+### 콜백지옥
+
+비동기 코드를 동기코드 처럼 작동하기 위해 콜백으로 여러코드 블록을 차례대로 작성할때 발생하는 상황이 콜백지옥이라고 부른다.
+
+A -> B -> C 이런식으로 발생할때 3depth면 그나마 나은 작업이지만
+
+A -> B -> C -> D ... -> F 까지 발생하면 콜백지옥이 발생하게된다.
+
+이럴떄 Promise를 사용하면 조금 개선된다
+
+### Promise
+
+> 프로미스는 비동기 작업의 최종 성공 또는 실패를 나타내는 객체다.
+
+프로미스의 성공을 알리기 위해서는 resolve, 실패를 알리기 위해서는 reject를 호출하면 된다.
+
+한번 아래의 예시로 로그인 버튼 클릭시 2초뒤에 성공과 실패를 알리는 함수를 작성해보겠다
+
+```js
+const signInAction = (name) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'))
+    }, 2000)
+  })
+}
+
+;(() => {
+  const isMe = signInAction('빡준')
+    .then((res) => console.log(res)) // "넌 내가 맞아"
+    .catch((err) => console.log(err))
+
+  const isNotMe = signInAction('빡준2')
+    .then((res) => console.log(res))
+    .catch((err) => console.log(err)) // Error : "넌 내가 아냐"
+})()
+```
+
+### 프로미스 체이닝
+
+프로미스 성공 실패 여부와 무관하게 이전 프로미스에서 반환된것을 후속 프로미스의 기반으로 사용하여 프로미스를 계속 체이닝 할 수 있다.
+
+```js
+const signInAction = (name) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'))
+    }, 2000)
+  })
+}
+
+const me = signInAction('빡준')
+  .then((name) => `hello my name is ${name}`)
+  .then((string) => console.log(string)) // hello my name is 빡준
+```
+
+### Promise.resolve, Promise.reject
+
+Promise.resolve(), Promise.reject()는 즉시 성공 혹은 실패하는 프로미스를 생성한다.
+
+### Promise.all, Promise.race
+
+Promise.all()은 첫번째 인자인 배열에서 모든 프로미스가 이행한 후 혹은 주어지지 않을때에 이행하는 Promise를 반환한다. <br/>
+주어진 프로미스 중 하나가 거부하는 경우, 첫번째로 거절한 프로미스의 이유를 사용해 자신도 거부한다.
+
+이러한 이유로 많은 라이브러리에서 비동기요청에대한 병렬처리를 해당 프로미스 메서드를 사용하여 구현하였다.<br/>
+예를들면 TanStack Query의 useQueries가 있다
+
+Promise.race()는 첫번째 인자인 배열에서 가장 먼저 완료된것의 결과값을 이행하거나 거부한다.
+
+<hr />
+
+# 14장
+
+## 제너레이터
+
+제너레이터 함수는 원하는 만큼 코드 실행을 시작하거나 중지할 수 있는 함수다.
+
+중지된 제너레이터 함수를 다시 시작할 때 데이터를 추가로 전달하며 재시작할수있다.
+
+```js
+function* sayNames() {
+  yield '박준형'
+  yield '빡준'
+  yield 'BBAK_JUN'
+}
+
+const names = sayNames()
+
+names.next()
+// { value : '박준형', done : false }
+names.next()
+// { value : '빡준', done : false }
+names.next()
+// { value : 'BBAK_JUN', done : false }
+names.next()
+// { value : undefined, done : true }
+```
+
+- function\* 을 사용하여 함수 선언
+- 반환할 값앞에 yield 키워드 사용
+- .next() 사용하여 함수 실행 시작
+- 마지막으로 .next() 호출시 undefined와 함께 done: true 반환한다.
+
+이 예시에서는 각 next() 호출 사이에서 일시 중단된 상태로 있다.
+
+### 제너레이터로 배열 반복하기
+
+```js
+const names = ['박준형', '빡준', 'BBAK_JUN']
+function* getNames() {
+  for (name in names) {
+    yield name
+  }
+}
+
+const sayNames = getNames()
+
+names.next()
+// { value : '박준형', done : false }
+names.next()
+// { value : '빡준', done : false }
+names.next()
+// { value : 'BBAK_JUN', done : false }
+names.next()
+// { value : undefined, done : true }
+```
+
+### 함수 종료
+
+```js
+names.return() // 이렇게 함수 종료가 가능하다.
+```
+
+### 제너레이터와 프로미스를 같이 사용하기
+
+프로미스와 제너레이터를 함께 사용하면 콜백지옥과 가은 문제를 방지할 수 있는 매우 강력한 도구이다.
+
+제너레이터를 프로미스와 함께 사용하면 마치 동기코드인것처럼 작성할 수 있다.
+
+<hr />
+
+# 15장
+
+## 프록시
+
+프록시 객체는 기본작업(속성조회, 할당, 열거, 함수호출)에 대해 사용자 지정 동작을 추가로 정의하는데 사용된다.
+
+```js
+const x = new Proxy(target, handler)
+```
+
+- target은 객체, 함수 다른 프록시 무엇이든 가능
+- handler는 작업이 수행될때 프록시의 동작을 정의하는 객체이다.
+
+```js
+const person = { name: "bbakjun", age: 28 }
+
+const personProxy = new Proxy(person, {
+  get(target,name) {
+    return target[name].toUpperCase()
+  }
+
+  set(target, age, value){
+    console.log('changing age to..')
+    target[age] = value
+  }
+})
+
+console.log(personProxy.age) // 28
+
+console.log(personProxy.age = 29)
+// 'changing age to..'
+// 29
+```

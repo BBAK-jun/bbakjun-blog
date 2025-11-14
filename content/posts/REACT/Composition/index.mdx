@@ -1,0 +1,142 @@
+---
+title: '리액트는 왜 상속보다 합성을 권장하는가?'
+date: '2023-03-05T22:11:03.284Z'
+summary: '상속? 합성?'
+tags: ['REACT']
+---
+
+#리액트는 왜 상속보다 합성을 권장하는가?
+
+# 관계
+
+학생이라는 객체와 사람이라는 객체가 있다고 생각해보자
+
+모든 학생은 사람이다. 하지만 모든 사람은 학생인가? 라고 생각해보면 그것은 아니다. 이렇게 하위 객체를 가지는 상위 객체와 하위객체의 관계를 Is-A(상속)이라고한다.
+
+```tsx
+class Person {
+  private readonly age: number
+  private readonly name: string
+}
+
+class Student extends Person {
+  constrcotor(age, name) {
+    super()
+    this.age = age
+    this.name = name
+  }
+}
+```
+
+칼을쥔 남성, 칼을쥔 고양이, 칼을쥔 경찰, 칼을쥔 어린아이 이런 관계가 Has-A(합성) 관계라고 볼 수 있다.
+
+칼을 쥐는 행위는 누구나 가능한 행위다. 조금 거부감이 들지만 어린아이도 칼을 쥘수는 있다.
+
+```tsx
+class Knife {
+  constructor(
+    private power: number,
+    private name: string
+  ) {}
+}
+
+class 어린아이 {
+  private readonly weapon: Knife
+}
+```
+
+## 상속 - inheritence (is-a)
+
+다른 부모클래스를 만들고 자식 클래스는 상속받아 구현을 정의하는것을 뜻한다
+
+## 합성 - composition (has-a)
+
+서로 다른 객체를 여러개 붙여서 새로운 기능이나 객체를 구성하는것을 뜻한다.
+
+일반적으로 합성할 클래스를 변수에 할당 후 사용하는 구조다
+
+이렇게 합성 한 경우 상속과는 다르게 클래스간의 유기적으로 서로의 클래스를 융통성있게 합성 할 수있 다.
+
+`Gof 디자인 패턴`에서는 클래스 상속보다 객체 합성이 더 나은 방법이라고한다.
+
+> 합성 vs 상속
+
+- 합성을 사용한 코드를 변경하는 것이 상속을 사용한 코드를 변경하는 것보다 노력이 덜 든다.
+- 상속을 사용한 코드는 일반적으로 합성을 사용한 코드보다 더 빨리 동작한다.
+- 전통적인 방법을 따라서 상속을 사용하기에 모호한 경우 합성을 우선 고려한다.
+- 자식 클래스를 사용해야 하는 곳에 부모 클래스를 사용할 수 있다면 상속을 고려
+- 클래스가 단지 다른 클래스의 서비스만을 이용한다면 합성을 고려
+- 새로 디자인 하려는 클래스가 기존 클래스와 유사한 형태라면 상속으로 제작
+  >
+
+상속의 경우 상속체이닝이 발생한다면 뎁스가 깊어져 기능이 추가되거나 변경될때 복잡해질것이다. 그리고 상속을 받을때 private을 제외한 것들이 노출될 위험이 있다.
+
+상속 최상위 클래스가 변경될경우 자식 클래스 모두 사이드이펙트가 발생한다.
+
+### 결론
+
+상속은 재사용성 보다는 확장성에 용이하다.
+
+합성은 확장성보다는 재사용성에 용이하다.
+
+## React에서의 상속과 합성
+
+공식문서에 React는 강력한 합성 모델을 가지고있다고한다. `상속`보다는 `합성`을 사용하여 구성 요소간의 코드를 재사용 하는것이 좋다고 가이드한다.
+
+React를 만든 Facebook Team도 컴포넌트를 상속계층으로 만드는것이 권장되는 사용 사례를 찾지 못했다고 한다.
+
+예를들어 `Modal 컴포넌트`를 제작한다고 생각해본다.
+
+놀랍게도 너무 자연스럽게 아래와 같이 컴포넌트를 작성했을것이다.
+
+```jsx
+const Modal = ({ children }) => {
+  return (
+    <ModalContainer>
+      <ModalHeader></ModalHeader>
+      <ModalMain>{children}</ModalMain> // children이 존재한다.
+      <ModalBottom></ModalBottom>
+    </ModalContainer>
+  )
+}
+
+export default Modal
+```
+
+왜 이렇게 작성했을까?
+
+일반적으로 이런 특수한 컴포넌트의 경우 재사용을 한다. 하지만 어떻게 작성해야할지를 미리 알수도 없어 어떻게 그려줘야할지 컴포넌트가 알수가 없다.
+
+그렇기 때문에 컴포넌트를 호출 할 때에 children을 이용해 그려줄 요소를 컴포넌트에게 알려줄수 있다.
+
+```jsx
+import Modal from './components/Modal
+
+const ExamplePage = () => {
+	const [visible,setVisible] = useState(false)
+
+	return (
+		<div>
+			{visible &&
+				<Modal>
+					<Form/>
+				</Modal>}
+		</div>
+	)
+}
+
+const Form = () => {
+	return (
+		<form>
+			<label>라벨</label>
+			<input/>
+		</form>
+	)
+}
+
+export default ExamplePage
+```
+
+ExamplePage 컴포넌트는 Modal 컴포넌트를 호출하고 children이 무엇인지 Modal 컴포넌트에게 전달해준다.
+
+위에서 말했듯이 Modal 컴포넌트는 재사용을 위해 자식요소로 무엇이 들어와야할지 알수가 없기에 자신을 소비하는 상위 컴포넌트에게 책임을 위임한다.

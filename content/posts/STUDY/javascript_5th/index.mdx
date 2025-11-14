@@ -1,0 +1,290 @@
+---
+title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 5회'
+date: '2023-01-31T11:47:03.284Z'
+summary: '자바스크립트 스터디 21장 ~ 22장 + 추가학습'
+tags: ['STUDY','JS']
+---
+
+# ES2019
+
+## Object.fromEntries
+
+Object.entries의 반대 기능이다. entries가 객체를 2차원 배열로 만들었다면, fromEntries는 2차원 배열을 객체로 만들어준다. Map도 지원한다.
+
+```js
+const array = [
+  ['name', 'BBAKJUN'],
+  ['age', 28],
+]
+
+const obj = Object.fromEntries(array)
+
+console.log(obj) // { name: 'BBAKJUN', age: 28 }
+```
+
+## Array.flat Array.flatMap
+
+flat은 다중 배열을 펼치는 기능이다.(기본은 1단계 펼침) 인자로 숫자를 넣어주면 연달아 몇번 펼칠지 결정한다.
+
+```js
+const array = [1, 2, [3, [4, [5]]]]
+console.log(array.flat()) // [1, 2, 3, [4, [5]]];
+
+const array = [1, 2, [3, [4, [5]]]]
+console.log(array.flat(2)) // [1, 2, 3, 4, [5]];
+
+const array = [1, 2, [3, [4, [5]]]]
+console.log(array.flat(Infinity)) // [1, 2, 3, 4, 5];
+```
+
+flatMap은 map과 flat을 섞은 메서드다. map후에 flat을 하는게 살짝 더 효율적이라고 생각된다.
+
+```js
+const array = ['abc', 'def']
+
+const first = array.map((v) => v.split('')) // [['a', 'b', 'c'], ['d', 'e', 'f']]
+const second = array.map((v) => v.split('')).flat() // ['a', 'b', 'c', 'd', 'e', 'f']
+const third = array.flatMap((v) => v.split('')) // ['a', 'b', 'c', 'd', 'e', 'f']
+```
+
+second와 third는 같은 값을 반환한다. 하지만 왜 효율적일까?
+
+map은 callBack 함수를 각각의 요소에 대해 한번씩 순서대로 불러와 그 함수의 반환값을 새로운 배열을 만들게된다.
+
+그럼 array를 한번씩 순서대로 불러올때는 `'abc'`, `'def'`를 불러오고 split으로 나눈다. 총 2번 루프를 돌았다. 그후 flat메서드로 다중배열을 1차원배열로 풀어주었으니 2번을 돌아 총 4번을 돌았다.
+
+flatMap은
+
+## String.trimStart trimEnd trimLeft trimRight
+
+기존에 문자열 공백제러를 위해 trim 메서드를 썼는데 양쪽 공백을 모두 제거했었고, 우측공백만 제거하고싶었을때에는 난감했는데 이를 해소해줄 메서드가 나왔다.
+
+## Optional Catch
+
+catch의 매개변수를 쓰지않는 경우 error 매개변수를 작성하지 않아도 된다.
+
+```js
+try {
+  new Error('error')
+} catch (error) {
+  console.log('이전 방법')
+}
+
+try {
+  new Error('error')
+} catch {
+  console.log('최신 방법')
+}
+```
+
+# ES2020
+
+## matchAll
+
+문자열에서 일치하는 정규 표현식을 iterator 형식으로 반환한다.
+
+정규표현식 뒤에 /g를 사용하지 않으면 에러가 발생한다.<br/>
+`Uncaught TypeError: String.prototype.matchAll called with a non-global RegExp argument`
+
+```js
+const 집에_몇번_가고싶나 =
+  '집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...'.matchAll(
+    /집에가고싶음/g
+  )
+
+let num = 0
+
+while (true) {
+  const { value, done } = 집에_몇번_가고싶나.next()
+  if (done) break
+  num++
+}
+
+console.log(num) // 8
+```
+
+정표현식에 일치하는 문자열은 8개이므로 8개의 iterator 형식으로 반환되었다. 그래서 나는 총 8번 집에 가고싶었던것이다...
+
+## BigInt
+
+JS에서는 큰 숫자를 표현하는데 문제가있었다. 2^53-1보다 큰 숫자를 처리할 수 없었는데 BigInt객체가 도입되며 처리할 수 있게되었다.
+
+숫자뒤에 n을 붙이면된다
+
+## Promise.allSettled
+
+Promise.all 의 아쉬운점이 여러 프라미스중 하나만 실패해도 catch로 이동하는 점이 아쉬웠다.
+
+```js
+const fetchFirstData = () => new Promise((resolve, reject) => resolve('성공'))
+const fetchSecondData = () => new Promise((resolve, reject) => reject('실패'))
+const fetchThirdData = () => new Promise((resolve, reject) => resolve('성공'))
+
+Promise.allSettled([fetchFirstData(), fetchSecondData(), fetchThirdData()]).then((res) => {
+  console.log(res[0]) // { status: 'fulfilled', value: '성공' }
+  console.log(res[1]) // { status: 'rejected', reason: '실패' }
+  console.log(res[2]) // { status: 'fulfilled', value: '성공' }
+})
+```
+
+Promise.allSettled를 사용하면 개별적으로 성공여부를 알려준다. 성공한 경우 status는 fulfilled를 실패한 경우 rejected로 반환한다.
+
+## globalThis
+
+기존의 브라우저의 전역객체는 window, 노드는 global이었기 때문에 분기처리를 해줘야했던 경우가있었는데 globalThis라는 것으로 통일되었다
+
+```js
+const isServer = globalThis !== window
+```
+
+## Optional Chaining
+
+옵셔널 체이닝이 생기기 이전에는 a 객체의 b 프로퍼티를 참조하려할때 `a.b`로 했었지만 만약 a가 객체가 아닐경우 에러를 만나게되었다<br/>
+`Uncaught TypeError: Cannot read properties of undefined (reading 'b')`
+
+이를 `a && a.b` 이렇게 작성했었는데 객체의 depth가 길어질수록 보기 안좋았었다.
+
+옵셔널 체이닝이 생기며 `a?.b`로 사용이 가능해지며 코드가 간결해졌다.
+
+## Nullish coalescing
+
+널 병합기능으로 옵셔널 체이닝과 같이 편의성을 위해 추가되었다.
+
+Nullish coalescing를 사용하면 null과 undefined인 경우에만 거짓으로 처리되니 boolean값과 분리하여 사용할수있어 편리하다.
+
+```js
+console.log(
+  false || 'hello', // false
+  '' || 'hello', // ""
+  null || 'hello', // "hello"
+  undefined || 'hello' // "hello"
+)
+```
+
+# ES2021
+
+## replaceAll
+
+문자열을 한번에 여러개 바꿀 수있는 기능이다. 이전에는 정규표현식으로 사용했어야했다
+
+```js
+const string = 'hello, my name is Park Jun Hyeong'
+
+console.log(string.replaceAll(',', ' ')) // 최신 방법
+console.log(string.replace(/,/g, ' ')) // 이전 방법
+```
+
+## Promise.any
+
+여러개의 프라미스 중에 하나라도 통과하면 resolve 모두 실패할 경우 reject된다.
+
+```js
+const Promises = [Promise.reject(1), Promise.reject(3), Promise.resolve(5)]
+
+Promise.any(Promises).then((res) => console.log(res === 5)) // Promise.resolve(5)가 가장 먼저 성공한다.
+
+Promise.any(Promises).catch((err) => console.log(err)) // AggregationError
+```
+
+race와 헷갈릴수있지만 race는 실패하던 성공하던 상관없이 가장 먼저 끝나는 것을 resolve하기때문에 any는 반드시 성공하는것이 resolve된다.
+
+그래서 `Promises`요소중 `Promise.reject(1)`가 가장 먼저 종료되지만 `Promise.resolve(5)`가 가장 먼저 성공하는것이다
+
+## Logical Assignment
+
+기존에 사용하던 논리연산자에 할당문이 붙은거다. 잘쓰지는 않았던 문법이라 생소하긴하다.
+
+```js
+a = a || 2
+
+a ||= 2
+```
+
+## Numeric Separators
+
+1000000을 보기 힘든경우가 있다. 보통 천의자리마다 끊어줘서 사용하는게 편한데, 코드로는 어려워서 도입된 기능이다.
+
+1_000_000으로 사용이 가능하다.
+
+# ES2022
+
+## Class 속성
+
+메서드가 아닌 클래스 속성을 아래와 같이 사용할수 있게 되었다
+
+```js
+class User {
+  name = 'BBAKJUN'
+  #age = 28
+  static isHuman = false
+}
+
+console.log(new User().name) // "BBAKJUN"
+console.log(new User().age) // undefined
+
+console.log(User.isHuman) // false
+```
+
+private 속성이 추가되었다
+
+클래스 내부에서만 사용이 가능하며, 앞에 `#`를 붙이면 된다.
+
+static 속성은 앞에 `static`을 붙이면된다. 정적메서드혹은 정적멤버로 사용이 가능하다.
+
+```js
+class BBAKJUN {
+  static #is(type) {
+    return type === 'noHuman'
+  }
+
+  #isHuman() {
+    return BBAKJUN.#is('noHuman')
+  }
+  isHuman() {
+    return this.#isHuman()
+  }
+}
+
+console.log(new BBAKJUN().isHuman) // undefined
+console.log(BBAKJUN.is) // undefined
+console.log(new BBAKJUN().isHuman()) // true
+```
+
+## at
+
+배열과 문자열에 at 메서드가 추가되었다.
+
+```js
+const array = [1, 2, 3]
+
+console.log(array.at(2)) // 3
+console.log(array.at(-1)) // 3
+```
+
+## hasOwn
+
+Object에 hasOwn 정적메서드가 추가되었다. 첫번째 인자로 넘겨준 객체의 자기 자신의 속성인지 체크한다.
+
+```js
+const me = { name: 'BBAKJUN' }
+
+Object.hasOwn(me, 'name') // true
+Object.hasOwn(me, 'age') // false
+Object.hasOwn(me, 'job') // false
+```
+
+# ES2023
+
+## findLast, findLastIndex
+
+find 메서드는 배열에서 조건을 만족하는 첫번째 요소를 찾고, findLast는 반대로 마지막 요소를 찾는다.
+
+findLastIndex는 요소대신 인덱스를 찾는다.
+
+```js
+const arr = [1, 2, 3, 1]
+
+arr.find((num) => num === 1) // 1
+arr.findLast는((num) => num === 1) // 1
+arr.findLastIndex는((num) => num === 1) // 3
+```

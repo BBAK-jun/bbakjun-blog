@@ -1,0 +1,149 @@
+---
+title: '바텀업 타입을 활용한 선언적 타입 작성'
+date: '2023-08-27'
+tags: ['DEV', 'REACT']
+draft: false
+summary: '탑다운이 아닌 바텀업 방법을 활용해 선언적타입 작성'
+---
+
+최근 모달을 구현해가며, 전역상태로 관리하는 코드를 작성한적이 있었다.
+
+코드를 작성하며 생각했던 고민과 그 고민을 해결했던 방법을 간단하게 소개해보려한다.
+
+## 문제의 코드
+
+modal Store가 존재하고 store는 state와 state를 변경하는 action으로 분리되어 관리되고있다.
+
+한번 코드를 천천히 살펴보자..!
+
+```ts
+// src/slices/modalSlice.ts
+import { StoreApi } from 'zustand'
+
+type SetState = StoreApi<CreateModalSlice>['setState']
+
+type State = {
+  visible: Record<string, boolean>
+}
+
+type Action = {
+  open: (modalName: string) => void
+  close: (modalName: string) => void
+}
+
+type CreateModalSlice = State & { action: Action }
+
+const initialState: State = {
+  visible: {},
+}
+
+const createModalSlice = (set: SetState): CreateModalSlice => ({
+  ...initialState,
+  action: {
+    open: (modalName) => {
+      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }))
+    },
+    close: (modalName) => {
+      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }))
+    },
+  },
+})
+
+export default createModalSlice
+
+// src/stores/useModalStore.ts
+const useModalStore = create(createModalSlice)
+
+const useModalState = () => {
+  return useModalStore((state) => ({
+    visible: state.visible,
+  }))
+}
+
+const useModalAction = () => {
+  return useModalStore((state) => state.action)
+}
+```
+
+문제는 없어보인다!
+
+이유는 모달의 상태를 제어해주는 상태는 visible이고 <br/>
+visible은 `Record<string, boolean>`이기 때문에 자유로운 모달의 키값을 활용하여 on off가 가능하다.
+
+### 정말 문제가 없을까?
+
+![](/static/images/DEV/declartive_type/code_first.png)
+
+사진으로 확인해보자
+
+visible의 타입은 `Record<string, boolean>`이어서 문제가 발생하고있다.
+
+store를 사용하는 사용처인 컴포넌트는 visible의 키 타입이 너무나 자유분방하여 <br/>
+button을 클릭하면 **create**라는 키값이 on되지만 **visible.crate**라는 오류를 범하고있다.
+
+보이는 문제 그대로 타입의 자유때문에 개발자는 오타임에도 불구하고 컴파일 에러가 발생하지않아, 무엇이 잘못되었는지 알 수 조차 없는 문제가 발생한것이다.
+
+물론 오타를 조심하면된다 ㅋㅋㅋㅋ 하지만 그게 말처럼 쉽지는 않을것이고, 이를 근본적으로 해결하고픈 욕구가 끓어올랐다.
+
+### 그럼 어떻게 해결해볼까?
+
+문제가 발생한 원인은 스토어에서 타입을 string으로 지정하였고 사용처에서는 스토어가 갖고있는 타입을 그대로 사용하는것이 문제라고 했다.
+
+그러면 사용처에서 타입을 강제해버릴 방법이 없을까를 고민하였고 제너릭을 활용해보기로 맘먹게 되었다.
+
+```ts
+type State<T extends string> = {
+  visible: Record<T, boolean>
+}
+
+type Action<T> = {
+  open: (modalName: T) => void
+  close: (modalName: T) => void
+}
+```
+
+원하는 부분은 이곳이다. visible의 key값이 string이 아닌 사용처에서 지정해준 `KeyType`일것이다.
+
+그러면 기존의 코드에서 어떻게 타입을 끌어올려줄지 고민해보면된다.
+
+```ts
+// src/slices/modalSlice.ts
+type CreateModalSlice<T extends string> = State<T> & { action: Action<T> }
+
+const createModalSlice = <T extends string>(set: SetState<T>): CreateModalSlice<T> => ({
+  ...initialState,
+  action: {
+    open: (modalName) => {
+      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }))
+    },
+    close: (modalName) => {
+      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }))
+    },
+  },
+})
+
+// src/stores/useModalStore.ts
+import createModalStore, { CreateModalSlice } from '../slices/ModalSliceBottomUp'
+
+const modalStore = createModalStore<string>()
+
+const useModalStore = <T extends string>() => {
+  return modalStore() as CreateModalSlice<T>
+}
+
+export { useModalStore }
+```
+
+타입단언으로 리턴타입을 명시해주었다. 이로써 사용처에서 타입을 전달하여 modalStore까지 타입이 전달되고 State, Action에 타입이 전달될수있는 구조가 되었다.
+
+### 그렇다면 사용처에서는 어떻게 사용해야할까?
+
+사용처에서 호출될 훅스를 살펴보자
+
+`useModalStore`에서 타입을 받아 slice에게 타입을 던져주면된다. `CreateModalSlice`는 `State`와 `Action`에게 타입을 던져주면 목표 완성이다
+
+![](/static/images/DEV/declartive_type/code_last.png)
+
+사진에서 보다 싶이 ModalName이 잘 들어가는것을 확인할수있다.
+
+이로써 타입의 흐름이 탑다운 방식이 아닌, 바텀업 방식으로 흐르게 되어서 보다 선언적인 코드가 되었다.

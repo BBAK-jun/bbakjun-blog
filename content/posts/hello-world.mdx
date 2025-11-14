@@ -1,0 +1,199 @@
+---
+title: "Hello World - 첫 번째 블로그 포스트"
+date: "2024-11-15"
+description: "Next.js와 MDX로 만든 블로그의 첫 번째 포스트입니다. 코드 하이라이팅과 아름다운 스타일링을 테스트해봅시다!"
+tags: ["nextjs", "mdx", "blog", "typescript"]
+author: "bbakjun"
+draft: false
+---
+
+# 안녕하세요! 👋
+
+이것은 **Next.js 15**와 **MDX**로 만든 블로그의 첫 번째 포스트입니다. 이제 훨씬 더 아름다운 마크다운 렌더링을 지원합니다!
+
+## 🛠️ 기술 스택
+
+이 블로그는 다음과 같은 현대적인 기술 스택으로 구성되어 있습니다:
+
+- **Next.js 15** - 최신 React 프레임워크
+- **TypeScript** - 타입 안전성을 보장하는 언어
+- **MDX** - 마크다운과 React 컴포넌트의 결합
+- **Tailwind CSS** - 유틸리티 우선 CSS 프레임워크
+- **Redis (Vercel KV)** - 실시간 조회수 저장
+- **Vercel** - 서버리스 배포 플랫폼
+
+## 💻 코드 하이라이팅 예시
+
+### JavaScript/TypeScript
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
+class UserService {
+  private users: User[] = [];
+
+  async createUser(userData: Omit<User, 'id'>): Promise<User> {
+    const newUser: User = {
+      id: Math.random(),
+      ...userData
+    };
+
+    this.users.push(newUser);
+    console.log(`사용자 생성됨: ${newUser.name}`)
+
+    return newUser;
+  }
+
+  getUsersByStatus(active: boolean): User[] {
+    return this.users.filter(user => user.isActive === active);
+  }
+}
+
+// 사용법
+const userService = new UserService();
+const user = await userService.createUser({
+  name: "빡준",
+  email: "bbakjun@example.com",
+  isActive: true
+});
+```
+
+### Python
+
+```python
+from typing import List, Optional
+import asyncio
+
+class BlogPost:
+    def __init__(self, title: str, content: str, tags: List[str]):
+        self.title = title
+        self.content = content
+        self.tags = tags
+        self.views = 0
+
+    async def increment_views(self) -> int:
+        """조회수를 비동기적으로 증가시킵니다."""
+        await asyncio.sleep(0.1)  # Redis 호출 시뮬레이션
+        self.views += 1
+        return self.views
+
+    def __str__(self) -> str:
+        return f"📝 {self.title} (조회수: {self.views})"
+
+# 블로그 포스트 생성
+post = BlogPost(
+    title="Hello World",
+    content="첫 번째 포스트입니다!",
+    tags=["nextjs", "python", "tutorial"]
+)
+
+print(post)  # 📝 Hello World (조회수: 0)
+```
+
+### Bash/Shell
+
+```bash
+#!/bin/bash
+
+# 블로그 배포 스크립트
+deploy_blog() {
+    echo "🚀 블로그 배포를 시작합니다..."
+
+    # 의존성 설치
+    npm install
+
+    # 빌드
+    npm run build
+
+    # 테스트
+    if npm test; then
+        echo "✅ 테스트 통과!"
+    else
+        echo "❌ 테스트 실패"
+        exit 1
+    fi
+
+    # Vercel 배포
+    vercel --prod
+
+    echo "🎉 배포 완료!"
+}
+
+deploy_blog
+```
+
+## 📊 테이블 예시
+
+다음은 이 블로그에서 사용하는 기술들의 비교표입니다:
+
+| 기술 | 용도 | 장점 | 단점 |
+|------|------|------|------|
+| Next.js | 프레임워크 | ⚡ 빠른 성능, 🔧 개발자 경험 | 📈 학습 곡선 |
+| TypeScript | 언어 | 🛡️ 타입 안전성, 🐛 버그 예방 | ⏰ 초기 설정 시간 |
+| Tailwind CSS | 스타일링 | 🎨 빠른 스타일링, 📱 반응형 | 📝 HTML 복잡도 증가 |
+| Redis | 데이터베이스 | ⚡ 빠른 속도, 💾 메모리 기반 | 💸 비용, 🔄 영속성 제한 |
+
+## 💡 인용구와 하이라이트
+
+> **중요한 개발 원칙:**
+>
+> "코드는 컴퓨터가 실행하기 위한 것이지만, 사람이 읽기 위해 작성되어야 합니다. 따라서 가독성은 성능보다 더 중요할 수 있습니다."
+>
+> — 마틴 파울러
+
+또 다른 관점에서:
+
+> 💭 **개인적인 생각**
+>
+> 블로그를 만들면서 가장 중요하게 생각한 것은 **글을 쓰고 싶게 만드는 환경**을 구축하는 것이었습니다.
+>
+> 아무리 좋은 기술 스택을 사용해도 글을 쓰지 않으면 의미가 없으니까요! 😄
+
+## ✅ 체크리스트
+
+이 블로그에서 구현된 기능들:
+
+- [x] ✨ MDX 기반 포스트 작성
+- [x] 🎨 아름다운 코드 하이라이팅
+- [x] 👁️ 실시간 조회수 추적
+- [x] 🏷️ 태그 시스템
+- [x] 📱 반응형 디자인
+- [x] 🌙 다크 모드 지원
+- [ ] 🔍 검색 기능
+- [ ] 💬 댓글 시스템
+- [ ] 📡 RSS 피드
+- [ ] 📈 SEO 최적화
+
+## 🎯 다음 단계
+
+앞으로 추가하고 싶은 기능들:
+
+1. **검색 기능** - Algolia 또는 로컬 검색 구현
+2. **댓글 시스템** - Giscus나 Utterances 연동
+3. **RSS 피드** - 구독자들을 위한 피드 생성
+4. **성능 모니터링** - Web Vitals 추적
+5. **다국어 지원** - i18n 구현
+
+---
+
+## 📝 마무리
+
+이제 훨씬 더 예쁜 마크다운 렌더링을 지원하는 블로그가 완성되었습니다!
+
+**주요 개선사항:**
+- 🎨 GitHub 스타일 코드 하이라이팅
+- 🔗 자동 앵커 링크 생성
+- 📊 개선된 테이블 스타일
+- 💬 아름다운 인용구 디자인
+- 🌙 다크 모드 완벽 지원
+
+**읽어주셔서 감사합니다!** 🚀
+
+---
+
+*마지막 업데이트: 2024년 11월 15일*
