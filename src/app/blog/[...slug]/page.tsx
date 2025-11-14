@@ -38,6 +38,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 
   const { frontMatter } = post
 
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/og/${slugString}`
+
   return {
     title: `${frontMatter.title} | DEV_BBAK 블로그`,
     description: frontMatter.description,
@@ -50,11 +52,20 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       publishedTime: frontMatter.date,
       authors: [frontMatter.author || 'bbakjun'],
       tags: frontMatter.tags,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: frontMatter.title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: frontMatter.title,
       description: frontMatter.description,
+      images: [ogImageUrl],
     },
   }
 }
