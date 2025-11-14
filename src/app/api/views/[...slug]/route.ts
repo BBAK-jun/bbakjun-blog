@@ -59,6 +59,28 @@ export async function POST(
       return NextResponse.json({ slug: slugString, views, incremented: false })
     }
 
+    // 세션 ID 확인
+    const sessionId = request.cookies.get('sessionId')?.value
+
+    if (sessionId) {
+      // 세션 기반 조회수 증가 (원자적 연산으로 중복 방지)
+      const [views, incremented] = await ViewCounter.incrementWithSession(
+        sessionId,
+        slugString
+      )
+
+      return NextResponse.json(
+        { slug: slugString, views, incremented },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        }
+      )
+    }
+
+    // 세션 ID가 없는 경우 기존대로 조회수 증가
     const views = await ViewCounter.increment(slugString)
 
     return NextResponse.json(
