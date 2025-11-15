@@ -1,0 +1,107 @@
+/* Mermaid 차트 전용 스타일 */
+
+.mermaid-container {
+  @apply transition-all duration-200 hover:shadow-md;
+}
+
+.mermaid-container svg {
+  max-width: 100% !important;
+  max-height: 400px !important;
+  height: auto !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  transform: scale(0.9);
+  transform-origin: center;
+}
+
+/* 플로우차트 스타일 개선 */
+.mermaid-container .node rect,
+.mermaid-container .node circle,
+.mermaid-container .node ellipse,
+.mermaid-container .node polygon {
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* 시퀀스 다이어그램 스타일 개선 */
+.mermaid-container .actor {
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
+}
+
+.mermaid-container .messageLine0 {
+  stroke-width: 1.5px !important;
+}
+
+/* 클래스 다이어그램 스타일 개선 */
+.mermaid-container .classBox {
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* 간트 차트 스타일 개선 */
+.mermaid-container .task {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
+}
+
+.mermaid-container .taskText {
+  font-weight: 500 !important;
+}
+
+/* 파이 차트 스타일 개선 */
+.mermaid-container .pieCircle {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)) !important;
+}
+
+.mermaid-container .pieTitleText {
+  font-weight: 600 !important;
+  font-size: 18px !important;
+}
+
+/* Git 그래프 스타일 개선 */
+.mermaid-container .commit {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
+}
+
+.mermaid-container .commit-label {
+  font-weight: 500 !important;
+}
+
+/* 텍스트 가독성 향상 */
+.mermaid-container text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.mermaid-container .nodeLabel,
+.mermaid-container .edgeLabel {
+  font-weight: 500 !important;
+}
+
+/* 다크 모드에서의 추가 스타일링 */
+.dark .mermaid-container svg {
+  filter: brightness(0.9) contrast(1.1) !important;
+}
+
+/* 호버 효과 */
+.mermaid-container:hover {
+  transform: translateY(-1px);
+}
+
+/* 반응형 개선 */
+@media (max-width: 768px) {
+  .mermaid-container {
+    @apply p-3;
+  }
+
+  .mermaid-container svg {
+    font-size: 12px !important;
+    transform: scale(0.8) !important;
+    max-height: 300px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .mermaid-container svg {
+    transform: scale(0.7) !important;
+    max-height: 250px !important;
+  }
+}

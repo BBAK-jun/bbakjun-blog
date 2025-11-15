@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
-import { getPostBySlug, getAllPosts } from '@/lib/posts'
+import { getPostBySlug, getAllPosts, getRelatedPosts } from '@/lib/posts'
 import ViewCounter from '@/components/ViewCounter'
 import ShareButton from '@/components/ShareButton'
+import ReadingProgress from '@/components/ReadingProgress'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { processMarkdown } from '@/lib/markdown'
@@ -9,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import Comments, { CommentsConfig } from '@/components/Comments'
+import MermaidRenderer from '@/components/MermaidRenderer'
+import RelatedPosts from '@/components/RelatedPosts'
 
 interface PostPageProps {
   params: Promise<{
@@ -91,9 +94,12 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const htmlContent = await processMarkdown(content)
+  const relatedPosts = getRelatedPosts(post, 4)
 
   return (
-    <article className="max-w-4xl mx-auto">
+    <>
+      <ReadingProgress />
+      <article className="max-w-4xl mx-auto">
       {/* 포스트 헤더 */}
       <header className="mb-10">
         <div className="mb-6">
@@ -150,6 +156,9 @@ export default async function PostPage({ params }: PostPageProps) {
         dangerouslySetInnerHTML={{ __html: htmlContent }}
       />
 
+      {/* Mermaid 차트 렌더링 */}
+      <MermaidRenderer content={htmlContent} />
+
       {/* 포스트 푸터 */}
       <footer>
         <Separator className="mb-8" />
@@ -164,7 +173,12 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
         </div>
 
-        {/* 관련 포스트 (간단한 구현) */}
+        {/* 연관 포스트 */}
+        <div className="mb-16">
+          <RelatedPosts posts={relatedPosts} />
+        </div>
+
+        {/* 다른 포스트 둘러보기 */}
         <div className="text-center space-y-4 mb-16">
           <h3 className="text-xl font-bold text-foreground">
             다른 포스트 둘러보기
@@ -192,6 +206,7 @@ export default async function PostPage({ params }: PostPageProps) {
         </section>
       </footer>
     </article>
+    </>
   )
 }
 

@@ -7,6 +7,7 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeStringify from 'rehype-stringify'
 import type { Element } from 'hast'
+import { rehypeMermaid } from './rehype-mermaid'
 
 // 마크다운을 HTML로 변환하는 함수
 export async function processMarkdown(content: string): Promise<string> {
@@ -49,6 +50,7 @@ export async function processMarkdown(content: string): Promise<string> {
       detect: true,
       ignoreMissing: true,
     }) // 코드 하이라이팅
+    .use(rehypeMermaid) // Mermaid 차트 처리
     .use(rehypeStringify, { allowDangerousHtml: true }) // HTML 문자열로 변환
 
   const result = await processor.process(content)
