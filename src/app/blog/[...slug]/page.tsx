@@ -4,6 +4,7 @@ import ViewCounter from '@/components/ViewCounter'
 import ShareButton from '@/components/ShareButton'
 import ReadingProgress from '@/components/ReadingProgress'
 import TableOfContents from '@/components/TableOfContents'
+import PopularPosts from '@/components/PopularPosts'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { processMarkdown } from '@/lib/markdown'
@@ -222,11 +223,17 @@ export default async function PostPage({ params }: PostPageProps) {
       </footer>
         </article>
 
-        {/* 사이드바 - 목차 */}
+        {/* 사이드바 - 목차 및 인기 글 */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
-          <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+          <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto space-y-6">
+            {/* 목차 */}
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
               <TableOfContents />
+            </div>
+
+            {/* 인기 글 */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+              <PopularPosts limit={5} compact={true} />
             </div>
           </div>
         </aside>

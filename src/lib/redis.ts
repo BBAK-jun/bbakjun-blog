@@ -170,13 +170,17 @@ export class ViewCounter {
 
       slugs.forEach((slug, index) => {
         const result = results?.[index]
-        if (result && Array.isArray(result) && result[0] === null) {
-          // pipeline.exec()는 [error, result] 튜플을 반환
-          const value = result[1]
-          viewCounts[slug] = value ? Number(value) : 0
-        } else {
-          viewCounts[slug] = 0
+        let views = 0
+
+        // Redis pipeline 결과는 [error, value] 형태
+        if (result && Array.isArray(result)) {
+          const [error, value] = result
+          if (!error && value !== null) {
+            views = Number(value) || 0
+          }
         }
+
+        viewCounts[slug] = views
       })
 
       return viewCounts
@@ -196,19 +200,17 @@ export class ViewCounter {
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`)
       if (keys.length === 0) return 0
 
-      const pipeline = redis.multi()
-      keys.forEach(key => {
-        pipeline.hGet(key, 'views')
-      })
-
-      const results = await pipeline.exec()
-      const total = results?.reduce((sum: number, result: unknown) => {
-        if (result && Array.isArray(result) && result[0] === null) {
-          const value = result[1]
-          return sum + (value ? Number(value) : 0)
+      // 직접 조회 방식 (더 안정적)
+      let total = 0
+      for (const key of keys) {
+        try {
+          const views = await redis.hGet(key, 'views')
+          total += views ? Number(views) : 0
+        } catch (error) {
+          // 개별 키 조회 실패 시 무시하고 계속
+          continue
         }
-        return sum
-      }, 0) || 0
+      }
 
       return total
     } catch (error) {
@@ -224,29 +226,28 @@ export class ViewCounter {
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`)
       if (keys.length === 0) return []
 
-      const pipeline = redis.multi()
-      keys.forEach(key => {
-        pipeline.hGet(key, 'views')
-      })
+      // 직접 조회 방식 (더 안정적)
+      const posts = []
+      for (const key of keys) {
+        try {
+          const views = await redis.hGet(key, 'views')
+          const viewCount = views ? Number(views) : 0
 
-      const results = await pipeline.exec()
-      const posts = keys
-        .map((key, index) => {
-          const result = results?.[index]
-          let views = 0
-          if (result && Array.isArray(result) && result[0] === null) {
-            const value = result[1]
-            views = value ? Number(value) : 0
-          }
-          return {
+          posts.push({
             slug: key.replace(this.VIEW_KEY_PREFIX, ''),
-            views
-          }
-        })
-        .sort((a, b) => b.views - a.views)
-        .slice(0, limit)
+            views: viewCount
+          })
+        } catch (error) {
+          posts.push({
+            slug: key.replace(this.VIEW_KEY_PREFIX, ''),
+            views: 0
+          })
+        }
+      }
 
       return posts
+        .sort((a, b) => b.views - a.views)
+        .slice(0, limit)
     } catch (error) {
       console.error('Failed to get popular posts:', error)
       return []

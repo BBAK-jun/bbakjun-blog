@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
 import PostCard from '@/components/PostCard'
+import PopularPosts from '@/components/PopularPosts'
 import { Button } from '@/components/ui/button'
 
 export default function Home() {
@@ -31,33 +32,64 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent Posts Section */}
-      <section>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-foreground">
-            최근 포스트
-          </h2>
-          <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
-            <Link href="/blog">
-              전체 보기 →
-            </Link>
-          </Button>
+      {/* Popular Posts Section */}
+      <section className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-foreground">
+              최근 포스트
+            </h2>
+            <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
+              <Link href="/blog">
+                전체 보기 →
+              </Link>
+            </Button>
+          </div>
+
+          {featuredPosts.length > 0 ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {featuredPosts.slice(0, 6).map((post) => (
+                <PostCard key={post.slug} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg">
+                아직 포스트가 없습니다. 첫 번째 포스트를 작성해보세요!
+              </p>
+            </div>
+          )}
         </div>
 
-        {featuredPosts.length > 0 ? (
+        {/* Sidebar */}
+        <div className="space-y-8">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+            <PopularPosts limit={5} />
+          </div>
+        </div>
+      </section>
+
+      {/* More Recent Posts Section */}
+      {featuredPosts.length > 6 && (
+        <section>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-foreground">
+              더 많은 포스트
+            </h2>
+            <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
+              <Link href="/blog">
+                전체 보기 →
+              </Link>
+            </Button>
+          </div>
+
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featuredPosts.map((post) => (
+            {featuredPosts.slice(6).map((post) => (
               <PostCard key={post.slug} post={post} />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              아직 포스트가 없습니다. 첫 번째 포스트를 작성해보세요!
-            </p>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   )
 }
