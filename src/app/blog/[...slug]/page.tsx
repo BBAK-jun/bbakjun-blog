@@ -3,6 +3,7 @@ import { getPostBySlug, getAllPosts, getRelatedPosts } from '@/lib/posts'
 import ViewCounter from '@/components/ViewCounter'
 import ShareButton from '@/components/ShareButton'
 import ReadingProgress from '@/components/ReadingProgress'
+import TableOfContents from '@/components/TableOfContents'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { processMarkdown } from '@/lib/markdown'
@@ -99,7 +100,9 @@ export default async function PostPage({ params }: PostPageProps) {
   return (
     <>
       <ReadingProgress />
-      <article className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto flex gap-8">
+        {/* 메인 콘텐츠 */}
+        <article className="flex-1 max-w-4xl">
       {/* 포스트 헤더 */}
       <header className="mb-10">
         <div className="mb-6">
@@ -148,6 +151,18 @@ export default async function PostPage({ params }: PostPageProps) {
         )}
 
         <Separator className="my-8" />
+
+        {/* 모바일 목차 */}
+        <div className="lg:hidden mb-8">
+          <details className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <summary className="p-4 cursor-pointer font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-t-lg">
+              📑 목차 보기
+            </summary>
+            <div className="p-4 pt-0 border-t border-gray-200 dark:border-gray-700">
+              <TableOfContents />
+            </div>
+          </details>
+        </div>
       </header>
 
       {/* 포스트 내용 */}
@@ -205,7 +220,17 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
         </section>
       </footer>
-    </article>
+        </article>
+
+        {/* 사이드바 - 목차 */}
+        <aside className="hidden lg:block w-64 flex-shrink-0">
+          <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+              <TableOfContents />
+            </div>
+          </div>
+        </aside>
+      </div>
     </>
   )
 }
