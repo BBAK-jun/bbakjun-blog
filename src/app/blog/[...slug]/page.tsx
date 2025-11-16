@@ -101,9 +101,10 @@ export default async function PostPage({ params }: PostPageProps) {
   return (
     <>
       <ReadingProgress />
-      <div className="max-w-7xl mx-auto flex gap-8">
-        {/* 메인 콘텐츠 */}
-        <article className="flex-1 max-w-4xl">
+      <div className="mx-auto">
+        <div className="flex flex-col xl:flex-row gap-8">
+          {/* 메인 콘텐츠 */}
+          <article className="flex-1 min-w-0">
       {/* 포스트 헤더 */}
       <header className="mb-10">
         <div className="mb-6">
@@ -154,7 +155,7 @@ export default async function PostPage({ params }: PostPageProps) {
         <Separator className="my-8" />
 
         {/* 모바일 목차 */}
-        <div className="lg:hidden mb-8">
+        <div className="xl:hidden mb-8">
           <details className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
             <summary className="p-4 cursor-pointer font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-t-lg">
               📑 목차 보기
@@ -223,20 +224,21 @@ export default async function PostPage({ params }: PostPageProps) {
       </footer>
         </article>
 
-        {/* 사이드바 - 목차 및 인기 글 */}
-        <aside className="hidden lg:block w-64 flex-shrink-0">
-          <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto space-y-6">
-            {/* 목차 */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
-              <TableOfContents />
-            </div>
+          {/* 사이드바 - 목차 및 인기 글 */}
+          <aside className="hidden xl:block xl:w-64 xl:flex-shrink-0">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto space-y-6">
+              {/* 목차 */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                <TableOfContents />
+              </div>
 
-            {/* 인기 글 */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
-              <PopularPosts limit={5} compact={true} />
+              {/* 인기 글 */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                <PopularPosts limit={5} compact={true} />
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
     </>
   )

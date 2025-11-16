@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
 import PostCard from '@/components/PostCard'
-import PopularPosts from '@/components/PopularPosts'
 import PopularPostsGrid from '@/components/PopularPostsGrid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
