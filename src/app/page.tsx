@@ -2,11 +2,13 @@ import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
 import PostCard from '@/components/PostCard'
 import PopularPosts from '@/components/PopularPosts'
+import PopularPostsGrid from '@/components/PopularPostsGrid'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 export default function Home() {
   const posts = getAllPosts()
-  const featuredPosts = posts.slice(0, 12) // 최신 6개 포스트만 표시
+  const featuredPosts = posts.slice(0, 12) // 최신 포스트
 
   return (
     <div className="space-y-16">
@@ -32,64 +34,90 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Posts Section */}
-      <section className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-2">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-foreground">
-              최근 포스트
-            </h2>
-            <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
-              <Link href="/blog">
-                전체 보기 →
-              </Link>
-            </Button>
-          </div>
+      {/* Tabbed Posts Section */}
+      <section className="grid md:grid-cols-4 gap-8">
+        <div className="md:col-span-4">
+          <Tabs defaultValue="recent" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="recent" className="text-base font-medium">
+                📅 최신글
+              </TabsTrigger>
+              <TabsTrigger value="popular" className="text-base font-medium">
+                🔥 인기글
+              </TabsTrigger>
+            </TabsList>
 
-          {featuredPosts.length > 0 ? (
-            <div className="grid gap-6 lg:grid-cols-2">
-              {featuredPosts.slice(0, 6).map((post) => (
-                <PostCard key={post.slug} post={post} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">
-                아직 포스트가 없습니다. 첫 번째 포스트를 작성해보세요!
-              </p>
-            </div>
-          )}
+            <TabsContent value="recent">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    최신 포스트
+                  </h2>
+                  <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
+                    <Link href="/blog">
+                      전체 보기 →
+                    </Link>
+                  </Button>
+                </div>
+
+                {featuredPosts.length > 0 ? (
+                  <>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      {featuredPosts.slice(0, 6).map((post) => (
+                        <PostCard key={post.slug} post={post} />
+                      ))}
+                    </div>
+
+                    {/* More Recent Posts */}
+                    {featuredPosts.length > 6 && (
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-foreground border-t border-gray-200 dark:border-gray-700 pt-8">
+                          더 많은 포스트
+                        </h3>
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                          {featuredPosts.slice(6).map((post) => (
+                            <PostCard key={post.slug} post={post} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                      아직 포스트가 없습니다. 첫 번째 포스트를 작성해보세요!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="popular">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    인기 포스트
+                  </h2>
+                  <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
+                    <Link href="/blog">
+                      전체 보기 →
+                    </Link>
+                  </Button>
+                </div>
+
+                <PopularPostsGrid limit={12} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-8">
+        {/* <div className="space-y-8">
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
             <PopularPosts limit={5} />
           </div>
-        </div>
+        </div> */}
       </section>
-
-      {/* More Recent Posts Section */}
-      {featuredPosts.length > 6 && (
-        <section>
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-foreground">
-              더 많은 포스트
-            </h2>
-            <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
-              <Link href="/blog">
-                전체 보기 →
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featuredPosts.slice(6).map((post) => (
-              <PostCard key={post.slug} post={post} />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   )
 }
