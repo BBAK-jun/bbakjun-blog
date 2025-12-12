@@ -4,7 +4,7 @@ import matter from 'gray-matter'
 import readingTime from 'reading-time'
 import type { Post, PostMatter } from '@repo/types'
 
-const postsDirectory = path.join(process.cwd(), 'content/posts')
+const postsDirectory = path.join(process.cwd(), '../../packages/content/posts')
 
 function getAllMdxFiles(dir: string, relativePath: string = ''): string[] {
   if (!fs.existsSync(dir)) {

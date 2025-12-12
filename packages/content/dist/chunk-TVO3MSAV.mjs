@@ -1,59 +1,19 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
 // src/posts.ts
-var posts_exports = {};
-__export(posts_exports, {
-  getAllPosts: () => getAllPosts,
-  getAllPostsIncludingDrafts: () => getAllPostsIncludingDrafts,
-  getAllTags: () => getAllTags,
-  getPostBySlug: () => getPostBySlug,
-  getPostSlugs: () => getPostSlugs,
-  getPostsByTag: () => getPostsByTag,
-  getRelatedPosts: () => getRelatedPosts
-});
-module.exports = __toCommonJS(posts_exports);
-var import_fs = __toESM(require("fs"));
-var import_path = __toESM(require("path"));
-var import_gray_matter = __toESM(require("gray-matter"));
-var import_reading_time = __toESM(require("reading-time"));
-var postsDirectory = import_path.default.join(process.cwd(), "content/posts");
+import fs from "fs";
+import path from "path";
+import matter from "gray-matter";
+import readingTime from "reading-time";
+var postsDirectory = path.join(process.cwd(), "content/posts");
 console.log(postsDirectory);
 function getAllMdxFiles(dir, relativePath = "") {
-  if (!import_fs.default.existsSync(dir)) {
+  if (!fs.existsSync(dir)) {
     return [];
   }
-  const items = import_fs.default.readdirSync(dir);
+  const items = fs.readdirSync(dir);
   let files = [];
   for (const item of items) {
-    const fullPath = import_path.default.join(dir, item);
-    const stat = import_fs.default.statSync(fullPath);
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
       const subPath = relativePath ? `${relativePath}/${item}` : item;
       files = files.concat(getAllMdxFiles(fullPath, subPath));
@@ -74,13 +34,13 @@ function getPostSlugs() {
 }
 function getPostBySlug(slug) {
   try {
-    let fullPath = import_path.default.join(postsDirectory, slug, "index.mdx");
-    if (!import_fs.default.existsSync(fullPath)) {
-      fullPath = import_path.default.join(postsDirectory, `${slug}.mdx`);
+    let fullPath = path.join(postsDirectory, slug, "index.mdx");
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(postsDirectory, `${slug}.mdx`);
     }
-    const fileContents = import_fs.default.readFileSync(fullPath, "utf8");
-    const { data, content } = (0, import_gray_matter.default)(fileContents);
-    const readingTimeStats = (0, import_reading_time.default)(content);
+    const fileContents = fs.readFileSync(fullPath, "utf8");
+    const { data, content } = matter(fileContents);
+    const readingTimeStats = readingTime(content);
     return {
       slug,
       frontMatter: data,
@@ -164,13 +124,13 @@ function getRelatedPosts(currentPost, maxPosts = 4) {
     return b.score - a.score;
   }).slice(0, maxPosts).map((item) => item.post);
 }
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
+
+export {
+  getPostSlugs,
+  getPostBySlug,
   getAllPosts,
   getAllPostsIncludingDrafts,
-  getAllTags,
-  getPostBySlug,
-  getPostSlugs,
   getPostsByTag,
+  getAllTags,
   getRelatedPosts
-});
+};

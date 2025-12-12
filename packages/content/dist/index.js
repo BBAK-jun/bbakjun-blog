@@ -48,6 +48,7 @@ var import_path = __toESM(require("path"));
 var import_gray_matter = __toESM(require("gray-matter"));
 var import_reading_time = __toESM(require("reading-time"));
 var postsDirectory = import_path.default.join(process.cwd(), "content/posts");
+console.log(postsDirectory);
 function getAllMdxFiles(dir, relativePath = "") {
   if (!import_fs.default.existsSync(dir)) {
     return [];

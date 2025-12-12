@@ -6,7 +6,7 @@ import {
   getPostSlugs,
   getPostsByTag,
   getRelatedPosts
-} from "./chunk-LN475WPO.mjs";
+} from "./chunk-TVO3MSAV.mjs";
 export {
   getAllPosts,
   getAllPostsIncludingDrafts,
