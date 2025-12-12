@@ -3,7 +3,12 @@
 ## 1. 개요
 
 ### 목표
-개발자가 로컬에서 마크다운 파일을 편집하고, 백오피스 UI를 통해 Azure Blob Storage에 직접 업로드할 수 있는 관리 시스템 구축
+독립적인 **blog-admin** 애플리케이션에서 개발자가 마크다운 파일을 편집하고, 백오피스 UI를 통해 Azure Blob Storage에 직접 업로드할 수 있는 관리 시스템 구축
+
+### 아키텍처 결정
+- **blog**: 공개 블로그 (포트 3000)
+- **blog-admin**: 관리자 대시보드 (포트 3001) - 별도 배포
+- **packages**: 두 앱에서 공유하는 라이브러리
 
 ### 핵심 기능
 - 로컬 마크다운 파일 브라우징 및 선택
@@ -17,65 +22,70 @@
 ## 2. 기술 스택
 
 ### 프론트엔드
-- **프레임워크**: Next.js 16 (현재 스택 재사용)
+- **프레임워크**: Next.js 16 (blog-admin 전용 앱)
 - **UI 라이브러리**: React 19 + Radix UI (기존 컴포넌트 활용)
 - **마크다운 렌더링**: @repo/content (processMarkdown 재사용)
-- **상태 관리**: React hooks (localStorage 활용)
+- **상태 관리**: React hooks + localStorage
 - **HTTP 클라이언트**: fetch API
+- **포트**: 3001 (blog는 3000)
 
 ### 백엔드
 - **런타임**: Node.js 24
 - **프레임워크**: Next.js API Routes (기존 구조 활용)
 - **인증**: Bearer Token (간단한 API Key 방식)
 - **파일 처리**: FormData + multipart/form-data
-- **Blob Storage**: Azure Blob Storage SDK
+- **Blob Storage**: Vercel Blob SDK (@vercel/blob)
 
 ### 인프라
 - **배포**: Vercel (현재 배포 환경 재사용)
 - **환경 변수**: .env.local
-- **스토리지**: Azure Blob Storage
-- **CDN**: Azure CDN (선택사항)
+- **스토리지**: Vercel Blob Storage
+- **CDN**: Vercel의 기본 CDN 포함
 
 ---
 
 ## 3. 아키텍처
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Backoffice UI                        │
-│  (/apps/blog/src/app/admin/backoffice)                  │
-│                                                         │
-│  - File Selector                                        │
-│  - Markdown Editor                                      │
-│  - Preview Pane                                         │
-│  - Upload Queue                                         │
-│  - Upload History                                       │
-└──────────────────┬──────────────────────────────────────┘
-                   │
-         HTTP POST/GET requests
-                   │
-┌──────────────────▼──────────────────────────────────────┐
-│                API Routes                               │
-│  (/apps/blog/src/app/api/admin/*)                       │
-│                                                         │
-│  - POST /api/admin/upload    (마크다운 업로드)          │
-│  - GET  /api/admin/files     (파일 목록 조회)           │
-│  - GET  /api/admin/history   (업로드 이력)              │
-│  - DELETE /api/admin/file/:id (파일 삭제)               │
-│  - POST /api/admin/restore   (버전 복원)                │
-└──────────────────┬──────────────────────────────────────┘
-                   │
-         Azure SDK calls
-                   │
-┌──────────────────▼──────────────────────────────────────┐
-│             Azure Blob Storage                          │
-│                                                         │
-│  Container: blog-markdown                               │
-│  ├─ DEV/                                                │
-│  ├─ REACT/                                              │
-│  ├─ JS/                                                 │
-│  └─ ...versions/                                        │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              Monorepo (pnpm workspaces)                  │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  apps/blog          (포트 3000 - 공개 블로그)            │
+│  ├─ /blog/*         (포스트 페이지)                      │
+│  ├─ /api/views      (뷰 카운팅 API)                      │
+│  └─ /api/og         (OG 이미지 생성)                     │
+│                                                          │
+│  apps/blog-admin    (포트 3001 - 관리 대시보드)          │
+│  ├─ /dashboard      (마크다운 관리 UI)                   │
+│  └─ /api/admin/*    (어드민 API 엔드포인트)             │
+│      ├─ /upload     (파일 업로드)                        │
+│      ├─ /files      (파일 목록)                          │
+│      ├─ /history    (업로드 이력)                        │
+│      └─ /restore    (버전 복원)                          │
+│                                                          │
+│  packages/                 (공유 패키지)                 │
+│  ├─ @repo/analytics        (Redis 뷰 트래킹)             │
+│  ├─ @repo/content          (MDX 처리)                    │
+│  ├─ @repo/types            (공유 타입)                   │
+│  ├─ @repo/ui               (UI 컴포넌트)                 │
+│  └─ @repo/config           (공유 설정)                   │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+              ↓ Azure SDK (blog-admin에서만)
+        ┌─────────────────────────────────┐
+        │   Azure Blob Storage            │
+        │   blog-markdown container       │
+        ├─────────────────────────────────┤
+        │  DEV/                           │
+        │  ├─ my-post.mdx                 │
+        │  ├─ .metadata.json              │
+        │  └─ .versions/                  │
+        │                                 │
+        │  REACT/                         │
+        │  ├─ my-post.mdx                 │
+        │  └─ .metadata.json              │
+        └─────────────────────────────────┘
 ```
 
 ---
@@ -404,19 +414,23 @@ Response:
 ## 9. 환경 변수
 
 ```env
-# Azure Blob Storage
-AZURE_STORAGE_ACCOUNT_NAME=your-storage-account
-AZURE_STORAGE_ACCOUNT_KEY=your-account-key
-AZURE_STORAGE_CONTAINER=blog-markdown
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
 
 # Backoffice 보안
 BACKOFFICE_API_KEY=your-secret-api-key
-BACKOFFICE_SECRET=your-secret-key
 
 # 기타
 MAX_FILE_SIZE=10485760  # 10MB (bytes)
 ALLOWED_FILE_TYPES=md,mdx
 ```
+
+### 환경 변수 획득 방법
+
+**BLOB_READ_WRITE_TOKEN**:
+1. Vercel 프로젝트 대시보드 접속
+2. Settings → Storage → Create Database (Blob 선택)
+3. .env.local에 자동 생성된 토큰 복사
 
 ---
 

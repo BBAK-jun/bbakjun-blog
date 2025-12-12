@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:blog": "turbo run dev --filter=blog",
+    "dev:admin": "turbo run dev --filter=blog-admin",
+    "dev:all": "turbo run dev --filter=blog --filter=blog-admin",
     "dev:dashboard": "turbo run dev --filter=dashboard",
     "build": "turbo run build",
     "build:blog": "turbo run build --filter=blog",
+    "build:admin": "turbo run build --filter=blog-admin",
     "build:dashboard": "turbo run build --filter=dashboard",
     "start": "turbo run start",
     "lint": "turbo run lint",
