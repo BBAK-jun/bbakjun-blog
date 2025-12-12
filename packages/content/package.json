@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@types/hast": "^3",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "typescript": "^5"
   }
 }
