@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import { ArrowLeft, Save, Eye, Code } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
 import "../../../markdown.css";
@@ -33,7 +33,6 @@ function EditPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Editing states
   const [title, setTitle] = useState("");
@@ -161,10 +160,8 @@ function EditPageContent() {
 
   const handleContentChange = (value: string) => {
     setContent(value);
-    // Debounce preview updates
-    if (showPreview) {
-      updatePreview(value);
-    }
+    // Auto-update preview
+    updatePreview(value);
   };
 
   const handleSave = async () => {
@@ -283,31 +280,6 @@ function EditPageContent() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setShowPreview(!showPreview);
-              if (!showPreview) {
-                updatePreview(content);
-              }
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              showPreview
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-            }`}
-          >
-            {showPreview ? (
-              <>
-                <Code className="w-4 h-4" />
-                <span>편집</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4" />
-                <span>미리보기</span>
-              </>
-            )}
-          </button>
-          <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
@@ -401,20 +373,16 @@ function EditPageContent() {
         </div>
       </div>
 
-      {/* Content Editor */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {showPreview ? "미리보기" : "마크다운 편집"}
-          </h2>
-        </div>
-        <div className="p-0">
-          {showPreview ? (
-            <article
-              className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
-          ) : (
+      {/* Content Editor - Responsive Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Editor Section */}
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              마크다운 편집
+            </h2>
+          </div>
+          <div className="p-0">
             <CodeMirror
               value={content}
               onChange={handleContentChange}
@@ -445,7 +413,22 @@ function EditPageContent() {
                 lintKeymap: true,
               }}
             />
-          )}
+          </div>
+        </div>
+
+        {/* Preview Section */}
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              미리보기
+            </h2>
+          </div>
+          <div className="overflow-auto" style={{ height: '600px' }}>
+            <article
+              className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          </div>
         </div>
       </div>
     </div>
