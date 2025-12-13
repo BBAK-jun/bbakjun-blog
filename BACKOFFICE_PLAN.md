@@ -3,7 +3,9 @@
 ## 1. 개요
 
 ### 목표
-독립적인 **blog-admin** 애플리케이션에서 개발자가 마크다운 파일을 편집하고, 백오피스 UI를 통해 Azure Blob Storage에 직접 업로드할 수 있는 관리 시스템 구축
+독립적인 **blog-admin** 애플리케이션에서 개발자가 마크다운 파일을 편집하고, 백오피스 UI를 통해 Vercel Blob Storage에 직접 업로드할 수 있는 관리 시스템 구축
+
+**현재 상태**: Phase 1-2 부분 완료 (기본 업로드 및 목록 조회 구현)
 
 ### 아키텍처 결정
 - **blog**: 공개 블로그 (포트 3000)
@@ -11,11 +13,24 @@
 - **packages**: 두 앱에서 공유하는 라이브러리
 
 ### 핵심 기능
+
+**✅ 구현 완료**:
+- Blob Storage에 파일 업로드 (POST /api/admin/upload)
+- 파일 목록 조회 (GET /api/admin/files)
+- Bearer Token 인증
+- 파일 검증 (.md/.mdx, 10MB 제한)
+- SHA256 해시 생성
+
+**🔄 진행 중**:
+- 기본 대시보드 UI (로그인, 탭 네비게이션)
+
+**⏳ 계획 중** (향후 구현):
 - 로컬 마크다운 파일 브라우징 및 선택
 - 실시간 마크다운 미리보기
-- Blob Storage에 일괄/개별 업로드
-- 업로드 이력 관리
-- 버전 관리 (이전 버전 복원 가능)
+- Blob Storage에 일괄 업로드
+- 업로드 이력 관리 (GET /api/admin/history)
+- 버전 관리 (POST /api/admin/restore)
+- 파일 삭제 (DELETE /api/admin/file/:id)
 
 ---
 
@@ -72,19 +87,20 @@
 │  └─ @repo/config           (공유 설정)                   │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
-              ↓ Azure SDK (blog-admin에서만)
+              ↓ @vercel/blob SDK (blog-admin만)
         ┌─────────────────────────────────┐
-        │   Azure Blob Storage            │
-        │   blog-markdown container       │
+        │   Vercel Blob Storage           │
+        │   (글로벌 분산 저장소)           │
         ├─────────────────────────────────┤
         │  DEV/                           │
         │  ├─ my-post.mdx                 │
-        │  ├─ .metadata.json              │
-        │  └─ .versions/                  │
+        │  └─ .metadata.json              │
         │                                 │
         │  REACT/                         │
         │  ├─ my-post.mdx                 │
         │  └─ .metadata.json              │
+        │                                 │
+        │  .versions/ (향후 구현)         │
         └─────────────────────────────────┘
 ```
 
@@ -379,35 +395,43 @@ Response:
 
 ## 8. 개발 단계
 
-### Phase 1: 기초 구조 (1-2주)
-- [ ] Next.js 백오피스 페이지 생성
-- [ ] 기본 파일 선택 UI
-- [ ] 마크다운 미리보기 통합
-- [ ] API Routes 스켈레톤
+### Phase 1: 기초 구조 ✅ **완료** (2025-12-12)
+- [x] Next.js 백오피스 페이지 생성
+- [x] 기본 파일 선택 UI (드래그앤드롭 영역)
+- [ ] 마크다운 미리보기 통합 (미구현)
+- [x] API Routes 스켈레톤
+- [x] 기본 대시보드 레이아웃
+- [x] 로그인 페이지
 
-### Phase 2: Blob Storage 연동 (2-3주)
-- [ ] Azure SDK 설정
-- [ ] 파일 업로드 API 구현
-- [ ] 메타데이터 저장 로직
-- [ ] 에러 처리 & 재시도 로직
+### Phase 2: Blob Storage 연동 🔄 **진행 중** (70% 완료)
+- [x] Vercel Blob SDK 설정 (@vercel/blob)
+- [x] 파일 업로드 API 구현 (POST /api/admin/upload)
+- [x] 파일 목록 API 구현 (GET /api/admin/files)
+- [x] 메타데이터 저장 로직
+- [x] SHA256 해시 생성
+- [ ] 에러 처리 강화 (재시도 로직 미구현)
+- [ ] 진행률 표시 (미구현)
 
-### Phase 3: 버전 관리 & 이력 (1-2주)
+### Phase 3: 버전 관리 & 이력 ⏳ **계획 중** (0%)
 - [ ] 버전 관리 시스템
-- [ ] 이력 조회 API
-- [ ] 버전 복원 기능
+- [ ] 이력 조회 API (GET /api/admin/history)
+- [ ] 버전 복원 기능 (POST /api/admin/restore)
+- [ ] 파일 삭제 API (DELETE /api/admin/file/:id)
 - [ ] 이력 UI
 
-### Phase 4: 보안 & 최적화 (1주)
-- [ ] 인증 시스템
-- [ ] 파일 크기/유형 검증
-- [ ] 접근 제어
-- [ ] 성능 최적화
+### Phase 4: 보안 & 최적화 🔄 **일부 완료** (60%)
+- [x] Bearer Token 인증 시스템
+- [x] 파일 크기 검증 (10MB 제한)
+- [x] 파일 유형 검증 (.md/.mdx)
+- [ ] IP 화이트리스트 (미구현)
+- [ ] 성능 최적화 (캐싱 등)
 
-### Phase 5: 배포 & 모니터링 (1주)
-- [ ] 프로덕션 환경 설정
-- [ ] 로깅 & 모니터링
-- [ ] 에러 트래킹
-- [ ] 문서화
+### Phase 5: 배포 & 모니터링 🔄 **일부 완료** (40%)
+- [x] Vercel 배포 준비 완료
+- [x] 환경 변수 설정 가이드
+- [x] 문서화 (API, 설정, 아키텍처, 배포, 개발 가이드)
+- [ ] 로깅 & 모니터링 (기본만)
+- [ ] 에러 트래킹 (미구현)
 
 ---
 
@@ -477,8 +501,65 @@ ALLOWED_FILE_TYPES=md,mdx
 
 ---
 
-## 문서 작성일
-2025-12-12
+---
 
-## 최종 승인
-대기 중...
+## 14. 현재 구현 상태 요약
+
+### ✅ 완료된 기능 (MVP)
+
+| 기능 | 상태 | 구현 위치 |
+|------|------|-----------|
+| 파일 업로드 API | ✅ 완료 | `POST /api/admin/upload` |
+| 파일 목록 API | ✅ 완료 | `GET /api/admin/files` |
+| Bearer Token 인증 | ✅ 완료 | `src/lib/auth.ts` |
+| Vercel Blob 연동 | ✅ 완료 | `src/lib/blob.ts` |
+| 파일 검증 | ✅ 완료 | 형식(.md/.mdx), 크기(10MB) |
+| SHA256 해시 | ✅ 완료 | 파일 무결성 확인 |
+| 기본 대시보드 UI | ✅ 완료 | `src/app/dashboard/page.tsx` |
+| 로그인 페이지 | ✅ 완료 | API 키 입력 |
+| 문서화 | ✅ 완료 | 6개 문서 (API, 설정, 아키텍처 등) |
+
+### 🔄 진행 중
+
+- 대시보드 UI 개선
+- 에러 처리 강화
+
+### ⏳ 미구현 (향후 계획)
+
+| 기능 | 우선순위 | 비고 |
+|------|----------|------|
+| 실시간 마크다운 미리보기 | High | @repo/content 활용 |
+| 파일 삭제 API | High | DELETE /api/admin/file/:id |
+| 업로드 이력 조회 | Medium | GET /api/admin/history |
+| 버전 관리 시스템 | Medium | .versions/ 폴더 |
+| 버전 복원 | Medium | POST /api/admin/restore |
+| 일괄 업로드 | Low | 여러 파일 동시 업로드 |
+| 로컬 파일 브라우저 | Low | File System Access API |
+| 진행률 표시 | Low | Progress bar |
+
+### 📊 전체 진행률
+
+- **Phase 1**: ✅ 90% (기초 구조)
+- **Phase 2**: 🔄 70% (Blob Storage 연동)
+- **Phase 3**: ⏳ 0% (버전 관리)
+- **Phase 4**: 🔄 60% (보안)
+- **Phase 5**: 🔄 40% (배포)
+
+**전체**: ~52% 완료
+
+### 🎯 다음 단계 (우선순위 순)
+
+1. **Vercel 배포 완료** - 프로덕션 환경 테스트
+2. **파일 삭제 API 추가** - DELETE 엔드포인트
+3. **마크다운 미리보기** - @repo/content 통합
+4. **업로드 이력 API** - 버전 추적 시작
+5. **대시보드 UI 개선** - 실제 업로드 기능 연결
+
+---
+
+## 문서 정보
+
+**작성일**: 2025-12-12
+**최종 업데이트**: 2025-12-12
+**버전**: 1.1 (현재 구현 반영)
+**상태**: 🔄 진행 중 (MVP 완료, 추가 기능 개발 중)
