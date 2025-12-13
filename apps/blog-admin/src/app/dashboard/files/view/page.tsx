@@ -142,15 +142,17 @@ export default function FileViewPage() {
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              파일 목록
+            </button>
+          </div>
           <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            파일 목록
-          </button>
-          <button
-            onClick={() => alert("편집 기능은 곧 추가될 예정입니다.")}
+            onClick={() => router.push(`/dashboard/files/edit?pathname=${encodeURIComponent(pathname || "")}`)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
