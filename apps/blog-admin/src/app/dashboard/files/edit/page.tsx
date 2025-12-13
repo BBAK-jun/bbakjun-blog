@@ -44,6 +44,7 @@ function EditPageContent() {
   const [draft, setDraft] = useState(false);
   const [content, setContent] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
+  const [apiKey, setApiKey] = useState<string>("");
 
   useEffect(() => {
     if (!pathname) {
@@ -52,10 +53,35 @@ function EditPageContent() {
       return;
     }
 
-    fetchFileData();
+    // Fetch session to get API key
+    fetchSession();
   }, [pathname]);
 
-  const fetchFileData = async () => {
+  const fetchSession = async () => {
+    try {
+      const response = await fetch("/api/admin/session", {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        setError("세션이 만료되었습니다. 다시 로그인해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      const session = await response.json();
+      setApiKey(session.apiKey);
+
+      // Now fetch file data with API key
+      fetchFileData(session.apiKey);
+    } catch (err) {
+      console.error("Error fetching session:", err);
+      setError("세션을 불러올 수 없습니다.");
+      setLoading(false);
+    }
+  };
+
+  const fetchFileData = async (key: string) => {
     if (!pathname) return;
 
     try {
@@ -66,6 +92,9 @@ function EditPageContent() {
         `/api/admin/file/content?pathname=${encodeURIComponent(pathname)}`,
         {
           credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+          },
         }
       );
 
@@ -105,12 +134,15 @@ function EditPageContent() {
   };
 
   const updatePreview = async (newContent: string) => {
+    if (!apiKey) return;
+
     try {
       const response = await fetch("/api/admin/file/preview", {
         method: "POST",
         credentials: 'include',
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({ content: newContent }),
       });
@@ -179,6 +211,7 @@ function EditPageContent() {
           credentials: 'include',
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
             content: fullContent,
