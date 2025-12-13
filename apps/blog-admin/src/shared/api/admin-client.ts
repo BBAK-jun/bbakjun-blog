@@ -5,30 +5,8 @@
  * Handles API key management and provides typed methods for all endpoints.
  */
 
-export interface FileData {
-  rawContent: string;
-  htmlContent: string;
-  frontMatter: Record<string, any> | null;
-  metadata: {
-    pathname: string;
-    size: number;
-    uploadedAt: string;
-    url: string;
-  };
-}
-
-export interface BlobFile {
-  filename: string;
-  pathname: string;
-  size: number;
-  uploadedAt: string;
-  url: string;
-}
-
-export interface Session {
-  authenticated: boolean;
-  apiKey: string;
-}
+import type { FileData, BlobFile } from "@/entities/file";
+import type { Session } from "@/entities/session";
 
 class AdminApiClient {
   private apiKey: string | null = null;

@@ -4,7 +4,7 @@
  * Public API for frontmatter domain model
  */
 
-export type { FrontMatter } from "./model/types";
+export type { FrontMatter, EditorFormData } from "./model/types";
 export {
   parseFrontMatter,
   serializeFrontMatter,

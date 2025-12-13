@@ -3,27 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Calendar, HardDrive, Loader2, AlertCircle, Edit, Tag } from "lucide-react";
+import type { FileData } from "@/entities/file";
 import "../../../markdown.css";
-
-interface FileData {
-  rawContent: string;
-  htmlContent: string;
-  frontMatter: {
-    title?: string;
-    date?: string;
-    description?: string;
-    tags?: string[];
-    author?: string;
-    draft?: boolean;
-    [key: string]: any;
-  } | null;
-  metadata: {
-    pathname: string;
-    size: number;
-    uploadedAt: string;
-    url: string;
-  };
-}
 
 export default function FileViewPage() {
   const router = useRouter();

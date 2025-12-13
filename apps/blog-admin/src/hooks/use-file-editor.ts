@@ -3,13 +3,9 @@ import { apiClient, type FileData } from "@/shared/api";
 import {
   combineContent,
   parseFrontMatter,
-  type FrontMatter,
+  type EditorFormData,
 } from "@/entities/frontmatter";
 import { useState, useEffect } from "react";
-
-export interface EditorFormData extends Partial<FrontMatter> {
-  content: string;
-}
 
 export function useFileEditor(pathname: string | null) {
   const queryClient = useQueryClient();

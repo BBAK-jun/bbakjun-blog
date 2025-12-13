@@ -5,6 +5,8 @@
  */
 
 export type { BlobFile, FileMetadata, FileContent } from "./model/types";
+// Alias for backward compatibility
+export type { FileContent as FileData } from "./model/types";
 export {
   uploadBlob,
   deleteBlob,

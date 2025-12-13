@@ -6,8 +6,7 @@
 
 export { apiClient } from "./admin-client";
 export { createQueryClient } from "./query-client";
-export type {
-  FileData,
-  BlobFile,
-  Session,
-} from "./admin-client";
+
+// Re-export types from entities for convenience
+export type { FileData, BlobFile } from "@/entities/file";
+export type { Session } from "@/entities/session";

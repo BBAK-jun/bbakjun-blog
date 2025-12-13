@@ -10,3 +10,10 @@ export interface FrontMatter {
   author: string;
   draft?: boolean;
 }
+
+/**
+ * Editor form data combining frontmatter and content
+ */
+export interface EditorFormData extends Partial<FrontMatter> {
+  content: string;
+}
