@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle } from "lucide-react";
+import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import DeleteConfirmModal from "@/components/delete-confirm-modal";
 
 interface BlobFile {
   filename: string;
@@ -15,6 +16,12 @@ export default function FilesPage() {
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [filesError, setFilesError] = useState("");
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    file: BlobFile | null;
+  }>({ isOpen: false, file: null });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   // 페이지 로드 시 파일 목록 조회
   useEffect(() => {
@@ -80,6 +87,71 @@ export default function FilesPage() {
     }).format(date);
   };
 
+  // 삭제 모달 열기
+  const handleDeleteClick = (file: BlobFile) => {
+    setDeleteModal({ isOpen: true, file });
+    setDeleteSuccess(null);
+  };
+
+  // 삭제 모달 닫기
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setDeleteModal({ isOpen: false, file: null });
+    }
+  };
+
+  // 파일 삭제 실행
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.file) return;
+
+    setIsDeleting(true);
+    setFilesError("");
+
+    try {
+      // 세션에서 API 키 가져오기
+      const sessionResponse = await fetch("/api/admin/session");
+      if (!sessionResponse.ok) {
+        setFilesError("인증이 만료되었습니다. 다시 로그인해주세요.");
+        setIsDeleting(false);
+        setDeleteModal({ isOpen: false, file: null });
+        return;
+      }
+
+      const { apiKey } = await sessionResponse.json();
+
+      const response = await fetch(
+        `/api/admin/file?pathname=${encodeURIComponent(deleteModal.file.pathname)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // 성공: 목록에서 제거하고 성공 메시지 표시
+        setFiles((prev) => prev.filter((f) => f.pathname !== deleteModal.file!.pathname));
+        setDeleteSuccess(`${deleteModal.file.filename} 파일이 삭제되었습니다.`);
+        setDeleteModal({ isOpen: false, file: null });
+
+        // 3초 후 성공 메시지 제거
+        setTimeout(() => setDeleteSuccess(null), 3000);
+      } else {
+        setFilesError(result.error || "파일 삭제 중 오류가 발생했습니다.");
+        setDeleteModal({ isOpen: false, file: null });
+      }
+    } catch (error) {
+      setFilesError("서버에 연결할 수 없습니다.");
+      console.error("Delete file error:", error);
+      setDeleteModal({ isOpen: false, file: null });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
       <div className="flex items-center justify-between mb-6">
@@ -109,6 +181,14 @@ export default function FilesPage() {
           )}
         </button>
       </div>
+
+      {/* Success Message */}
+      {deleteSuccess && (
+        <div className="flex items-center gap-2 p-3 mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm text-green-600 dark:text-green-400">{deleteSuccess}</p>
+        </div>
+      )}
 
       {/* Error Message */}
       {filesError && (
@@ -207,9 +287,7 @@ export default function FilesPage() {
                       <button
                         className="p-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         title="삭제"
-                        onClick={() => {
-                          alert("삭제 기능은 곧 추가될 예정입니다.");
-                        }}
+                        onClick={() => handleDeleteClick(file)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -228,6 +306,15 @@ export default function FilesPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        fileName={deleteModal.file?.pathname || ""}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
