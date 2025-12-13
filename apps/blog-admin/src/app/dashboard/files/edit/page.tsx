@@ -63,7 +63,10 @@ function EditPageContent() {
       setError(null);
 
       const response = await fetch(
-        `/api/admin/file/content?pathname=${encodeURIComponent(pathname)}`
+        `/api/admin/file/content?pathname=${encodeURIComponent(pathname)}`,
+        {
+          credentials: 'include',
+        }
       );
 
       if (!response.ok) {
@@ -105,6 +108,7 @@ function EditPageContent() {
     try {
       const response = await fetch("/api/admin/file/preview", {
         method: "POST",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
         },
@@ -172,6 +176,7 @@ function EditPageContent() {
         `/api/admin/file?pathname=${encodeURIComponent(pathname)}`,
         {
           method: "PUT",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },
