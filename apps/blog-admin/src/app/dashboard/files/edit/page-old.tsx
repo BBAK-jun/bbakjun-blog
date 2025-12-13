@@ -1,11 +1,10 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
-import { useFileEditor } from "@/hooks/use-file-editor";
 import "../../../markdown.css";
 
 const CodeMirror = dynamic(
@@ -13,44 +12,231 @@ const CodeMirror = dynamic(
   { ssr: false }
 );
 
+type FileData = {
+  rawContent: string;
+  htmlContent: string;
+  frontMatter: Record<string, any> | null;
+  metadata: {
+    pathname: string;
+    size: number;
+    uploadedAt: string;
+    url: string;
+  };
+};
+
 function EditPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = searchParams.get("pathname");
 
-  const {
-    fileData,
-    isLoading,
-    error,
-    formData,
-    setFormData,
-    previewHtml,
-    save,
-    isSaving,
-  } = useFileEditor(pathname);
+  const [fileData, setFileData] = useState<FileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    save(undefined, {
-      onSuccess: () => {
-        alert("파일이 성공적으로 저장되었습니다");
-        router.push(
-          `/dashboard/files/view?pathname=${encodeURIComponent(pathname || "")}`
-        );
-      },
-      onError: (err) => {
-        alert(err instanceof Error ? err.message : "파일 저장에 실패했습니다");
-      },
-    });
+  // Editing states
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("");
+  const [author, setAuthor] = useState("");
+  const [date, setDate] = useState("");
+  const [draft, setDraft] = useState(false);
+  const [content, setContent] = useState("");
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [apiKey, setApiKey] = useState<string>("");
+
+  useEffect(() => {
+    if (!pathname) {
+      setError("파일 경로가 필요합니다");
+      setLoading(false);
+      return;
+    }
+
+    // Fetch session to get API key
+    fetchSession();
+  }, [pathname]);
+
+  const fetchSession = async () => {
+    try {
+      const response = await fetch("/api/admin/session", {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        setError("세션이 만료되었습니다. 다시 로그인해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      const session = await response.json();
+      setApiKey(session.apiKey);
+
+      // Now fetch file data with API key
+      fetchFileData(session.apiKey);
+    } catch (err) {
+      console.error("Error fetching session:", err);
+      setError("세션을 불러올 수 없습니다.");
+      setLoading(false);
+    }
   };
 
-  if (isLoading) {
+  const fetchFileData = async (key: string) => {
+    if (!pathname) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/admin/file/content?pathname=${encodeURIComponent(pathname)}`,
+        {
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "파일을 불러올 수 없습니다");
+      }
+
+      const data: FileData = await response.json();
+      setFileData(data);
+
+      // Initialize form fields
+      if (data.frontMatter) {
+        setTitle(data.frontMatter.title || "");
+        setDescription(data.frontMatter.description || "");
+        setTags(
+          Array.isArray(data.frontMatter.tags)
+            ? data.frontMatter.tags.join(", ")
+            : data.frontMatter.tags || ""
+        );
+        setAuthor(data.frontMatter.author || "");
+        setDate(data.frontMatter.date || "");
+        setDraft(data.frontMatter.draft === true || data.frontMatter.draft === "true");
+      }
+
+      // Extract content without frontmatter
+      const frontMatterRegex = /^---\n[\s\S]*?\n---\n([\s\S]*)$/;
+      const match = data.rawContent.match(frontMatterRegex);
+      setContent(match ? match[1] : data.rawContent);
+      setPreviewHtml(data.htmlContent);
+    } catch (err) {
+      console.error("Error fetching file:", err);
+      setError(err instanceof Error ? err.message : "파일을 불러올 수 없습니다");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreview = async (newContent: string) => {
+    if (!apiKey) return;
+
+    try {
+      const response = await fetch("/api/admin/file/preview", {
+        method: "POST",
+        credentials: 'include',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ content: newContent }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to generate preview");
+        return;
+      }
+
+      const data = await response.json();
+      setPreviewHtml(data.htmlContent);
+    } catch (error) {
+      console.error("Error generating preview:", error);
+    }
+  };
+
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    // Auto-update preview
+    updatePreview(value);
+  };
+
+  const handleSave = async () => {
+    if (!pathname || !fileData) return;
+
+    try {
+      setSaving(true);
+
+      // Construct frontmatter
+      const frontMatterObj: Record<string, any> = {
+        title,
+        date,
+        description,
+        tags: tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        author,
+      };
+
+      if (draft) {
+        frontMatterObj.draft = true;
+      }
+
+      // Construct full content with frontmatter
+      const frontMatterYaml = Object.entries(frontMatterObj)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
+          }
+          if (typeof value === "boolean") {
+            return `${key}: ${value}`;
+          }
+          return `${key}: "${value}"`;
+        })
+        .join("\n");
+
+      const fullContent = `---\n${frontMatterYaml}\n---\n${content}`;
+
+      const response = await fetch(
+        `/api/admin/file?pathname=${encodeURIComponent(pathname)}`,
+        {
+          method: "PUT",
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            content: fullContent,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "파일 저장에 실패했습니다");
+      }
+
+      alert("파일이 성공적으로 저장되었습니다");
+      router.push(`/dashboard/files/view?pathname=${encodeURIComponent(pathname)}`);
+    } catch (err) {
+      console.error("Error saving file:", err);
+      alert(err instanceof Error ? err.message : "파일 저장에 실패했습니다");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">
-            파일 로딩 중...
-          </p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">파일 로딩 중...</p>
         </div>
       </div>
     );
@@ -60,9 +246,7 @@ function EditPageContent() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">
-            {error instanceof Error ? error.message : "파일을 찾을 수 없습니다"}
-          </p>
+          <p className="text-red-600 dark:text-red-400">{error || "파일을 찾을 수 없습니다"}</p>
           <button
             onClick={() => router.push("/dashboard/files")}
             className="mt-4 text-blue-600 hover:underline"
@@ -97,11 +281,11 @@ function EditPageContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={saving}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? "저장 중..." : "저장"}</span>
+            <span>{saving ? "저장 중..." : "저장"}</span>
           </button>
         </div>
       </div>
@@ -118,10 +302,8 @@ function EditPageContent() {
             </label>
             <input
               type="text"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -131,10 +313,8 @@ function EditPageContent() {
               설명 *
             </label>
             <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
@@ -146,10 +326,8 @@ function EditPageContent() {
             </label>
             <input
               type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -160,10 +338,8 @@ function EditPageContent() {
             </label>
             <input
               type="text"
-              value={formData.author}
-              onChange={(e) =>
-                setFormData({ ...formData, author: e.target.value })
-              }
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -174,16 +350,8 @@ function EditPageContent() {
             </label>
             <input
               type="text"
-              value={Array.isArray(formData.tags) ? formData.tags.join(", ") : ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  tags: e.target.value
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean),
-                })
-              }
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
               placeholder="예: nextjs, react, typescript"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
@@ -193,10 +361,8 @@ function EditPageContent() {
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={formData.draft || false}
-                onChange={(e) =>
-                  setFormData({ ...formData, draft: e.target.checked })
-                }
+                checked={draft}
+                onChange={(e) => setDraft(e.target.checked)}
                 className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -218,10 +384,8 @@ function EditPageContent() {
           </div>
           <div className="p-0">
             <CodeMirror
-              value={formData.content}
-              onChange={(value) =>
-                setFormData({ ...formData, content: value })
-              }
+              value={content}
+              onChange={handleContentChange}
               height="600px"
               theme="dark"
               extensions={[markdown()]}
@@ -259,7 +423,7 @@ function EditPageContent() {
               미리보기
             </h2>
           </div>
-          <div className="overflow-auto" style={{ height: "600px" }}>
+          <div className="overflow-auto" style={{ height: '600px' }}>
             <article
               className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
