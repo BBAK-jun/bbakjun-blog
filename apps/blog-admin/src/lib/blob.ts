@@ -83,13 +83,17 @@ export async function listBlobs(prefix?: string) {
 
 export async function getBlobMetadata(path: string) {
   try {
-    // Use list() with the exact pathname as prefix to find the blob
+    // Extract the folder prefix (everything except the filename)
+    // This optimizes the search by only listing blobs in the same directory
+    const lastSlashIndex = path.lastIndexOf('/');
+    const prefix = lastSlashIndex > 0 ? path.substring(0, lastSlashIndex + 1) : '';
+
     const { blobs } = await list({
-      prefix: path,
-      limit: 1,
+      prefix: prefix || undefined,
+      limit: 100,
     });
 
-    // Find exact match (list returns blobs with prefix, we need exact match)
+    // Find exact match
     const blob = blobs.find((b) => b.pathname === path);
 
     if (!blob) {
