@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
 import DeleteConfirmModal from "@/components/delete-confirm-modal";
 
@@ -15,6 +16,7 @@ interface BlobFile {
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "size-asc" | "size-desc";
 
 export default function FilesPage() {
+  const router = useRouter();
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [filesError, setFilesError] = useState("");
@@ -425,12 +427,15 @@ export default function FilesPage() {
                   }`}
                 >
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => router.push(`/dashboard/files/view?pathname=${encodeURIComponent(file.pathname)}`)}
+                      className="flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 -mx-2 px-2 py-1 rounded transition-colors"
+                    >
                       <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                      <span className="text-sm text-slate-900 dark:text-white font-medium">
+                      <span className="text-sm text-slate-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400">
                         {file.filename}
                       </span>
-                    </div>
+                    </button>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
