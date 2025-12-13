@@ -34,12 +34,18 @@ export async function uploadBlob(
 
 export async function downloadBlob(path: string): Promise<Buffer> {
   try {
-    const blob = await head(path);
-    if (!blob) {
+    // First, get the blob metadata to retrieve the URL
+    const metadata = await getBlobMetadata(path);
+    if (!metadata) {
       throw new Error(`Blob not found: ${path}`);
     }
 
-    const response = await fetch(blob.downloadUrl || blob.url);
+    // Download the blob content using the URL
+    const response = await fetch(metadata.url);
+    if (!response.ok) {
+      throw new Error(`Failed to download blob: ${response.statusText}`);
+    }
+
     return Buffer.from(await response.arrayBuffer());
   } catch (error) {
     console.error("Download blob error:", error);
@@ -77,7 +83,15 @@ export async function listBlobs(prefix?: string) {
 
 export async function getBlobMetadata(path: string) {
   try {
-    const blob = await head(path);
+    // Use list() with the exact pathname as prefix to find the blob
+    const { blobs } = await list({
+      prefix: path,
+      limit: 1,
+    });
+
+    // Find exact match (list returns blobs with prefix, we need exact match)
+    const blob = blobs.find((b) => b.pathname === path);
+
     if (!blob) {
       return null;
     }
