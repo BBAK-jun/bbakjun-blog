@@ -1,12 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Upload, FileText, History, Settings, LogOut } from "lucide-react";
+import { Upload, FileText, History, Settings, LogOut, Moon, Sun } from "lucide-react";
 import { logout } from "./actions";
+import { useEffect, useState } from "react";
 
 export default function DashboardNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isDark, setIsDark] = useState(false);
 
   const tabs = [
     { id: "upload", name: "업로드", icon: Upload, href: "/dashboard/upload" },
@@ -14,6 +16,25 @@ export default function DashboardNav() {
     { id: "history", name: "업로드 이력", icon: History, href: "/dashboard/history" },
     { id: "settings", name: "설정", icon: Settings, href: "/dashboard/settings" },
   ];
+
+  useEffect(() => {
+    // Check initial theme
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    } else {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDark(true);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -33,13 +54,26 @@ export default function DashboardNav() {
                 블로그 백오피스
               </h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>로그아웃</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>로그아웃</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
