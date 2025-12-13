@@ -25,15 +25,22 @@ export default function DashboardNav() {
 
   const toggleDarkMode = () => {
     const html = document.documentElement;
+    console.log('Current classes:', html.className);
+    console.log('Has dark class:', html.classList.contains('dark'));
+
     if (html.classList.contains('dark')) {
       html.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       setIsDark(false);
+      console.log('Switched to light mode');
     } else {
       html.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       setIsDark(true);
+      console.log('Switched to dark mode');
     }
+
+    console.log('New classes:', html.className);
   };
 
   const handleLogout = async () => {
