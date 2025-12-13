@@ -579,14 +579,108 @@ git push origin main --tags
 
 ---
 
+## 벌크 업로드
+
+### 로컬 마크다운 파일 일괄 업로드
+
+`packages/content/posts/` 디렉토리의 모든 마크다운 파일을 한 번에 업로드할 수 있습니다.
+
+#### 사전 준비
+
+1. **환경 변수 설정**
+
+   `.env.local`에 API 키 설정:
+   ```bash
+   BACKOFFICE_API_KEY=your-api-key
+   ```
+
+2. **blog-admin 서버 실행** (로컬 업로드 시)
+
+   ```bash
+   pnpm dev:admin
+   ```
+
+#### 업로드 실행
+
+**로컬 환경에 업로드**:
+```bash
+pnpm upload-posts
+```
+
+**프로덕션 환경에 업로드**:
+```bash
+pnpm upload-posts:prod
+```
+
+#### 파일 목록 확인 (드라이런)
+
+실제 업로드 전 어떤 파일들이 업로드될지 확인:
+```bash
+node scripts/list-posts.js
+```
+
+**출력 예시**:
+```
+📋 Markdown Files List
+
+Found 68 files:
+
+📁 DEV (31 files)
+  → DEV/my-post
+    DEV/my-post/index.mdx
+  ...
+
+✅ Total: 68 files
+```
+
+#### 업로드 결과
+
+```
+🚀 Blog Posts Bulk Upload Script
+
+ℹ️  Scanning directory: packages/content/posts
+ℹ️  Target API: http://localhost:3001
+
+Found 68 markdown files
+
+[1/68] Uploading: DEV/my-post/index.mdx
+✅   ✓ Uploaded to: DEV/my-post
+...
+
+==================================================
+📊 Upload Summary
+==================================================
+Total files:     68
+Successful:      68
+==================================================
+```
+
+#### 문제 해결
+
+**"BACKOFFICE_API_KEY is not set"**:
+```bash
+export BACKOFFICE_API_KEY=your-api-key
+```
+
+**"fetch failed"**:
+- blog-admin 서버가 실행 중인지 확인 (`pnpm dev:admin`)
+
+**"Unauthorized"**:
+- API 키가 blog-admin의 키와 일치하는지 확인
+
+자세한 내용은 [`scripts/README.md`](../../../scripts/README.md) 참고
+
+---
+
 ## 추가 리소스
 
 - [Next.js 공식 문서](https://nextjs.org/docs)
 - [TypeScript 핸드북](https://www.typescriptlang.org/docs)
 - [Vercel Blob API](https://vercel.com/docs/storage/vercel-blob/api-reference)
 - [ESLint 규칙](https://eslint.org/docs/rules)
+- [벌크 업로드 스크립트](../../../scripts/README.md)
 
 ---
 
-**마지막 업데이트**: 2025-12-12
-**버전**: 1.0.0
+**마지막 업데이트**: 2025-12-13
+**버전**: 1.0.1

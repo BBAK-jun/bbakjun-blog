@@ -1,23 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, FileText, History, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, FileText, History, Settings, AlertCircle } from "lucide-react";
 
 export default function DashboardPage() {
   const [apiKey, setApiKey] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("upload");
+  const [authError, setAuthError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleAuth = () => {
-    if (apiKey.trim()) {
-      setIsAuthenticated(true);
-      localStorage.setItem("backoffice_api_key", apiKey);
+  // 페이지 로드 시 저장된 API 키로 자동 로그인 시도
+  useEffect(() => {
+    const savedKey = localStorage.getItem("backoffice_api_key");
+    if (savedKey) {
+      verifyApiKey(savedKey);
     }
+  }, []);
+
+  const verifyApiKey = async (key: string) => {
+    setIsLoading(true);
+    setAuthError("");
+
+    try {
+      // 실제 API를 호출하여 키 검증
+      const response = await fetch("/api/admin/files?limit=1", {
+        headers: {
+          Authorization: `Bearer ${key}`,
+        },
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        setApiKey(key);
+        localStorage.setItem("backoffice_api_key", key);
+      } else if (response.status === 401) {
+        setAuthError("유효하지 않은 API 키입니다.");
+        localStorage.removeItem("backoffice_api_key");
+      } else {
+        setAuthError("인증 중 오류가 발생했습니다.");
+        localStorage.removeItem("backoffice_api_key");
+      }
+    } catch (error) {
+      setAuthError("서버에 연결할 수 없습니다.");
+      console.error("Auth error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAuth = async () => {
+    if (!apiKey.trim()) {
+      setAuthError("API 키를 입력해주세요.");
+      return;
+    }
+    await verifyApiKey(apiKey.trim());
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setApiKey("");
+    setAuthError("");
     localStorage.removeItem("backoffice_api_key");
   };
 
@@ -39,6 +82,14 @@ export default function DashboardPage() {
           </p>
 
           <div className="space-y-4">
+            {/* Error Message */}
+            {authError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <p className="text-sm text-red-600 dark:text-red-400">{authError}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 API 키
@@ -46,18 +97,33 @@ export default function DashboardPage() {
               <input
                 type="password"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setAuthError(""); // 입력 시 에러 메시지 초기화
+                }}
                 placeholder="BACKOFFICE_API_KEY 입력"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyPress={(e) => e.key === "Enter" && handleAuth()}
+                onKeyPress={(e) => e.key === "Enter" && !isLoading && handleAuth()}
+                disabled={isLoading}
               />
             </div>
 
             <button
               onClick={handleAuth}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
             >
-              로그인
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>인증 중...</span>
+                </>
+              ) : (
+                "로그인"
+              )}
             </button>
           </div>
 

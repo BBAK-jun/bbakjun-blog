@@ -15,7 +15,9 @@
     "start": "turbo run start",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "upload-posts": "node scripts/upload-posts.js",
+    "upload-posts:prod": "NEXT_PUBLIC_ADMIN_URL=https://bbakjun-blog-admin.vercel.app node scripts/upload-posts.js"
   },
   "devDependencies": {
     "@types/node": "^24",
