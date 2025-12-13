@@ -1,6 +1,6 @@
 import { isAuthenticated } from "@/lib/auth-server";
 import DashboardNav from "./dashboard-nav";
-import { QueryProvider } from "@/components/query-provider";
+import { QueryProvider } from "@/shared/providers";
 
 export default async function DashboardLayout({
   children,

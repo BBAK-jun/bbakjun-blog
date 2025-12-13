@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyApiKey } from "@/lib/auth";
-import { deleteBlob, uploadBlob } from "@/lib/blob";
+import { deleteBlob, uploadBlob } from "@/entities/file";
 
 /**
  * DELETE /api/admin/file

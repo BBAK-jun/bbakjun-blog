@@ -16,7 +16,7 @@ const CodeMirror = dynamic(
 function EditPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = searchParams.get("pathname");
+  const pathname = searchParams?.get("pathname") || null;
 
   const {
     fileData,

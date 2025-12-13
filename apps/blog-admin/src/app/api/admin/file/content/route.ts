@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyApiKey } from "@/lib/auth";
-import { downloadBlob, getBlobMetadata } from "@/lib/blob";
+import { downloadBlob, getBlobMetadata } from "@/entities/file";
 import { processMarkdown } from "@repo/content";
 
 /**

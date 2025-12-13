@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyApiKey } from "@/lib/auth";
-import { listBlobs } from "@/lib/blob";
+import { listBlobs } from "@/entities/file";
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, type FileData } from "@/lib/api-client";
+import { apiClient, type FileData } from "@/shared/api";
 import {
   combineContent,
   parseFrontMatter,
   type FrontMatter,
-} from "@/lib/frontmatter";
+} from "@/entities/frontmatter";
 import { useState, useEffect } from "react";
 
 export interface EditorFormData extends Partial<FrontMatter> {

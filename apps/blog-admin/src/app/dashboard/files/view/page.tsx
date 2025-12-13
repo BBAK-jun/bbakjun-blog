@@ -28,7 +28,7 @@ interface FileData {
 export default function FileViewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = searchParams.get("pathname");
+  const pathname = searchParams?.get("pathname") || null;
 
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

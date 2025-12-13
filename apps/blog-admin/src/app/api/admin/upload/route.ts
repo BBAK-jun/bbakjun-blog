@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyApiKey } from "@/lib/auth";
-import { uploadBlob } from "@/lib/blob";
+import { uploadBlob } from "@/entities/file";
 import { v4 as uuidv4 } from "uuid";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
