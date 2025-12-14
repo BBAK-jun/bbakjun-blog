@@ -7,6 +7,7 @@ import { useFileDelete } from "@/features/file-delete";
 import { useFileSearch } from "@/features/file-search";
 import { useFileFilter } from "@/features/file-filter";
 import { FileListWidget } from "@/widgets/file-list";
+import { formatFileSize, formatDate } from "@/shared/lib/format";
 
 // Lazy import for modal
 const DeleteConfirmModal = lazy(() =>
@@ -41,27 +42,6 @@ export function FileManagerWidget() {
 
   const { deleteSuccess, deleteFile, isDeleting, error: deleteError } =
     useFileDelete();
-
-  // 파일 크기 포맷팅
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
-  };
-
-  // 날짜 포맷팅
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  };
 
   // 삭제 핸들러
   const handleDeleteClick = (file: BlobFile) => {
