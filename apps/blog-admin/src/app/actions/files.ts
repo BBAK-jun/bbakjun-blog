@@ -3,6 +3,7 @@
 import { put, del, list } from "@vercel/blob";
 import { processMarkdown } from "@repo/content";
 import { revalidatePath } from "next/cache";
+import matter from "gray-matter";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
 
@@ -15,33 +16,38 @@ if (!BLOB_TOKEN) {
  */
 export async function getFileContent(pathname: string) {
   try {
-    const url = `https://${process.env.BLOB_STORE_ID}.public.blob.vercel-storage.com/${pathname}`;
-    const response = await fetch(url);
+    // Note: Vercel Blob doesn't support prefix search reliably because files have random suffixes in URLs
+    // We need to list all blobs and find the exact pathname match
+    const { blobs } = await list({
+      token: BLOB_TOKEN,
+    });
+
+    const blob = blobs.find((b) => b.pathname === pathname);
+
+    if (!blob) {
+      throw new Error(`File not found in Blob Storage: ${pathname}`);
+    }
+
+    // Fetch content using the blob's URL
+    const response = await fetch(blob.url);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch file: ${response.statusText}`);
     }
 
     const rawContent = await response.text();
-    const htmlContent = await processMarkdown(rawContent);
 
-    // Get metadata
-    const { blobs } = await list({
-      token: BLOB_TOKEN,
-      prefix: pathname,
-      limit: 1,
-    });
+    // Parse front matter
+    const { data: frontMatter, content } = matter(rawContent);
 
-    const blob = blobs.find((b) => b.pathname === pathname);
-
-    if (!blob) {
-      throw new Error("File not found in Blob Storage");
-    }
+    // Process markdown to HTML
+    const htmlContent = await processMarkdown(content);
 
     return {
       success: true,
       rawContent,
       htmlContent,
+      frontMatter: Object.keys(frontMatter).length > 0 ? frontMatter : null,
       metadata: {
         pathname: blob.pathname,
         size: blob.size,

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Calendar, HardDrive, Loader2, AlertCircle, Edit, Tag } from "lucide-react";
 import type { FileData } from "@/entities/file";
+import { getFileContent } from "@/app/actions/files";
 import "../../../markdown.css";
 
 export default function FileViewPage() {
@@ -30,29 +31,10 @@ export default function FileViewPage() {
     setError("");
 
     try {
-      // 세션에서 API 키 가져오기
-      const sessionResponse = await fetch("/api/admin/session");
-      if (!sessionResponse.ok) {
-        setError("인증이 만료되었습니다. 다시 로그인해주세요.");
-        setIsLoading(false);
-        return;
-      }
+      const result = await getFileContent(pathname!);
 
-      const { apiKey } = await sessionResponse.json();
-
-      const response = await fetch(
-        `/api/admin/file/content?pathname=${encodeURIComponent(pathname!)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setFileData(result);
+      if (result.success) {
+        setFileData(result as FileData);
       } else {
         setError(result.error || "파일을 불러올 수 없습니다.");
       }

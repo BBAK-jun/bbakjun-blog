@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Upload as UploadIcon, FileText, AlertCircle, CheckCircle } from "lucide-react";
+import { uploadMarkdown } from "@/app/actions/files";
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -35,36 +36,15 @@ export default function UploadPage() {
     setUploadResult(null);
 
     try {
-      // 세션에서 API 키 가져오기
-      const sessionResponse = await fetch("/api/admin/session");
-      if (!sessionResponse.ok) {
-        setUploadResult({
-          success: false,
-          message: "인증이 만료되었습니다. 다시 로그인해주세요.",
-        });
-        setIsUploading(false);
-        return;
-      }
-
-      const { apiKey } = await sessionResponse.json();
-
       const formData = new FormData();
       formData.append("file", file);
       formData.append("path", path.trim());
       formData.append("tags", tags.trim());
       formData.append("status", status);
 
-      const response = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: formData,
-      });
+      const result = await uploadMarkdown(formData);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (result.success) {
         setUploadResult({
           success: true,
           message: `파일이 성공적으로 업로드되었습니다: ${result.path}`,

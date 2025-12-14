@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
 import DeleteConfirmModal from "@/components/delete-confirm-modal";
+import { listFiles, deleteFile } from "@/app/actions/files";
 
 interface BlobFile {
   filename: string;
@@ -43,29 +44,12 @@ export default function FilesPage() {
     setFilesError("");
 
     try {
-      // 세션에서 API 키 가져오기
-      const sessionResponse = await fetch("/api/admin/session");
-      if (!sessionResponse.ok) {
-        setFilesError("인증이 만료되었습니다. 다시 로그인해주세요.");
-        setIsLoadingFiles(false);
-        return;
-      }
+      const result = await listFiles(100);
 
-      const { apiKey } = await sessionResponse.json();
-
-      const response = await fetch("/api/admin/files?limit=100", {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files || []);
-      } else if (response.status === 401) {
-        setFilesError("인증이 만료되었습니다. 다시 로그인해주세요.");
+      if (result.success) {
+        setFiles(result.files || []);
       } else {
-        setFilesError("파일 목록을 불러올 수 없습니다.");
+        setFilesError(result.error || "파일 목록을 불러올 수 없습니다.");
       }
     } catch (error) {
       setFilesError("서버에 연결할 수 없습니다.");
@@ -117,30 +101,9 @@ export default function FilesPage() {
     setFilesError("");
 
     try {
-      // 세션에서 API 키 가져오기
-      const sessionResponse = await fetch("/api/admin/session");
-      if (!sessionResponse.ok) {
-        setFilesError("인증이 만료되었습니다. 다시 로그인해주세요.");
-        setIsDeleting(false);
-        setDeleteModal({ isOpen: false, file: null });
-        return;
-      }
+      const result = await deleteFile(deleteModal.file.pathname);
 
-      const { apiKey } = await sessionResponse.json();
-
-      const response = await fetch(
-        `/api/admin/file?pathname=${encodeURIComponent(deleteModal.file.pathname)}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (result.success) {
         // 성공: 목록에서 제거하고 성공 메시지 표시
         setFiles((prev) => prev.filter((f) => f.pathname !== deleteModal.file!.pathname));
         setDeleteSuccess(`${deleteModal.file.filename} 파일이 삭제되었습니다.`);
