@@ -372,9 +372,6 @@ export default function FilesPage() {
                   제목
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  파일명
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
                   경로
                 </th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -399,25 +396,22 @@ export default function FilesPage() {
                   <td className="py-3 px-4">
                     <button
                       onClick={() => router.push(`/dashboard/files/view?pathname=${encodeURIComponent(file.pathname)}`)}
-                      className="text-left hover:bg-slate-50 dark:hover:bg-slate-800 -mx-2 px-2 py-1 rounded transition-colors"
+                      className="text-left hover:bg-slate-50 dark:hover:bg-slate-800 -mx-2 px-2 py-1 rounded transition-colors w-full"
                     >
-                      <div className="text-sm text-slate-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400">
-                        {file.title || <span className="text-slate-400 dark:text-slate-500 italic">제목 없음</span>}
-                      </div>
-                      {file.description && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                          {file.description}
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-slate-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400 truncate">
+                            {file.title || <span className="text-slate-400 dark:text-slate-500 italic">제목 없음</span>}
+                          </div>
+                          {file.description && (
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                              {file.description}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </button>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {file.filename}
-                      </span>
-                    </div>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
