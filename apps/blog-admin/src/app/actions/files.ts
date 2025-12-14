@@ -74,7 +74,24 @@ export async function updateFile(pathname: string, content: string) {
       token: BLOB_TOKEN,
     });
 
+    // Revalidate admin file list
     revalidatePath("/dashboard/files");
+
+    // Revalidate blog cache for the updated post
+    // Extract slug from pathname (e.g., "DEV/my-post/index.mdx" -> "DEV/my-post")
+    const slug = pathname.replace(/\/(index\.)?(md|mdx)$/, "").replace(/\.(md|mdx)$/, "");
+
+    // Revalidate the specific blog post page
+    const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL || "http://localhost:3000";
+    try {
+      await fetch(`${blogUrl}/api/revalidate?path=/blog/${encodeURIComponent(slug)}`, {
+        method: "POST",
+      });
+      console.log(`Revalidated blog post: /blog/${slug}`);
+    } catch (revalidateError) {
+      console.error("Failed to revalidate blog:", revalidateError);
+      // Don't fail the update if revalidation fails
+    }
 
     return {
       success: true,
