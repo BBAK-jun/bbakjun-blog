@@ -381,3 +381,80 @@ export async function listImages(limit = 50) {
     };
   }
 }
+
+/**
+ * Create new markdown file in Blob Storage
+ */
+export interface CreateFileInput {
+  pathname: string; // e.g., "DEV/my-post"
+  title: string;
+  description: string;
+  date: string;
+  tags: string[];
+  author: string;
+  draft?: boolean;
+  content: string;
+}
+
+export async function createFile(input: CreateFileInput) {
+  try {
+    // Validate pathname
+    const sanitized = input.pathname.trim().replace(/^\/+|\/+$/g, "");
+
+    if (!sanitized || sanitized.split("/").some(part => !part.trim())) {
+      return {
+        success: false,
+        error: "Invalid pathname format. Use format: CATEGORY/slug",
+      };
+    }
+
+    // Generate final pathname
+    const finalPathname = `${sanitized}/index.mdx`;
+
+    // Check if file already exists
+    const { blobs } = await list({ token: BLOB_TOKEN });
+    const existingFile = blobs.find((b) => b.pathname === finalPathname);
+
+    if (existingFile) {
+      return {
+        success: false,
+        error: `File already exists: ${finalPathname}`,
+      };
+    }
+
+    // Create frontmatter
+    const frontMatter = matter.stringify("", {
+      title: input.title,
+      date: input.date,
+      description: input.description,
+      tags: input.tags,
+      author: input.author,
+      ...(input.draft !== undefined && { draft: input.draft }),
+    });
+
+    // Combine frontmatter and content
+    const fullContent = frontMatter + "\n" + input.content;
+
+    // Upload to Blob Storage
+    const blob = await put(finalPathname, fullContent, {
+      access: "public",
+      token: BLOB_TOKEN,
+      contentType: "text/markdown",
+    });
+
+    // Revalidate cache
+    revalidatePath("/dashboard/files");
+
+    return {
+      success: true,
+      pathname: blob.pathname,
+      url: blob.url,
+    };
+  } catch (error) {
+    console.error("Create file error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create file",
+    };
+  }
+}
