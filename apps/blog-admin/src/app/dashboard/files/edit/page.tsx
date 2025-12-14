@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { Suspense, useState } from "react";
+import { ArrowLeft, Save, ImageIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
 import { useFileEditor } from "@/hooks/use-file-editor";
+import ImageUploader from "@/components/ImageUploader";
 import "../../../markdown.css";
 
 const CodeMirror = dynamic(
@@ -17,6 +18,7 @@ function EditPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = searchParams?.get("pathname") || null;
+  const [showImageUploader, setShowImageUploader] = useState(false);
 
   const {
     fileData,
@@ -28,6 +30,16 @@ function EditPageContent() {
     save,
     isSaving,
   } = useFileEditor(pathname);
+
+  const handleImageUploaded = (url: string, filename: string) => {
+    // Insert markdown image syntax at cursor position or end of content
+    const imageMarkdown = `![${filename}](${url})`;
+    setFormData({
+      ...formData,
+      content: formData.content + "\n" + imageMarkdown + "\n",
+    });
+    setShowImageUploader(false);
+  };
 
   const handleSave = () => {
     save(undefined, {
@@ -95,6 +107,13 @@ function EditPageContent() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImageUploader(!showImageUploader)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>이미지 추가</span>
+          </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -206,6 +225,24 @@ function EditPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Image Uploader */}
+      {showImageUploader && (
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              이미지 업로드
+            </h2>
+            <button
+              onClick={() => setShowImageUploader(false)}
+              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              ✕
+            </button>
+          </div>
+          <ImageUploader onImageUploaded={handleImageUploaded} />
+        </div>
+      )}
 
       {/* Content Editor - Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
