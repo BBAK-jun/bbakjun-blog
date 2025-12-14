@@ -112,7 +112,7 @@ export async function deleteFile(pathname: string) {
 }
 
 /**
- * List all markdown files from Blob Storage
+ * List all markdown files from Blob Storage with front matter metadata
  */
 export async function listFiles(limit = 100) {
   try {
@@ -120,25 +120,56 @@ export async function listFiles(limit = 100) {
       token: BLOB_TOKEN,
     });
 
-    const files = blobs
+    const markdownBlobs = blobs
       .filter(
         (blob) =>
           (blob.pathname.endsWith(".md") || blob.pathname.endsWith(".mdx")) &&
           !blob.pathname.includes("/.")
       )
-      .slice(0, limit)
-      .map((blob) => ({
-        filename: blob.pathname.split("/").pop() || blob.pathname,
-        pathname: blob.pathname,
-        size: blob.size,
-        uploadedAt: blob.uploadedAt.toISOString(),
-        url: blob.url,
-      }));
+      .slice(0, limit);
+
+    // Fetch front matter for each file
+    const filesWithMetadata = await Promise.all(
+      markdownBlobs.map(async (blob) => {
+        try {
+          // Fetch file content
+          const response = await fetch(blob.url);
+          if (!response.ok) {
+            throw new Error("Failed to fetch file");
+          }
+
+          const content = await response.text();
+          const { data: frontMatter } = matter(content);
+
+          return {
+            filename: blob.pathname.split("/").pop() || blob.pathname,
+            pathname: blob.pathname,
+            size: blob.size,
+            uploadedAt: blob.uploadedAt.toISOString(),
+            url: blob.url,
+            title: frontMatter.title || null,
+            description: frontMatter.description || null,
+          };
+        } catch (error) {
+          // If front matter parsing fails, return basic info
+          console.error(`Failed to parse front matter for ${blob.pathname}:`, error);
+          return {
+            filename: blob.pathname.split("/").pop() || blob.pathname,
+            pathname: blob.pathname,
+            size: blob.size,
+            uploadedAt: blob.uploadedAt.toISOString(),
+            url: blob.url,
+            title: null,
+            description: null,
+          };
+        }
+      })
+    );
 
     return {
       success: true,
-      files,
-      total: files.length,
+      files: filesWithMetadata,
+      total: filesWithMetadata.length,
     };
   } catch (error) {
     console.error("List files error:", error);
@@ -147,6 +178,72 @@ export async function listFiles(limit = 100) {
       error: error instanceof Error ? error.message : "Failed to list files",
       files: [],
       total: 0,
+    };
+  }
+}
+
+/**
+ * Upload markdown file to Blob Storage
+ */
+export async function uploadMarkdown(formData: FormData) {
+  try {
+    const file = formData.get("file") as File;
+    const path = formData.get("path") as string;
+
+    if (!file) {
+      return {
+        success: false,
+        error: "No file provided",
+      };
+    }
+
+    if (!path?.trim()) {
+      return {
+        success: false,
+        error: "Path is required",
+      };
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    const ALLOWED_EXTENSIONS = [".md", ".mdx"];
+
+    const fileExtension = file.name.substring(file.name.lastIndexOf("."));
+    if (!ALLOWED_EXTENSIONS.includes(fileExtension.toLowerCase())) {
+      return {
+        success: false,
+        error: `Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
+      };
+    }
+
+    if (file.size > MAX_SIZE) {
+      return {
+        success: false,
+        error: `File size exceeds ${MAX_SIZE / 1024 / 1024}MB limit`,
+      };
+    }
+
+    // Sanitize path
+    const sanitizedPath = path.trim().replace(/^\/+|\/+$/g, "");
+    const pathname = `${sanitizedPath}${fileExtension}`;
+
+    const blob = await put(pathname, file, {
+      access: "public",
+      token: BLOB_TOKEN,
+    });
+
+    revalidatePath("/dashboard/files");
+
+    return {
+      success: true,
+      path: blob.pathname,
+      url: blob.url,
+      size: file.size,
+    };
+  } catch (error) {
+    console.error("Upload markdown error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to upload file",
     };
   }
 }
