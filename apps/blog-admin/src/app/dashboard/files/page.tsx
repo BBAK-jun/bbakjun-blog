@@ -1,45 +1,22 @@
 "use client";
 
-import { useState, useMemo, lazy } from "react";
+import { lazy } from "react";
 import { useRouter } from "next/navigation";
-import { parseAsString, parseAsStringEnum, useQueryStates } from "nuqs";
-import { overlay } from "overlay-kit";
-import { FileText, Loader2, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
-import { useFilesQuery, useDeleteFileMutation, FileListItem, type BlobFile } from "@/entities/file";
+import { FileText, Loader2, RefreshCw, AlertCircle, CheckCircle, X, Filter } from "lucide-react";
+import { useFilesQuery, FileListItem } from "@/entities/file";
+import { useFileDelete } from "@/features/file-delete";
+import { useFileSearch, SearchInput } from "@/features/file-search";
+import { useFileFilter, CategoryFilter, SortSelect } from "@/features/file-filter";
 
 // Lazy import for modal (code-splitting)
-const DeleteConfirmModal = lazy(() => import("@/shared/ui/modal").then(m => ({ default: m.DeleteConfirmModal })));
-
-type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "size-asc" | "size-desc";
-
-// Query parameter parsers
-const filesSearchParams = {
-  q: parseAsString.withDefault(""),
-  category: parseAsString.withDefault("all"),
-  sort: parseAsStringEnum<SortOption>([
-    "name-asc",
-    "name-desc",
-    "date-asc",
-    "date-desc",
-    "size-asc",
-    "size-desc",
-  ]).withDefault("date-desc"),
-};
+const DeleteConfirmModal = lazy(() =>
+  import("@/shared/ui/modal").then((m) => ({ default: m.DeleteConfirmModal }))
+);
 
 export default function FilesPage() {
   const router = useRouter();
 
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
-
-  // URL query states with nuqs (type-safe)
-  const [{ q: searchQuery, category: categoryFilter, sort: sortOption }, setQueryStates] = useQueryStates(
-    filesSearchParams,
-    {
-      history: "push", // URL 변경 시 히스토리에 추가
-    }
-  );
-
-  // Entity hooks - React Query로 파일 목록 조회
+  // Entity hook - 파일 목록 조회
   const {
     data: filesData,
     isLoading: isLoadingFiles,
@@ -48,6 +25,24 @@ export default function FilesPage() {
   } = useFilesQuery();
 
   const files = filesData || [];
+
+  // Feature hooks
+  const { searchQuery, setSearchQuery, clearSearch, filteredFiles } =
+    useFileSearch(files);
+
+  const {
+    category,
+    sort,
+    categories,
+    setCategory,
+    setSort,
+    clearFilters,
+    filteredAndSortedFiles,
+    hasActiveFilters,
+  } = useFileFilter(filteredFiles);
+
+  const { deleteSuccess, deleteFile, isDeleting, error: deleteError } =
+    useFileDelete();
 
   // 파일 크기 포맷팅
   const formatFileSize = (bytes: number): string => {
@@ -70,106 +65,30 @@ export default function FilesPage() {
     }).format(date);
   };
 
-  // Entity hook - 파일 삭제 mutation
-  const deleteMutation = useDeleteFileMutation();
-
-  // 삭제 모달 열기 (overlay-kit 사용)
-  const handleDeleteClick = (file: BlobFile) => {
-    setDeleteSuccess(null);
-
-    overlay.open(({ isOpen, close }) => (
-      <DeleteConfirmModal
-        isOpen={isOpen}
-        onClose={close}
-        onConfirm={async () => {
-          deleteMutation.mutate(
-            { pathname: file.pathname },
-            {
-              onSuccess: () => {
-                setDeleteSuccess(`${file.filename} 파일이 삭제되었습니다.`);
-                setTimeout(() => setDeleteSuccess(null), 3000);
-              },
-            }
-          );
-          close();
-        }}
-        fileName={file.pathname}
-        isDeleting={deleteMutation.isPending}
-      />
-    ));
-  };
-
-  // Extract unique categories from files
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
-    files.forEach((file) => {
-      const category = file.pathname.split("/")[0];
-      if (category) cats.add(category);
-    });
-    return Array.from(cats).sort();
-  }, [files]);
-
-  // Filter and sort files
-  const filteredAndSortedFiles = useMemo(() => {
-    let result = [...files];
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (file) =>
-          file.filename.toLowerCase().includes(query) ||
-          file.pathname.toLowerCase().includes(query) ||
-          file.title?.toLowerCase().includes(query) ||
-          file.description?.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply category filter
-    if (categoryFilter !== "all") {
-      result = result.filter((file) => file.pathname.startsWith(categoryFilter + "/"));
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      switch (sortOption) {
-        case "name-asc":
-          return a.filename.localeCompare(b.filename);
-        case "name-desc":
-          return b.filename.localeCompare(a.filename);
-        case "date-asc":
-          // Use frontmatter date if available, otherwise fall back to uploadedAt
-          const dateA = a.date ? new Date(a.date).getTime() : new Date(a.uploadedAt).getTime();
-          const dateB = b.date ? new Date(b.date).getTime() : new Date(b.uploadedAt).getTime();
-          return dateA - dateB;
-        case "date-desc":
-          // Use frontmatter date if available, otherwise fall back to uploadedAt
-          const dateDescA = a.date ? new Date(a.date).getTime() : new Date(a.uploadedAt).getTime();
-          const dateDescB = b.date ? new Date(b.date).getTime() : new Date(b.uploadedAt).getTime();
-          return dateDescB - dateDescA;
-        case "size-asc":
-          return a.size - b.size;
-        case "size-desc":
-          return b.size - a.size;
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [files, searchQuery, categoryFilter, sortOption]);
-
-  // Clear all filters
-  const clearFilters = () => {
-    setQueryStates({
-      q: "",
-      category: "all",
-      sort: "date-desc",
+  // 삭제 핸들러
+  const handleDeleteClick = (file: typeof files[number]) => {
+    import("overlay-kit").then(({ overlay }) => {
+      overlay.open(({ isOpen, close }) => (
+        <DeleteConfirmModal
+          isOpen={isOpen}
+          onClose={close}
+          onConfirm={() => {
+            deleteFile(file, close);
+          }}
+          fileName={file.pathname}
+          isDeleting={isDeleting}
+        />
+      ));
     });
   };
 
-  // Check if any filters are active
-  const hasActiveFilters = searchQuery !== "" || categoryFilter !== "all" || sortOption !== "date-desc";
+  // 모든 필터 초기화
+  const clearAllFilters = () => {
+    clearSearch();
+    clearFilters();
+  };
+
+  const hasAnyFilter = searchQuery !== "" || hasActiveFilters;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
@@ -204,57 +123,24 @@ export default function FilesPage() {
       {/* Search and Filter Controls */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setQueryStates({ q: e.target.value })}
-              placeholder="파일명 또는 경로로 검색..."
-              className="w-full pl-10 pr-10 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setQueryStates({ q: "" })}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onClear={clearSearch}
+            placeholder="파일명 또는 경로로 검색..."
+          />
 
-          {/* Category Filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setQueryStates({ category: e.target.value })}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">모든 카테고리</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <CategoryFilter
+            value={category}
+            categories={categories}
+            onChange={setCategory}
+          />
 
-          {/* Sort Options */}
-          <select
-            value={sortOption}
-            onChange={(e) => setQueryStates({ sort: e.target.value as SortOption })}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="date-desc">최신순</option>
-            <option value="date-asc">오래된순</option>
-            <option value="name-asc">이름 (A-Z)</option>
-            <option value="name-desc">이름 (Z-A)</option>
-            <option value="size-desc">크기 (큰순)</option>
-            <option value="size-asc">크기 (작은순)</option>
-          </select>
+          <SortSelect value={sort} onChange={setSort} />
         </div>
 
         {/* Active Filters Summary */}
-        {hasActiveFilters && (
+        {hasAnyFilter && (
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-slate-500" />
             <span className="text-sm text-slate-600 dark:text-slate-400">
@@ -265,18 +151,27 @@ export default function FilesPage() {
                 검색: "{searchQuery}"
               </span>
             )}
-            {categoryFilter !== "all" && (
+            {category !== "all" && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded">
-                카테고리: {categoryFilter}
+                카테고리: {category}
               </span>
             )}
-            {sortOption !== "date-desc" && (
+            {sort !== "date-desc" && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded">
-                정렬: {sortOption === "date-asc" ? "오래된순" : sortOption === "name-asc" ? "이름(A-Z)" : sortOption === "name-desc" ? "이름(Z-A)" : sortOption === "size-asc" ? "크기(작은순)" : "크기(큰순)"}
+                정렬:{" "}
+                {sort === "date-asc"
+                  ? "오래된순"
+                  : sort === "name-asc"
+                  ? "이름(A-Z)"
+                  : sort === "name-desc"
+                  ? "이름(Z-A)"
+                  : sort === "size-asc"
+                  ? "크기(작은순)"
+                  : "크기(큰순)"}
               </span>
             )}
             <button
-              onClick={clearFilters}
+              onClick={clearAllFilters}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
             >
               <X className="w-3 h-3" />
@@ -290,21 +185,27 @@ export default function FilesPage() {
       {deleteSuccess && (
         <div className="flex items-center gap-2 p-3 mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-          <p className="text-sm text-green-600 dark:text-green-400">{deleteSuccess}</p>
+          <p className="text-sm text-green-600 dark:text-green-400">
+            {deleteSuccess}
+          </p>
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error Messages */}
       {filesError && (
         <div className="flex items-center gap-2 p-3 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-600 dark:text-red-400">{filesError.message}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {filesError.message}
+          </p>
         </div>
       )}
-      {deleteMutation.error && (
+      {deleteError && (
         <div className="flex items-center gap-2 p-3 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-600 dark:text-red-400">{deleteMutation.error.message}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {deleteError.message}
+          </p>
         </div>
       )}
 
@@ -312,12 +213,14 @@ export default function FilesPage() {
       {isLoadingFiles && files.length === 0 && (
         <div className="text-center py-12">
           <Loader2 className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4 animate-spin" />
-          <p className="text-slate-600 dark:text-slate-400">파일 목록을 불러오는 중...</p>
+          <p className="text-slate-600 dark:text-slate-400">
+            파일 목록을 불러오는 중...
+          </p>
         </div>
       )}
 
       {/* Empty State - No files at all */}
-      {!isLoadingFiles && files.length === 0 && !filesError && !deleteMutation.error && (
+      {!isLoadingFiles && files.length === 0 && !filesError && !deleteError && (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
           <p className="text-slate-600 dark:text-slate-400 mb-2">
@@ -330,24 +233,26 @@ export default function FilesPage() {
       )}
 
       {/* Empty State - No results from filter */}
-      {!isLoadingFiles && files.length > 0 && filteredAndSortedFiles.length === 0 && (
-        <div className="text-center py-12">
-          <Search className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 mb-2">
-            검색 결과가 없습니다
-          </p>
-          <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">
-            다른 검색어나 필터를 시도해보세요
-          </p>
-          <button
-            onClick={clearFilters}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-          >
-            <X className="w-4 h-4" />
-            필터 초기화
-          </button>
-        </div>
-      )}
+      {!isLoadingFiles &&
+        files.length > 0 &&
+        filteredAndSortedFiles.length === 0 && (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-600 dark:text-slate-400 mb-2">
+              검색 결과가 없습니다
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">
+              다른 검색어나 필터를 시도해보세요
+            </p>
+            <button
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              필터 초기화
+            </button>
+          </div>
+        )}
 
       {/* Files Table */}
       {!isLoadingFiles && filteredAndSortedFiles.length > 0 && (
@@ -377,7 +282,13 @@ export default function FilesPage() {
                 <FileListItem
                   key={file.pathname}
                   file={file}
-                  onView={(f) => router.push(`/dashboard/files/view?pathname=${encodeURIComponent(f.pathname)}`)}
+                  onView={(f) =>
+                    router.push(
+                      `/dashboard/files/view?pathname=${encodeURIComponent(
+                        f.pathname
+                      )}`
+                    )
+                  }
                   onDelete={handleDeleteClick}
                   formatFileSize={formatFileSize}
                   formatDate={formatDate}
@@ -391,13 +302,11 @@ export default function FilesPage() {
             <p className="text-sm text-slate-600 dark:text-slate-400">
               {filteredAndSortedFiles.length === files.length
                 ? `총 ${files.length}개의 파일`
-                : `${filteredAndSortedFiles.length}개 표시 (전체 ${files.length}개)`
-              }
+                : `${filteredAndSortedFiles.length}개 표시 (전체 ${files.length}개)`}
             </p>
           </div>
         </div>
       )}
-
     </div>
   );
 }
