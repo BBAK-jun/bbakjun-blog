@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, type FileData } from "@/shared/api";
 import {
   combineContent,
   parseFrontMatter,
   type EditorFormData,
 } from "@/entities/frontmatter";
+import { getFileContent, updateFile, previewMarkdown } from "@/app/actions/files";
 import { useState, useEffect } from "react";
 
 export function useFileEditor(pathname: string | null) {
@@ -28,13 +28,19 @@ export function useFileEditor(pathname: string | null) {
     error,
   } = useQuery({
     queryKey: ["file", pathname],
-    queryFn: () => apiClient.getFile(pathname!),
+    queryFn: async () => {
+      const result = await getFileContent(pathname!);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result;
+    },
     enabled: !!pathname,
   });
 
   // Initialize form when file data is loaded
   useEffect(() => {
-    if (fileData) {
+    if (fileData?.rawContent) {
       const { frontMatter, body } = parseFrontMatter(fileData.rawContent);
 
       setFormData({
@@ -50,9 +56,12 @@ export function useFileEditor(pathname: string | null) {
   }, [fileData]);
 
   // Preview query with debouncing
-  const { data: previewHtml } = useQuery({
+  const { data: previewResult } = useQuery({
     queryKey: ["preview", formData.content],
-    queryFn: () => apiClient.previewMarkdown(formData.content),
+    queryFn: async () => {
+      const result = await previewMarkdown(formData.content);
+      return result;
+    },
     enabled: formData.content.length > 0,
     staleTime: 500,
   });
@@ -74,7 +83,10 @@ export function useFileEditor(pathname: string | null) {
         formData.content
       );
 
-      await apiClient.updateFile(pathname, fullContent);
+      const result = await updateFile(pathname, fullContent);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
     },
     onSuccess: () => {
       // Invalidate file query to refetch
@@ -88,7 +100,7 @@ export function useFileEditor(pathname: string | null) {
     error,
     formData,
     setFormData,
-    previewHtml: previewHtml || fileData?.htmlContent || "",
+    previewHtml: previewResult?.htmlContent || fileData?.htmlContent || "",
     save: saveMutation.mutate,
     isSaving: saveMutation.isPending,
     saveError: saveMutation.error,

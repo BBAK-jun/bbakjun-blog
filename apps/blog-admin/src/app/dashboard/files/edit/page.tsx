@@ -102,7 +102,7 @@ function EditPageContent() {
               파일 편집
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {fileData.metadata.pathname}
+              {fileData.metadata?.pathname || ""}
             </p>
           </div>
         </div>

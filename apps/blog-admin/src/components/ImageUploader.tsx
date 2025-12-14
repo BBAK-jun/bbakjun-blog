@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Upload, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { uploadImage as uploadImageAction } from "@/app/actions/files";
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string, filename: string) => void;
@@ -26,19 +27,13 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
+      const result = await uploadImageAction(formData);
 
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Upload failed");
+      if (!result.success || !result.url) {
+        throw new Error(result.error || "Upload failed");
       }
 
-      onImageUploaded(data.url, file.name);
+      onImageUploaded(result.url, file.name);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
