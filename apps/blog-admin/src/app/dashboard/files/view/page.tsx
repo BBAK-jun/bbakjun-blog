@@ -1,10 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Calendar, HardDrive, Loader2, AlertCircle, Edit, Tag } from "lucide-react";
-import type { FileData } from "@/entities/file";
-import { getFileContent } from "@/app/actions/files";
+import { useFileQuery, type FileData } from "@/entities/file";
 import "../../../markdown.css";
 
 export default function FileViewPage() {
@@ -12,29 +10,12 @@ export default function FileViewPage() {
   const searchParams = useSearchParams();
   const pathname = searchParams?.get("pathname") || null;
 
-  // Fetch file content with TanStack Query
+  // Entity hook - Fetch file content with TanStack Query
   const {
     data: fileData,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ["file", pathname],
-    queryFn: async () => {
-      if (!pathname) {
-        throw new Error("파일 경로가 지정되지 않았습니다.");
-      }
-
-      const result = await getFileContent(pathname);
-
-      if (!result.success) {
-        throw new Error(result.error || "파일을 불러올 수 없습니다.");
-      }
-
-      return result as FileData;
-    },
-    enabled: !!pathname,
-    staleTime: 1000 * 60 * 5, // 5분간 fresh 상태 유지
-  });
+  } = useFileQuery(pathname);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";

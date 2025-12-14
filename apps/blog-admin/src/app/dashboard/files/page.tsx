@@ -2,25 +2,13 @@
 
 import { useState, useMemo, lazy } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseAsString, parseAsStringEnum, useQueryStates } from "nuqs";
 import { overlay } from "overlay-kit";
-import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
-import { listFiles, deleteFile } from "@/app/actions/files";
+import { FileText, Loader2, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
+import { useFilesQuery, useDeleteFileMutation, FileListItem, type BlobFile } from "@/entities/file";
 
 // Lazy import for modal (code-splitting)
 const DeleteConfirmModal = lazy(() => import("@/shared/ui/modal").then(m => ({ default: m.DeleteConfirmModal })));
-
-interface BlobFile {
-  filename: string;
-  pathname: string;
-  size: number;
-  uploadedAt: string;
-  url: string;
-  title: string | null;
-  description: string | null;
-  date: string | null;
-}
 
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "size-asc" | "size-desc";
 
@@ -40,7 +28,6 @@ const filesSearchParams = {
 
 export default function FilesPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
@@ -52,22 +39,13 @@ export default function FilesPage() {
     }
   );
 
-  // React Query로 파일 목록 조회
+  // Entity hooks - React Query로 파일 목록 조회
   const {
     data: filesData,
     isLoading: isLoadingFiles,
     error: filesError,
     refetch: loadFiles,
-  } = useQuery({
-    queryKey: ["files"],
-    queryFn: async () => {
-      const result = await listFiles(100);
-      if (!result.success) {
-        throw new Error(result.error || "파일 목록을 불러올 수 없습니다.");
-      }
-      return result.files || [];
-    },
-  });
+  } = useFilesQuery();
 
   const files = filesData || [];
 
@@ -92,26 +70,8 @@ export default function FilesPage() {
     }).format(date);
   };
 
-  // 파일 삭제 mutation
-  const deleteMutation = useMutation({
-    mutationFn: async ({ pathname, filename }: { pathname: string; filename: string }) => {
-      const result = await deleteFile(pathname);
-      if (!result.success) {
-        throw new Error(result.error || "파일 삭제 중 오류가 발생했습니다.");
-      }
-      return { pathname, filename };
-    },
-    onSuccess: (data) => {
-      // 캐시에서 삭제된 파일 제거
-      queryClient.setQueryData<BlobFile[]>(["files"], (old) => {
-        return old?.filter((f) => f.pathname !== data.pathname) || [];
-      });
-      setDeleteSuccess(`${data.filename} 파일이 삭제되었습니다.`);
-
-      // 3초 후 성공 메시지 제거
-      setTimeout(() => setDeleteSuccess(null), 3000);
-    },
-  });
+  // Entity hook - 파일 삭제 mutation
+  const deleteMutation = useDeleteFileMutation();
 
   // 삭제 모달 열기 (overlay-kit 사용)
   const handleDeleteClick = (file: BlobFile) => {
@@ -122,7 +82,15 @@ export default function FilesPage() {
         isOpen={isOpen}
         onClose={close}
         onConfirm={async () => {
-          deleteMutation.mutate({ pathname: file.pathname, filename: file.filename });
+          deleteMutation.mutate(
+            { pathname: file.pathname },
+            {
+              onSuccess: () => {
+                setDeleteSuccess(`${file.filename} 파일이 삭제되었습니다.`);
+                setTimeout(() => setDeleteSuccess(null), 3000);
+              },
+            }
+          );
           close();
         }}
         fileName={file.pathname}
@@ -405,69 +373,15 @@ export default function FilesPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedFiles.map((file, index) => (
-                <tr
+              {filteredAndSortedFiles.map((file) => (
+                <FileListItem
                   key={file.pathname}
-                  className={`border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-                    index === filteredAndSortedFiles.length - 1 ? "border-b-0" : ""
-                  }`}
-                >
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => router.push(`/dashboard/files/view?pathname=${encodeURIComponent(file.pathname)}`)}
-                      className="text-left hover:bg-slate-50 dark:hover:bg-slate-800 -mx-2 px-2 py-1 rounded transition-colors w-full"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-slate-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400 truncate">
-                            {file.title || <span className="text-slate-400 dark:text-slate-500 italic">제목 없음</span>}
-                          </div>
-                          {file.description && (
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                              {file.description}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
-                      {file.pathname}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {formatFileSize(file.size)}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {file.date ? formatDate(file.date) : <span className="text-slate-400 dark:text-slate-500 italic">날짜 없음</span>}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                        title="다운로드"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                      <button
-                        className="p-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="삭제"
-                        onClick={() => handleDeleteClick(file)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  file={file}
+                  onView={(f) => router.push(`/dashboard/files/view?pathname=${encodeURIComponent(f.pathname)}`)}
+                  onDelete={handleDeleteClick}
+                  formatFileSize={formatFileSize}
+                  formatDate={formatDate}
+                />
               ))}
             </tbody>
           </table>

@@ -8,6 +8,9 @@ export interface BlobFile {
   size: number;
   uploadedAt: string;
   url: string;
+  title: string | null;
+  description: string | null;
+  date: string | null;
 }
 
 export interface FileMetadata {
