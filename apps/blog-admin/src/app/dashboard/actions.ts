@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifyApiKey } from "@/lib/auth-server";
+import { verifyApiKey } from "@/shared/lib/auth";
 
 type LoginState = {
   success: boolean;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Calendar, HardDrive, Loader2, AlertCircle, Edit, Tag } from "lucide-react";
 import type { FileData } from "@/entities/file";
 import { getFileContent } from "@/app/actions/files";
@@ -12,39 +12,29 @@ export default function FileViewPage() {
   const searchParams = useSearchParams();
   const pathname = searchParams?.get("pathname") || null;
 
-  const [fileData, setFileData] = useState<FileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (pathname) {
-      loadFileContent();
-    } else {
-      setError("파일 경로가 지정되지 않았습니다.");
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
-  const loadFileContent = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const result = await getFileContent(pathname!);
-
-      if (result.success) {
-        setFileData(result as FileData);
-      } else {
-        setError(result.error || "파일을 불러올 수 없습니다.");
+  // Fetch file content with TanStack Query
+  const {
+    data: fileData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["file", pathname],
+    queryFn: async () => {
+      if (!pathname) {
+        throw new Error("파일 경로가 지정되지 않았습니다.");
       }
-    } catch (error) {
-      setError("서버에 연결할 수 없습니다.");
-      console.error("Load file content error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+      const result = await getFileContent(pathname);
+
+      if (!result.success) {
+        throw new Error(result.error || "파일을 불러올 수 없습니다.");
+      }
+
+      return result as FileData;
+    },
+    enabled: !!pathname,
+    staleTime: 1000 * 60 * 5, // 5분간 fresh 상태 유지
+  });
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -81,7 +71,9 @@ export default function FileViewPage() {
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
         <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-6">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {error instanceof Error ? error.message : "파일을 불러올 수 없습니다."}
+          </p>
         </div>
         <button
           onClick={() => router.back()}

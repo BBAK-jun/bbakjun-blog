@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, lazy } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { parseAsString, parseAsStringEnum, useQueryStates } from "nuqs";
+import { overlay } from "overlay-kit";
 import { FileText, Loader2, Trash2, Download, RefreshCw, AlertCircle, CheckCircle, Search, X, Filter } from "lucide-react";
-import DeleteConfirmModal from "@/components/delete-confirm-modal";
 import { listFiles, deleteFile } from "@/app/actions/files";
+
+// Lazy import for modal (code-splitting)
+const DeleteConfirmModal = lazy(() => import("@/shared/ui/modal").then(m => ({ default: m.DeleteConfirmModal })));
 
 interface BlobFile {
   filename: string;
@@ -14,52 +19,57 @@ interface BlobFile {
   url: string;
   title: string | null;
   description: string | null;
+  date: string | null;
 }
 
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "size-asc" | "size-desc";
 
+// Query parameter parsers
+const filesSearchParams = {
+  q: parseAsString.withDefault(""),
+  category: parseAsString.withDefault("all"),
+  sort: parseAsStringEnum<SortOption>([
+    "name-asc",
+    "name-desc",
+    "date-asc",
+    "date-desc",
+    "size-asc",
+    "size-desc",
+  ]).withDefault("date-desc"),
+};
+
 export default function FilesPage() {
   const router = useRouter();
-  const [files, setFiles] = useState<BlobFile[]>([]);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [filesError, setFilesError] = useState("");
-  const [deleteModal, setDeleteModal] = useState<{
-    isOpen: boolean;
-    file: BlobFile | null;
-  }>({ isOpen: false, file: null });
-  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
+
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
-  // Search and filter states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortOption, setSortOption] = useState<SortOption>("date-desc");
-
-  // 페이지 로드 시 파일 목록 조회
-  useEffect(() => {
-    loadFiles();
-  }, []);
-
-  // 파일 목록 로드
-  const loadFiles = async () => {
-    setIsLoadingFiles(true);
-    setFilesError("");
-
-    try {
-      const result = await listFiles(100);
-
-      if (result.success) {
-        setFiles(result.files || []);
-      } else {
-        setFilesError(result.error || "파일 목록을 불러올 수 없습니다.");
-      }
-    } catch (error) {
-      setFilesError("서버에 연결할 수 없습니다.");
-      console.error("Load files error:", error);
-    } finally {
-      setIsLoadingFiles(false);
+  // URL query states with nuqs (type-safe)
+  const [{ q: searchQuery, category: categoryFilter, sort: sortOption }, setQueryStates] = useQueryStates(
+    filesSearchParams,
+    {
+      history: "push", // URL 변경 시 히스토리에 추가
     }
-  };
+  );
+
+  // React Query로 파일 목록 조회
+  const {
+    data: filesData,
+    isLoading: isLoadingFiles,
+    error: filesError,
+    refetch: loadFiles,
+  } = useQuery({
+    queryKey: ["files"],
+    queryFn: async () => {
+      const result = await listFiles(100);
+      if (!result.success) {
+        throw new Error(result.error || "파일 목록을 불러올 수 없습니다.");
+      }
+      return result.files || [];
+    },
+  });
+
+  const files = filesData || [];
 
   // 파일 크기 포맷팅
   const formatFileSize = (bytes: number): string => {
@@ -82,48 +92,43 @@ export default function FilesPage() {
     }).format(date);
   };
 
-  // 삭제 모달 열기
-  const handleDeleteClick = (file: BlobFile) => {
-    setDeleteModal({ isOpen: true, file });
-    setDeleteSuccess(null);
-  };
-
-  // 삭제 모달 닫기
-  const handleDeleteCancel = () => {
-    if (!isDeleting) {
-      setDeleteModal({ isOpen: false, file: null });
-    }
-  };
-
-  // 파일 삭제 실행
-  const handleDeleteConfirm = async () => {
-    if (!deleteModal.file) return;
-
-    setIsDeleting(true);
-    setFilesError("");
-
-    try {
-      const result = await deleteFile(deleteModal.file.pathname);
-
-      if (result.success) {
-        // 성공: 목록에서 제거하고 성공 메시지 표시
-        setFiles((prev) => prev.filter((f) => f.pathname !== deleteModal.file!.pathname));
-        setDeleteSuccess(`${deleteModal.file.filename} 파일이 삭제되었습니다.`);
-        setDeleteModal({ isOpen: false, file: null });
-
-        // 3초 후 성공 메시지 제거
-        setTimeout(() => setDeleteSuccess(null), 3000);
-      } else {
-        setFilesError(result.error || "파일 삭제 중 오류가 발생했습니다.");
-        setDeleteModal({ isOpen: false, file: null });
+  // 파일 삭제 mutation
+  const deleteMutation = useMutation({
+    mutationFn: async ({ pathname, filename }: { pathname: string; filename: string }) => {
+      const result = await deleteFile(pathname);
+      if (!result.success) {
+        throw new Error(result.error || "파일 삭제 중 오류가 발생했습니다.");
       }
-    } catch (error) {
-      setFilesError("서버에 연결할 수 없습니다.");
-      console.error("Delete file error:", error);
-      setDeleteModal({ isOpen: false, file: null });
-    } finally {
-      setIsDeleting(false);
-    }
+      return { pathname, filename };
+    },
+    onSuccess: (data) => {
+      // 캐시에서 삭제된 파일 제거
+      queryClient.setQueryData<BlobFile[]>(["files"], (old) => {
+        return old?.filter((f) => f.pathname !== data.pathname) || [];
+      });
+      setDeleteSuccess(`${data.filename} 파일이 삭제되었습니다.`);
+
+      // 3초 후 성공 메시지 제거
+      setTimeout(() => setDeleteSuccess(null), 3000);
+    },
+  });
+
+  // 삭제 모달 열기 (overlay-kit 사용)
+  const handleDeleteClick = (file: BlobFile) => {
+    setDeleteSuccess(null);
+
+    overlay.open(({ isOpen, close }) => (
+      <DeleteConfirmModal
+        isOpen={isOpen}
+        onClose={close}
+        onConfirm={async () => {
+          deleteMutation.mutate({ pathname: file.pathname, filename: file.filename });
+          close();
+        }}
+        fileName={file.pathname}
+        isDeleting={deleteMutation.isPending}
+      />
+    ));
   };
 
   // Extract unique categories from files
@@ -165,9 +170,15 @@ export default function FilesPage() {
         case "name-desc":
           return b.filename.localeCompare(a.filename);
         case "date-asc":
-          return new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          // Use frontmatter date if available, otherwise fall back to uploadedAt
+          const dateA = a.date ? new Date(a.date).getTime() : new Date(a.uploadedAt).getTime();
+          const dateB = b.date ? new Date(b.date).getTime() : new Date(b.uploadedAt).getTime();
+          return dateA - dateB;
         case "date-desc":
-          return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
+          // Use frontmatter date if available, otherwise fall back to uploadedAt
+          const dateDescA = a.date ? new Date(a.date).getTime() : new Date(a.uploadedAt).getTime();
+          const dateDescB = b.date ? new Date(b.date).getTime() : new Date(b.uploadedAt).getTime();
+          return dateDescB - dateDescA;
         case "size-asc":
           return a.size - b.size;
         case "size-desc":
@@ -182,9 +193,11 @@ export default function FilesPage() {
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchQuery("");
-    setCategoryFilter("all");
-    setSortOption("date-desc");
+    setQueryStates({
+      q: "",
+      category: "all",
+      sort: "date-desc",
+    });
   };
 
   // Check if any filters are active
@@ -202,7 +215,7 @@ export default function FilesPage() {
           </p>
         </div>
         <button
-          onClick={loadFiles}
+          onClick={() => loadFiles()}
           disabled={isLoadingFiles}
           className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
         >
@@ -229,13 +242,13 @@ export default function FilesPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setQueryStates({ q: e.target.value })}
               placeholder="파일명 또는 경로로 검색..."
               className="w-full pl-10 pr-10 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => setQueryStates({ q: "" })}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -246,7 +259,7 @@ export default function FilesPage() {
           {/* Category Filter */}
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => setQueryStates({ category: e.target.value })}
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">모든 카테고리</option>
@@ -260,7 +273,7 @@ export default function FilesPage() {
           {/* Sort Options */}
           <select
             value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as SortOption)}
+            onChange={(e) => setQueryStates({ sort: e.target.value as SortOption })}
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="date-desc">최신순</option>
@@ -317,7 +330,13 @@ export default function FilesPage() {
       {filesError && (
         <div className="flex items-center gap-2 p-3 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-600 dark:text-red-400">{filesError}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{filesError.message}</p>
+        </div>
+      )}
+      {deleteMutation.error && (
+        <div className="flex items-center gap-2 p-3 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-600 dark:text-red-400">{deleteMutation.error.message}</p>
         </div>
       )}
 
@@ -330,7 +349,7 @@ export default function FilesPage() {
       )}
 
       {/* Empty State - No files at all */}
-      {!isLoadingFiles && files.length === 0 && !filesError && (
+      {!isLoadingFiles && files.length === 0 && !filesError && !deleteMutation.error && (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
           <p className="text-slate-600 dark:text-slate-400 mb-2">
@@ -378,7 +397,7 @@ export default function FilesPage() {
                   크기
                 </th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  업로드 일시
+                  게시 날짜
                 </th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
                   액션
@@ -425,7 +444,7 @@ export default function FilesPage() {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {formatDate(file.uploadedAt)}
+                      {file.date ? formatDate(file.date) : <span className="text-slate-400 dark:text-slate-500 italic">날짜 없음</span>}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -465,14 +484,6 @@ export default function FilesPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        fileName={deleteModal.file?.pathname || ""}
-        isDeleting={isDeleting}
-      />
     </div>
   );
 }

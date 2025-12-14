@@ -1,6 +1,5 @@
-import { isAuthenticated } from "@/lib/auth-server";
+import { isAuthenticated } from "@/shared/lib/auth";
 import DashboardNav from "./dashboard-nav";
-import { QueryProvider } from "@/shared/providers";
 
 export default async function DashboardLayout({
   children,
@@ -16,14 +15,13 @@ export default async function DashboardLayout({
   }
 
   // 인증된 경우 대시보드 레이아웃 표시
+  // QueryProvider는 root layout에 이미 설정되어 있음
   return (
-    <QueryProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        <DashboardNav />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
-      </div>
-    </QueryProvider>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <DashboardNav />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
+      </main>
+    </div>
   );
 }

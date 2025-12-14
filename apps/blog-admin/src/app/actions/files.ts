@@ -166,6 +166,7 @@ export async function listFiles(limit = 100) {
             url: blob.url,
             title: frontMatter.title || null,
             description: frontMatter.description || null,
+            date: frontMatter.date || null,
           };
         } catch (error) {
           // If front matter parsing fails, return basic info
@@ -178,6 +179,7 @@ export async function listFiles(limit = 100) {
             url: blob.url,
             title: null,
             description: null,
+            date: null,
           };
         }
       })

@@ -29,6 +29,8 @@
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.553.0",
     "next": "16.0.8",
+    "nuqs": "^2.8.5",
+    "overlay-kit": "^1.8.6",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "tailwind-merge": "^3.4.0",

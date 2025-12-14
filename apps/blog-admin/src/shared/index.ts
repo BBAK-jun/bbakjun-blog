@@ -1,8 +1,5 @@
-/**
- * Shared Layer
- *
- * Re-export all shared modules
- */
+// UI Components
+export { DeleteConfirmModal, ImageUploader } from "./ui";
 
-export * from "./lib";
-export * from "./providers";
+// Libraries
+export { QueryProvider, verifyApiKey, verifyApiKeySync, getSession, isAuthenticated } from "./lib";

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import type React from "react";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { OverlayProvider } from "overlay-kit";
+import { QueryProvider } from "@/shared/lib/react-query";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,9 +37,15 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <div className="min-h-screen bg-background">
-          {children}
-        </div>
+        <OverlayProvider>
+          <NuqsAdapter>
+            <QueryProvider>
+              <div className="min-h-screen bg-background">
+                {children}
+              </div>
+            </QueryProvider>
+          </NuqsAdapter>
+        </OverlayProvider>
       </body>
     </html>
   );

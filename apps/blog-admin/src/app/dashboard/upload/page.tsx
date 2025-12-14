@@ -1,41 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload as UploadIcon, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import { uploadMarkdown } from "@/app/actions/files";
 
 export default function UploadPage() {
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [path, setPath] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<{
-    success: boolean;
-    message: string;
-  } | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setUploadResult(null);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file || !path.trim()) {
-      setUploadResult({
-        success: false,
-        message: "파일과 경로를 모두 입력해주세요.",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadResult(null);
-
-    try {
+  // Upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, path, tags, status }: { file: File; path: string; tags: string; status: string }) => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("path", path.trim());
@@ -43,34 +22,40 @@ export default function UploadPage() {
       formData.append("status", status);
 
       const result = await uploadMarkdown(formData);
-
-      if (result.success) {
-        setUploadResult({
-          success: true,
-          message: `파일이 성공적으로 업로드되었습니다: ${result.path}`,
-        });
-        // 성공 시 폼 초기화
-        setFile(null);
-        setPath("");
-        setTags("");
-        // input file 초기화
-        const fileInput = document.getElementById("file-upload") as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-      } else {
-        setUploadResult({
-          success: false,
-          message: result.error || "업로드 중 오류가 발생했습니다.",
-        });
+      if (!result.success) {
+        throw new Error(result.error || "업로드 중 오류가 발생했습니다.");
       }
-    } catch (error) {
-      setUploadResult({
-        success: false,
-        message: "서버에 연결할 수 없습니다.",
-      });
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
+      return result;
+    },
+    onSuccess: () => {
+      // 파일 목록 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ["files"] });
+
+      // 성공 시 폼 초기화
+      setFile(null);
+      setPath("");
+      setTags("");
+
+      // input file 초기화
+      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+    },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      uploadMutation.reset(); // 이전 결과 초기화
     }
+  };
+
+  const handleUpload = () => {
+    if (!file || !path.trim()) {
+      return;
+    }
+
+    uploadMutation.mutate({ file, path, tags, status });
   };
 
   return (
@@ -85,28 +70,32 @@ export default function UploadPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Upload Result */}
-        {uploadResult && (
-          <div
-            className={`flex items-start gap-3 p-4 rounded-lg ${
-              uploadResult.success
-                ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-            }`}
-          >
-            {uploadResult.success ? (
-              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            )}
-            <p
-              className={`text-sm ${
-                uploadResult.success
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-red-700 dark:text-red-300"
-              }`}
-            >
-              {uploadResult.message}
+        {/* Upload Result - Success */}
+        {uploadMutation.isSuccess && uploadMutation.data && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-green-700 dark:text-green-300">
+              파일이 성공적으로 업로드되었습니다: {uploadMutation.data.path}
+            </p>
+          </div>
+        )}
+
+        {/* Upload Result - Error */}
+        {uploadMutation.isError && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300">
+              {uploadMutation.error.message}
+            </p>
+          </div>
+        )}
+
+        {/* Validation Error */}
+        {!file && uploadMutation.isIdle && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800" style={{ display: 'none' }}>
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              파일과 경로를 모두 입력해주세요.
             </p>
           </div>
         )}
@@ -193,10 +182,10 @@ export default function UploadPage() {
         {/* Upload Button */}
         <button
           onClick={handleUpload}
-          disabled={isUploading || !file || !path.trim()}
+          disabled={uploadMutation.isPending || !file || !path.trim()}
           className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
         >
-          {isUploading ? (
+          {uploadMutation.isPending ? (
             <>
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth-server";
+import { isAuthenticated } from "@/shared/lib/auth";
 import LoginForm from "./login-form";
 
 export default async function DashboardPage() {

@@ -6,7 +6,7 @@ import { ArrowLeft, Save, ImageIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
 import { useFileEditor } from "@/hooks/use-file-editor";
-import ImageUploader from "@/components/ImageUploader";
+import { ImageUploader } from "@/shared/ui";
 import "../../../markdown.css";
 
 const CodeMirror = dynamic(
