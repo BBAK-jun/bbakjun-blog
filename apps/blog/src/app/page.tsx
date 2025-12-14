@@ -5,8 +5,8 @@ import PopularPostsGrid from '@/components/PopularPostsGrid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
-export default function Home() {
-  const posts = getAllPosts()
+export default async function Home() {
+  const posts = await getAllPosts()
   const featuredPosts = posts.slice(0, 12) // 최신 포스트
 
   return (

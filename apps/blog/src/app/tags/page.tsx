@@ -7,14 +7,17 @@ export const metadata: Metadata = {
   description: 'DEV_BBAK 블로그의 모든 태그를 확인해보세요.',
 }
 
-export default function TagsPage() {
-  const tags = getAllTags()
+export default async function TagsPage() {
+  const tags = await getAllTags()
 
   // 각 태그별 포스트 수 계산
-  const tagsWithCount = tags.map(tag => ({
-    name: tag,
-    count: getPostsByTag(tag).length
-  })).sort((a, b) => b.count - a.count) // 포스트 수가 많은 순으로 정렬
+  const tagsWithCount = await Promise.all(
+    tags.map(async tag => ({
+      name: tag,
+      count: (await getPostsByTag(tag)).length
+    }))
+  )
+  tagsWithCount.sort((a, b) => b.count - a.count) // 포스트 수가 많은 순으로 정렬
 
   return (
     <div className="space-y-8">

@@ -22,7 +22,7 @@ interface PostPageProps {
 
 // 정적 경로 생성
 export async function generateStaticParams() {
-  const posts = getAllPosts()
+  const posts = await getAllPosts()
   return posts.map((post) => ({
     slug: post.slug.split('/'),
   }))
@@ -32,7 +32,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params
   const slugString = slug.join('/')
-  const post = getPostBySlug(slugString)
+  const post = await getPostBySlug(slugString)
 
   if (!post) {
     return {
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
   const slugString = slug.join('/')
-  const post = getPostBySlug(slugString)
+  const post = await getPostBySlug(slugString)
 
   if (!post) {
     notFound()
@@ -95,7 +95,7 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const htmlContent = await processMarkdown(content)
-  const relatedPosts = getRelatedPosts(post, 4)
+  const relatedPosts = await getRelatedPosts(post, 4)
 
   return (
     <>

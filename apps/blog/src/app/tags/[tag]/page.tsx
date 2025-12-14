@@ -12,7 +12,7 @@ interface TagPageProps {
 
 // 정적 경로 생성
 export async function generateStaticParams() {
-  const tags = getAllTags()
+  const tags = await getAllTags()
   return tags.map((tag) => ({
     tag: encodeURIComponent(tag),
   }))
@@ -22,7 +22,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
   const { tag } = await params
   const decodedTag = decodeURIComponent(tag)
-  const posts = getPostsByTag(decodedTag)
+  const posts = await getPostsByTag(decodedTag)
 
   if (posts.length === 0) {
     return {
@@ -39,8 +39,8 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 export default async function TagPage({ params }: TagPageProps) {
   const { tag } = await params
   const decodedTag = decodeURIComponent(tag)
-  const posts = getPostsByTag(decodedTag)
-  const allTags = getAllTags()
+  const posts = await getPostsByTag(decodedTag)
+  const allTags = await getAllTags()
 
   if (posts.length === 0) {
     notFound()

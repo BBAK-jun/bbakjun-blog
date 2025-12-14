@@ -251,6 +251,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../types
+      '@vercel/blob':
+        specifier: ^0.23.4
+        version: 0.23.4
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3

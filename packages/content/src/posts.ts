@@ -3,8 +3,12 @@ import path from 'path'
 import matter from 'gray-matter'
 import readingTime from 'reading-time'
 import type { Post, PostMatter } from '@repo/types'
+import { fetchAllPostsFromBlob } from './posts-blob'
 
 const postsDirectory = path.join(process.cwd(), '../../packages/content/posts')
+
+// 포스트 소스 선택: 'filesystem' | 'blob'
+const POST_SOURCE = process.env.POST_SOURCE || 'filesystem'
 
 function getAllMdxFiles(dir: string, relativePath: string = ''): string[] {
   if (!fs.existsSync(dir)) {
@@ -43,7 +47,14 @@ export function getPostSlugs(): string[] {
   return getAllMdxFiles(postsDirectory)
 }
 
-export function getPostBySlug(slug: string): Post | null {
+export async function getPostBySlug(slug: string): Promise<Post | null> {
+  // Blob 소스 사용 시
+  if (POST_SOURCE === 'blob') {
+    const allPosts = await fetchAllPostsFromBlob()
+    return allPosts.find(post => post.slug === slug) || null
+  }
+
+  // 파일시스템 소스 사용 시
   try {
     // slug에 폴더 경로가 포함될 수 있으므로 이를 처리
     // 먼저 index.mdx 파일을 확인 (대부분의 포스트가 이 패턴을 따름)
@@ -70,10 +81,26 @@ export function getPostBySlug(slug: string): Post | null {
   }
 }
 
-export function getAllPosts(): Post[] {
+export async function getAllPosts(): Promise<Post[]> {
+  // Blob 소스 사용 시
+  if (POST_SOURCE === 'blob') {
+    const posts = await fetchAllPostsFromBlob()
+    return posts
+      .filter((post) => !post.frontMatter.draft)
+      .sort((a, b) => {
+        // order가 있으면 order 우선, 없으면 날짜순
+        const orderA = a.frontMatter.order ?? 999999
+        const orderB = b.frontMatter.order ?? 999999
+
+        if (orderA !== orderB) return orderA - orderB
+        return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
+      })
+  }
+
+  // 파일시스템 소스 사용 시 (기존 로직)
   const slugs = getPostSlugs()
-  const posts = slugs
-    .map((slug) => getPostBySlug(slug))
+  const postsPromises = slugs.map((slug) => getPostBySlug(slug))
+  const posts = (await Promise.all(postsPromises))
     .filter((post): post is Post => post !== null)
     .filter((post) => !post.frontMatter.draft)
     .sort((a, b) => {
@@ -89,10 +116,23 @@ export function getAllPosts(): Post[] {
 }
 
 // Dashboard용: draft 포함한 모든 포스트
-export function getAllPostsIncludingDrafts(): Post[] {
+export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
+  // Blob 소스 사용 시
+  if (POST_SOURCE === 'blob') {
+    const posts = await fetchAllPostsFromBlob()
+    return posts.sort((a, b) => {
+      const orderA = a.frontMatter.order ?? 999999
+      const orderB = b.frontMatter.order ?? 999999
+
+      if (orderA !== orderB) return orderA - orderB
+      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
+    })
+  }
+
+  // 파일시스템 소스 사용 시
   const slugs = getPostSlugs()
-  const posts = slugs
-    .map((slug) => getPostBySlug(slug))
+  const postsPromises = slugs.map((slug) => getPostBySlug(slug))
+  const posts = (await Promise.all(postsPromises))
     .filter((post): post is Post => post !== null)
     .sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999
@@ -105,15 +145,15 @@ export function getAllPostsIncludingDrafts(): Post[] {
   return posts
 }
 
-export function getPostsByTag(tag: string): Post[] {
-  const allPosts = getAllPosts()
+export async function getPostsByTag(tag: string): Promise<Post[]> {
+  const allPosts = await getAllPosts()
   return allPosts.filter((post) =>
     post.frontMatter.tags?.includes(tag)
   )
 }
 
-export function getAllTags(): string[] {
-  const allPosts = getAllPosts()
+export async function getAllTags(): Promise<string[]> {
+  const allPosts = await getAllPosts()
   const tags = new Set<string>()
 
   allPosts.forEach((post) => {
@@ -124,8 +164,8 @@ export function getAllTags(): string[] {
 }
 
 // 연관 글을 찾는 함수
-export function getRelatedPosts(currentPost: Post, maxPosts: number = 4): Post[] {
-  const allPosts = getAllPosts()
+export async function getRelatedPosts(currentPost: Post, maxPosts: number = 4): Promise<Post[]> {
+  const allPosts = await getAllPosts()
   const currentSlug = currentPost.slug
   const currentTags = currentPost.frontMatter.tags || []
   const currentCategory = currentPost.slug.split('/')[0] // 첫 번째 폴더를 카테고리로 사용

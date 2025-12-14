@@ -8,9 +8,9 @@ export async function GET(
   try {
     const { slug } = await params
     const slugString = slug.join('/')
-    
+
     // 포스트 정보 가져오기
-    const post = getPostBySlug(slugString)
+    const post = await getPostBySlug(slugString)
     
     if (!post) {
       return new Response('Post not found', { status: 404 })

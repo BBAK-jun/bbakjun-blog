@@ -41,9 +41,9 @@ function BlogWithSearchFallback() {
   )
 }
 
-export default function PostsPage() {
-  const posts = getAllPosts()
-  const tags = getAllTags()
+export default async function PostsPage() {
+  const posts = await getAllPosts()
+  const tags = await getAllTags()
 
   return (
     <Suspense fallback={<BlogWithSearchFallback />}>
