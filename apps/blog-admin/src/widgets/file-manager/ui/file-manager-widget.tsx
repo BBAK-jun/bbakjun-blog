@@ -1,7 +1,8 @@
 "use client";
 
 import { lazy } from "react";
-import { FileText, Loader2, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { FileText, Loader2, RefreshCw, AlertCircle, CheckCircle, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useFilesQuery, type BlobFile } from "@/entities/file";
 import { useFileDelete } from "@/features/file-delete";
 import { useFileSearch } from "@/features/file-search";
@@ -15,6 +16,8 @@ const DeleteConfirmModal = lazy(() =>
 );
 
 export function FileManagerWidget() {
+  const router = useRouter();
+
   // Entity hook - 파일 목록 조회
   const {
     data: filesData,
@@ -78,23 +81,32 @@ export function FileManagerWidget() {
             업로드된 마크다운 파일 목록을 관리합니다
           </p>
         </div>
-        <button
-          onClick={() => loadFiles()}
-          disabled={isLoadingFiles}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
-        >
-          {isLoadingFiles ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>새로고침 중...</span>
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4" />
-              <span>새로고침</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/dashboard/files/create')}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>새 글 작성</span>
+          </button>
+          <button
+            onClick={() => loadFiles()}
+            disabled={isLoadingFiles}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+          >
+            {isLoadingFiles ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>새로고침 중...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                <span>새로고침</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Success Message */}

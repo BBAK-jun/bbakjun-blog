@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Upload, FileText, History, Settings, LogOut, Moon, Sun } from "lucide-react";
+import { Upload, FileText, History, Settings, LogOut, Moon, Sun, PenSquare } from "lucide-react";
 import { logout } from "./actions";
 import { useEffect, useState } from "react";
 
@@ -11,8 +11,9 @@ export default function DashboardNav() {
   const [isDark, setIsDark] = useState(false);
 
   const tabs = [
-    { id: "upload", name: "업로드", icon: Upload, href: "/dashboard/upload" },
+    { id: "create", name: "새 글 작성", icon: PenSquare, href: "/dashboard/create" },
     { id: "files", name: "파일 관리", icon: FileText, href: "/dashboard/files" },
+    { id: "upload", name: "파일 업로드", icon: Upload, href: "/dashboard/upload" },
     { id: "history", name: "업로드 이력", icon: History, href: "/dashboard/history" },
     { id: "settings", name: "설정", icon: Settings, href: "/dashboard/settings" },
   ];
@@ -91,7 +92,10 @@ export default function DashboardNav() {
           <div className="flex space-x-8">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = pathname === tab.href || pathname?.startsWith(tab.href + "/");
+              // Exact match for most tabs, but allow sub-routes for files
+              const isActive = tab.id === "files"
+                ? pathname?.startsWith(tab.href + "/") && !pathname?.startsWith("/dashboard/create")
+                : pathname === tab.href || pathname?.startsWith(tab.href + "/");
 
               return (
                 <button

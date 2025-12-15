@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { OverlayProvider } from "overlay-kit";
 import { QueryProvider } from "@/shared/lib/react-query";
 import "./globals.css";
+import "./markdown.css";
 
 export const metadata: Metadata = {
   title: "블로그 백오피스 - 마크다운 관리",
