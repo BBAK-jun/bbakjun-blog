@@ -21,3 +21,9 @@ export {
   useDeleteFileMutation,
 } from "./api/queries";
 export { FileListItem } from "./ui";
+export {
+  fileMetadataSchema,
+  fileContentSchema,
+  type FileMetadata as FileMetadataEntity,
+  type FileContent as FileContentEntity,
+} from "./model/schema";

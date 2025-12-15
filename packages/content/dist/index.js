@@ -45,9 +45,85 @@ module.exports = __toCommonJS(index_exports);
 // src/posts.ts
 var import_fs = __toESM(require("fs"));
 var import_path = __toESM(require("path"));
+var import_gray_matter2 = __toESM(require("gray-matter"));
+var import_reading_time2 = __toESM(require("reading-time"));
+
+// src/posts-blob.ts
+var import_blob = require("@vercel/blob");
 var import_gray_matter = __toESM(require("gray-matter"));
 var import_reading_time = __toESM(require("reading-time"));
+var cachedPosts = null;
+var lastFetchTime = 0;
+var CACHE_DURATION = 60 * 60 * 1e3;
+function pathnameToSlug(pathname) {
+  let slug = pathname;
+  slug = slug.replace(/\.(md|mdx)$/, "");
+  if (slug.endsWith("/index")) {
+    slug = slug.replace(/\/index$/, "");
+  }
+  return slug;
+}
+async function downloadBlobContent(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download blob: ${response.statusText}`);
+  }
+  return response.text();
+}
+async function fetchPostFromBlob(pathname, url) {
+  try {
+    const content = await downloadBlobContent(url);
+    const { data, content: markdownContent } = (0, import_gray_matter.default)(content);
+    const readingTimeStats = (0, import_reading_time.default)(markdownContent);
+    const slug = pathnameToSlug(pathname);
+    return {
+      slug,
+      frontMatter: data,
+      content: markdownContent,
+      readingTime: readingTimeStats.text
+    };
+  } catch (error) {
+    console.error(`Error fetching post ${pathname}:`, error);
+    return null;
+  }
+}
+async function fetchAllPostsFromBlob() {
+  const now = Date.now();
+  if (cachedPosts && now - lastFetchTime < CACHE_DURATION) {
+    console.log("Using cached posts from Blob");
+    return cachedPosts;
+  }
+  console.log("Fetching posts from Blob Storage...");
+  try {
+    const { blobs } = await (0, import_blob.list)({
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+    const mdBlobs = blobs.filter(
+      (blob) => (blob.pathname.endsWith(".md") || blob.pathname.endsWith(".mdx")) && !blob.pathname.includes("/.")
+      // 숨김 파일 제외
+    );
+    console.log(`Found ${mdBlobs.length} markdown files in Blob Storage`);
+    const posts = await Promise.all(
+      mdBlobs.map((blob) => fetchPostFromBlob(blob.pathname, blob.url))
+    );
+    const validPosts = posts.filter((post) => post !== null);
+    cachedPosts = validPosts;
+    lastFetchTime = now;
+    console.log(`Successfully fetched ${validPosts.length} posts from Blob`);
+    return validPosts;
+  } catch (error) {
+    console.error("Error fetching posts from Blob:", error);
+    if (cachedPosts) {
+      console.log("Returning cached posts due to error");
+      return cachedPosts;
+    }
+    return [];
+  }
+}
+
+// src/posts.ts
 var postsDirectory = import_path.default.join(process.cwd(), "../../packages/content/posts");
+var POST_SOURCE = process.env.POST_SOURCE || "filesystem";
 function getAllMdxFiles(dir, relativePath = "") {
   if (!import_fs.default.existsSync(dir)) {
     return [];
@@ -75,15 +151,19 @@ function getAllMdxFiles(dir, relativePath = "") {
 function getPostSlugs() {
   return getAllMdxFiles(postsDirectory);
 }
-function getPostBySlug(slug) {
+async function getPostBySlug(slug) {
+  if (POST_SOURCE === "blob") {
+    const allPosts = await fetchAllPostsFromBlob();
+    return allPosts.find((post) => post.slug === slug) || null;
+  }
   try {
     let fullPath = import_path.default.join(postsDirectory, slug, "index.mdx");
     if (!import_fs.default.existsSync(fullPath)) {
       fullPath = import_path.default.join(postsDirectory, `${slug}.mdx`);
     }
     const fileContents = import_fs.default.readFileSync(fullPath, "utf8");
-    const { data, content } = (0, import_gray_matter.default)(fileContents);
-    const readingTimeStats = (0, import_reading_time.default)(content);
+    const { data, content } = (0, import_gray_matter2.default)(fileContents);
+    const readingTimeStats = (0, import_reading_time2.default)(content);
     return {
       slug,
       frontMatter: data,
@@ -95,9 +175,19 @@ function getPostBySlug(slug) {
     return null;
   }
 }
-function getAllPosts() {
+async function getAllPosts() {
+  if (POST_SOURCE === "blob") {
+    const posts2 = await fetchAllPostsFromBlob();
+    return posts2.filter((post) => !post.frontMatter.draft).sort((a, b) => {
+      const orderA = a.frontMatter.order ?? 999999;
+      const orderB = b.frontMatter.order ?? 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
+    });
+  }
   const slugs = getPostSlugs();
-  const posts = slugs.map((slug) => getPostBySlug(slug)).filter((post) => post !== null).filter((post) => !post.frontMatter.draft).sort((a, b) => {
+  const postsPromises = slugs.map((slug) => getPostBySlug(slug));
+  const posts = (await Promise.all(postsPromises)).filter((post) => post !== null).filter((post) => !post.frontMatter.draft).sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
     const orderB = b.frontMatter.order ?? 999999;
     if (orderA !== orderB) return orderA - orderB;
@@ -105,9 +195,19 @@ function getAllPosts() {
   });
   return posts;
 }
-function getAllPostsIncludingDrafts() {
+async function getAllPostsIncludingDrafts() {
+  if (POST_SOURCE === "blob") {
+    const posts2 = await fetchAllPostsFromBlob();
+    return posts2.sort((a, b) => {
+      const orderA = a.frontMatter.order ?? 999999;
+      const orderB = b.frontMatter.order ?? 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
+    });
+  }
   const slugs = getPostSlugs();
-  const posts = slugs.map((slug) => getPostBySlug(slug)).filter((post) => post !== null).sort((a, b) => {
+  const postsPromises = slugs.map((slug) => getPostBySlug(slug));
+  const posts = (await Promise.all(postsPromises)).filter((post) => post !== null).sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
     const orderB = b.frontMatter.order ?? 999999;
     if (orderA !== orderB) return orderA - orderB;
@@ -115,22 +215,22 @@ function getAllPostsIncludingDrafts() {
   });
   return posts;
 }
-function getPostsByTag(tag) {
-  const allPosts = getAllPosts();
+async function getPostsByTag(tag) {
+  const allPosts = await getAllPosts();
   return allPosts.filter(
     (post) => post.frontMatter.tags?.includes(tag)
   );
 }
-function getAllTags() {
-  const allPosts = getAllPosts();
+async function getAllTags() {
+  const allPosts = await getAllPosts();
   const tags = /* @__PURE__ */ new Set();
   allPosts.forEach((post) => {
     post.frontMatter.tags?.forEach((tag) => tags.add(tag));
   });
   return Array.from(tags).sort();
 }
-function getRelatedPosts(currentPost, maxPosts = 4) {
-  const allPosts = getAllPosts();
+async function getRelatedPosts(currentPost, maxPosts = 4) {
+  const allPosts = await getAllPosts();
   const currentSlug = currentPost.slug;
   const currentTags = currentPost.frontMatter.tags || [];
   const currentCategory = currentPost.slug.split("/")[0];

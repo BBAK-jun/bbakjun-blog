@@ -75,19 +75,17 @@ export function useFileEditor(pathname: string | null) {
     mutationFn: async () => {
       if (!pathname) throw new Error("No pathname");
 
-      const fullContent = combineContent(
-        {
-          title: formData.title,
-          description: formData.description,
-          tags: formData.tags,
-          author: formData.author,
-          date: formData.date,
-          draft: formData.draft || undefined,
-        },
-        formData.content
-      );
+      const result = await updateFile({
+        pathname,
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags,
+        author: formData.author,
+        date: formData.date,
+        draft: formData.draft,
+        content: formData.content,
+      });
 
-      const result = await updateFile(pathname, fullContent);
       if (!result.success) {
         throw new Error(result.error);
       }

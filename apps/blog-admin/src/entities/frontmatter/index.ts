@@ -10,3 +10,9 @@ export {
   serializeFrontMatter,
   combineContent,
 } from "./lib/frontmatter";
+export {
+  frontmatterEntitySchema,
+  editorFormDataSchema,
+  type FrontmatterEntity,
+  type EditorFormDataEntity,
+} from "./model/schema";

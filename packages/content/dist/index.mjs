@@ -9,7 +9,7 @@ import {
   getPostSlugs,
   getPostsByTag,
   getRelatedPosts
-} from "./chunk-T3XFFEJX.mjs";
+} from "./chunk-EYTNGVVS.mjs";
 import {
   rehypeMermaid
 } from "./chunk-NG4EI63L.mjs";

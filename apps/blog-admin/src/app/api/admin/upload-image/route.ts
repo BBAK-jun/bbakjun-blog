@@ -4,10 +4,6 @@ import { verifyApiKey } from "@/shared/lib/auth";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
 
-if (!BLOB_TOKEN) {
-  throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
-}
-
 /**
  * API endpoint for uploading images with custom pathname
  * Used by migration script to preserve original path structure

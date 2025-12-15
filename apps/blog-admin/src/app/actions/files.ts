@@ -4,12 +4,9 @@ import { put, del, list } from "@vercel/blob";
 import { processMarkdown } from "@repo/content";
 import { revalidatePath } from "next/cache";
 import matter from "gray-matter";
+import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/lib/schemas";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
-
-if (!BLOB_TOKEN) {
-  throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
-}
 
 /**
  * Get file content and metadata from Blob Storage
@@ -67,11 +64,50 @@ export async function getFileContent(pathname: string) {
 /**
  * Update file content in Blob Storage
  */
-export async function updateFile(pathname: string, content: string) {
+export interface UpdateFileInput {
+  pathname: string;
+  title: string;
+  description: string;
+  date: string;
+  tags: string[];
+  author: string;
+  draft?: boolean;
+  content: string;
+}
+
+export async function updateFile(input: UpdateFileInput) {
   try {
-    await put(pathname, content, {
+    // Validate input with Zod
+    const validationResult = updateFileSchema.safeParse(input);
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      return {
+        success: false,
+        error: firstError.message,
+      };
+    }
+
+    const validatedData = validationResult.data;
+
+    // Create frontmatter
+    const frontMatter = matter.stringify("", {
+      title: validatedData.title,
+      date: validatedData.date,
+      description: validatedData.description,
+      tags: validatedData.tags,
+      author: validatedData.author,
+      ...(validatedData.draft !== undefined && { draft: validatedData.draft }),
+    });
+
+    // Combine frontmatter and content
+    const fullContent = frontMatter + "\n" + validatedData.content;
+
+    // Upload to Blob Storage
+    await put(validatedData.pathname, fullContent, {
       access: "public",
       token: BLOB_TOKEN,
+      contentType: "text/markdown",
     });
 
     // Revalidate admin file list
@@ -79,7 +115,7 @@ export async function updateFile(pathname: string, content: string) {
 
     // Revalidate blog cache for the updated post
     // Extract slug from pathname (e.g., "DEV/my-post/index.mdx" -> "DEV/my-post")
-    const slug = pathname.replace(/\/(index\.)?(md|mdx)$/, "").replace(/\.(md|mdx)$/, "");
+    const slug = validatedData.pathname.replace(/\/(index\.)?(md|mdx)$/, "").replace(/\.(md|mdx)$/, "");
 
     // Revalidate the specific blog post page
     const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL || "http://localhost:3000";
@@ -95,13 +131,13 @@ export async function updateFile(pathname: string, content: string) {
 
     return {
       success: true,
-      message: "File updated successfully",
+      message: "파일이 성공적으로 업데이트되었습니다",
     };
   } catch (error) {
     console.error("Update file error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update file",
+      error: error instanceof Error ? error.message : "파일 업데이트에 실패했습니다",
     };
   }
 }
@@ -111,19 +147,30 @@ export async function updateFile(pathname: string, content: string) {
  */
 export async function deleteFile(pathname: string) {
   try {
-    await del(pathname, { token: BLOB_TOKEN });
+    // Validate input with Zod
+    const validationResult = deleteFileSchema.safeParse({ pathname });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      return {
+        success: false,
+        error: firstError.message,
+      };
+    }
+
+    await del(validationResult.data.pathname, { token: BLOB_TOKEN });
 
     revalidatePath("/dashboard/files");
 
     return {
       success: true,
-      message: "File deleted successfully",
+      message: "파일이 성공적으로 삭제되었습니다",
     };
   } catch (error) {
     console.error("Delete file error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete file",
+      error: error instanceof Error ? error.message : "파일 삭제에 실패했습니다",
     };
   }
 }
@@ -398,17 +445,21 @@ export interface CreateFileInput {
 
 export async function createFile(input: CreateFileInput) {
   try {
-    // Validate pathname
-    const sanitized = input.pathname.trim().replace(/^\/+|\/+$/g, "");
+    // Validate input with Zod
+    const validationResult = createFileSchema.safeParse(input);
 
-    if (!sanitized || sanitized.split("/").some(part => !part.trim())) {
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
       return {
         success: false,
-        error: "Invalid pathname format. Use format: CATEGORY/slug",
+        error: firstError.message,
       };
     }
 
-    // Generate final pathname
+    const validatedData = validationResult.data;
+
+    // Sanitize pathname
+    const sanitized = validatedData.pathname.trim().replace(/^\/+|\/+$/g, "");
     const finalPathname = `${sanitized}/index.mdx`;
 
     // Check if file already exists
@@ -418,22 +469,22 @@ export async function createFile(input: CreateFileInput) {
     if (existingFile) {
       return {
         success: false,
-        error: `File already exists: ${finalPathname}`,
+        error: `파일이 이미 존재합니다: ${finalPathname}`,
       };
     }
 
     // Create frontmatter
     const frontMatter = matter.stringify("", {
-      title: input.title,
-      date: input.date,
-      description: input.description,
-      tags: input.tags,
-      author: input.author,
-      ...(input.draft !== undefined && { draft: input.draft }),
+      title: validatedData.title,
+      date: validatedData.date,
+      description: validatedData.description,
+      tags: validatedData.tags,
+      author: validatedData.author,
+      ...(validatedData.draft !== undefined && { draft: validatedData.draft }),
     });
 
     // Combine frontmatter and content
-    const fullContent = frontMatter + "\n" + input.content;
+    const fullContent = frontMatter + "\n" + validatedData.content;
 
     // Upload to Blob Storage
     const blob = await put(finalPathname, fullContent, {
@@ -454,7 +505,7 @@ export async function createFile(input: CreateFileInput) {
     console.error("Create file error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create file",
+      error: error instanceof Error ? error.message : "파일 생성에 실패했습니다",
     };
   }
 }
