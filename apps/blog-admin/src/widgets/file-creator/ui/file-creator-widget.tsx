@@ -6,10 +6,10 @@
 
 "use client";
 
-import { useState } from "react";
-import { Save, Plus, AlertCircle, CheckCircle, Eye } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, Plus, AlertCircle, CheckCircle, Eye, PanelLeftClose, PanelLeft, Clock, X } from "lucide-react";
 import { useFileCreator, CategorySelector, PathPreview } from "@/features/file-create";
-import { ImageUploader } from "@/shared/ui";
+import { ImageUploader, MarkdownEditor } from "@/shared/ui";
 
 export function FileCreatorWidget() {
   const {
@@ -24,9 +24,13 @@ export function FileCreatorWidget() {
     isCreating,
     createError,
     isSuccess,
+    lastSavedAt,
+    clearDraft,
   } = useFileCreator();
 
   const [showImageUploader, setShowImageUploader] = useState(false);
+  const [viewMode, setViewMode] = useState<"editor" | "preview" | "split">("editor");
+  const [showDraftNotice, setShowDraftNotice] = useState(false);
 
   const handleImageUploaded = (url: string, filename: string) => {
     const imageMarkdown = `![${filename}](${url})`;
@@ -36,6 +40,35 @@ export function FileCreatorWidget() {
     });
     setShowImageUploader(false);
   };
+
+  const handleImageDrop = async (file: File): Promise<string | void> => {
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("이미지 업로드 실패");
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      alert("이미지 업로드에 실패했습니다.");
+    }
+  };
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    if (formData.content || formData.title) {
+      setShowDraftNotice(true);
+    }
+  }, []);
 
   const isFormValid =
     category.trim() &&
@@ -55,9 +88,23 @@ export function FileCreatorWidget() {
             <Plus className="w-6 h-6" />
             새 파일 생성
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            새로운 마크다운 파일을 생성합니다
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              새로운 마크다운 파일을 생성합니다
+            </p>
+            {lastSavedAt && (
+              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-500">
+                <Clock className="w-3 h-3" />
+                <span>
+                  {new Date(lastSavedAt).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  자동 저장됨
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <button
           onClick={() => create()}
@@ -68,6 +115,35 @@ export function FileCreatorWidget() {
           <span>{isCreating ? "생성 중..." : "생성"}</span>
         </button>
       </div>
+
+      {/* Draft Notice */}
+      {showDraftNotice && (
+        <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              저장된 초안이 복구되었습니다. 계속 작성하거나 새로 시작할 수 있습니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                clearDraft();
+                setShowDraftNotice(false);
+              }}
+              className="text-sm px-3 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
+            >
+              새로 시작
+            </button>
+            <button
+              onClick={() => setShowDraftNotice(false)}
+              className="text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded p-1 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Success Message */}
       {isSuccess && (
@@ -228,8 +304,9 @@ export function FileCreatorWidget() {
         </div>
       )}
 
-      {/* Editor */}
+      {/* Editor & Preview */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Toolbar */}
         <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             마크다운 편집
@@ -241,53 +318,95 @@ export function FileCreatorWidget() {
             >
               + 이미지
             </button>
-            <button
-              onClick={handlePreview}
-              disabled={isPreviewLoading || !formData.content}
-              className="flex items-center gap-1 text-sm px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
-            >
-              <Eye className="w-4 h-4" />
-              미리보기
-            </button>
+            <div className="flex items-center gap-1 border border-slate-300 dark:border-slate-600 rounded overflow-hidden">
+              <button
+                onClick={() => setViewMode("editor")}
+                className={`px-3 py-1 text-sm ${
+                  viewMode === "editor"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                편집
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("split");
+                  handlePreview();
+                }}
+                className={`px-3 py-1 text-sm ${
+                  viewMode === "split"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("preview");
+                  handlePreview();
+                }}
+                className={`px-3 py-1 text-sm ${
+                  viewMode === "preview"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-        <div className="p-4">
-          <textarea
-            value={formData.content}
-            onChange={(e) =>
-              setFormData({ ...formData, content: e.target.value })
-            }
-            placeholder="마크다운 내용을 입력하세요..."
-            className="w-full h-96 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 resize-none"
-            required
-          />
+
+        {/* Content Area */}
+        <div className={`grid ${viewMode === "split" ? "grid-cols-2" : "grid-cols-1"} gap-0`}>
+          {/* Editor */}
+          {(viewMode === "editor" || viewMode === "split") && (
+            <div className={`${viewMode === "split" ? "border-r border-slate-200 dark:border-slate-700" : ""}`}>
+              <div className="p-4">
+                <MarkdownEditor
+                  value={formData.content}
+                  onChange={(value) =>
+                    setFormData({ ...formData, content: value })
+                  }
+                  height="500px"
+                  onImageClick={() => setShowImageUploader(true)}
+                  onImageDrop={handleImageDrop}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Preview */}
+          {(viewMode === "preview" || viewMode === "split") && (
+            <div className="p-4">
+              <div className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden" style={{ height: "500px" }}>
+                <div className="overflow-auto h-full">
+                  {isPreviewLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-slate-600 dark:text-slate-400">
+                        미리보기 처리 중...
+                      </p>
+                    </div>
+                  ) : previewHtml ? (
+                    <article
+                      className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
+                      dangerouslySetInnerHTML={{ __html: previewHtml }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-slate-400 dark:text-slate-500 text-sm">
+                        내용을 입력하면 미리보기가 표시됩니다
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Preview */}
-      {previewHtml && (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              미리보기
-            </h2>
-          </div>
-          <div className="overflow-auto max-h-96">
-            {isPreviewLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-slate-600 dark:text-slate-400">
-                  미리보기 처리 중...
-                </p>
-              </div>
-            ) : (
-              <article
-                className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
