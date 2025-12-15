@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
-import { verifyApiKey } from "@/shared/lib/auth";
+import { verifyApiKeySync } from "@/shared/lib/auth";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
 
@@ -10,11 +10,11 @@ const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify API key
+    // Verify API key (레거시 인증)
     const authHeader = request.headers.get("authorization");
     const apiKey = authHeader?.replace("Bearer ", "");
 
-    if (!apiKey || !verifyApiKey(apiKey)) {
+    if (!apiKey || !verifyApiKeySync(apiKey)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }

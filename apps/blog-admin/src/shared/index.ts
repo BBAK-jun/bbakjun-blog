@@ -4,10 +4,13 @@ export { DeleteConfirmModal, ImageUploader } from "./ui";
 // Libraries
 export {
   QueryProvider,
-  verifyApiKey,
   verifyApiKeySync,
+  verifyApiKeyLegacy,
   getSession,
   isAuthenticated,
+  createSession,
+  deleteSession,
+  userRepository,
   formatFileSize,
   formatDate,
   formatDateLong,
