@@ -527,6 +527,54 @@ pnpm build:admin
 
 ### 환경 변수 오류
 
+#### Prisma 데이터베이스 연결 실패 (Prisma 7)
+
+**오류 메시지**:
+```
+[auth][cause] PrismaClientKnownRequestError:
+Can't reach database server at base
+```
+
+**원인**: Vercel 환경 변수에 따옴표(`"`)가 포함되어 있어 PostgreSQL 연결 문자열이 잘못 파싱됨
+
+**해결 방법**:
+
+1. **Vercel 대시보드에서 환경 변수 수정**:
+   ```
+   Settings → Environment Variables → DATABASE_URL 클릭
+   ```
+
+2. **따옴표 제거**:
+
+   ❌ 잘못된 설정:
+   ```
+   "postgresql://user:pass@host/db?sslmode=require"
+   ```
+
+   ✅ 올바른 설정:
+   ```
+   postgresql://user:pass@host/db?sslmode=require
+   ```
+
+3. **모든 데이터베이스 관련 환경 변수 확인**:
+   - `DATABASE_URL` (pooled connection)
+   - `DIRECT_URL` (direct connection)
+
+4. **재배포**:
+   ```bash
+   vercel --prod
+   ```
+   또는 Vercel 대시보드에서 "Redeploy" 클릭
+
+**주의사항**:
+- Vercel 환경 변수 입력 시 **따옴표 없이** 순수한 값만 입력
+- 환경 변수 변경 후 **반드시 재배포** 필요
+- Prisma 7에서는 `schema.prisma`에 `url` 설정이 없어도 되지만, 런타임에 `DATABASE_URL` 환경 변수 필수
+
+**관련 코드**:
+- [apps/blog-admin/src/shared/lib/db.ts](../src/shared/lib/db.ts): PrismaClient 초기화
+- [apps/blog-admin/prisma.config.ts](../prisma.config.ts): Prisma 설정 파일
+
 #### 오류: "BLOB_READ_WRITE_TOKEN is not set"
 
 **원인**: 환경 변수 미설정

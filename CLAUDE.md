@@ -245,11 +245,28 @@ NEXT_PUBLIC_BLOG_URL=https://...        # Public blog URL
 2. **Environment Variables**: All env vars must be declared in `turbo.json`
 3. **Build Configuration**: Uses `vercel.json` with custom build commands
 
+**CRITICAL - Vercel Environment Variables (Prisma 7)**:
+
+⚠️ **NEVER wrap environment variable values in quotes on Vercel**:
+
+❌ Wrong:
+```
+DATABASE_URL = "postgresql://user:pass@host/db?sslmode=require"
+```
+
+✅ Correct:
+```
+DATABASE_URL = postgresql://user:pass@host/db?sslmode=require
+```
+
+**Why**: Vercel treats quotes as part of the value, causing Prisma to fail with cryptic errors like "Can't reach database server at base". Always enter raw values without quotes.
+
 **Deployment Issues & Solutions**:
 
 See [apps/blog-admin/docs/DEPLOYMENT.md](apps/blog-admin/docs/DEPLOYMENT.md) for:
 - Prisma Client build errors
 - Turborepo environment variable warnings
+- Prisma 7 database connection issues
 - Complete troubleshooting guide
 
 ### Turborepo Environment Variables
