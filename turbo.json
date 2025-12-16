@@ -15,10 +15,12 @@
     "BLOB_STORE_ID",
     "BACKOFFICE_API_KEY",
     "NEXT_PUBLIC_BLOG_URL",
+    "NEXT_PUBLIC_ADMIN_URL",
     "BLOG_REVALIDATION_SECRET",
     "REVALIDATION_SECRET",
     "JWT_SECRET",
-    "REDIS_URL"
+    "REDIS_URL",
+    "RESEND_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -34,10 +36,12 @@
         "BLOB_STORE_ID",
         "BACKOFFICE_API_KEY",
         "NEXT_PUBLIC_BLOG_URL",
+        "NEXT_PUBLIC_ADMIN_URL",
         "BLOG_REVALIDATION_SECRET",
         "REVALIDATION_SECRET",
         "JWT_SECRET",
-        "REDIS_URL"
+        "REDIS_URL",
+        "RESEND_API_KEY"
       ]
     },
     "dev": {

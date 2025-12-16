@@ -87,3 +87,25 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map("verification_tokens")
 }
+
+// ==========================================
+// Newsletter Subscription
+// ==========================================
+
+model Subscriber {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  subscribedAt    DateTime  @default(now())
+  unsubscribedAt  DateTime?
+  isActive        Boolean   @default(true)
+
+  // Unsubscribe token for secure unsubscribe links
+  unsubscribeToken String   @unique @default(cuid())
+
+  // Optional metadata
+  source          String?   // e.g., "footer", "popup", "blog-post"
+
+  @@index([email])
+  @@index([isActive])
+  @@map("subscribers")
+}

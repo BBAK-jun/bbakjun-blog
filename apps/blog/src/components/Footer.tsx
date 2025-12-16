@@ -1,9 +1,16 @@
+import NewsletterSubscribe from './NewsletterSubscribe'
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Newsletter Section */}
+        <div className="mb-8">
+          <NewsletterSubscribe source="footer" />
+        </div>
+
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="text-gray-600 dark:text-gray-400 text-sm mb-4 md:mb-0">
             © {currentYear} DEV_BBAK 블로그. All rights reserved.

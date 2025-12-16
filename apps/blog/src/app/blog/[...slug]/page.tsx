@@ -6,6 +6,7 @@ import ReadingProgress from '@/components/ReadingProgress'
 import TableOfContents from '@/components/TableOfContents'
 import PopularPosts from '@/components/PopularPosts'
 import SeriesNavigation from '@/components/SeriesNavigation'
+import NewsletterSubscribe from '@/components/NewsletterSubscribe'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
@@ -214,6 +215,11 @@ export default async function PostPage({ params }: PostPageProps) {
           <div className="flex items-center space-x-4">
             <ShareButton title={frontMatter.title} description={frontMatter.description} />
           </div>
+        </div>
+
+        {/* Newsletter 구독 */}
+        <div className="mb-16">
+          <NewsletterSubscribe source="blog-post" />
         </div>
 
         {/* 연관 포스트 */}
