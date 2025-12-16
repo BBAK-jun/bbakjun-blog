@@ -6,8 +6,36 @@
 2. [Vercel에 배포](#vercel에-배포)
 3. [환경 변수 설정](#환경-변수-설정)
 4. [배포 후 확인](#배포-후-확인)
-5. [문제 해결](#문제-해결)
+5. [문제 해결 (트러블슈팅)](#문제-해결-트러블슈팅)
 6. [롤백](#롤백)
+
+---
+
+## 중요: 모노레포 배포 이슈 해결
+
+이 프로젝트는 Turborepo 모노레포 구조로, Vercel 배포 시 다음 두 가지 주요 이슈가 해결되었습니다:
+
+### 1. Prisma Client 빌드 오류
+
+**문제**: Prisma Client가 빌드 전에 생성되지 않아 오류 발생
+
+**해결**: `package.json`의 `postinstall` 및 `build` 스크립트에 `prisma generate` 추가
+```json
+{
+  "scripts": {
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate"
+  }
+}
+```
+
+### 2. Turborepo 환경 변수 경고
+
+**문제**: Vercel 환경 변수가 `turbo.json`에 선언되지 않아 빌드 실패
+
+**해결**: `turbo.json`에 모든 필요한 환경 변수 선언, 패키지에 `envMode: "loose"` 추가
+
+자세한 내용은 [문제 해결](#문제-해결-트러블슈팅) 섹션 참조.
 
 ---
 
@@ -352,9 +380,121 @@ VERCEL_PROJECT_ID=...
 
 ---
 
-## 문제 해결
+## 문제 해결 (트러블슈팅)
 
-### 배포 실패
+### 모노레포 특화 이슈
+
+#### Prisma Client 빌드 오류
+
+**오류 메시지**:
+```
+Error: @prisma/client did not initialize yet.
+Please run "prisma generate" and try to import it again.
+```
+
+**원인**: Vercel 빌드 프로세스에서 Prisma Client 생성 단계가 누락됨
+
+**해결 방법**:
+
+1. `apps/blog-admin/package.json`에 스크립트 추가 (이미 적용됨):
+```json
+{
+  "scripts": {
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate"
+  }
+}
+```
+
+2. `apps/blog-admin/vercel.json` 확인 (이미 생성됨):
+```json
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
+  "outputDirectory": ".next"
+}
+```
+
+3. 로컬 테스트:
+```bash
+# Prisma Client 재생성
+pnpm --filter=blog-admin exec prisma generate
+
+# 빌드 테스트
+pnpm --filter=blog-admin build
+```
+
+#### Turborepo 환경 변수 경고
+
+**오류 메시지**:
+```
+Warning - the following environment variables are set on your Vercel project,
+but missing from "turbo.json". These variables WILL NOT be available to your
+application and may cause your build to fail.
+```
+
+**원인**:
+- 모노레포 환경에서 Turborepo가 환경 변수를 관리
+- Vercel 환경 변수가 `turbo.json`에 선언되지 않으면 빌드 시 사용 불가
+
+**해결 방법**:
+
+1. 루트 `turbo.json`에 환경 변수 추가 (이미 적용됨):
+```json
+{
+  "globalEnv": [
+    "NODE_ENV",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "AUTH_SECRET",
+    "AUTH_GOOGLE_ID",
+    "AUTH_GOOGLE_SECRET",
+    "BLOB_READ_WRITE_TOKEN",
+    "BLOB_STORE_ID",
+    "BACKOFFICE_API_KEY",
+    "NEXT_PUBLIC_BLOG_URL",
+    "JWT_SECRET",
+    "REDIS_URL"
+  ],
+  "tasks": {
+    "build": {
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "AUTH_SECRET",
+        "AUTH_GOOGLE_ID",
+        "AUTH_GOOGLE_SECRET",
+        "BLOB_READ_WRITE_TOKEN",
+        "BLOB_STORE_ID",
+        "BACKOFFICE_API_KEY",
+        "NEXT_PUBLIC_BLOG_URL",
+        "JWT_SECRET",
+        "REDIS_URL"
+      ]
+    }
+  }
+}
+```
+
+2. 각 라이브러리 패키지에 `envMode: "loose"` 추가 (이미 적용됨):
+   - `packages/types/package.json`
+   - `packages/ui/package.json`
+   - `packages/analytics/package.json`
+
+```json
+{
+  "envMode": "loose"
+}
+```
+
+3. Vercel 대시보드에서 모든 환경 변수 설정 확인
+
+### 일반 배포 이슈
 
 #### 오류: "Build failed"
 

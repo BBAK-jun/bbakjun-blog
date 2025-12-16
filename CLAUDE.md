@@ -152,7 +152,61 @@ Custom renderers for MDX elements with Tailwind styling:
 - Experimental `mdxRs: true` for Rust-based MDX compiler
 - Page extensions: `['js', 'jsx', 'md', 'mdx', 'ts', 'tsx']`
 
+## Monorepo Structure
+
+This is a **Turborepo monorepo** with the following structure:
+
+```
+├── apps/
+│   ├── blog/              # Public blog (Next.js)
+│   └── blog-admin/        # Admin dashboard (Next.js + Prisma + Auth.js)
+├── packages/
+│   ├── analytics/         # @repo/analytics - Redis-based view tracking
+│   ├── content/           # @repo/content - MDX processing
+│   ├── types/             # @repo/types - Shared TypeScript types
+│   ├── ui/                # @repo/ui - Shared UI components
+│   └── config/            # @repo/config - Shared configurations
+└── turbo.json             # Turborepo configuration
+```
+
+### Development Commands (Monorepo)
+
+```bash
+# Run all apps
+pnpm dev
+
+# Run specific app
+pnpm dev:admin        # blog-admin only (port 3001)
+pnpm dev              # blog only (port 3000)
+
+# Build specific app
+pnpm build:admin      # blog-admin
+pnpm build:blog       # blog
+
+# Build all packages and apps
+pnpm build
+
+# Type checking
+pnpm type-check
+```
+
+### Workspace Dependencies
+
+Packages use `workspace:*` protocol for local dependencies:
+```json
+{
+  "dependencies": {
+    "@repo/analytics": "workspace:*",
+    "@repo/content": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/ui": "workspace:*"
+  }
+}
+```
+
 ## Deployment Notes
+
+### Blog App (apps/blog)
 
 **Platform**: Vercel (optimized for Next.js)
 
@@ -167,6 +221,60 @@ NEXT_PUBLIC_GISCUS_REPO_ID=... (optional, for comments)
 1. Static generation for all posts via `generateStaticParams()`
 2. API routes deployed as serverless functions
 3. Redis connection pooled via Vercel KV
+
+### Blog-Admin App (apps/blog-admin)
+
+**Platform**: Vercel
+
+**Required Environment Variables**:
+```
+DATABASE_URL=postgresql://...           # Neon PostgreSQL
+DIRECT_URL=postgresql://...             # Direct connection (non-pooled)
+AUTH_SECRET=...                         # openssl rand -base64 32
+AUTH_GOOGLE_ID=...                      # Google OAuth Client ID
+AUTH_GOOGLE_SECRET=...                  # Google OAuth Client Secret
+BLOB_READ_WRITE_TOKEN=...               # Vercel Blob Storage token
+BLOB_STORE_ID=...                       # Vercel Blob Store ID
+BACKOFFICE_API_KEY=...                  # Legacy API key
+JWT_SECRET=...                          # openssl rand -base64 32
+NEXT_PUBLIC_BLOG_URL=https://...        # Public blog URL
+```
+
+**Critical Setup**:
+1. **Prisma Client Generation**: `postinstall` script runs `prisma generate`
+2. **Environment Variables**: All env vars must be declared in `turbo.json`
+3. **Build Configuration**: Uses `vercel.json` with custom build commands
+
+**Deployment Issues & Solutions**:
+
+See [apps/blog-admin/docs/DEPLOYMENT.md](apps/blog-admin/docs/DEPLOYMENT.md) for:
+- Prisma Client build errors
+- Turborepo environment variable warnings
+- Complete troubleshooting guide
+
+### Turborepo Environment Variables
+
+**IMPORTANT**: All environment variables used in the monorepo must be declared in `turbo.json`:
+
+```json
+{
+  "globalEnv": ["NODE_ENV", "VERCEL", "DATABASE_URL", ...],
+  "tasks": {
+    "build": {
+      "env": ["DATABASE_URL", "AUTH_SECRET", ...]
+    }
+  }
+}
+```
+
+For library packages that don't use environment variables, add `"envMode": "loose"` to their `package.json`:
+
+```json
+{
+  "name": "@repo/types",
+  "envMode": "loose"
+}
+```
 
 ## Common Patterns
 
@@ -190,3 +298,117 @@ Edit the unified pipeline in `src/lib/markdown.ts`. Add rehype/remark plugins to
 ### Session Tracking
 
 Session IDs are managed client-side (see `ViewCounter` component). The backend uses cookies to deduplicate views within 24 hours.
+
+## Documentation Guidelines
+
+**CRITICAL**: Always update documentation when making significant changes to the codebase.
+
+### When to Update Documentation
+
+1. **After Adding New Features**
+   - Update relevant files in `apps/[app-name]/docs/`
+   - Add API documentation if new endpoints created
+   - Update ARCHITECTURE.md if structure changes
+
+2. **After Fixing Deployment Issues**
+   - Document the issue in `apps/blog-admin/docs/DEPLOYMENT.md` under "문제 해결 (트러블슈팅)"
+   - Include error messages, causes, and solutions
+   - Update CLAUDE.md if it's a critical pattern to remember
+
+3. **After Adding Environment Variables**
+   - Update `turbo.json` with new variables
+   - Document in CLAUDE.md under "Deployment Notes"
+   - Add to DEPLOYMENT.md's environment variables section
+
+4. **After Major Refactoring**
+   - Update ARCHITECTURE.md with new structure
+   - Update code examples in documentation
+   - Update CLAUDE.md if patterns changed
+
+5. **After Adding Dependencies**
+   - Document why the dependency was added
+   - Note any special configuration required
+   - Update package-specific README if needed
+
+### Documentation Structure to Follow
+
+```
+Problem/Feature → Solution → Documentation Update
+```
+
+**Example Flow**:
+1. Fix Prisma build issue
+2. Update `package.json` with `postinstall` script
+3. **Document in**:
+   - ✅ `apps/blog-admin/docs/DEPLOYMENT.md` (troubleshooting section)
+   - ✅ `CLAUDE.md` (critical setup section)
+
+### Files to Update Based on Change Type
+
+| Change Type | Update These Files |
+|-------------|-------------------|
+| Deployment issue | `apps/blog-admin/docs/DEPLOYMENT.md`, `CLAUDE.md` |
+| New API endpoint | `apps/blog-admin/docs/API.md` |
+| Architecture change | `apps/blog-admin/docs/ARCHITECTURE.md`, `CLAUDE.md` |
+| Environment variable | `turbo.json`, `CLAUDE.md`, `DEPLOYMENT.md` |
+| New pattern/convention | `CLAUDE.md`, relevant `/docs/` files |
+| Bug fix (significant) | `DEPLOYMENT.md` or `DEVELOPMENT.md` |
+
+### Documentation Template for Issues
+
+When documenting a resolved issue in DEPLOYMENT.md:
+
+```markdown
+#### Issue Title
+
+**오류 메시지**:
+\`\`\`
+[Exact error message]
+\`\`\`
+
+**원인**: [Root cause explanation]
+
+**해결 방법**:
+
+1. [Step 1 with code example]
+2. [Step 2 with code example]
+3. [Verification step]
+```
+
+### What NOT to Document
+
+- Minor variable renames
+- Simple typo fixes
+- Temporary debugging code
+- Routine dependency updates (unless breaking changes)
+
+### Documentation Priority
+
+**HIGH (Must document immediately)**:
+- Deployment configuration changes
+- Build process changes
+- Critical bug fixes
+- New environment variables
+- Breaking changes
+
+**MEDIUM (Document when convenient)**:
+- New features
+- API changes
+- Architecture refactoring
+- New utilities
+
+**LOW (Optional)**:
+- Internal helper functions
+- Minor optimizations
+- Code cleanup
+
+### Self-Check Before Completing Task
+
+Before marking a task complete, ask:
+1. ✅ Did I update CLAUDE.md if this is a pattern to remember?
+2. ✅ Did I update DEPLOYMENT.md if this affects deployment?
+3. ✅ Did I update API.md if I added/changed endpoints?
+4. ✅ Did I update turbo.json if I used new environment variables?
+5. ✅ Did I update ARCHITECTURE.md if structure changed?
+
+**If any answer is YES but not done → Update documentation first, then complete task.**

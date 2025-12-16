@@ -1,9 +1,27 @@
 # DEV_BBAK 블로그
 
-Next.js 15, TypeScript, MDX, Redis를 사용한 현대적인 블로그입니다.
+Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포입니다.
 
-## ✨ 기능
+## 📦 모노레포 구조
 
+이 프로젝트는 **Turborepo**로 관리되는 모노레포입니다:
+
+```
+├── apps/
+│   ├── blog/              # 공개 블로그 (Next.js 15)
+│   └── blog-admin/        # 관리자 대시보드 (Next.js 16 + Prisma + Auth.js v5)
+├── packages/
+│   ├── analytics/         # Redis 기반 조회수 추적
+│   ├── content/           # MDX 처리 및 마크다운 렌더링
+│   ├── types/             # 공유 TypeScript 타입 정의
+│   ├── ui/                # 공유 UI 컴포넌트 라이브러리
+│   └── config/            # 공유 설정
+└── content/posts/         # 블로그 포스트 (MDX)
+```
+
+## ✨ 주요 기능
+
+### Blog App (공개 블로그)
 - 📝 **MDX 기반 블로그 포스트**: 마크다운에 React 컴포넌트 사용 가능
 - 👁️ **조회수 추적**: Redis(Vercel KV) 기반 실시간 조회수 카운팅
 - 🏷️ **태그 시스템**: 포스트를 태그별로 분류 및 필터링
@@ -12,17 +30,42 @@ Next.js 15, TypeScript, MDX, Redis를 사용한 현대적인 블로그입니다.
 - ⚡ **빠른 성능**: Next.js 15의 최신 기능 활용
 - 🔍 **SEO 최적화**: 메타태그, Open Graph, Twitter Cards 지원
 
+### Blog-Admin App (관리자 대시보드)
+- 🔐 **인증 시스템**: Auth.js v5 + Google OAuth
+- 👥 **역할 기반 접근 제어**: SUPER_ADMIN, ADMIN, GUEST
+- 📂 **파일 관리**: Vercel Blob Storage를 통한 MDX 파일 업로드/관리
+- 🗄️ **데이터베이스**: Neon PostgreSQL + Prisma ORM
+- 📝 **마크다운 편집기**: CodeMirror 기반 실시간 프리뷰
+- 📊 **대시보드**: 파일 관리, 업로드 이력, 설정
+
 ## 🛠️ 기술 스택
 
-- **프레임워크**: Next.js 15 (App Router)
+### Frontend
+- **프레임워크**: Next.js 15 (Blog), Next.js 16 (Admin)
 - **언어**: TypeScript
-- **스타일링**: Tailwind CSS
-- **콘텐츠**: MDX (Markdown + React)
-- **데이터베이스**: Redis (Vercel KV)
-- **배포**: Vercel
-- **폰트**: Geist Sans & Geist Mono
+- **스타일링**: Tailwind CSS v4
+- **UI 라이브러리**: Radix UI
+- **상태 관리**: React Query (Admin)
 
-## 🚀 로컬 개발 시작하기
+### Backend
+- **데이터베이스**:
+  - PostgreSQL (Neon) - Admin 인증 및 사용자 관리
+  - Redis (Vercel KV) - 조회수 추적
+- **ORM**: Prisma
+- **인증**: Auth.js v5 (Google OAuth)
+- **스토리지**: Vercel Blob Storage
+
+### Build & Deploy
+- **모노레포**: Turborepo
+- **패키지 관리**: pnpm
+- **배포**: Vercel
+- **CI/CD**: Vercel Git Integration
+
+## 🚀 빠른 시작
+
+### 사전 요구사항
+- Node.js v24 이상
+- pnpm v10.25.0 이상
 
 ### 1. 저장소 클론
 
@@ -34,23 +77,49 @@ cd bbakjun-blog
 ### 2. 의존성 설치
 
 \`\`\`bash
-npm install
+pnpm install
 \`\`\`
 
-### 3. 환경 변수 설정
+### 3. 개발 서버 실행
 
-\`\`\`.env.local
-# 로컬 개발용 (Redis 없이도 작동)
-NODE_ENV=development
+**모든 앱 실행:**
+\`\`\`bash
+pnpm dev
 \`\`\`
 
-### 4. 개발 서버 실행
+**특정 앱만 실행:**
+\`\`\`bash
+pnpm dev:admin   # Blog-Admin (http://localhost:3001)
+# 또는 blog만 실행 (http://localhost:3000)
+\`\`\`
+
+### 4. 빌드
 
 \`\`\`bash
-npm run dev
+# 전체 빌드
+pnpm build
+
+# 특정 앱 빌드
+pnpm build:admin  # Blog-Admin
+pnpm build:blog   # Blog
 \`\`\`
 
-[http://localhost:3000](http://localhost:3000)에서 블로그를 확인할 수 있습니다.
+## 📚 문서
+
+### 루트 문서
+- [CLAUDE.md](CLAUDE.md) - Claude Code를 위한 프로젝트 가이드 (모노레포 구조, 배포 지침 포함)
+- [QUICKSTART.md](QUICKSTART.md) - 빠른 시작 가이드
+- [DOCUMENTATION.md](DOCUMENTATION.md) - 프로젝트 전체 문서
+
+### Blog App 문서
+블로그 앱은 기본적으로 환경 변수 없이 작동합니다 (Redis 없이 조회수 0 표시).
+
+### Blog-Admin App 문서
+- [apps/blog-admin/README.md](apps/blog-admin/README.md) - 개요
+- [apps/blog-admin/docs/SETUP.md](apps/blog-admin/docs/SETUP.md) - 환경 설정 가이드
+- [apps/blog-admin/docs/DEPLOYMENT.md](apps/blog-admin/docs/DEPLOYMENT.md) - **Vercel 배포 가이드 (Prisma, Turborepo 이슈 해결 포함)**
+- [apps/blog-admin/docs/ARCHITECTURE.md](apps/blog-admin/docs/ARCHITECTURE.md) - 아키텍처 설명
+- [apps/blog-admin/docs/API.md](apps/blog-admin/docs/API.md) - API 문서
 
 ## 📝 블로그 포스트 작성
 
