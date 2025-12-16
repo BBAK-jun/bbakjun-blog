@@ -10,6 +10,8 @@ interface PostMatter {
     image?: string;
     draft?: boolean;
     order?: number;
+    series?: string;
+    seriesOrder?: number;
 }
 /**
  * Complete post data including content and metadata
@@ -47,5 +49,32 @@ interface PopularPost {
     slug: string;
     views: number;
 }
+/**
+ * Series metadata
+ */
+interface Series {
+    slug: string;
+    title: string;
+    description: string;
+    cover?: string;
+    status: 'ongoing' | 'completed';
+    posts: Post[];
+    totalPosts: number;
+    startedAt?: string;
+    updatedAt?: string;
+}
+/**
+ * Series summary (without full post content)
+ */
+interface SeriesSummary {
+    slug: string;
+    title: string;
+    description: string;
+    cover?: string;
+    status: 'ongoing' | 'completed';
+    totalPosts: number;
+    startedAt?: string;
+    updatedAt?: string;
+}
 
-export type { PopularPost, Post, PostMatter, PostUpdate, ViewData };
+export type { PopularPost, Post, PostMatter, PostUpdate, Series, SeriesSummary, ViewData };

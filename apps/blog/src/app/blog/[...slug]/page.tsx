@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
-import { getPostBySlug, getAllPosts, getRelatedPosts, processMarkdown } from '@repo/content'
+import { getPostBySlug, getAllPosts, getRelatedPosts, processMarkdown, getPostSeries, getSeriesNavigation } from '@repo/content'
 import ViewCounter from '@/components/ViewCounter'
 import ShareButton from '@/components/ShareButton'
 import ReadingProgress from '@/components/ReadingProgress'
 import TableOfContents from '@/components/TableOfContents'
 import PopularPosts from '@/components/PopularPosts'
+import SeriesNavigation from '@/components/SeriesNavigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
@@ -106,6 +107,10 @@ export default async function PostPage({ params }: PostPageProps) {
   const htmlContent = await processMarkdown(content)
   const relatedPosts = await getRelatedPosts(post, 4)
 
+  // Get series information if post belongs to a series
+  const series = await getPostSeries(slugString)
+  const seriesNav = series ? getSeriesNavigation(series, slugString) : null
+
   return (
     <>
       <ReadingProgress />
@@ -174,6 +179,16 @@ export default async function PostPage({ params }: PostPageProps) {
           </details>
         </div>
       </header>
+
+      {/* 시리즈 네비게이션 */}
+      {series && seriesNav && (
+        <SeriesNavigation
+          series={series}
+          currentPost={post}
+          prev={seriesNav.prev}
+          next={seriesNav.next}
+        />
+      )}
 
       {/* 포스트 내용 */}
       <div

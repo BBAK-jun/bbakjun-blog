@@ -9,6 +9,8 @@ export interface FrontMatter {
   tags: string[];
   author: string;
   draft?: boolean;
+  series?: string;
+  seriesOrder?: number;
 }
 
 /**
@@ -21,5 +23,7 @@ export interface EditorFormData {
   tags: string[];
   author: string;
   draft?: boolean;
+  series?: string;
+  seriesOrder?: number;
   content: string;
 }

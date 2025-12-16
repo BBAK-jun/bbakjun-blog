@@ -10,6 +10,8 @@ export interface PostMatter {
   image?: string
   draft?: boolean
   order?: number  // For manual post ordering in dashboard
+  series?: string  // Series slug this post belongs to
+  seriesOrder?: number  // Order within the series
 }
 
 /**
@@ -50,4 +52,33 @@ export interface ViewData {
 export interface PopularPost {
   slug: string
   views: number
+}
+
+/**
+ * Series metadata
+ */
+export interface Series {
+  slug: string
+  title: string
+  description: string
+  cover?: string  // Cover image URL
+  status: 'ongoing' | 'completed'
+  posts: Post[]  // Posts in this series, ordered by seriesOrder
+  totalPosts: number
+  startedAt?: string  // Date of first post
+  updatedAt?: string  // Date of last post
+}
+
+/**
+ * Series summary (without full post content)
+ */
+export interface SeriesSummary {
+  slug: string
+  title: string
+  description: string
+  cover?: string
+  status: 'ongoing' | 'completed'
+  totalPosts: number
+  startedAt?: string
+  updatedAt?: string
 }

@@ -19,6 +19,8 @@ export const fileCreateFormSchema = z.object({
     .min(1, "최소 1개의 태그를 입력해주세요"),
   author: z.string().min(1, "작성자를 입력해주세요"),
   draft: z.boolean().optional(),
+  series: z.string().optional(),
+  seriesOrder: z.number().int().positive().optional(),
   content: z.string().min(1, "내용을 입력해주세요"),
 });
 

@@ -273,6 +273,48 @@ export function FileCreatorWidget() {
             />
           </div>
 
+          {/* Series */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              시리즈 (선택사항)
+            </label>
+            <input
+              type="text"
+              value={formData.series || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, series: e.target.value || undefined })
+              }
+              placeholder="예: react-deep-dive"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              시리즈 slug (영문, 소문자, 하이픈)
+            </p>
+          </div>
+
+          {/* Series Order */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              시리즈 순서 (선택사항)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.seriesOrder || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  seriesOrder: e.target.value ? parseInt(e.target.value) : undefined,
+                })
+              }
+              placeholder="1"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              시리즈 내 순서 (1부터 시작)
+            </p>
+          </div>
+
           {/* Draft */}
           <div className="md:col-span-2">
             <label className="flex items-center gap-2 cursor-pointer">

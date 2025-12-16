@@ -58,6 +58,15 @@ export default function Header() {
             >
               태그
             </Link>
+            <Link
+              href="/series"
+              className={cn(
+                "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors",
+                "hover:underline hover:underline-offset-4"
+              )}
+            >
+              시리즈
+            </Link>
             <ThemeToggle />
           </nav>
 
@@ -115,6 +124,16 @@ export default function Header() {
                 onClick={closeMobileMenu}
               >
                 태그
+              </Link>
+              <Link
+                href="/series"
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+                  "hover:underline hover:underline-offset-4"
+                )}
+                onClick={closeMobileMenu}
+              >
+                시리즈
               </Link>
             </div>
           </div>

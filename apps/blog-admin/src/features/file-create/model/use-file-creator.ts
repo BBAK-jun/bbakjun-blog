@@ -16,6 +16,8 @@ export interface EditorFormData {
   author: string;
   date: string;
   draft: boolean;
+  series?: string;
+  seriesOrder?: number;
   content: string;
 }
 
