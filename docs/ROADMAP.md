@@ -631,7 +631,7 @@ await resend.emails.send({
 | 7 | 다크모드 개선 | 2-4시간 | 쉬움 | ⭐⭐⭐ | ✅ 완료 |
 | 8 | 시리즈/카테고리 | 10-13시간 | 높음 | ⭐⭐⭐⭐ | ✅ 완료 |
 | 9 | 관련 포스트 개선 | 14-18시간 | 높음 | ⭐⭐⭐ | ⏸️ 보류 |
-| 10 | Newsletter | 4-12시간 | 중간 | ⭐⭐⭐⭐ | ⏸️ 보류 |
+| 10 | Newsletter | 4-12시간 | 중간 | ⭐⭐⭐⭐ | ✅ 완료 |
 
 ---
 
@@ -681,10 +681,17 @@ await resend.emails.send({
    - `/series/[slug]` detail pages
    - Series navigation in post pages (prev/next)
    - Admin UI for series fields
-2. ⏸️ Newsletter 구독 - 4-12시간
+2. ✅ Newsletter 구독 - 4-12시간
+   - Prisma Subscriber model with unsubscribe tokens
+   - Resend email service integration
+   - Subscribe/unsubscribe API endpoints
+   - Newsletter UI components (full & compact)
+   - Admin subscriber management dashboard
+   - CSV export functionality
+   - Role-based access control
 3. ⏸️ 관련 포스트 알고리즘 - 14-18시간
 
-**총 예상**: 28-43시간 | **현재까지**: ~12시간
+**총 예상**: 28-43시간 | **현재까지**: ~18시간
 
 ---
 
