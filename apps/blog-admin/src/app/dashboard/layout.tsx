@@ -1,4 +1,4 @@
-import { isAuthenticated } from "@/shared/lib/auth";
+import { auth } from "../../../auth";
 import DashboardNav from "./dashboard-nav";
 
 export default async function DashboardLayout({
@@ -6,16 +6,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const authenticated = await isAuthenticated();
+  const session = await auth();
 
-  // /dashboard 자체는 로그인 페이지이므로 인증 체크 안 함
-  // 하위 경로만 체크
-  if (!authenticated) {
+  // 인증되지 않은 경우 레이아웃 없이 children만 렌더링
+  if (!session?.user) {
     return <>{children}</>;
   }
 
   // 인증된 경우 대시보드 레이아웃 표시
-  // QueryProvider는 root layout에 이미 설정되어 있음
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <DashboardNav />
