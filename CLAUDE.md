@@ -80,7 +80,7 @@ Uses Redis hashes with session-based deduplication:
 
 ## Markdown Processing Pipeline
 
-**Location**: `src/lib/markdown.ts`
+**Location**: `packages/content/src/markdown.ts`
 
 ```
 Raw MDX content
@@ -91,16 +91,34 @@ Raw MDX content
   → rehype-autolink-headings (add anchor links to headings)
   → rehype-highlight (syntax highlighting for code blocks)
   → rehype-mermaid (convert ```mermaid to renderable divs)
+  → rehype-optimize-images (lazy loading, responsive images, captions)
   → rehype-stringify (HTML AST → string)
 ```
 
 ### Mermaid Chart Support
 
-Mermaid code blocks are transformed server-side by `src/lib/rehype-mermaid.ts`:
+Mermaid code blocks are transformed server-side by `packages/content/src/rehype-mermaid.ts`:
 
 1. Detects `code.language-mermaid` elements in HTML AST
 2. Wraps content in `<div data-mermaid="..."><pre class="mermaid">...</pre></div>`
 3. Client-side: `MermaidRenderer` component initializes mermaid.js on mount
+
+### Image Optimization
+
+Images are optimized server-side by `packages/content/src/rehype-optimize-images.ts`:
+
+1. Detects `<img>` elements in HTML AST
+2. Adds `loading="lazy"` and `decoding="async"` for better performance
+3. Wraps images with alt text in `<figure>` with `<figcaption>`
+4. Adds responsive styling classes
+5. Prevents layout shift with proper sizing
+
+**Features**:
+- Lazy loading for images below the fold
+- Automatic captions from alt text
+- Responsive design with hover effects
+- Dark mode support
+- WebP/AVIF format support via Next.js Image configuration
 
 ## ISR (Incremental Static Regeneration)
 

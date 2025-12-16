@@ -120,6 +120,51 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Smooth dark mode transitions */
+  html {
+    transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+  }
+
+  body,
+  div,
+  header,
+  footer,
+  nav,
+  main,
+  section,
+  article,
+  aside {
+    transition: background-color 200ms ease-in-out, color 200ms ease-in-out,
+      border-color 200ms ease-in-out;
+  }
+
+  /* Prevent flash on page load */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+
+  /* Blog image optimization */
+  .blog-image {
+    @apply shadow-md;
+    transition: transform 200ms ease-in-out, box-shadow 200ms ease-in-out;
+  }
+
+  .blog-image:hover {
+    @apply shadow-lg;
+    transform: scale(1.01);
+  }
+
+  .blog-image-figure {
+    @apply space-y-2;
+  }
+
+  /* Responsive images */
+  img {
+    @apply max-w-full h-auto;
+  }
 }
 
 @import './mermaid.css';

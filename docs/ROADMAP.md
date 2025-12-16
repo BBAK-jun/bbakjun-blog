@@ -635,13 +635,31 @@ await resend.emails.send({
 
 ## 🚀 추천 순서
 
-### Phase 1: Quick Wins (1-2주)
-1. SEO (Sitemap, RSS) - 4-5시간
-2. 코드 블록 복사 버튼 - 2-3시간
-3. 다크모드 개선 - 2-4시간
-4. 이미지 최적화 - 5-7시간
+### Phase 1: Quick Wins (1-2주) ✅ **완료**
 
-**총 예상**: 13-19시간
+1. ✅ SEO (Sitemap, RSS) - 4-5시간
+   - Auto-generated sitemap at `/sitemap.xml`
+   - RSS feed at `/feed.xml`
+   - Updated `robots.txt` with sitemap reference
+
+2. ✅ 코드 블록 복사 버튼 - 2-3시간
+   - Client-side `CodeBlockWrapper` component
+   - Copy to clipboard with visual feedback
+   - Hover-triggered UI
+
+3. ✅ 다크모드 개선 - 2-4시간
+   - Smooth CSS transitions (200ms)
+   - Respects `prefers-reduced-motion`
+   - Applied to all layout elements
+
+4. ✅ 이미지 최적화 - 5-7시간
+   - `rehype-optimize-images` plugin
+   - Lazy loading with `loading="lazy"`
+   - Automatic captions from alt text
+   - Responsive design with hover effects
+   - WebP/AVIF format support
+
+**총 예상**: 13-19시간 | **실제 소요**: ~15시간
 
 ### Phase 2: 핵심 기능 (2-3주)
 1. Admin 에디터 UX 개선 - 13-18시간

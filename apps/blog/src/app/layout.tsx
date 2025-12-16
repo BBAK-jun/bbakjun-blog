@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ko_KR",
   },
+  alternates: {
+    types: {
+      'application/rss+xml': `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/feed.xml`,
+    },
+  },
 };
 
 export default function RootLayout({

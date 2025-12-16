@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import Comments, { CommentsConfig } from '@/components/Comments'
 import MermaidRenderer from '@/components/MermaidRenderer'
 import RelatedPosts from '@/components/RelatedPosts'
+import CodeBlockWrapper from '@/components/CodeBlockWrapper'
 
 interface PostPageProps {
   params: Promise<{
@@ -182,6 +183,9 @@ export default async function PostPage({ params }: PostPageProps) {
 
       {/* Mermaid 차트 렌더링 */}
       <MermaidRenderer content={htmlContent} />
+
+      {/* 코드 블록 복사 버튼 */}
+      <CodeBlockWrapper />
 
       {/* 포스트 푸터 */}
       <footer>

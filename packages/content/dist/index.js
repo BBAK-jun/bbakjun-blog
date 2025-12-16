@@ -343,6 +343,58 @@ function rehypeMermaid() {
   };
 }
 
+// src/rehype-optimize-images.ts
+var import_unist_util_visit = require("unist-util-visit");
+function rehypeOptimizeImages() {
+  return (tree) => {
+    (0, import_unist_util_visit.visit)(tree, "element", (node, index, parent) => {
+      if (node.tagName === "img" && parent && typeof index === "number") {
+        const src = node.properties?.src;
+        const alt = node.properties?.alt || "";
+        if (!src) return;
+        node.properties = {
+          ...node.properties,
+          loading: "lazy",
+          decoding: "async",
+          alt,
+          // Add CSS classes for styling
+          className: "blog-image rounded-lg my-6 w-full h-auto",
+          // Add dimensions if not already present (prevents layout shift)
+          style: "max-width: 100%; height: auto;"
+        };
+        if (alt && parent.type === "element") {
+          const figure = {
+            type: "element",
+            tagName: "figure",
+            properties: {
+              className: "blog-image-figure my-8"
+            },
+            children: [
+              { ...node },
+              // Clone the img node
+              {
+                type: "element",
+                tagName: "figcaption",
+                properties: {
+                  className: "text-center text-sm text-gray-600 dark:text-gray-400 mt-2 italic"
+                },
+                children: [
+                  {
+                    type: "text",
+                    value: alt
+                  }
+                ]
+              }
+            ]
+          };
+          parent.children[index] = figure;
+          return import_unist_util_visit.SKIP;
+        }
+      }
+    });
+  };
+}
+
 // src/markdown.ts
 async function processMarkdown(content) {
   const processor = (0, import_unified.unified)().use(import_remark_parse.default).use(import_remark_gfm.default).use(import_remark_rehype.default, { allowDangerousHtml: true }).use(import_rehype_slug.default).use(import_rehype_autolink_headings.default, {
@@ -377,7 +429,7 @@ async function processMarkdown(content) {
   }).use(import_rehype_highlight.default, {
     detect: true,
     ignoreMissing: true
-  }).use(rehypeMermaid).use(import_rehype_stringify.default, { allowDangerousHtml: true });
+  }).use(rehypeMermaid).use(rehypeOptimizeImages).use(import_rehype_stringify.default, { allowDangerousHtml: true });
   const result = await processor.process(content);
   return String(result);
 }
