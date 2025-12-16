@@ -1,0 +1,89 @@
+// Prisma schema for blog-admin authentication system
+// Auth.js v5 + Neon PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// User Roles (역할 기반 접근 제어)
+// ==========================================
+enum UserRole {
+  SUPER_ADMIN  // 최고 관리자 - 모든 권한 + 사용자 역할 관리
+  ADMIN        // 일반 관리자 - 콘텐츠 관리 (CRUD)
+  GUEST        // 게스트 - 읽기 전용
+}
+
+// ==========================================
+// Auth.js Required Models
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Custom fields
+  role          UserRole  @default(GUEST)
+  username      String?   @unique  // 레거시 호환성 (선택)
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String  // e.g., "google"
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
