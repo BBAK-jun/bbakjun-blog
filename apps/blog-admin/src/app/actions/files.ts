@@ -5,6 +5,7 @@ import { processMarkdown } from "@repo/content";
 import { revalidatePath } from "next/cache";
 import matter from "gray-matter";
 import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/lib/schemas";
+import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
 
@@ -113,21 +114,8 @@ export async function updateFile(input: UpdateFileInput) {
     // Revalidate admin file list
     revalidatePath("/dashboard/files");
 
-    // Revalidate blog cache for the updated post
-    // Extract slug from pathname (e.g., "DEV/my-post/index.mdx" -> "DEV/my-post")
-    const slug = validatedData.pathname.replace(/\/(index\.)?(md|mdx)$/, "").replace(/\.(md|mdx)$/, "");
-
-    // Revalidate the specific blog post page
-    const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL || "http://localhost:3000";
-    try {
-      await fetch(`${blogUrl}/api/revalidate?path=/blog/${encodeURIComponent(slug)}`, {
-        method: "POST",
-      });
-      console.log(`Revalidated blog post: /blog/${slug}`);
-    } catch (revalidateError) {
-      console.error("Failed to revalidate blog:", revalidateError);
-      // Don't fail the update if revalidation fails
-    }
+    // Revalidate blog post using utility function
+    await revalidateBlogPost(validatedData.pathname);
 
     return {
       success: true,
@@ -161,6 +149,9 @@ export async function deleteFile(pathname: string) {
     await del(validationResult.data.pathname, { token: BLOB_TOKEN });
 
     revalidatePath("/dashboard/files");
+
+    // Revalidate blog post
+    await revalidateBlogPost(validationResult.data.pathname);
 
     return {
       success: true,
@@ -495,6 +486,9 @@ export async function createFile(input: CreateFileInput) {
 
     // Revalidate cache
     revalidatePath("/dashboard/files");
+
+    // Revalidate blog post
+    await revalidateBlogPost(blob.pathname);
 
     return {
       success: true,
