@@ -10,13 +10,19 @@ interface TagPageProps {
   }>
 }
 
-// 정적 경로 생성
+// 정적 경로 생성 (ISR과 함께 사용)
 export async function generateStaticParams() {
   const tags = await getAllTags()
   return tags.map((tag) => ({
     tag: encodeURIComponent(tag),
   }))
 }
+
+// ISR 설정: 300초(5분)마다 재검증
+export const revalidate = 300
+
+// 새 태그가 추가되면 런타임에 생성 후 캐싱
+export const dynamicParams = true
 
 // 메타데이터 생성
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {

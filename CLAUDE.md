@@ -102,15 +102,48 @@ Mermaid code blocks are transformed server-side by `src/lib/rehype-mermaid.ts`:
 2. Wraps content in `<div data-mermaid="..."><pre class="mermaid">...</pre></div>`
 3. Client-side: `MermaidRenderer` component initializes mermaid.js on mount
 
+## ISR (Incremental Static Regeneration)
+
+The blog uses **ISR** to combine static performance with dynamic content updates:
+
+### Revalidation Strategy
+
+- **Blog Posts** (`/blog/[...slug]`): 60 seconds
+  - Automatically updates content every minute
+  - `dynamicParams: true` allows new posts to be generated on-demand
+
+- **Home Page** (`/`): 60 seconds
+  - Latest posts list refreshes every minute
+
+- **Tag Pages** (`/tags/[tag]`): 300 seconds (5 minutes)
+  - Tag-based post lists refresh every 5 minutes
+  - New tags are generated on-demand
+
+### On-Demand Revalidation
+
+API endpoint: `POST /api/revalidate?secret=<token>&path=<path>`
+
+**Usage from blog-admin**:
+```bash
+curl -X POST \
+  'https://your-blog.vercel.app/api/revalidate?secret=YOUR_SECRET&path=/blog/my-post'
+```
+
+**Environment Variables**:
+- `REVALIDATION_SECRET`: Secret token for on-demand revalidation (generate with `openssl rand -base64 32`)
+
+**See**: [apps/blog/docs/ISR.md](apps/blog/docs/ISR.md) for complete guide
+
 ## Component Architecture
 
 ### Page Components (App Router)
 
 - **`src/app/blog/[...slug]/page.tsx`**: Individual post pages
-  - Uses `generateStaticParams()` for static generation
+  - Uses `generateStaticParams()` for static generation with ISR
   - Handles catch-all routes for nested slugs
   - Generates metadata with dynamic OG images
   - Renders processed markdown with dangerouslySetInnerHTML
+  - **ISR**: 60 second revalidation
 
 ### Client Components
 
@@ -215,12 +248,20 @@ Packages use `workspace:*` protocol for local dependencies:
 REDIS_URL=redis://...
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
 NEXT_PUBLIC_GISCUS_REPO_ID=... (optional, for comments)
+REVALIDATION_SECRET=... (for on-demand ISR revalidation)
 ```
 
 **Build Process**:
-1. Static generation for all posts via `generateStaticParams()`
+1. Static generation for all posts via `generateStaticParams()` with ISR
 2. API routes deployed as serverless functions
 3. Redis connection pooled via Vercel KV
+4. ISR revalidation: 60s for posts/home, 300s for tags
+
+**ISR Configuration**:
+- Blog posts and home page automatically refresh every 60 seconds
+- Tag pages refresh every 5 minutes
+- On-demand revalidation available via `/api/revalidate` endpoint
+- See [apps/blog/docs/ISR.md](apps/blog/docs/ISR.md) for details
 
 ### Blog-Admin App (apps/blog-admin)
 

@@ -2,30 +2,60 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * API endpoint to revalidate specific paths
+ * On-demand ISR revalidation API
  * Called by blog-admin when content is updated
+ *
+ * Usage:
+ * POST /api/revalidate?secret=<token>&path=/blog/my-post
+ * POST /api/revalidate?secret=<token>&all=true (revalidates all blog pages)
  */
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const secret = searchParams.get("secret");
     const path = searchParams.get("path");
+    const all = searchParams.get("all") === "true";
 
-    if (!path) {
+    // Security: Verify secret token
+    if (secret !== process.env.REVALIDATION_SECRET) {
       return NextResponse.json(
-        { error: "Path parameter is required" },
+        { error: "Invalid secret token" },
+        { status: 401 }
+      );
+    }
+
+    // Validate parameters
+    if (!path && !all) {
+      return NextResponse.json(
+        { error: "Either 'path' or 'all=true' parameter is required" },
         { status: 400 }
       );
     }
 
-    // Revalidate the specific path
-    revalidatePath(path);
+    const revalidatedPaths: string[] = [];
 
-    // Also revalidate the home page to update the post list
-    revalidatePath("/");
+    // Revalidate specific path
+    if (path) {
+      revalidatePath(path);
+      revalidatedPaths.push(path);
+
+      // Also revalidate the home page and blog list
+      revalidatePath("/");
+      revalidatePath("/blog");
+      revalidatedPaths.push("/", "/blog");
+    }
+
+    // Revalidate all blog-related pages
+    if (all) {
+      // Revalidate with layout option to clear all nested pages
+      revalidatePath("/", "layout");
+      revalidatePath("/blog", "layout");
+      revalidatedPaths.push("/ (layout)", "/blog (layout)");
+    }
 
     return NextResponse.json({
       revalidated: true,
-      path,
+      paths: revalidatedPaths,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

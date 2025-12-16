@@ -20,13 +20,21 @@ interface PostPageProps {
   }>
 }
 
-// 정적 경로 생성
+// 정적 경로 생성 (ISR과 함께 사용)
 export async function generateStaticParams() {
   const posts = await getAllPosts()
   return posts.map((post) => ({
     slug: post.slug.split('/'),
   }))
 }
+
+// ISR 설정: 60초마다 재검증
+export const revalidate = 60
+
+// 동적 경로 처리 방식
+// true: 빌드 시 생성되지 않은 경로도 런타임에 생성 후 캐싱 (ISR)
+// false: generateStaticParams에 없는 경로는 404
+export const dynamicParams = true
 
 // 메타데이터 생성
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {

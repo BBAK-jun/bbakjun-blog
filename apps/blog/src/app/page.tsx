@@ -5,6 +5,9 @@ import PopularPostsGrid from '@/components/PopularPostsGrid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
+// ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
+export const revalidate = 60
+
 export default async function Home() {
   const posts = await getAllPosts()
   const featuredPosts = posts.slice(0, 12) // 최신 포스트
