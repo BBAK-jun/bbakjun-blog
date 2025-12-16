@@ -80,6 +80,64 @@ export function MarkdownEditor({
     [value, onChange]
   );
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!modKey) return;
+
+      // Prevent default for our shortcuts
+      const shortcuts: Record<string, () => void> = {
+        b: () => {
+          e.preventDefault();
+          insertText("**", "**", "굵은 텍스트");
+        },
+        i: () => {
+          e.preventDefault();
+          insertText("*", "*", "기울임 텍스트");
+        },
+        k: () => {
+          e.preventDefault();
+          insertText("[", "](https://)", "링크 텍스트");
+        },
+      };
+
+      // Shift + Cmd/Ctrl shortcuts
+      if (e.shiftKey) {
+        const shiftShortcuts: Record<string, () => void> = {
+          c: () => {
+            e.preventDefault();
+            insertText("`", "`", "코드");
+          },
+          k: () => {
+            e.preventDefault();
+            insertText("```\n", "\n```", "코드 블록");
+          },
+          i: () => {
+            e.preventDefault();
+            if (onImageClick) {
+              onImageClick();
+            } else {
+              insertText("![", "](https://)", "이미지 설명");
+            }
+          },
+        };
+
+        const handler = shiftShortcuts[e.key.toLowerCase()];
+        if (handler) handler();
+        return;
+      }
+
+      const handler = shortcuts[e.key.toLowerCase()];
+      if (handler) handler();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [insertText, onImageClick]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -183,21 +241,28 @@ export function MarkdownEditor({
       onDrop={handleDrop}
     >
       {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600 flex-wrap">
-        {toolbarButtons.map((button, index) => {
-          const Icon = button.icon;
-          return (
-            <button
-              key={index}
-              onClick={button.action}
-              type="button"
-              title={button.label}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-            >
-              <Icon className="w-4 h-4" />
-            </button>
-          );
-        })}
+      <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600">
+        <div className="flex items-center gap-1 p-2 flex-wrap">
+          {toolbarButtons.map((button, index) => {
+            const Icon = button.icon;
+            return (
+              <button
+                key={index}
+                onClick={button.action}
+                type="button"
+                title={button.label}
+                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
+        <div className="px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
+          💡 단축키: <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded">⌘/Ctrl+B</kbd> 굵게,
+          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">⌘/Ctrl+I</kbd> 기울임,
+          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">⌘/Ctrl+K</kbd> 링크
+        </div>
       </div>
 
       {/* Editor */}

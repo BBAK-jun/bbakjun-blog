@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { ArrowLeft, Save, ImageIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
@@ -19,6 +19,11 @@ function EditPageContent() {
   const router = useRouter();
   const pathname = searchParams?.get("pathname") || null;
   const [showImageUploader, setShowImageUploader] = useState(false);
+
+  // Scroll sync refs
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+  const isScrollingSyncRef = useRef(false);
 
   const {
     fileData,
@@ -54,6 +59,44 @@ function EditPageContent() {
       },
     });
   };
+
+  // Scroll synchronization
+  useEffect(() => {
+    const editorContainer = editorScrollRef.current;
+    const previewContainer = previewScrollRef.current;
+
+    if (!editorContainer || !previewContainer) return;
+
+    const handleEditorScroll = () => {
+      if (isScrollingSyncRef.current) {
+        isScrollingSyncRef.current = false;
+        return;
+      }
+
+      isScrollingSyncRef.current = true;
+      const scrollPercentage = editorContainer.scrollTop / (editorContainer.scrollHeight - editorContainer.clientHeight);
+      previewContainer.scrollTop = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
+    };
+
+    const handlePreviewScroll = () => {
+      if (isScrollingSyncRef.current) {
+        isScrollingSyncRef.current = false;
+        return;
+      }
+
+      isScrollingSyncRef.current = true;
+      const scrollPercentage = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight);
+      editorContainer.scrollTop = scrollPercentage * (editorContainer.scrollHeight - editorContainer.clientHeight);
+    };
+
+    editorContainer.addEventListener("scroll", handleEditorScroll);
+    previewContainer.addEventListener("scroll", handlePreviewScroll);
+
+    return () => {
+      editorContainer.removeEventListener("scroll", handleEditorScroll);
+      previewContainer.removeEventListener("scroll", handlePreviewScroll);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -253,13 +296,13 @@ function EditPageContent() {
               마크다운 편집
             </h2>
           </div>
-          <div className="p-0">
+          <div ref={editorScrollRef} className="p-0 overflow-auto" style={{ height: "600px" }}>
             <CodeMirror
               value={formData.content}
               onChange={(value) =>
                 setFormData({ ...formData, content: value })
               }
-              height="600px"
+              height="100%"
               theme="dark"
               extensions={[markdown()]}
               className="text-sm"
@@ -296,7 +339,7 @@ function EditPageContent() {
               미리보기
             </h2>
           </div>
-          <div className="overflow-auto" style={{ height: "600px" }}>
+          <div ref={previewScrollRef} className="overflow-auto" style={{ height: "600px" }}>
             <article
               className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
               dangerouslySetInnerHTML={{ __html: previewHtml }}

@@ -45,6 +45,7 @@ export function useFileCreator() {
   const router = useRouter();
   const [previewHtml, setPreviewHtml] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Use localStorage hook for automatic syncing
   const [draftData, setDraftData] = useLocalStorage<DraftData>(
@@ -109,6 +110,7 @@ export function useFileCreator() {
   useEffect(() => {
     // Mark as editing
     isEditingRef.current = true;
+    setIsSaving(true);
 
     // Clear previous edit timeout
     if (editTimeoutRef.current) {
@@ -126,10 +128,12 @@ export function useFileCreator() {
         category,
       });
       setLastSavedAt(new Date());
+      setIsSaving(false);
     }, 2000); // Save after 2 seconds of inactivity
 
     return () => {
       clearTimeout(timer);
+      setIsSaving(false);
     };
   }, [formData, category, setDraftData]);
 
@@ -239,6 +243,7 @@ export function useFileCreator() {
 
     // Autosave
     lastSavedAt,
+    isSaving,
     clearDraft,
   };
 }

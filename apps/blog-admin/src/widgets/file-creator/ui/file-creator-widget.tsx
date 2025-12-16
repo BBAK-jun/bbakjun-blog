@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Plus, AlertCircle, CheckCircle, Eye, PanelLeftClose, PanelLeft, Clock, X } from "lucide-react";
+import { Save, Plus, AlertCircle, CheckCircle, Eye, PanelLeftClose, PanelLeft, X } from "lucide-react";
 import { useFileCreator, CategorySelector, PathPreview } from "@/features/file-create";
 import { ImageUploader, MarkdownEditor } from "@/shared/ui";
 
@@ -25,6 +25,7 @@ export function FileCreatorWidget() {
     createError,
     isSuccess,
     lastSavedAt,
+    isSaving,
     clearDraft,
   } = useFileCreator();
 
@@ -92,15 +93,20 @@ export function FileCreatorWidget() {
             <p className="text-sm text-slate-600 dark:text-slate-400">
               새로운 마크다운 파일을 생성합니다
             </p>
-            {lastSavedAt && (
-              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-500">
-                <Clock className="w-3 h-3" />
+            {isSaving ? (
+              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                <div className="animate-spin w-3 h-3 border-2 border-amber-600 dark:border-amber-500 border-t-transparent rounded-full"></div>
+                <span>저장 중...</span>
+              </div>
+            ) : lastSavedAt && (
+              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
+                <CheckCircle className="w-3 h-3" />
                 <span>
                   {new Date(lastSavedAt).toLocaleTimeString("ko-KR", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}{" "}
-                  자동 저장됨
+                  저장됨
                 </span>
               </div>
             )}
