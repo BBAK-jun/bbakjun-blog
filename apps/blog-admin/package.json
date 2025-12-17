@@ -21,7 +21,7 @@
     "start": "next start -p 3001",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && pnpm build:rpc"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
