@@ -5,12 +5,17 @@ import PopularPostsGrid from '@/components/PopularPostsGrid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
+import { client } from '@/lib/rpc'
+
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
 export const revalidate = 60
 
 export default async function Home() {
   const posts = await getAllPosts()
+  const postsFromRpc = await client.api.v1['blob-files'].$get({})
   const featuredPosts = posts.slice(0, 12) // 최신 포스트
+
+  console.log(postsFromRpc)
 
   return (
     <div className="space-y-16">

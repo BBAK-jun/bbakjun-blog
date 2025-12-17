@@ -16,10 +16,10 @@ export const blobFileSchema = z.object({
   url: z.string().url(),
   pathname: z.string(),
   size: z.number(),
-  uploadedAt: z.string(),
+  uploadedAt: z.date(),
   contentType: z.string().nullable(),
-  syncedAt: z.string(),
-  lastChecked: z.string(),
+  syncedAt: z.date(),
+  lastChecked: z.date(),
   isDeleted: z.boolean(),
   uploadedBy: z.string().nullable(),
 });

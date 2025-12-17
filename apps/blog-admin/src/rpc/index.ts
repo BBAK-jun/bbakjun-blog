@@ -1,16 +1,14 @@
 import { Hono } from 'hono';
+import type { RpcEnv } from './env';
 import {
-  adminBlobFilesRoutes,
   blobFilesRoutes,
   legacyAdminBlobFilesRoutes,
   legacyImageUploadRoutes,
   legacyMarkdownUploadRoutes,
   legacyPublicBlobFilesRoutes,
   newsletterRoutes,
-  uploadRoutes,
+  uploadRoutes
 } from './routes';
-import type { RpcEnv } from './env';
-import { openApiSpec } from '../contract/openapi';
  
 const v1 = new Hono<RpcEnv>()
   .route('/blob-files', blobFilesRoutes)
@@ -21,10 +19,7 @@ const v1 = new Hono<RpcEnv>()
   .route('/admin/upload', legacyMarkdownUploadRoutes)
   .route('/admin/upload-image', legacyImageUploadRoutes);
 
-const api = new Hono<RpcEnv>()
-  .route('/v1', v1)
-  .get('/openapi.json', (c) => c.json(openApiSpec))
-  .route('/', v1);
+const api = new Hono<RpcEnv>().route('/v1', v1)
 
 const rootApp = new Hono<RpcEnv>();
 rootApp.notFound((c) => c.json({ error: 'Not Found' }, 404));
@@ -40,7 +35,3 @@ rootApp.onError((err, c) => {
 export const rpcApp = rootApp.route('/api', api);
 
 export type AppType = typeof rpcApp;
-
-export function createRpcApp() {
-  return rpcApp;
-}

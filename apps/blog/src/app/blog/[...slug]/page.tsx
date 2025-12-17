@@ -1,21 +1,22 @@
-import { notFound } from 'next/navigation'
-import { getPostBySlug, getAllPosts, getRelatedPosts, processMarkdown, getPostSeries, getSeriesNavigation } from '@repo/content'
-import ViewCounter from '@/components/ViewCounter'
-import ShareButton from '@/components/ShareButton'
-import ReadingProgress from '@/components/ReadingProgress'
-import TableOfContents from '@/components/TableOfContents'
-import PopularPosts from '@/components/PopularPosts'
-import SeriesNavigation from '@/components/SeriesNavigation'
-import NewsletterSubscribe from '@/components/NewsletterSubscribe'
-import Link from 'next/link'
-import { Metadata } from 'next'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import CodeBlockWrapper from '@/components/CodeBlockWrapper'
 import Comments, { CommentsConfig } from '@/components/Comments'
 import MermaidRenderer from '@/components/MermaidRenderer'
+import NewsletterSubscribe from '@/components/NewsletterSubscribe'
+import PopularPosts from '@/components/PopularPosts'
+import ReadingProgress from '@/components/ReadingProgress'
 import RelatedPosts from '@/components/RelatedPosts'
-import CodeBlockWrapper from '@/components/CodeBlockWrapper'
+import SeriesNavigation from '@/components/SeriesNavigation'
+import ShareButton from '@/components/ShareButton'
+import TableOfContents from '@/components/TableOfContents'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import ViewCounter from '@/components/ViewCounter'
+import { client } from '@/lib/rpc'
+import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNavigation, processMarkdown } from '@repo/content'
+import { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
 interface PostPageProps {
   params: Promise<{
@@ -43,9 +44,25 @@ export const dynamicParams = true
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params
   const slugString = slug.join('/')
+  const blobFilesResponse = await client.api.v1['blob-files'].$get({
+    path: {
+      slug: slugString,
+    },
+  })
+
+  if (!blobFilesResponse.ok) {
+    throw new Error('Failed to fetch blob files')
+  }
+
+  const blobFiles = await blobFilesResponse.json()
+
+  const blobFile = blobFiles.files.find((file) => file.pathname.startsWith(slugString))
+
+
+
   const post = await getPostBySlug(slugString)
 
-  if (!post) {
+  if (!blobFile || !post) {
     return {
       title: 'Post Not Found',
     }

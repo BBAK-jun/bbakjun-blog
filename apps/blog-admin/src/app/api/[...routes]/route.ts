@@ -3,16 +3,14 @@
  * Exposes the same RPC surface consumed via `hc<AppType>()`.
  */
 
+import { rpcApp } from '@/rpc';
 import { handle } from 'hono/vercel';
-import { createRpcApp } from '@/rpc';
 
 export const runtime = 'nodejs';
 
-const app = createRpcApp();
-
-export const GET = handle(app);
-export const POST = handle(app);
-export const PUT = handle(app);
-export const DELETE = handle(app);
-export const PATCH = handle(app);
-export const OPTIONS = handle(app);
+export const GET = handle(rpcApp);
+export const POST = handle(rpcApp);
+export const PUT = handle(rpcApp);
+export const DELETE = handle(rpcApp);
+export const PATCH = handle(rpcApp);
+export const OPTIONS = handle(rpcApp);

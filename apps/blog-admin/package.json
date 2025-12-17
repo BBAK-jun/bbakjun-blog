@@ -4,14 +4,9 @@
   "private": true,
   "exports": {
     "./rpc": {
-      "types": "./dist/rpc/types.d.mts",
-      "import": "./dist/rpc/types.mjs",
-      "default": "./dist/rpc/types.mjs"
-    },
-    "./contract": {
-      "types": "./dist/contract/index.d.mts",
-      "import": "./dist/contract/index.mjs",
-      "default": "./dist/contract/index.mjs"
+      "types": "./dist/rpc/index.d.mts",
+      "import": "./dist/rpc/index.mjs",
+      "default": "./dist/rpc/index.mjs"
     }
   },
   "scripts": {

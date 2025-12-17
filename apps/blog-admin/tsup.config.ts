@@ -2,8 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: {
-    'rpc/types': 'src/rpc/types.ts',
-    'contract/index': 'src/contract/index.ts',
+    'rpc/index': 'src/rpc/index.ts',
   },
   format: ['esm'],
   dts: true,

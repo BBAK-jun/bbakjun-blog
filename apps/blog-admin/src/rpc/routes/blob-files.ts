@@ -32,6 +32,10 @@ const publicListHandler = async (c: Context<RpcEnv>) => {
     const { limit, offset, search: searchTerm } = parsed.data;
     const result = await getCachedBlobFiles({ limit, offset, searchTerm });
 
+    // console.log(result)
+
+    // return c.json(result)
+
     return c.json(blobFilesResponseSchema.parse(result));
   } catch (error) {
     console.error('Public blob files list error:', error);
@@ -66,6 +70,9 @@ const adminListHandler = async (c: Context<RpcEnv>) => {
     }
 
     const result = await getCachedBlobFiles({ limit, offset, searchTerm });
+
+    // return c.json(result)
+
     return c.json(blobFilesResponseSchema.parse(result));
   } catch (error) {
     console.error('Blob files list error:', error);
