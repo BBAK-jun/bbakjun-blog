@@ -58,8 +58,6 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 
   const blobFile = blobFiles.files.find((file) => file.pathname.startsWith(slugString))
 
-
-
   const post = await getPostBySlug(slugString)
 
   if (!blobFile || !post) {
