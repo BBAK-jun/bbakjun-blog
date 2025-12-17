@@ -51,13 +51,38 @@ All fields are required except `draft` (defaults to `false`).
 
 ## Core Data Flow
 
-### Post Loading System (`src/lib/posts.ts`)
+### Post Loading System (`packages/content/src/posts.ts`)
 
+**Two modes**: Filesystem (default) or Blob (via `POST_SOURCE` env variable)
+
+**Filesystem Mode** (default):
 1. **File Discovery**: Recursively scans `content/posts/` for `.mdx` files
 2. **Slug Generation**: Converts file paths to URL slugs (handles `index.mdx` specially)
 3. **Front Matter Parsing**: Uses `gray-matter` to extract YAML metadata
 4. **Reading Time**: Calculates using `reading-time` library
 5. **Related Posts**: Scores posts by shared tags (×3), same category (×2), and recency (×0.5)
+
+**Blob Mode** (`POST_SOURCE='blob'`):
+1. **CDC Integration**: Blog app fetches CDC cached blob files via Hono RPC
+2. **Injection**: `setBlobFiles()` injects blob file list into posts module
+3. **Content Download**: Downloads markdown content from blob URLs
+4. **Parsing**: Same front matter parsing and reading time calculation
+5. **Caching**: In-memory cache (1 hour) to reduce blob downloads
+
+**Usage Pattern**:
+```typescript
+// Blog app must call setBlobFiles() before using post functions
+if (process.env.POST_SOURCE === 'blob') {
+  const response = await client.api.v1['blob-files'].$get({})
+  const { files } = await response.json()
+  setBlobFiles(files.map(f => ({
+    url: f.url,
+    pathname: f.pathname,
+    contentType: f.contentType
+  })))
+}
+const posts = await getAllPosts() // Works in both modes
+```
 
 ### View Tracking System (`src/lib/redis.ts`)
 
