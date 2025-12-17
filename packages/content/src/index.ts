@@ -1,5 +1,6 @@
 // Re-export types
 export type { Post, PostMatter, Series, SeriesSummary } from '@repo/types'
+export type { BlobFileInfo } from './posts-blob'
 
 // Re-export everything from posts
 export {
@@ -10,6 +11,7 @@ export {
   getPostsByTag,
   getAllTags,
   getRelatedPosts,
+  setBlobFiles,
 } from './posts'
 
 // Re-export series functions

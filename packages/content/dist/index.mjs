@@ -8,8 +8,9 @@ import {
   getPostBySlug,
   getPostSlugs,
   getPostsByTag,
-  getRelatedPosts
-} from "./chunk-EYTNGVVS.mjs";
+  getRelatedPosts,
+  setBlobFiles
+} from "./chunk-PJBGY254.mjs";
 import {
   rehypeMermaid
 } from "./chunk-NG4EI63L.mjs";
@@ -105,5 +106,6 @@ export {
   getSeriesNavigation,
   getSeriesSummaries,
   processMarkdown,
-  rehypeMermaid
+  rehypeMermaid,
+  setBlobFiles
 };

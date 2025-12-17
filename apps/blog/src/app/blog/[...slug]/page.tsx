@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import ViewCounter from '@/components/ViewCounter'
 import { client } from '@/lib/rpc'
-import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNavigation, processMarkdown } from '@repo/content'
+import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNavigation, processMarkdown, setBlobFiles } from '@repo/content'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -44,23 +44,23 @@ export const dynamicParams = true
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params
   const slugString = slug.join('/')
-  const blobFilesResponse = await client.api.v1['blob-files'].$get({
-    path: {
-      slug: slugString,
-    },
-  })
 
-  if (!blobFilesResponse.ok) {
-    throw new Error('Failed to fetch blob files')
+  // CDC 캐시에서 BlobFiles 가져오기 (POST_SOURCE='blob'일 때만 사용)
+  if (process.env.POST_SOURCE === 'blob') {
+    const blobFilesResponse = await client.api.v1['blob-files'].$get({})
+    if (blobFilesResponse.ok) {
+      const { files } = await blobFilesResponse.json()
+      setBlobFiles(files.map(f => ({
+        url: f.url,
+        pathname: f.pathname,
+        contentType: f.contentType
+      })))
+    }
   }
-
-  const blobFiles = await blobFilesResponse.json()
-
-  const blobFile = blobFiles.files.find((file) => file.pathname.startsWith(slugString))
 
   const post = await getPostBySlug(slugString)
 
-  if (!blobFile || !post) {
+  if (!post) {
     return {
       title: 'Post Not Found',
     }
@@ -103,6 +103,20 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
   const slugString = slug.join('/')
+
+  // CDC 캐시에서 BlobFiles 가져오기 (POST_SOURCE='blob'일 때만 사용)
+  if (process.env.POST_SOURCE === 'blob') {
+    const blobFilesResponse = await client.api.v1['blob-files'].$get({})
+    if (blobFilesResponse.ok) {
+      const { files } = await blobFilesResponse.json()
+      setBlobFiles(files.map(f => ({
+        url: f.url,
+        pathname: f.pathname,
+        contentType: f.contentType
+      })))
+    }
+  }
+
   const post = await getPostBySlug(slugString)
 
   if (!post) {

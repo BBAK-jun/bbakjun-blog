@@ -5,8 +5,9 @@ import {
   getPostBySlug,
   getPostSlugs,
   getPostsByTag,
-  getRelatedPosts
-} from "./chunk-EYTNGVVS.mjs";
+  getRelatedPosts,
+  setBlobFiles
+} from "./chunk-PJBGY254.mjs";
 export {
   getAllPosts,
   getAllPostsIncludingDrafts,
@@ -14,5 +15,6 @@ export {
   getPostBySlug,
   getPostSlugs,
   getPostsByTag,
-  getRelatedPosts
+  getRelatedPosts,
+  setBlobFiles
 };

@@ -1,21 +1,30 @@
-import Link from 'next/link'
-import { getAllPosts } from '@repo/content'
-import PostCard from '@/components/PostCard'
 import PopularPostsGrid from '@/components/PopularPostsGrid'
+import PostCard from '@/components/PostCard'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getAllPosts, setBlobFiles } from '@repo/content'
+import Link from 'next/link'
 import { client } from '@/lib/rpc'
 
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
 export const revalidate = 60
 
 export default async function Home() {
-  const posts = await getAllPosts()
-  const postsFromRpc = await client.api.v1['blob-files'].$get({})
-  const featuredPosts = posts.slice(0, 12) // 최신 포스트
+  // CDC 캐시에서 BlobFiles 가져오기 (POST_SOURCE='blob'일 때만 사용)
+  if (process.env.POST_SOURCE === 'blob') {
+    const blobFilesResponse = await client.api.v1['blob-files'].$get({})
+    if (blobFilesResponse.ok) {
+      const { files } = await blobFilesResponse.json()
+      setBlobFiles(files.map(f => ({
+        url: f.url,
+        pathname: f.pathname,
+        contentType: f.contentType
+      })))
+    }
+  }
 
-  console.log(postsFromRpc)
+  const posts = await getAllPosts()
+  const featuredPosts = posts.slice(0, 12) // 최신 포스트
 
   return (
     <div className="space-y-16">

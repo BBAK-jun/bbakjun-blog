@@ -3,12 +3,23 @@ import path from 'path'
 import matter from 'gray-matter'
 import readingTime from 'reading-time'
 import type { Post, PostMatter } from '@repo/types'
-import { fetchAllPostsFromBlob } from './posts-blob'
+import { fetchAllPostsFromBlobFiles, type BlobFileInfo } from './posts-blob'
 
 const postsDirectory = path.join(process.cwd(), '../../packages/content/posts')
 
 // 포스트 소스 선택: 'filesystem' | 'blob'
 const POST_SOURCE = process.env.POST_SOURCE || 'filesystem'
+
+// CDC 캐시에서 가져온 BlobFile 목록을 저장할 전역 변수
+let cachedBlobFiles: BlobFileInfo[] | null = null
+
+/**
+ * CDC 캐시에서 가져온 BlobFile 목록을 설정
+ * Blog 앱에서 RPC로 가져온 데이터를 전달받음
+ */
+export function setBlobFiles(files: BlobFileInfo[]): void {
+  cachedBlobFiles = files
+}
 
 function getAllMdxFiles(dir: string, relativePath: string = ''): string[] {
   if (!fs.existsSync(dir)) {
@@ -50,7 +61,11 @@ export function getPostSlugs(): string[] {
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   // Blob 소스 사용 시
   if (POST_SOURCE === 'blob') {
-    const allPosts = await fetchAllPostsFromBlob()
+    if (!cachedBlobFiles) {
+      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
+      return null
+    }
+    const allPosts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
     return allPosts.find(post => post.slug === slug) || null
   }
 
@@ -84,7 +99,11 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 export async function getAllPosts(): Promise<Post[]> {
   // Blob 소스 사용 시
   if (POST_SOURCE === 'blob') {
-    const posts = await fetchAllPostsFromBlob()
+    if (!cachedBlobFiles) {
+      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
+      return []
+    }
+    const posts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
     return posts
       .filter((post) => !post.frontMatter.draft)
       .sort((a, b) => {
@@ -119,7 +138,11 @@ export async function getAllPosts(): Promise<Post[]> {
 export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
   // Blob 소스 사용 시
   if (POST_SOURCE === 'blob') {
-    const posts = await fetchAllPostsFromBlob()
+    if (!cachedBlobFiles) {
+      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
+      return []
+    }
+    const posts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
     return posts.sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999
       const orderB = b.frontMatter.order ?? 999999
