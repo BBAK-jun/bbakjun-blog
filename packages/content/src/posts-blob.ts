@@ -14,10 +14,6 @@ export interface BlobFileInfo {
   contentType: string | null
 }
 
-// 메모리 캐시
-let cachedPosts: Post[] | null = null
-let lastFetchTime: number = 0
-const CACHE_DURATION = 60 * 60 * 1000 // 1시간
 
 /**
  * BlobFile 목록에서 마크다운 파일만 필터링
@@ -87,63 +83,14 @@ async function fetchPostFromBlobFile(file: BlobFileInfo): Promise<Post | null> {
  * @param blobFiles CDC 캐시에서 가져온 BlobFile 목록
  */
 export async function fetchAllPostsFromBlobFiles(blobFiles: BlobFileInfo[]): Promise<Post[]> {
-  const now = Date.now()
+  // .md 또는 .mdx 파일만 필터링
+  const mdFiles = filterMarkdownFiles(blobFiles)
 
-  // 캐시가 유효하면 캐시된 데이터 반환
-  if (cachedPosts && now - lastFetchTime < CACHE_DURATION) {
-    console.log('Using cached posts from memory')
-    return cachedPosts
-  }
+  // 모든 파일 다운로드 및 파싱 (병렬 처리)
+  const posts = await Promise.all(
+    mdFiles.map((file) => fetchPostFromBlobFile(file))
+  )
 
-  console.log('Fetching posts from CDC cached Blob files...')
-
-  try {
-    // .md 또는 .mdx 파일만 필터링
-    const mdFiles = filterMarkdownFiles(blobFiles)
-
-    console.log(`Found ${mdFiles.length} markdown files in CDC cache`)
-
-    // 모든 파일 다운로드 및 파싱 (병렬 처리)
-    const posts = await Promise.all(
-      mdFiles.map((file) => fetchPostFromBlobFile(file))
-    )
-
-    // null 제거 및 정렬
-    const validPosts = posts.filter((post): post is Post => post !== null)
-
-    // 캐시 업데이트
-    cachedPosts = validPosts
-    lastFetchTime = now
-
-    console.log(`Successfully fetched ${validPosts.length} posts from CDC cache`)
-
-    return validPosts
-  } catch (error) {
-    console.error('Error fetching posts from Blob files:', error)
-
-    // 에러 발생 시 캐시된 데이터라도 반환
-    if (cachedPosts) {
-      console.log('Returning cached posts due to error')
-      return cachedPosts
-    }
-
-    return []
-  }
-}
-
-/**
- * @deprecated Use fetchAllPostsFromBlobFiles() with CDC cache instead
- * Legacy function for backward compatibility
- */
-export async function fetchAllPostsFromBlob(): Promise<Post[]> {
-  console.warn('fetchAllPostsFromBlob() is deprecated. Use fetchAllPostsFromBlobFiles() with CDC cache.')
-  return cachedPosts || []
-}
-
-/**
- * 캐시 무효화
- */
-export function invalidatePostsCache(): void {
-  cachedPosts = null
-  lastFetchTime = 0
+  // null 제거
+  return posts.filter((post): post is Post => post !== null)
 }

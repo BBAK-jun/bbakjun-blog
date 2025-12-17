@@ -57,9 +57,6 @@ var import_reading_time2 = __toESM(require("reading-time"));
 // src/posts-blob.ts
 var import_gray_matter = __toESM(require("gray-matter"));
 var import_reading_time = __toESM(require("reading-time"));
-var cachedPosts = null;
-var lastFetchTime = 0;
-var CACHE_DURATION = 60 * 60 * 1e3;
 function filterMarkdownFiles(files) {
   return files.filter(
     (file) => (file.pathname.endsWith(".md") || file.pathname.endsWith(".mdx")) && !file.pathname.includes("/.")
@@ -98,40 +95,19 @@ async function fetchPostFromBlobFile(file) {
     return null;
   }
 }
-async function fetchAllPostsFromBlobFiles(blobFiles) {
-  const now = Date.now();
-  if (cachedPosts && now - lastFetchTime < CACHE_DURATION) {
-    console.log("Using cached posts from memory");
-    return cachedPosts;
-  }
-  console.log("Fetching posts from CDC cached Blob files...");
-  try {
-    const mdFiles = filterMarkdownFiles(blobFiles);
-    console.log(`Found ${mdFiles.length} markdown files in CDC cache`);
-    const posts = await Promise.all(
-      mdFiles.map((file) => fetchPostFromBlobFile(file))
-    );
-    const validPosts = posts.filter((post) => post !== null);
-    cachedPosts = validPosts;
-    lastFetchTime = now;
-    console.log(`Successfully fetched ${validPosts.length} posts from CDC cache`);
-    return validPosts;
-  } catch (error) {
-    console.error("Error fetching posts from Blob files:", error);
-    if (cachedPosts) {
-      console.log("Returning cached posts due to error");
-      return cachedPosts;
-    }
-    return [];
-  }
+async function fetchAllPostsFromBlobFiles(blobFiles2) {
+  const mdFiles = filterMarkdownFiles(blobFiles2);
+  const posts = await Promise.all(
+    mdFiles.map((file) => fetchPostFromBlobFile(file))
+  );
+  return posts.filter((post) => post !== null);
 }
 
 // src/posts.ts
 var postsDirectory = import_path.default.join(process.cwd(), "../../packages/content/posts");
-var POST_SOURCE = process.env.POST_SOURCE || "filesystem";
-var cachedBlobFiles = null;
+var blobFiles = [];
 function setBlobFiles(files) {
-  cachedBlobFiles = files;
+  blobFiles = files;
 }
 function getAllMdxFiles(dir, relativePath = "") {
   if (!import_fs.default.existsSync(dir)) {
@@ -161,12 +137,8 @@ function getPostSlugs() {
   return getAllMdxFiles(postsDirectory);
 }
 async function getPostBySlug(slug) {
-  if (POST_SOURCE === "blob") {
-    if (!cachedBlobFiles) {
-      console.error("BlobFiles not initialized. Call setBlobFiles() first.");
-      return null;
-    }
-    const allPosts = await fetchAllPostsFromBlobFiles(cachedBlobFiles);
+  if (process.env.POST_SOURCE === "blob") {
+    const allPosts = await fetchAllPostsFromBlobFiles(blobFiles);
     return allPosts.find((post) => post.slug === slug) || null;
   }
   try {
@@ -189,12 +161,8 @@ async function getPostBySlug(slug) {
   }
 }
 async function getAllPosts() {
-  if (POST_SOURCE === "blob") {
-    if (!cachedBlobFiles) {
-      console.error("BlobFiles not initialized. Call setBlobFiles() first.");
-      return [];
-    }
-    const posts2 = await fetchAllPostsFromBlobFiles(cachedBlobFiles);
+  if (process.env.POST_SOURCE === "blob") {
+    const posts2 = await fetchAllPostsFromBlobFiles(blobFiles);
     return posts2.filter((post) => !post.frontMatter.draft).sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999;
       const orderB = b.frontMatter.order ?? 999999;
@@ -213,12 +181,8 @@ async function getAllPosts() {
   return posts;
 }
 async function getAllPostsIncludingDrafts() {
-  if (POST_SOURCE === "blob") {
-    if (!cachedBlobFiles) {
-      console.error("BlobFiles not initialized. Call setBlobFiles() first.");
-      return [];
-    }
-    const posts2 = await fetchAllPostsFromBlobFiles(cachedBlobFiles);
+  if (process.env.POST_SOURCE === "blob") {
+    const posts2 = await fetchAllPostsFromBlobFiles(blobFiles);
     return posts2.sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999;
       const orderB = b.frontMatter.order ?? 999999;

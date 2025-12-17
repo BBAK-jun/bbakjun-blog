@@ -7,18 +7,14 @@ import { fetchAllPostsFromBlobFiles, type BlobFileInfo } from './posts-blob'
 
 const postsDirectory = path.join(process.cwd(), '../../packages/content/posts')
 
-// 포스트 소스 선택: 'filesystem' | 'blob'
-const POST_SOURCE = process.env.POST_SOURCE || 'filesystem'
-
-// CDC 캐시에서 가져온 BlobFile 목록을 저장할 전역 변수
-let cachedBlobFiles: BlobFileInfo[] | null = null
+// CDC 캐시에서 가져온 BlobFile 목록 (전역 변수)
+let blobFiles: BlobFileInfo[] = []
 
 /**
  * CDC 캐시에서 가져온 BlobFile 목록을 설정
- * Blog 앱에서 RPC로 가져온 데이터를 전달받음
  */
 export function setBlobFiles(files: BlobFileInfo[]): void {
-  cachedBlobFiles = files
+  blobFiles = files
 }
 
 function getAllMdxFiles(dir: string, relativePath: string = ''): string[] {
@@ -59,23 +55,15 @@ export function getPostSlugs(): string[] {
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
-  // Blob 소스 사용 시
-  if (POST_SOURCE === 'blob') {
-    if (!cachedBlobFiles) {
-      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
-      return null
-    }
-    const allPosts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
+  // Blob 소스: CDC 캐시에서 모든 포스트 가져온 후 필터링
+  if (process.env.POST_SOURCE === 'blob') {
+    const allPosts = await fetchAllPostsFromBlobFiles(blobFiles)
     return allPosts.find(post => post.slug === slug) || null
   }
 
-  // 파일시스템 소스 사용 시
+  // 파일시스템 소스: 직접 파일 읽기
   try {
-    // slug에 폴더 경로가 포함될 수 있으므로 이를 처리
-    // 먼저 index.mdx 파일을 확인 (대부분의 포스트가 이 패턴을 따름)
     let fullPath = path.join(postsDirectory, slug, 'index.mdx')
-
-    // index.mdx 파일이 존재하지 않으면 직접 .mdx 파일을 확인
     if (!fs.existsSync(fullPath)) {
       fullPath = path.join(postsDirectory, `${slug}.mdx`)
     }
@@ -97,36 +85,28 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getAllPosts(): Promise<Post[]> {
-  // Blob 소스 사용 시
-  if (POST_SOURCE === 'blob') {
-    if (!cachedBlobFiles) {
-      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
-      return []
-    }
-    const posts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
+  // Blob 소스: CDC 캐시에서 가져오기
+  if (process.env.POST_SOURCE === 'blob') {
+    const posts = await fetchAllPostsFromBlobFiles(blobFiles)
     return posts
       .filter((post) => !post.frontMatter.draft)
       .sort((a, b) => {
-        // order가 있으면 order 우선, 없으면 날짜순
         const orderA = a.frontMatter.order ?? 999999
         const orderB = b.frontMatter.order ?? 999999
-
         if (orderA !== orderB) return orderA - orderB
         return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
       })
   }
 
-  // 파일시스템 소스 사용 시 (기존 로직)
+  // 파일시스템 소스: 파일 스캔
   const slugs = getPostSlugs()
   const postsPromises = slugs.map((slug) => getPostBySlug(slug))
   const posts = (await Promise.all(postsPromises))
     .filter((post): post is Post => post !== null)
     .filter((post) => !post.frontMatter.draft)
     .sort((a, b) => {
-      // order가 있으면 order 우선, 없으면 날짜순
       const orderA = a.frontMatter.order ?? 999999
       const orderB = b.frontMatter.order ?? 999999
-
       if (orderA !== orderB) return orderA - orderB
       return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
     })
@@ -136,23 +116,18 @@ export async function getAllPosts(): Promise<Post[]> {
 
 // Dashboard용: draft 포함한 모든 포스트
 export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
-  // Blob 소스 사용 시
-  if (POST_SOURCE === 'blob') {
-    if (!cachedBlobFiles) {
-      console.error('BlobFiles not initialized. Call setBlobFiles() first.')
-      return []
-    }
-    const posts = await fetchAllPostsFromBlobFiles(cachedBlobFiles)
+  // Blob 소스: CDC 캐시에서 가져오기 (draft 포함)
+  if (process.env.POST_SOURCE === 'blob') {
+    const posts = await fetchAllPostsFromBlobFiles(blobFiles)
     return posts.sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999
       const orderB = b.frontMatter.order ?? 999999
-
       if (orderA !== orderB) return orderA - orderB
       return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
     })
   }
 
-  // 파일시스템 소스 사용 시
+  // 파일시스템 소스: 파일 스캔 (draft 포함)
   const slugs = getPostSlugs()
   const postsPromises = slugs.map((slug) => getPostBySlug(slug))
   const posts = (await Promise.all(postsPromises))
@@ -160,7 +135,6 @@ export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
     .sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999
       const orderB = b.frontMatter.order ?? 999999
-
       if (orderA !== orderB) return orderA - orderB
       return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
     })
