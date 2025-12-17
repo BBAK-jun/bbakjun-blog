@@ -244,16 +244,21 @@ Admin UI & Blog App
    - Called immediately after Blob operations
    - Non-critical: upload succeeds even if hook fails
 
-### API Endpoints
+### Hono RPC API Endpoints
 
-**GET `/api/admin/blob-files`** (blog-admin):
-- Auto-syncs if 5+ minutes since last sync
-- Returns cached file list from DB
-- Query params: `limit`, `offset`, `search`, `autoSync`
+**Location**: `apps/blog-admin/src/rpc/routes/blob-files.ts`
 
-**POST `/api/admin/blob-files/sync`** (blog-admin):
-- Manual sync trigger (admin only)
-- Returns sync statistics
+**Public Endpoints** (accessible from blog app):
+- `GET /api/rpc/blob-files` - List cached blob files
+  - Query params: `limit` (default: 1000), `offset` (default: 0), `search`
+  - Returns: `{ files: BlobFile[], total: number, hasMore: boolean }`
+
+**Admin Endpoints** (requires authentication):
+- `GET /api/rpc/blob-files/admin` - List cached files with auto-sync
+  - Query params: `limit` (default: 100), `offset`, `search`, `autoSync` (default: true)
+  - Auto-syncs if 5+ minutes elapsed
+- `POST /api/rpc/blob-files/admin/sync` - Manual sync trigger
+  - Returns sync statistics
 
 ### Usage Pattern
 
@@ -263,10 +268,33 @@ import { list } from '@vercel/blob'
 const { blobs } = await list() // API call every page load
 ```
 
-**✅ New (CDC Cached)**:
+**✅ New (Hono RPC with Type Safety)**:
+
+**Blog App** (`apps/blog/src/lib/rpc.ts`):
 ```typescript
-const response = await fetch('/api/admin/blob-files?limit=100')
-const { files } = await response.json() // DB query, no Blob API call
+import { client } from '@/lib/rpc'
+
+// Type-safe API call with automatic validation
+const response = await client.api.v1['blob-files'].$get({
+  query: { limit: 100, search: 'posts/' }
+})
+
+if (!response.ok) {
+  throw new Error('Failed to fetch blob files')
+}
+
+const { files, total, hasMore } = await response.json()
+```
+
+**Blog-Admin App** (server actions):
+```typescript
+import { getCachedBlobFiles } from '@/lib/blob-cdc'
+
+// Direct database access
+const { files, total, hasMore } = await getCachedBlobFiles({
+  limit: 100,
+  searchTerm: 'posts/'
+})
 ```
 
 ### Cost Reduction
@@ -290,6 +318,96 @@ Use this pattern when:
 - Data doesn't need real-time accuracy (eventual consistency OK)
 - Read-heavy workload (many list/fetch operations)
 - Source of truth is external (Vercel Blob, S3, etc.)
+
+## Cross-App Communication (Hono RPC)
+
+### Architecture
+
+Blog-admin exposes type-safe Hono RPC endpoints that blog app consumes:
+
+```
+Blog App (apps/blog)
+    ↓ Hono RPC Client (hc)
+    ↓ Type-safe HTTP calls
+    ↓
+Blog-Admin API (apps/blog-admin)
+    ↓ Hono routes with Zod validation
+    ↓ OpenAPI contract (@hono/zod-openapi)
+    ↓
+PostgreSQL (CDC cache)
+```
+
+### Key Files
+
+1. **RPC Routes** (`apps/blog-admin/src/rpc/routes/blob-files.ts`):
+   - Hono route handlers with Zod validation
+   - Public routes (no auth) for blog app
+   - Admin routes (session required) for admin UI
+
+2. **Contract Schemas** (`apps/blog-admin/src/contract/schemas/blob-files.ts`):
+   - Zod schemas for request/response validation
+   - Auto-generates OpenAPI types via `@hono/zod-openapi`
+
+3. **RPC Client** (`apps/blog/src/lib/rpc.ts`):
+   ```typescript
+   import { AppType } from 'blog-admin/rpc'
+   import { hc } from 'hono/client'
+
+   export const client = hc<AppType>(process.env.NEXT_PUBLIC_ADMIN_URL!)
+   ```
+
+4. **Type Export** (`apps/blog-admin/src/rpc/index.ts`):
+   ```typescript
+   export type AppType = typeof app
+   ```
+
+### Build Configuration
+
+**`apps/blog-admin/tsup.config.ts`**:
+```typescript
+export default defineConfig({
+  entry: ['src/rpc/index.ts', 'src/contract/index.ts'],
+  format: ['esm'],
+  dts: true,  // Generate .d.ts files for blog app
+  clean: true,
+})
+```
+
+**`apps/blog-admin/package.json`**:
+```json
+{
+  "main": "./dist/rpc/index.js",
+  "types": "./dist/rpc/index.d.ts",
+  "exports": {
+    "./rpc": {
+      "types": "./dist/rpc/index.d.ts",
+      "import": "./dist/rpc/index.js"
+    }
+  }
+}
+```
+
+### Benefits
+
+1. **Type Safety**: End-to-end TypeScript types from server to client
+2. **Validation**: Automatic request/response validation with Zod
+3. **OpenAPI**: Auto-generated API documentation
+4. **Developer Experience**: Autocomplete and type checking in blog app
+5. **Separation of Concerns**: Blog app doesn't need database access
+
+### Environment Variables
+
+**Blog App**:
+```
+NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
+```
+
+**Turbo Configuration** (`turbo.json`):
+```json
+{
+  "globalEnv": ["NEXT_PUBLIC_ADMIN_URL"]
+}
+```
 
 ## Styling System
 
