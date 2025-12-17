@@ -1,6 +1,7 @@
 import { Series, SeriesSummary, Post } from '@repo/types';
 export { Post, PostMatter, Series, SeriesSummary } from '@repo/types';
-export { B as BlobFileInfo, a as getAllPosts, b as getAllPostsIncludingDrafts, d as getAllTags, g as getPostBySlug, c as getPostsByTag, e as getRelatedPosts, s as setBlobFiles } from './posts-ddATDTZT.mjs';
+import { B as BlobFileInfo } from './posts-jmE_jCSv.mjs';
+export { a as getAllPosts, b as getAllPostsIncludingDrafts, d as getAllTags, g as getPostBySlug, c as getPostsByTag, e as getRelatedPosts } from './posts-jmE_jCSv.mjs';
 export { processMarkdown } from './markdown.mjs';
 export { rehypeMermaid } from './rehype-mermaid.mjs';
 import 'hast';
@@ -8,15 +9,15 @@ import 'hast';
 /**
  * Get all available series with their posts
  */
-declare function getAllSeries(): Promise<Series[]>;
+declare function getAllSeries(blobFiles: BlobFileInfo[]): Promise<Series[]>;
 /**
  * Get series summaries without full post content
  */
-declare function getSeriesSummaries(): Promise<SeriesSummary[]>;
+declare function getSeriesSummaries(blobFiles: BlobFileInfo[]): Promise<SeriesSummary[]>;
 /**
  * Get a specific series by slug
  */
-declare function getSeriesBySlug(slug: string): Promise<Series | null>;
+declare function getSeriesBySlug(blobFiles: BlobFileInfo[], slug: string): Promise<Series | null>;
 /**
  * Get next and previous posts in a series
  */
@@ -27,6 +28,6 @@ declare function getSeriesNavigation(series: Series, currentSlug: string): {
 /**
  * Check if a post belongs to a series
  */
-declare function getPostSeries(postSlug: string): Promise<Series | null>;
+declare function getPostSeries(blobFiles: BlobFileInfo[], postSlug: string): Promise<Series | null>;
 
-export { getAllSeries, getPostSeries, getSeriesBySlug, getSeriesNavigation, getSeriesSummaries };
+export { BlobFileInfo, getAllSeries, getPostSeries, getSeriesBySlug, getSeriesNavigation, getSeriesSummaries };

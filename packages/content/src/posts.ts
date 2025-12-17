@@ -1,22 +1,12 @@
 import type { Post } from '@repo/types'
 import { fetchAllPostsFromBlobFiles, type BlobFileInfo } from './posts-blob'
 
-// CDC 캐시에서 가져온 BlobFile 목록 (전역 변수)
-let blobFiles: BlobFileInfo[] = []
-
-/**
- * CDC 캐시에서 가져온 BlobFile 목록을 설정
- */
-export function setBlobFiles(files: BlobFileInfo[]): void {
-  blobFiles = files
-}
-
-export async function getPostBySlug(slug: string): Promise<Post | null> {
+export async function getPostBySlug(blobFiles: BlobFileInfo[], slug: string): Promise<Post | null> {
   const allPosts = await fetchAllPostsFromBlobFiles(blobFiles)
   return allPosts.find(post => post.slug === slug) || null
 }
 
-export async function getAllPosts(): Promise<Post[]> {
+export async function getAllPosts(blobFiles: BlobFileInfo[]): Promise<Post[]> {
   const posts = await fetchAllPostsFromBlobFiles(blobFiles)
   return posts
     .filter((post) => !post.frontMatter.draft)
@@ -28,7 +18,7 @@ export async function getAllPosts(): Promise<Post[]> {
     })
 }
 
-export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
+export async function getAllPostsIncludingDrafts(blobFiles: BlobFileInfo[]): Promise<Post[]> {
   const posts = await fetchAllPostsFromBlobFiles(blobFiles)
   return posts.sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999
@@ -38,15 +28,15 @@ export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
   })
 }
 
-export async function getPostsByTag(tag: string): Promise<Post[]> {
-  const allPosts = await getAllPosts()
+export async function getPostsByTag(blobFiles: BlobFileInfo[], tag: string): Promise<Post[]> {
+  const allPosts = await getAllPosts(blobFiles)
   return allPosts.filter((post) =>
     post.frontMatter.tags?.includes(tag)
   )
 }
 
-export async function getAllTags(): Promise<string[]> {
-  const allPosts = await getAllPosts()
+export async function getAllTags(blobFiles: BlobFileInfo[]): Promise<string[]> {
+  const allPosts = await getAllPosts(blobFiles)
   const tags = new Set<string>()
 
   allPosts.forEach((post) => {
@@ -56,14 +46,12 @@ export async function getAllTags(): Promise<string[]> {
   return Array.from(tags).sort()
 }
 
-// 연관 글을 찾는 함수
-export async function getRelatedPosts(currentPost: Post, maxPosts: number = 4): Promise<Post[]> {
-  const allPosts = await getAllPosts()
+export async function getRelatedPosts(blobFiles: BlobFileInfo[], currentPost: Post, maxPosts: number = 4): Promise<Post[]> {
+  const allPosts = await getAllPosts(blobFiles)
   const currentSlug = currentPost.slug
   const currentTags = currentPost.frontMatter.tags || []
-  const currentCategory = currentPost.slug.split('/')[0] // 첫 번째 폴더를 카테고리로 사용
+  const currentCategory = currentPost.slug.split('/')[0]
 
-  // 현재 글 제외
   const otherPosts = allPosts.filter(post => post.slug !== currentSlug)
 
   // 각 글에 관련성 점수 계산

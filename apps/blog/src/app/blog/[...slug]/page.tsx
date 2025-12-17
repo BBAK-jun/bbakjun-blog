@@ -12,8 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import ViewCounter from '@/components/ViewCounter'
-import { client } from '@/lib/rpc'
-import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNavigation, processMarkdown, setBlobFiles } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob'
+import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNavigation, processMarkdown } from '@repo/content'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -26,7 +26,8 @@ interface PostPageProps {
 
 // 정적 경로 생성 (ISR과 함께 사용)
 export async function generateStaticParams() {
-  const posts = await getAllPosts()
+  const blobFiles = await getBlobFiles()
+  const posts = await getAllPosts(blobFiles)
   return posts.map((post) => ({
     slug: post.slug.split('/'),
   }))
@@ -45,18 +46,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const { slug } = await params
   const slugString = slug.join('/')
 
-  // CDC 캐시에서 BlobFiles 가져오기
-  const blobFilesResponse = await client.api.v1['blob-files'].$get({})
-  if (blobFilesResponse.ok) {
-    const { files } = await blobFilesResponse.json()
-    setBlobFiles(files.map(f => ({
-      url: f.url,
-      pathname: f.pathname,
-      contentType: f.contentType
-    })))
-  }
-
-  const post = await getPostBySlug(slugString)
+  const blobFiles = await getBlobFiles()
+  const post = await getPostBySlug(blobFiles, slugString)
 
   if (!post) {
     return {
@@ -102,18 +93,8 @@ export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
   const slugString = slug.join('/')
 
-  // CDC 캐시에서 BlobFiles 가져오기
-  const blobFilesResponse = await client.api.v1['blob-files'].$get({})
-  if (blobFilesResponse.ok) {
-    const { files } = await blobFilesResponse.json()
-    setBlobFiles(files.map(f => ({
-      url: f.url,
-      pathname: f.pathname,
-      contentType: f.contentType
-    })))
-  }
-
-  const post = await getPostBySlug(slugString)
+  const blobFiles = await getBlobFiles()
+  const post = await getPostBySlug(blobFiles, slugString)
 
   if (!post) {
     notFound()
@@ -131,10 +112,10 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const htmlContent = await processMarkdown(content)
-  const relatedPosts = await getRelatedPosts(post, 4)
+  const relatedPosts = await getRelatedPosts(blobFiles, post, 4)
 
   // Get series information if post belongs to a series
-  const series = await getPostSeries(slugString)
+  const series = await getPostSeries(blobFiles, slugString)
   const seriesNav = series ? getSeriesNavigation(series, slugString) : null
 
   return (

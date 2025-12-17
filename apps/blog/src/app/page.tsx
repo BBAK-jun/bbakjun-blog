@@ -2,26 +2,16 @@ import PopularPostsGrid from '@/components/PopularPostsGrid'
 import PostCard from '@/components/PostCard'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getAllPosts, setBlobFiles } from '@repo/content'
+import { getAllPosts } from '@repo/content'
 import Link from 'next/link'
-import { client } from '@/lib/rpc'
+import { getBlobFiles } from '@/lib/blob'
 
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
 export const revalidate = 60
 
 export default async function Home() {
-  // CDC 캐시에서 BlobFiles 가져오기
-  const blobFilesResponse = await client.api.v1['blob-files'].$get({})
-  if (blobFilesResponse.ok) {
-    const { files } = await blobFilesResponse.json()
-    setBlobFiles(files.map(f => ({
-      url: f.url,
-      pathname: f.pathname,
-      contentType: f.contentType
-    })))
-  }
-
-  const posts = await getAllPosts()
+  const blobFiles = await getBlobFiles()
+  const posts = await getAllPosts(blobFiles)
   const featuredPosts = posts.slice(0, 12) // 최신 포스트
 
   return (

@@ -1,6 +1,7 @@
 import { getAllTags, getPostsByTag } from '@repo/content'
 import Link from 'next/link'
 import { Metadata } from 'next'
+import { getBlobFiles } from '@/lib/blob'
 
 export const metadata: Metadata = {
   title: '모든 태그 | DEV_BBAK 블로그',
@@ -8,13 +9,14 @@ export const metadata: Metadata = {
 }
 
 export default async function TagsPage() {
-  const tags = await getAllTags()
+  const blobFiles = await getBlobFiles()
+  const tags = await getAllTags(blobFiles)
 
   // 각 태그별 포스트 수 계산
   const tagsWithCount = await Promise.all(
     tags.map(async tag => ({
       name: tag,
-      count: (await getPostsByTag(tag)).length
+      count: (await getPostsByTag(blobFiles, tag)).length
     }))
   )
   tagsWithCount.sort((a, b) => b.count - a.count) // 포스트 수가 많은 순으로 정렬

@@ -1,5 +1,6 @@
-import { getAllPosts, getAllTags } from '@repo/content'
 import BlogWithSearch from '@/components/BlogWithSearch'
+import { getBlobFiles } from '@/lib/blob'
+import { getAllPosts, getAllTags } from '@repo/content'
 import { Metadata } from 'next'
 import { Suspense } from 'react'
 
@@ -42,8 +43,9 @@ function BlogWithSearchFallback() {
 }
 
 export default async function PostsPage() {
-  const posts = await getAllPosts()
-  const tags = await getAllTags()
+  const blobFiles = await getBlobFiles()
+  const posts = await getAllPosts(blobFiles)
+  const tags = await getAllTags(blobFiles)
 
   return (
     <Suspense fallback={<BlogWithSearchFallback />}>

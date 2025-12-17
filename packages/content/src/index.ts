@@ -10,7 +10,6 @@ export {
   getPostsByTag,
   getAllTags,
   getRelatedPosts,
-  setBlobFiles,
 } from './posts'
 
 // Re-export series functions

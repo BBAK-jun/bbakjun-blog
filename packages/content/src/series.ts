@@ -1,11 +1,12 @@
 import type { Series, SeriesSummary, Post } from '@repo/types'
 import { getAllPosts } from './posts'
+import type { BlobFileInfo } from './posts-blob'
 
 /**
  * Get all available series with their posts
  */
-export async function getAllSeries(): Promise<Series[]> {
-  const allPosts = await getAllPosts()
+export async function getAllSeries(blobFiles: BlobFileInfo[]): Promise<Series[]> {
+  const allPosts = await getAllPosts(blobFiles)
 
   // Group posts by series
   const seriesMap = new Map<string, Post[]>()
@@ -63,8 +64,8 @@ export async function getAllSeries(): Promise<Series[]> {
 /**
  * Get series summaries without full post content
  */
-export async function getSeriesSummaries(): Promise<SeriesSummary[]> {
-  const allSeries = await getAllSeries()
+export async function getSeriesSummaries(blobFiles: BlobFileInfo[]): Promise<SeriesSummary[]> {
+  const allSeries = await getAllSeries(blobFiles)
 
   return allSeries.map(series => ({
     slug: series.slug,
@@ -81,8 +82,8 @@ export async function getSeriesSummaries(): Promise<SeriesSummary[]> {
 /**
  * Get a specific series by slug
  */
-export async function getSeriesBySlug(slug: string): Promise<Series | null> {
-  const allSeries = await getAllSeries()
+export async function getSeriesBySlug(blobFiles: BlobFileInfo[], slug: string): Promise<Series | null> {
+  const allSeries = await getAllSeries(blobFiles)
   return allSeries.find(s => s.slug === slug) || null
 }
 
@@ -108,8 +109,8 @@ export function getSeriesNavigation(
 /**
  * Check if a post belongs to a series
  */
-export async function getPostSeries(postSlug: string): Promise<Series | null> {
-  const allSeries = await getAllSeries()
+export async function getPostSeries(blobFiles: BlobFileInfo[], postSlug: string): Promise<Series | null> {
+  const allSeries = await getAllSeries(blobFiles)
 
   for (const series of allSeries) {
     if (series.posts.some(p => p.slug === postSlug)) {

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
+import { getBlobFiles } from '@/lib/blob'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -15,7 +16,8 @@ interface SeriesPageProps {
 }
 
 export async function generateStaticParams() {
-  const series = await getAllSeries()
+  const blobFiles = await getBlobFiles()
+  const series = await getAllSeries(blobFiles)
   return series.map((s) => ({
     slug: s.slug,
   }))
@@ -26,7 +28,8 @@ export const dynamicParams = true
 
 export async function generateMetadata({ params }: SeriesPageProps): Promise<Metadata> {
   const { slug } = await params
-  const series = await getSeriesBySlug(slug)
+  const blobFiles = await getBlobFiles()
+  const series = await getSeriesBySlug(blobFiles, slug)
 
   if (!series) {
     return {
@@ -42,7 +45,8 @@ export async function generateMetadata({ params }: SeriesPageProps): Promise<Met
 
 export default async function SeriesDetailPage({ params }: SeriesPageProps) {
   const { slug } = await params
-  const series = await getSeriesBySlug(slug)
+  const blobFiles = await getBlobFiles()
+  const series = await getSeriesBySlug(blobFiles, slug)
 
   if (!series) {
     notFound()

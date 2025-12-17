@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getAllPosts, getAllTags } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob'
 
 /**
  * Auto-generated sitemap for SEO
@@ -9,8 +10,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   // Get all posts and tags
-  const posts = await getAllPosts()
-  const tags = await getAllTags()
+  const blobFiles = await getBlobFiles()
+  const posts = await getAllPosts(blobFiles)
+  const tags = await getAllTags(blobFiles)
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

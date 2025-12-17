@@ -7,16 +7,15 @@ import {
   getAllTags,
   getPostBySlug,
   getPostsByTag,
-  getRelatedPosts,
-  setBlobFiles
-} from "./chunk-N3U7XZZL.mjs";
+  getRelatedPosts
+} from "./chunk-M3NDKQEW.mjs";
 import {
   rehypeMermaid
 } from "./chunk-NG4EI63L.mjs";
 
 // src/series.ts
-async function getAllSeries() {
-  const allPosts = await getAllPosts();
+async function getAllSeries(blobFiles) {
+  const allPosts = await getAllPosts(blobFiles);
   const seriesMap = /* @__PURE__ */ new Map();
   for (const post of allPosts) {
     const seriesSlug = post.frontMatter.series;
@@ -55,8 +54,8 @@ async function getAllSeries() {
     return dateB.getTime() - dateA.getTime();
   });
 }
-async function getSeriesSummaries() {
-  const allSeries = await getAllSeries();
+async function getSeriesSummaries(blobFiles) {
+  const allSeries = await getAllSeries(blobFiles);
   return allSeries.map((series) => ({
     slug: series.slug,
     title: series.title,
@@ -68,8 +67,8 @@ async function getSeriesSummaries() {
     updatedAt: series.updatedAt
   }));
 }
-async function getSeriesBySlug(slug) {
-  const allSeries = await getAllSeries();
+async function getSeriesBySlug(blobFiles, slug) {
+  const allSeries = await getAllSeries(blobFiles);
   return allSeries.find((s) => s.slug === slug) || null;
 }
 function getSeriesNavigation(series, currentSlug) {
@@ -82,8 +81,8 @@ function getSeriesNavigation(series, currentSlug) {
     next: currentIndex < series.posts.length - 1 ? series.posts[currentIndex + 1] : null
   };
 }
-async function getPostSeries(postSlug) {
-  const allSeries = await getAllSeries();
+async function getPostSeries(blobFiles, postSlug) {
+  const allSeries = await getAllSeries(blobFiles);
   for (const series of allSeries) {
     if (series.posts.some((p) => p.slug === postSlug)) {
       return series;
@@ -104,6 +103,5 @@ export {
   getSeriesNavigation,
   getSeriesSummaries,
   processMarkdown,
-  rehypeMermaid,
-  setBlobFiles
+  rehypeMermaid
 };

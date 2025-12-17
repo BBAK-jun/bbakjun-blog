@@ -2,6 +2,7 @@ import { getSeriesSummaries } from '@repo/content'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
+import { getBlobFiles } from '@/lib/blob'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { BookOpen, Calendar, FileText } from 'lucide-react'
 
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 export const revalidate = 300 // 5 minutes
 
 export default async function SeriesPage() {
-  const series = await getSeriesSummaries()
+  const blobFiles = await getBlobFiles()
+  const series = await getSeriesSummaries(blobFiles)
 
   if (series.length === 0) {
     return (

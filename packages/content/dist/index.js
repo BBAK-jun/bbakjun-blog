@@ -42,8 +42,7 @@ __export(index_exports, {
   getSeriesNavigation: () => getSeriesNavigation,
   getSeriesSummaries: () => getSeriesSummaries,
   processMarkdown: () => processMarkdown,
-  rehypeMermaid: () => rehypeMermaid,
-  setBlobFiles: () => setBlobFiles
+  rehypeMermaid: () => rehypeMermaid
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -88,8 +87,8 @@ async function fetchPostFromBlobFile(file) {
     return null;
   }
 }
-async function fetchAllPostsFromBlobFiles(blobFiles2) {
-  const mdFiles = filterMarkdownFiles(blobFiles2);
+async function fetchAllPostsFromBlobFiles(blobFiles) {
+  const mdFiles = filterMarkdownFiles(blobFiles);
   const posts = await Promise.all(
     mdFiles.map((file) => fetchPostFromBlobFile(file))
   );
@@ -97,15 +96,11 @@ async function fetchAllPostsFromBlobFiles(blobFiles2) {
 }
 
 // src/posts.ts
-var blobFiles = [];
-function setBlobFiles(files) {
-  blobFiles = files;
-}
-async function getPostBySlug(slug) {
+async function getPostBySlug(blobFiles, slug) {
   const allPosts = await fetchAllPostsFromBlobFiles(blobFiles);
   return allPosts.find((post) => post.slug === slug) || null;
 }
-async function getAllPosts() {
+async function getAllPosts(blobFiles) {
   const posts = await fetchAllPostsFromBlobFiles(blobFiles);
   return posts.filter((post) => !post.frontMatter.draft).sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
@@ -114,7 +109,7 @@ async function getAllPosts() {
     return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
   });
 }
-async function getAllPostsIncludingDrafts() {
+async function getAllPostsIncludingDrafts(blobFiles) {
   const posts = await fetchAllPostsFromBlobFiles(blobFiles);
   return posts.sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
@@ -123,22 +118,22 @@ async function getAllPostsIncludingDrafts() {
     return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
   });
 }
-async function getPostsByTag(tag) {
-  const allPosts = await getAllPosts();
+async function getPostsByTag(blobFiles, tag) {
+  const allPosts = await getAllPosts(blobFiles);
   return allPosts.filter(
     (post) => post.frontMatter.tags?.includes(tag)
   );
 }
-async function getAllTags() {
-  const allPosts = await getAllPosts();
+async function getAllTags(blobFiles) {
+  const allPosts = await getAllPosts(blobFiles);
   const tags = /* @__PURE__ */ new Set();
   allPosts.forEach((post) => {
     post.frontMatter.tags?.forEach((tag) => tags.add(tag));
   });
   return Array.from(tags).sort();
 }
-async function getRelatedPosts(currentPost, maxPosts = 4) {
-  const allPosts = await getAllPosts();
+async function getRelatedPosts(blobFiles, currentPost, maxPosts = 4) {
+  const allPosts = await getAllPosts(blobFiles);
   const currentSlug = currentPost.slug;
   const currentTags = currentPost.frontMatter.tags || [];
   const currentCategory = currentPost.slug.split("/")[0];
@@ -177,8 +172,8 @@ async function getRelatedPosts(currentPost, maxPosts = 4) {
 }
 
 // src/series.ts
-async function getAllSeries() {
-  const allPosts = await getAllPosts();
+async function getAllSeries(blobFiles) {
+  const allPosts = await getAllPosts(blobFiles);
   const seriesMap = /* @__PURE__ */ new Map();
   for (const post of allPosts) {
     const seriesSlug = post.frontMatter.series;
@@ -217,8 +212,8 @@ async function getAllSeries() {
     return dateB.getTime() - dateA.getTime();
   });
 }
-async function getSeriesSummaries() {
-  const allSeries = await getAllSeries();
+async function getSeriesSummaries(blobFiles) {
+  const allSeries = await getAllSeries(blobFiles);
   return allSeries.map((series) => ({
     slug: series.slug,
     title: series.title,
@@ -230,8 +225,8 @@ async function getSeriesSummaries() {
     updatedAt: series.updatedAt
   }));
 }
-async function getSeriesBySlug(slug) {
-  const allSeries = await getAllSeries();
+async function getSeriesBySlug(blobFiles, slug) {
+  const allSeries = await getAllSeries(blobFiles);
   return allSeries.find((s) => s.slug === slug) || null;
 }
 function getSeriesNavigation(series, currentSlug) {
@@ -244,8 +239,8 @@ function getSeriesNavigation(series, currentSlug) {
     next: currentIndex < series.posts.length - 1 ? series.posts[currentIndex + 1] : null
   };
 }
-async function getPostSeries(postSlug) {
-  const allSeries = await getAllSeries();
+async function getPostSeries(blobFiles, postSlug) {
+  const allSeries = await getAllSeries(blobFiles);
   for (const series of allSeries) {
     if (series.posts.some((p) => p.slug === postSlug)) {
       return series;
@@ -433,6 +428,5 @@ async function processMarkdown(content) {
   getSeriesNavigation,
   getSeriesSummaries,
   processMarkdown,
-  rehypeMermaid,
-  setBlobFiles
+  rehypeMermaid
 });

@@ -3,6 +3,7 @@ import { getPostsByTag, getAllTags } from '@repo/content'
 import PostCard from '@/components/PostCard'
 import Link from 'next/link'
 import { Metadata } from 'next'
+import { getBlobFiles } from '@/lib/blob'
 
 interface TagPageProps {
   params: Promise<{
@@ -12,7 +13,8 @@ interface TagPageProps {
 
 // 정적 경로 생성 (ISR과 함께 사용)
 export async function generateStaticParams() {
-  const tags = await getAllTags()
+  const blobFiles = await getBlobFiles()
+  const tags = await getAllTags(blobFiles)
   return tags.map((tag) => ({
     tag: encodeURIComponent(tag),
   }))
@@ -28,7 +30,8 @@ export const dynamicParams = true
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
   const { tag } = await params
   const decodedTag = decodeURIComponent(tag)
-  const posts = await getPostsByTag(decodedTag)
+  const blobFiles = await getBlobFiles()
+  const posts = await getPostsByTag(blobFiles, decodedTag)
 
   if (posts.length === 0) {
     return {
@@ -45,8 +48,9 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 export default async function TagPage({ params }: TagPageProps) {
   const { tag } = await params
   const decodedTag = decodeURIComponent(tag)
-  const posts = await getPostsByTag(decodedTag)
-  const allTags = await getAllTags()
+  const blobFiles = await getBlobFiles()
+  const posts = await getPostsByTag(blobFiles, decodedTag)
+  const allTags = await getAllTags(blobFiles)
 
   if (posts.length === 0) {
     notFound()

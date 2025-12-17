@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { getPostBySlug } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob'
 
 export async function GET(
   request: Request,
@@ -10,7 +11,8 @@ export async function GET(
     const slugString = slug.join('/')
 
     // 포스트 정보 가져오기
-    const post = await getPostBySlug(slugString)
+    const blobFiles = await getBlobFiles()
+    const post = await getPostBySlug(blobFiles, slugString)
     
     if (!post) {
       return new Response('Post not found', { status: 404 })

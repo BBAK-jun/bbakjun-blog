@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ViewCounter } from '@repo/analytics'
 import { getAllPosts } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob'
 
 // 조회수 통계 조회 - 타임아웃과 에러 핸들링 개선
 export async function GET() {
@@ -18,7 +19,8 @@ export async function GET() {
     }
 
     // 포스트 데이터는 빠르게 가져옴
-    const posts = await getAllPosts()
+    const blobFiles = await getBlobFiles()
+    const posts = await getAllPosts(blobFiles)
     console.log(`[stats] ${posts.length}개 포스트 로드 완료`)
 
     // Redis 작업들을 단계별로 실행하여 타임아웃 방지
@@ -89,7 +91,8 @@ export async function GET() {
     console.error('[stats] API 에러:', error)
 
     // 에러 발생시 기본값 반환
-    const posts = await getAllPosts()
+    const blobFiles = await getBlobFiles()
+    const posts = await getAllPosts(blobFiles)
     const fallbackStats = {
       totalViews: 0,
       totalPosts: posts.length,

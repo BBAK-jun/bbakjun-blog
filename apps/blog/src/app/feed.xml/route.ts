@@ -1,4 +1,5 @@
 import { getAllPosts } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob'
 
 /**
  * RSS Feed for blog posts
@@ -6,7 +7,8 @@ import { getAllPosts } from '@repo/content'
  */
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const posts = await getAllPosts()
+  const blobFiles = await getBlobFiles()
+  const posts = await getAllPosts(blobFiles)
 
   // Get latest 20 posts for the feed
   const recentPosts = posts.slice(0, 20)
