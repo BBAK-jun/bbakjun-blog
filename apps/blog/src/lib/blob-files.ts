@@ -3,26 +3,13 @@
  * Fetches cached blob file list from blog-admin API
  */
 
-const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
+import type { paths } from '@/generated/blog-admin-openapi';
 
-export interface BlobFile {
-  id: string;
-  url: string;
-  pathname: string;
-  size: number;
-  uploadedAt: Date;
-  contentType: string | null;
-  syncedAt: Date;
-  lastChecked: Date;
-  isDeleted: boolean;
-  uploadedBy: string | null;
-}
+const BLOG_ADMIN_URL =
+  process.env.NEXT_PUBLIC_BLOG_ADMIN_URL || 'http://localhost:3001';
 
-export interface BlobFilesResponse {
-  files: BlobFile[];
-  total: number;
-  hasMore: boolean;
-}
+type BlobFilesResponse =
+  paths['/api/v1/blob-files']['get']['responses']['200']['content']['application/json'];
 
 /**
  * Get cached blob files from blog-admin API
@@ -41,7 +28,7 @@ export async function getCachedBlobFiles(options?: {
     ...(searchTerm && { search: searchTerm }),
   });
 
-  const response = await fetch(`${ADMIN_URL}/api/public/blob-files?${params}`, {
+  const response = await fetch(`${BLOG_ADMIN_URL}/api/v1/blob-files?${params}`, {
     // Cache for 5 minutes (same as CDC auto-sync interval)
     next: { revalidate: 300 },
   });

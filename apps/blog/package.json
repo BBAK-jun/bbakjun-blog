@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate:blog-admin-openapi": "node ./scripts/generate-blog-admin-openapi.mjs",
+    "prebuild": "pnpm generate:blog-admin-openapi",
+    "predev": "pnpm generate:blog-admin-openapi",
+    "pretype-check": "pnpm generate:blog-admin-openapi",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -49,6 +53,7 @@
     "blog-admin": "workspace:*",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "openapi-typescript": "^7.9.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
