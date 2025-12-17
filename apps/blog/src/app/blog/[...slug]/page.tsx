@@ -45,17 +45,15 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const { slug } = await params
   const slugString = slug.join('/')
 
-  // CDC 캐시에서 BlobFiles 가져오기 (POST_SOURCE='blob'일 때만 사용)
-  if (process.env.POST_SOURCE === 'blob') {
-    const blobFilesResponse = await client.api.v1['blob-files'].$get({})
-    if (blobFilesResponse.ok) {
-      const { files } = await blobFilesResponse.json()
-      setBlobFiles(files.map(f => ({
-        url: f.url,
-        pathname: f.pathname,
-        contentType: f.contentType
-      })))
-    }
+  // CDC 캐시에서 BlobFiles 가져오기
+  const blobFilesResponse = await client.api.v1['blob-files'].$get({})
+  if (blobFilesResponse.ok) {
+    const { files } = await blobFilesResponse.json()
+    setBlobFiles(files.map(f => ({
+      url: f.url,
+      pathname: f.pathname,
+      contentType: f.contentType
+    })))
   }
 
   const post = await getPostBySlug(slugString)
@@ -104,17 +102,15 @@ export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
   const slugString = slug.join('/')
 
-  // CDC 캐시에서 BlobFiles 가져오기 (POST_SOURCE='blob'일 때만 사용)
-  if (process.env.POST_SOURCE === 'blob') {
-    const blobFilesResponse = await client.api.v1['blob-files'].$get({})
-    if (blobFilesResponse.ok) {
-      const { files } = await blobFilesResponse.json()
-      setBlobFiles(files.map(f => ({
-        url: f.url,
-        pathname: f.pathname,
-        contentType: f.contentType
-      })))
-    }
+  // CDC 캐시에서 BlobFiles 가져오기
+  const blobFilesResponse = await client.api.v1['blob-files'].$get({})
+  if (blobFilesResponse.ok) {
+    const { files } = await blobFilesResponse.json()
+    setBlobFiles(files.map(f => ({
+      url: f.url,
+      pathname: f.pathname,
+      contentType: f.contentType
+    })))
   }
 
   const post = await getPostBySlug(slugString)

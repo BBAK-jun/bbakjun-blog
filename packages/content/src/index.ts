@@ -4,7 +4,6 @@ export type { BlobFileInfo } from './posts-blob'
 
 // Re-export everything from posts
 export {
-  getPostSlugs,
   getPostBySlug,
   getAllPosts,
   getAllPostsIncludingDrafts,

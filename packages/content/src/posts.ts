@@ -1,11 +1,5 @@
-import fs from 'fs'
-import path from 'path'
-import matter from 'gray-matter'
-import readingTime from 'reading-time'
-import type { Post, PostMatter } from '@repo/types'
+import type { Post } from '@repo/types'
 import { fetchAllPostsFromBlobFiles, type BlobFileInfo } from './posts-blob'
-
-const postsDirectory = path.join(process.cwd(), '../../packages/content/posts')
 
 // CDC 캐시에서 가져온 BlobFile 목록 (전역 변수)
 let blobFiles: BlobFileInfo[] = []
@@ -17,92 +11,14 @@ export function setBlobFiles(files: BlobFileInfo[]): void {
   blobFiles = files
 }
 
-function getAllMdxFiles(dir: string, relativePath: string = ''): string[] {
-  if (!fs.existsSync(dir)) {
-    return []
-  }
-
-  const items = fs.readdirSync(dir)
-  let files: string[] = []
-
-  for (const item of items) {
-    const fullPath = path.join(dir, item)
-    const stat = fs.statSync(fullPath)
-
-    if (stat.isDirectory()) {
-      // 재귀적으로 하위 폴더 탐색
-      const subPath = relativePath ? `${relativePath}/${item}` : item
-      files = files.concat(getAllMdxFiles(fullPath, subPath))
-    } else if (item.endsWith('.mdx')) {
-      // MDX 파일 추가
-      const fileName = item.replace(/\.mdx$/, '')
-
-      // index.mdx 파일의 경우 폴더명을 slug로 사용
-      if (fileName === 'index' && relativePath) {
-        files.push(relativePath)
-      } else {
-        const slug = relativePath ? `${relativePath}/${fileName}` : fileName
-        files.push(slug)
-      }
-    }
-  }
-
-  return files
-}
-
-export function getPostSlugs(): string[] {
-  return getAllMdxFiles(postsDirectory)
-}
-
 export async function getPostBySlug(slug: string): Promise<Post | null> {
-  // Blob 소스: CDC 캐시에서 모든 포스트 가져온 후 필터링
-  if (process.env.POST_SOURCE === 'blob') {
-    const allPosts = await fetchAllPostsFromBlobFiles(blobFiles)
-    return allPosts.find(post => post.slug === slug) || null
-  }
-
-  // 파일시스템 소스: 직접 파일 읽기
-  try {
-    let fullPath = path.join(postsDirectory, slug, 'index.mdx')
-    if (!fs.existsSync(fullPath)) {
-      fullPath = path.join(postsDirectory, `${slug}.mdx`)
-    }
-
-    const fileContents = fs.readFileSync(fullPath, 'utf8')
-    const { data, content } = matter(fileContents)
-    const readingTimeStats = readingTime(content)
-
-    return {
-      slug,
-      frontMatter: data as PostMatter,
-      content,
-      readingTime: readingTimeStats.text,
-    }
-  } catch (error) {
-    console.error(`Error reading post ${slug}:`, error)
-    return null
-  }
+  const allPosts = await fetchAllPostsFromBlobFiles(blobFiles)
+  return allPosts.find(post => post.slug === slug) || null
 }
 
 export async function getAllPosts(): Promise<Post[]> {
-  // Blob 소스: CDC 캐시에서 가져오기
-  if (process.env.POST_SOURCE === 'blob') {
-    const posts = await fetchAllPostsFromBlobFiles(blobFiles)
-    return posts
-      .filter((post) => !post.frontMatter.draft)
-      .sort((a, b) => {
-        const orderA = a.frontMatter.order ?? 999999
-        const orderB = b.frontMatter.order ?? 999999
-        if (orderA !== orderB) return orderA - orderB
-        return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
-      })
-  }
-
-  // 파일시스템 소스: 파일 스캔
-  const slugs = getPostSlugs()
-  const postsPromises = slugs.map((slug) => getPostBySlug(slug))
-  const posts = (await Promise.all(postsPromises))
-    .filter((post): post is Post => post !== null)
+  const posts = await fetchAllPostsFromBlobFiles(blobFiles)
+  return posts
     .filter((post) => !post.frontMatter.draft)
     .sort((a, b) => {
       const orderA = a.frontMatter.order ?? 999999
@@ -110,36 +26,16 @@ export async function getAllPosts(): Promise<Post[]> {
       if (orderA !== orderB) return orderA - orderB
       return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
     })
-
-  return posts
 }
 
-// Dashboard용: draft 포함한 모든 포스트
 export async function getAllPostsIncludingDrafts(): Promise<Post[]> {
-  // Blob 소스: CDC 캐시에서 가져오기 (draft 포함)
-  if (process.env.POST_SOURCE === 'blob') {
-    const posts = await fetchAllPostsFromBlobFiles(blobFiles)
-    return posts.sort((a, b) => {
-      const orderA = a.frontMatter.order ?? 999999
-      const orderB = b.frontMatter.order ?? 999999
-      if (orderA !== orderB) return orderA - orderB
-      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
-    })
-  }
-
-  // 파일시스템 소스: 파일 스캔 (draft 포함)
-  const slugs = getPostSlugs()
-  const postsPromises = slugs.map((slug) => getPostBySlug(slug))
-  const posts = (await Promise.all(postsPromises))
-    .filter((post): post is Post => post !== null)
-    .sort((a, b) => {
-      const orderA = a.frontMatter.order ?? 999999
-      const orderB = b.frontMatter.order ?? 999999
-      if (orderA !== orderB) return orderA - orderB
-      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
-    })
-
-  return posts
+  const posts = await fetchAllPostsFromBlobFiles(blobFiles)
+  return posts.sort((a, b) => {
+    const orderA = a.frontMatter.order ?? 999999
+    const orderB = b.frontMatter.order ?? 999999
+    if (orderA !== orderB) return orderA - orderB
+    return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime()
+  })
 }
 
 export async function getPostsByTag(tag: string): Promise<Post[]> {

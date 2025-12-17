@@ -36,7 +36,6 @@ __export(index_exports, {
   getAllTags: () => getAllTags,
   getPostBySlug: () => getPostBySlug,
   getPostSeries: () => getPostSeries,
-  getPostSlugs: () => getPostSlugs,
   getPostsByTag: () => getPostsByTag,
   getRelatedPosts: () => getRelatedPosts,
   getSeriesBySlug: () => getSeriesBySlug,
@@ -47,12 +46,6 @@ __export(index_exports, {
   setBlobFiles: () => setBlobFiles
 });
 module.exports = __toCommonJS(index_exports);
-
-// src/posts.ts
-var import_fs = __toESM(require("fs"));
-var import_path = __toESM(require("path"));
-var import_gray_matter2 = __toESM(require("gray-matter"));
-var import_reading_time2 = __toESM(require("reading-time"));
 
 // src/posts-blob.ts
 var import_gray_matter = __toESM(require("gray-matter"));
@@ -104,101 +97,31 @@ async function fetchAllPostsFromBlobFiles(blobFiles2) {
 }
 
 // src/posts.ts
-var postsDirectory = import_path.default.join(process.cwd(), "../../packages/content/posts");
 var blobFiles = [];
 function setBlobFiles(files) {
   blobFiles = files;
 }
-function getAllMdxFiles(dir, relativePath = "") {
-  if (!import_fs.default.existsSync(dir)) {
-    return [];
-  }
-  const items = import_fs.default.readdirSync(dir);
-  let files = [];
-  for (const item of items) {
-    const fullPath = import_path.default.join(dir, item);
-    const stat = import_fs.default.statSync(fullPath);
-    if (stat.isDirectory()) {
-      const subPath = relativePath ? `${relativePath}/${item}` : item;
-      files = files.concat(getAllMdxFiles(fullPath, subPath));
-    } else if (item.endsWith(".mdx")) {
-      const fileName = item.replace(/\.mdx$/, "");
-      if (fileName === "index" && relativePath) {
-        files.push(relativePath);
-      } else {
-        const slug = relativePath ? `${relativePath}/${fileName}` : fileName;
-        files.push(slug);
-      }
-    }
-  }
-  return files;
-}
-function getPostSlugs() {
-  return getAllMdxFiles(postsDirectory);
-}
 async function getPostBySlug(slug) {
-  if (process.env.POST_SOURCE === "blob") {
-    const allPosts = await fetchAllPostsFromBlobFiles(blobFiles);
-    return allPosts.find((post) => post.slug === slug) || null;
-  }
-  try {
-    let fullPath = import_path.default.join(postsDirectory, slug, "index.mdx");
-    if (!import_fs.default.existsSync(fullPath)) {
-      fullPath = import_path.default.join(postsDirectory, `${slug}.mdx`);
-    }
-    const fileContents = import_fs.default.readFileSync(fullPath, "utf8");
-    const { data, content } = (0, import_gray_matter2.default)(fileContents);
-    const readingTimeStats = (0, import_reading_time2.default)(content);
-    return {
-      slug,
-      frontMatter: data,
-      content,
-      readingTime: readingTimeStats.text
-    };
-  } catch (error) {
-    console.error(`Error reading post ${slug}:`, error);
-    return null;
-  }
+  const allPosts = await fetchAllPostsFromBlobFiles(blobFiles);
+  return allPosts.find((post) => post.slug === slug) || null;
 }
 async function getAllPosts() {
-  if (process.env.POST_SOURCE === "blob") {
-    const posts2 = await fetchAllPostsFromBlobFiles(blobFiles);
-    return posts2.filter((post) => !post.frontMatter.draft).sort((a, b) => {
-      const orderA = a.frontMatter.order ?? 999999;
-      const orderB = b.frontMatter.order ?? 999999;
-      if (orderA !== orderB) return orderA - orderB;
-      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
-    });
-  }
-  const slugs = getPostSlugs();
-  const postsPromises = slugs.map((slug) => getPostBySlug(slug));
-  const posts = (await Promise.all(postsPromises)).filter((post) => post !== null).filter((post) => !post.frontMatter.draft).sort((a, b) => {
+  const posts = await fetchAllPostsFromBlobFiles(blobFiles);
+  return posts.filter((post) => !post.frontMatter.draft).sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
     const orderB = b.frontMatter.order ?? 999999;
     if (orderA !== orderB) return orderA - orderB;
     return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
   });
-  return posts;
 }
 async function getAllPostsIncludingDrafts() {
-  if (process.env.POST_SOURCE === "blob") {
-    const posts2 = await fetchAllPostsFromBlobFiles(blobFiles);
-    return posts2.sort((a, b) => {
-      const orderA = a.frontMatter.order ?? 999999;
-      const orderB = b.frontMatter.order ?? 999999;
-      if (orderA !== orderB) return orderA - orderB;
-      return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
-    });
-  }
-  const slugs = getPostSlugs();
-  const postsPromises = slugs.map((slug) => getPostBySlug(slug));
-  const posts = (await Promise.all(postsPromises)).filter((post) => post !== null).sort((a, b) => {
+  const posts = await fetchAllPostsFromBlobFiles(blobFiles);
+  return posts.sort((a, b) => {
     const orderA = a.frontMatter.order ?? 999999;
     const orderB = b.frontMatter.order ?? 999999;
     if (orderA !== orderB) return orderA - orderB;
     return new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime();
   });
-  return posts;
 }
 async function getPostsByTag(tag) {
   const allPosts = await getAllPosts();
@@ -504,7 +427,6 @@ async function processMarkdown(content) {
   getAllTags,
   getPostBySlug,
   getPostSeries,
-  getPostSlugs,
   getPostsByTag,
   getRelatedPosts,
   getSeriesBySlug,

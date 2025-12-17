@@ -3,17 +3,15 @@ import {
   getAllPostsIncludingDrafts,
   getAllTags,
   getPostBySlug,
-  getPostSlugs,
   getPostsByTag,
   getRelatedPosts,
   setBlobFiles
-} from "./chunk-RHXIPNCE.mjs";
+} from "./chunk-N3U7XZZL.mjs";
 export {
   getAllPosts,
   getAllPostsIncludingDrafts,
   getAllTags,
   getPostBySlug,
-  getPostSlugs,
   getPostsByTag,
   getRelatedPosts,
   setBlobFiles

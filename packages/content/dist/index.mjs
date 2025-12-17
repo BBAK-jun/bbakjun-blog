@@ -6,11 +6,10 @@ import {
   getAllPostsIncludingDrafts,
   getAllTags,
   getPostBySlug,
-  getPostSlugs,
   getPostsByTag,
   getRelatedPosts,
   setBlobFiles
-} from "./chunk-RHXIPNCE.mjs";
+} from "./chunk-N3U7XZZL.mjs";
 import {
   rehypeMermaid
 } from "./chunk-NG4EI63L.mjs";
@@ -99,7 +98,6 @@ export {
   getAllTags,
   getPostBySlug,
   getPostSeries,
-  getPostSlugs,
   getPostsByTag,
   getRelatedPosts,
   getSeriesBySlug,

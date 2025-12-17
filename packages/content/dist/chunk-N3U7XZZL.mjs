@@ -1,48 +1,6 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// src/posts.ts
-var posts_exports = {};
-__export(posts_exports, {
-  getAllPosts: () => getAllPosts,
-  getAllPostsIncludingDrafts: () => getAllPostsIncludingDrafts,
-  getAllTags: () => getAllTags,
-  getPostBySlug: () => getPostBySlug,
-  getPostsByTag: () => getPostsByTag,
-  getRelatedPosts: () => getRelatedPosts,
-  setBlobFiles: () => setBlobFiles
-});
-module.exports = __toCommonJS(posts_exports);
-
 // src/posts-blob.ts
-var import_gray_matter = __toESM(require("gray-matter"));
-var import_reading_time = __toESM(require("reading-time"));
+import matter from "gray-matter";
+import readingTime from "reading-time";
 function filterMarkdownFiles(files) {
   return files.filter(
     (file) => (file.pathname.endsWith(".md") || file.pathname.endsWith(".mdx")) && !file.pathname.includes("/.")
@@ -67,8 +25,8 @@ async function downloadBlobContent(url) {
 async function fetchPostFromBlobFile(file) {
   try {
     const content = await downloadBlobContent(file.url);
-    const { data, content: markdownContent } = (0, import_gray_matter.default)(content);
-    const readingTimeStats = (0, import_reading_time.default)(markdownContent);
+    const { data, content: markdownContent } = matter(content);
+    const readingTimeStats = readingTime(markdownContent);
     const slug = pathnameToSlug(file.pathname);
     return {
       slug,
@@ -168,13 +126,13 @@ async function getRelatedPosts(currentPost, maxPosts = 4) {
     return b.score - a.score;
   }).slice(0, maxPosts).map((item) => item.post);
 }
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
+
+export {
+  setBlobFiles,
+  getPostBySlug,
   getAllPosts,
   getAllPostsIncludingDrafts,
-  getAllTags,
-  getPostBySlug,
   getPostsByTag,
-  getRelatedPosts,
-  setBlobFiles
-});
+  getAllTags,
+  getRelatedPosts
+};
