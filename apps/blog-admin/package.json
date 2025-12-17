@@ -2,9 +2,22 @@
   "name": "blog-admin",
   "version": "0.1.0",
   "private": true,
+  "exports": {
+    "./rpc": {
+      "types": "./dist/rpc/types.d.mts",
+      "import": "./dist/rpc/types.mjs",
+      "default": "./dist/rpc/types.mjs"
+    },
+    "./contract": {
+      "types": "./dist/contract/index.d.mts",
+      "import": "./dist/contract/index.mjs",
+      "default": "./dist/contract/index.mjs"
+    }
+  },
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "prisma generate && next build",
+    "build:rpc": "tsup --config tsup.config.ts",
     "start": "next start -p 3001",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
@@ -14,6 +27,7 @@
     "@auth/prisma-adapter": "^2.11.1",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/theme-one-dark": "^6.1.3",
+    "@hono/node-server": "^1.19.7",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
@@ -34,6 +48,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "gray-matter": "^4.0.3",
+    "hono": "^4.11.1",
     "jose": "^6.1.3",
     "lucide-react": "^0.553.0",
     "next": "16.0.8",
@@ -44,6 +59,7 @@
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-hook-form": "^7.68.0",
+    "resend": "^6.6.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^13.0.0",

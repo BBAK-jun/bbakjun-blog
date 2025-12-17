@@ -109,3 +109,29 @@ model Subscriber {
   @@index([isActive])
   @@map("subscribers")
 }
+
+// ==========================================
+// Blob Storage CDC (Change Data Capture)
+// ==========================================
+
+model BlobFile {
+  id          String   @id @default(cuid())
+  url         String   @unique  // Blob URL
+  pathname    String              // File path
+  size        BigInt              // File size in bytes
+  uploadedAt  DateTime            // Upload timestamp from Blob
+  contentType String?             // MIME type
+
+  // CDC metadata
+  syncedAt    DateTime @default(now())
+  lastChecked DateTime @default(now())
+  isDeleted   Boolean  @default(false)
+
+  // Optional metadata
+  uploadedBy  String?             // User who uploaded (if tracked)
+
+  @@index([pathname])
+  @@index([uploadedAt])
+  @@index([isDeleted])
+  @@map("blob_files")
+}

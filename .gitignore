@@ -42,6 +42,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# generated declaration files (repo policy: do not commit)
+apps/blog-admin/src/rpc/**/*.d.ts
+apps/blog-admin/src/shared/lib/auth/**/*.d.ts
+apps/blog-admin/src/lib/**/*.d.ts
+
 # turborepo
 .turbo
 */.turbo

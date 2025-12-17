@@ -1,11 +1,13 @@
 "use server";
 
-import { put, del, list } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { processMarkdown } from "@repo/content";
 import { revalidatePath } from "next/cache";
 import matter from "gray-matter";
 import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/lib/schemas";
 import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
+import { getCachedBlobFiles } from "@/lib/blob-cdc";
+import { onBlobUpload, onBlobDelete } from "@/lib/blob-cdc";
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
 
@@ -14,13 +16,10 @@ const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
  */
 export async function getFileContent(pathname: string) {
   try {
-    // Note: Vercel Blob doesn't support prefix search reliably because files have random suffixes in URLs
-    // We need to list all blobs and find the exact pathname match
-    const { blobs } = await list({
-      token: BLOB_TOKEN,
-    });
+    // Use CDC cached file list instead of direct Blob API call
+    const { files } = await getCachedBlobFiles();
 
-    const blob = blobs.find((b) => b.pathname === pathname);
+    const blob = files.find((f) => f.pathname === pathname);
 
     if (!blob) {
       throw new Error(`File not found in Blob Storage: ${pathname}`);
@@ -105,11 +104,24 @@ export async function updateFile(input: UpdateFileInput) {
     const fullContent = frontMatter + "\n" + validatedData.content;
 
     // Upload to Blob Storage
-    await put(validatedData.pathname, fullContent, {
+    const blob = await put(validatedData.pathname, fullContent, {
       access: "public",
       token: BLOB_TOKEN,
       contentType: "text/markdown",
     });
+
+    // CDC: DB에 파일 정보 저장
+    try {
+      await onBlobUpload({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: Buffer.byteLength(fullContent, 'utf8'),
+        uploadedAt: new Date(),
+        contentType: "text/markdown",
+      });
+    } catch (cdcError) {
+      console.error('CDC sync failed (non-critical):', cdcError);
+    }
 
     // Revalidate admin file list
     revalidatePath("/dashboard/files");
@@ -146,7 +158,20 @@ export async function deleteFile(pathname: string) {
       };
     }
 
+    // First get the file URL for CDC
+    const { files } = await getCachedBlobFiles({ limit: 1000 });
+    const fileToDelete = files.find((f) => f.pathname === validationResult.data.pathname);
+
     await del(validationResult.data.pathname, { token: BLOB_TOKEN });
+
+    // CDC: DB에서 파일 삭제 표시
+    if (fileToDelete) {
+      try {
+        await onBlobDelete(fileToDelete.url);
+      } catch (cdcError) {
+        console.error('CDC sync failed (non-critical):', cdcError);
+      }
+    }
 
     revalidatePath("/dashboard/files");
 
@@ -171,11 +196,12 @@ export async function deleteFile(pathname: string) {
  */
 export async function listFiles(limit = 100) {
   try {
-    const { blobs } = await list({
-      token: BLOB_TOKEN,
-    });
+    // Use CDC cached file list instead of direct Blob API call
+    const { files } = await getCachedBlobFiles({ limit: 1000 });
 
-    const markdownBlobs = blobs
+    console.log(files)
+
+    const markdownBlobs = files
       .filter(
         (blob) =>
           (blob.pathname.endsWith(".md") || blob.pathname.endsWith(".mdx")) &&
@@ -200,7 +226,7 @@ export async function listFiles(limit = 100) {
             filename: blob.pathname.split("/").pop() || blob.pathname,
             pathname: blob.pathname,
             size: blob.size,
-            uploadedAt: blob.uploadedAt.toISOString(),
+            uploadedAt: new Date(blob.uploadedAt).toISOString(),
             url: blob.url,
             title: frontMatter.title || null,
             description: frontMatter.description || null,
@@ -213,7 +239,7 @@ export async function listFiles(limit = 100) {
             filename: blob.pathname.split("/").pop() || blob.pathname,
             pathname: blob.pathname,
             size: blob.size,
-            uploadedAt: blob.uploadedAt.toISOString(),
+            uploadedAt: new Date(blob.uploadedAt).toISOString(),
             url: blob.url,
             title: null,
             description: null,
@@ -287,6 +313,19 @@ export async function uploadMarkdown(formData: FormData) {
       access: "public",
       token: BLOB_TOKEN,
     });
+
+    // CDC: DB에 파일 정보 저장
+    try {
+      await onBlobUpload({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: file.size,
+        uploadedAt: new Date(),
+        contentType: file.type,
+      });
+    } catch (cdcError) {
+      console.error('CDC sync failed (non-critical):', cdcError);
+    }
 
     revalidatePath("/dashboard/files");
 
@@ -367,6 +406,19 @@ export async function uploadImage(formData: FormData) {
       addRandomSuffix: false,
     });
 
+    // CDC: DB에 파일 정보 저장
+    try {
+      await onBlobUpload({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: file.size,
+        uploadedAt: new Date(),
+        contentType: file.type,
+      });
+    } catch (cdcError) {
+      console.error('CDC sync failed (non-critical):', cdcError);
+    }
+
     return {
       success: true,
       url: blob.url,
@@ -388,12 +440,13 @@ export async function uploadImage(formData: FormData) {
  */
 export async function listImages(limit = 50) {
   try {
-    const { blobs } = await list({
-      token: BLOB_TOKEN,
-      prefix: "images/",
+    // Use CDC cached file list instead of direct Blob API call
+    const { files } = await getCachedBlobFiles({
+      limit: 1000,
+      searchTerm: "images/",
     });
 
-    const images = blobs
+    const images = files
       .filter((blob) => /\.(jpg|jpeg|png|gif|webp)$/i.test(blob.pathname))
       .slice(0, limit)
       .map((blob) => ({
@@ -401,7 +454,7 @@ export async function listImages(limit = 50) {
         pathname: blob.pathname,
         filename: blob.pathname.split("/").pop() || blob.pathname,
         size: blob.size,
-        uploadedAt: blob.uploadedAt.toISOString(),
+        uploadedAt: new Date(blob.uploadedAt).toISOString(),
       }));
 
     return {
@@ -453,9 +506,9 @@ export async function createFile(input: CreateFileInput) {
     const sanitized = validatedData.pathname.trim().replace(/^\/+|\/+$/g, "");
     const finalPathname = `${sanitized}/index.mdx`;
 
-    // Check if file already exists
-    const { blobs } = await list({ token: BLOB_TOKEN });
-    const existingFile = blobs.find((b) => b.pathname === finalPathname);
+    // Check if file already exists using CDC cache
+    const { files } = await getCachedBlobFiles({ limit: 1000 });
+    const existingFile = files.find((f) => f.pathname === finalPathname);
 
     if (existingFile) {
       return {
@@ -483,6 +536,19 @@ export async function createFile(input: CreateFileInput) {
       token: BLOB_TOKEN,
       contentType: "text/markdown",
     });
+
+    // CDC: DB에 파일 정보 저장
+    try {
+      await onBlobUpload({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: Buffer.byteLength(fullContent, 'utf8'),
+        uploadedAt: new Date(),
+        contentType: "text/markdown",
+      });
+    } catch (cdcError) {
+      console.error('CDC sync failed (non-critical):', cdcError);
+    }
 
     // Revalidate cache
     revalidatePath("/dashboard/files");

@@ -4,7 +4,7 @@ import { authConfig } from "./auth.config";
 import { prisma } from "@/shared/lib/db";
 import type { UserRole } from "@prisma/client";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma) as any,
   session: {
@@ -37,3 +37,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, auth } = nextAuth;
+
+export const signOut: (options?: { redirectTo?: string }) => Promise<void> =
+  nextAuth.signOut;
