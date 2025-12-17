@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react'
+import { env } from '@/env'
 
 interface NewsletterSubscribeProps {
   source?: string
@@ -19,7 +20,7 @@ export default function NewsletterSubscribe({ source = 'footer', compact = false
     setMessage('')
 
     try {
-      const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
+      const adminUrl = env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
       const response = await fetch(`${adminUrl}/api/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

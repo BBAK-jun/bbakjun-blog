@@ -4,8 +4,9 @@ import { put } from '@vercel/blob';
 import { verifyApiKeySync } from '../../shared/lib/auth';
 import { onBlobUpload } from '../../lib/blob-cdc';
 import type { RpcEnv } from '../env';
+import { env } from '../../env';
 
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
 const requireApiKey = (authHeader?: string | null) => {
   const apiKey = authHeader?.replace('Bearer ', '');

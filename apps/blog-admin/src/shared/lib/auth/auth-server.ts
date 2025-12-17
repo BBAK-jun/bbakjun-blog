@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
+import { env } from "@/env";
 
-const API_KEY = process.env.BACKOFFICE_API_KEY;
+const API_KEY = env.BACKOFFICE_API_KEY;
 
 /**
  * 서버 사이드에서 세션 쿠키를 확인하여 인증 여부 검증

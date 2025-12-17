@@ -1,12 +1,13 @@
 import { getAllPosts } from '@repo/content'
 import { getBlobFiles } from '@/lib/blob'
+import { env } from '@/env'
 
 /**
  * RSS Feed for blog posts
  * Accessible at /feed.xml
  */
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const baseUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const blobFiles = await getBlobFiles()
   const posts = await getAllPosts(blobFiles)
 

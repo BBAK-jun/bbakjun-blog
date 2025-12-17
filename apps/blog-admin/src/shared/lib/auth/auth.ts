@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
+import { env } from "@/env";
 
 function getApiKey(): string {
-  const key = process.env.BACKOFFICE_API_KEY;
+  const key = env.BACKOFFICE_API_KEY;
   if (!key) {
     throw new Error("BACKOFFICE_API_KEY environment variable is required");
   }

@@ -1,10 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { Session, SessionPayload } from "@/shared/types/user";
+import { env } from "@/env";
 
 // JWT 시크릿 키 (환경변수에서 가져오기)
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
+  const secret = env.JWT_SECRET;
   if (!secret) {
     throw new Error("JWT_SECRET environment variable is required");
   }
@@ -67,7 +68,7 @@ export async function createSession(payload: SessionPayload): Promise<void> {
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: SESSION_DURATION,
     path: "/",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Giscus from '@giscus/react'
 import { useTheme } from 'next-themes'
+import { env } from '@/env'
 
 interface GiscusClientProps {
   identifier: string
@@ -19,10 +20,10 @@ export default function GiscusClient({ identifier }: GiscusClientProps) {
       <Giscus
         id="comments"
         // GitHub repo 설정 - 사용자가 자신의 repo로 변경해야 함
-        repo={process.env.NEXT_PUBLIC_GISCUS_REPO as `${string}/${string}` || "bbakjun/bbakjun-blog"}
-        repoId={process.env.NEXT_PUBLIC_GISCUS_REPO_ID || ""}
-        category={process.env.NEXT_PUBLIC_GISCUS_CATEGORY || "General"}
-        categoryId={process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID || ""}
+        repo={env.NEXT_PUBLIC_GISCUS_REPO as `${string}/${string}` || "bbakjun/bbakjun-blog"}
+        repoId={env.NEXT_PUBLIC_GISCUS_REPO_ID || ""}
+        category={env.NEXT_PUBLIC_GISCUS_CATEGORY || "General"}
+        categoryId={env.NEXT_PUBLIC_GISCUS_CATEGORY_ID || ""}
         // 댓글 매핑 방식
         mapping="specific"
         term={identifier}

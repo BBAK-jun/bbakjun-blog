@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import { CheckCircle, AlertCircle, Mail } from 'lucide-react'
 import Link from 'next/link'
+import { env } from '@/env'
 
 function UnsubscribeContent() {
   const searchParams = useSearchParams()
@@ -29,7 +30,7 @@ function UnsubscribeContent() {
     setStatus('loading')
 
     try {
-      const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
+      const adminUrl = env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
       const response = await fetch(`${adminUrl}/api/newsletter/unsubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

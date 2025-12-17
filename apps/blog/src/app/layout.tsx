@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/react";
+import { env } from "@/env";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   },
   alternates: {
     types: {
-      'application/rss+xml': `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/feed.xml`,
+      'application/rss+xml': `${env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/feed.xml`,
     },
   },
 };

@@ -8,11 +8,12 @@ import {
   newsletterSubscribeBodySchema,
   newsletterUnsubscribeBodySchema,
 } from '../../contract/schemas/newsletter';
+import { env } from '../../env';
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
@@ -90,7 +91,7 @@ export const newsletterRoutes = new Hono<RpcEnv>()
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
                 <p style="font-size: 14px; color: #6b7280;">
                   더 이상 이메일을 받고 싶지 않으시면
-                  <a href="${process.env.NEXT_PUBLIC_BLOG_URL}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}"
+                  <a href="${env.NEXT_PUBLIC_BLOG_URL}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}"
                      style="color: #2563eb;">여기</a>를 클릭하여 구독을 취소할 수 있습니다.
                 </p>
               </div>

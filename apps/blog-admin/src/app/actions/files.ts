@@ -8,8 +8,9 @@ import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/l
 import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
 import { getCachedBlobFiles } from "@/lib/blob-cdc";
 import { onBlobUpload, onBlobDelete } from "@/lib/blob-cdc";
+import { env } from "@/env";
 
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN!;
+const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
 /**
  * Get file content and metadata from Blob Storage

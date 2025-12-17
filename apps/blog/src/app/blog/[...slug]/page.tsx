@@ -17,6 +17,7 @@ import { getAllPosts, getPostBySlug, getPostSeries, getRelatedPosts, getSeriesNa
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { env } from '@/env'
 
 interface PostPageProps {
   params: Promise<{
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 
   const { frontMatter } = post
 
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/og/${slugString}`
+  const ogImageUrl = `${env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/og/${slugString}`
 
   return {
     title: `${frontMatter.title} | DEV_BBAK 블로그`,
@@ -252,7 +253,7 @@ export default async function PostPage({ params }: PostPageProps) {
             <h3 className="text-2xl font-bold text-foreground">💬 댓글</h3>
 
             {/* giscus 환경 변수가 없으면 설정 안내 표시, 있으면 댓글 표시 */}
-            {!process.env.NEXT_PUBLIC_GISCUS_REPO_ID ? (
+            {!env.NEXT_PUBLIC_GISCUS_REPO_ID ? (
               <CommentsConfig />
             ) : (
               <Comments identifier={slugString} title={frontMatter.title} />

@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/env";
 
 /**
  * On-demand ISR revalidation API
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     const all = searchParams.get("all") === "true";
 
     // Security: Verify secret token
-    if (secret !== process.env.REVALIDATION_SECRET) {
+    if (secret !== env.REVALIDATION_SECRET) {
       return NextResponse.json(
         { error: "Invalid secret token" },
         { status: 401 }

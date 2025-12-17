@@ -1,5 +1,6 @@
 import type { User } from "@/shared/types/user";
 import { hashPassword } from "./password";
+import { env } from "@/env";
 
 /**
  * 사용자 저장소 (실제로는 DB를 사용하지만, 현재는 메모리에 저장)
@@ -75,10 +76,10 @@ class UserRepository {
 export const userRepository = new UserRepository();
 
 // 개발 환경에서 기본 관리자 계정 생성
-if (process.env.NODE_ENV === "development") {
-  const adminUsername = process.env.ADMIN_USERNAME || "admin";
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+if (env.NODE_ENV === "development") {
+  const adminUsername = env.ADMIN_USERNAME || "admin";
+  const adminPassword = env.ADMIN_PASSWORD || "admin123";
+  const adminEmail = env.ADMIN_EMAIL || "admin@example.com";
 
   userRepository
     .create(adminUsername, adminEmail, adminPassword)

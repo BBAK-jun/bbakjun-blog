@@ -5,6 +5,8 @@
  * when content is updated in the admin panel.
  */
 
+import { env } from "@/env";
+
 interface RevalidateResponse {
   success: boolean;
   message?: string;
@@ -18,8 +20,8 @@ interface RevalidateResponse {
  * @returns Success status and message
  */
 export async function revalidateBlogPath(path: string): Promise<RevalidateResponse> {
-  const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL;
-  const secret = process.env.BLOG_REVALIDATION_SECRET;
+  const blogUrl = env.NEXT_PUBLIC_BLOG_URL;
+  const secret = env.BLOG_REVALIDATION_SECRET;
 
   if (!blogUrl) {
     console.warn("NEXT_PUBLIC_BLOG_URL is not set. Skipping blog revalidation.");
@@ -73,8 +75,8 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
  * Useful when making global changes
  */
 export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
-  const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL;
-  const secret = process.env.BLOG_REVALIDATION_SECRET;
+  const blogUrl = env.NEXT_PUBLIC_BLOG_URL;
+  const secret = env.BLOG_REVALIDATION_SECRET;
 
   if (!blogUrl || !secret) {
     console.warn("Blog URL or secret not configured. Skipping revalidation.");
