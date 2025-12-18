@@ -240,10 +240,7 @@ function EditPageContent() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  tags: e.target.value
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean),
+                  tags: [e.target.value] as any, // Store raw input as single-element array
                 })
               }
               placeholder="예: nextjs, react, typescript"

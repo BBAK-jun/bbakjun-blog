@@ -70,16 +70,29 @@ export function useFileEditor(pathname: string | null) {
     staleTime: 500,
   });
 
+  // Parse tags from string to array
+  const parseTags = (tags: string[]): string[] => {
+    // If already an array, join and re-parse to normalize
+    const tagString = Array.isArray(tags) ? tags.join(", ") : String(tags);
+    return tagString
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  };
+
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!pathname) throw new Error("No pathname");
 
+      // Parse tags only on submission
+      const parsedTags = parseTags(formData.tags);
+
       const result = await updateFile({
         pathname,
         title: formData.title,
         description: formData.description,
-        tags: formData.tags,
+        tags: parsedTags,
         author: formData.author,
         date: formData.date,
         draft: formData.draft,

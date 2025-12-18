@@ -11,8 +11,9 @@ import { useLocalStorage } from "@/shared/hooks/use-local-storage";
 
 export interface EditorFormData {
   title: string;
+  slug?: string; // Custom filename (optional, auto-generated from title if not provided)
   description: string;
-  tags: string[];
+  tags: string[]; // Stored as array internally, but input uses string
   author: string;
   date: string;
   draft: boolean;
@@ -83,6 +84,7 @@ export function useFileCreator() {
       // Only update if content actually changed
       const hasChanged =
         prev.title !== draftData.title ||
+        prev.slug !== draftData.slug ||
         prev.description !== draftData.description ||
         prev.content !== draftData.content ||
         prev.author !== draftData.author ||
@@ -96,6 +98,7 @@ export function useFileCreator() {
 
       return {
         title: draftData.title,
+        slug: draftData.slug,
         description: draftData.description,
         tags: draftData.tags,
         author: draftData.author,
@@ -165,6 +168,16 @@ export function useFileCreator() {
     return () => clearTimeout(timer);
   }, [formData.content]);
 
+  // Parse tags from string to array
+  const parseTags = (tags: string[]): string[] => {
+    // If already an array, join and re-parse to normalize
+    const tagString = Array.isArray(tags) ? tags.join(", ") : String(tags);
+    return tagString
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -172,19 +185,25 @@ export function useFileCreator() {
       if (!formData.title.trim()) throw new Error("제목을 입력해주세요");
       if (!formData.content.trim()) throw new Error("내용을 입력해주세요");
 
-      const slug = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9가-힣]+/g, "-")
-        .replace(/^-|-$/g, "");
+      // Use custom slug if provided, otherwise auto-generate from title
+      const slug = formData.slug?.trim()
+        ? formData.slug.trim()
+        : formData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9가-힣]+/g, "-")
+            .replace(/^-|-$/g, "");
 
       const pathname = `${category.trim()}/${slug}`;
+
+      // Parse tags only on submission
+      const parsedTags = parseTags(formData.tags);
 
       const input: CreateFileInput = {
         pathname,
         title: formData.title,
         description: formData.description,
         date: formData.date,
-        tags: formData.tags,
+        tags: parsedTags,
         author: formData.author,
         draft: formData.draft,
         content: formData.content,

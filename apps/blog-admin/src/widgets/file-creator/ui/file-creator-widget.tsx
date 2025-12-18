@@ -181,7 +181,7 @@ export function FileCreatorWidget() {
           {/* Category Selector */}
           <div className="md:col-span-2">
             <CategorySelector value={category} onChange={setCategory} />
-            <PathPreview category={category} title={formData.title} />
+            <PathPreview category={category} title={formData.title} customSlug={formData.slug} />
           </div>
 
           {/* Title */}
@@ -199,6 +199,25 @@ export function FileCreatorWidget() {
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
+          </div>
+
+          {/* Custom Slug (Filename) */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              파일명 (선택사항)
+            </label>
+            <input
+              type="text"
+              value={formData.slug || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, slug: e.target.value || undefined })
+              }
+              placeholder="비워두면 제목에서 자동 생성됩니다"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              영문, 숫자, 한글, 하이픈(-) 사용 가능 (예: my-custom-post)
+            </p>
           </div>
 
           {/* Description */}
@@ -261,10 +280,7 @@ export function FileCreatorWidget() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  tags: e.target.value
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean),
+                  tags: [e.target.value] as any, // Store raw input as single-element array
                 })
               }
               placeholder="예: nextjs, react, typescript"

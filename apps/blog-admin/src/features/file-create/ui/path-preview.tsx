@@ -5,15 +5,25 @@
 interface PathPreviewProps {
   category: string;
   title: string;
+  customSlug?: string;
 }
 
-export function PathPreview({ category, title }: PathPreviewProps) {
+export function PathPreview({ category, title, customSlug }: PathPreviewProps) {
   const generatePath = () => {
-    if (!category || !title) return "";
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/g, "-")
-      .replace(/^-|-$/g, "");
+    if (!category) return "";
+
+    // Use custom slug if provided, otherwise auto-generate from title
+    const slug = customSlug?.trim()
+      ? customSlug.trim()
+      : title
+          ? title
+              .toLowerCase()
+              .replace(/[^a-z0-9가-힣]+/g, "-")
+              .replace(/^-|-$/g, "")
+          : "";
+
+    if (!slug) return "";
+
     return `${category}/${slug}/index.mdx`;
   };
 
@@ -29,6 +39,11 @@ export function PathPreview({ category, title }: PathPreviewProps) {
       <p className="text-sm font-mono text-slate-900 dark:text-white break-all">
         {path}
       </p>
+      {customSlug && (
+        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+          커스텀 파일명 사용 중
+        </p>
+      )}
     </div>
   );
 }
