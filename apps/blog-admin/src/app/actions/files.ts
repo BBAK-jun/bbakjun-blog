@@ -104,11 +104,12 @@ export async function updateFile(input: UpdateFileInput) {
     // Combine frontmatter and content
     const fullContent = frontMatter + "\n" + validatedData.content;
 
-    // Upload to Blob Storage
+    // Upload to Blob Storage (overwrite existing file)
     const blob = await put(validatedData.pathname, fullContent, {
       access: "public",
       token: BLOB_TOKEN,
       contentType: "text/markdown",
+      addRandomSuffix: false, // Ensure file is overwritten, not duplicated
     });
 
     // CDC: DB에 파일 정보 저장
