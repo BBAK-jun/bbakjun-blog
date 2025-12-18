@@ -53,35 +53,44 @@ All fields are required except `draft` (defaults to `false`).
 
 ### Post Loading System (`packages/content/src/posts.ts`)
 
-**Two modes**: Filesystem (default) or Blob (via `POST_SOURCE` env variable)
+**Blob-Only Architecture**: All posts are loaded from Vercel Blob Storage via CDC cache.
 
-**Filesystem Mode** (default):
-1. **File Discovery**: Recursively scans `content/posts/` for `.mdx` files
-2. **Slug Generation**: Converts file paths to URL slugs (handles `index.mdx` specially)
-3. **Front Matter Parsing**: Uses `gray-matter` to extract YAML metadata
-4. **Reading Time**: Calculates using `reading-time` library
-5. **Related Posts**: Scores posts by shared tags (×3), same category (×2), and recency (×0.5)
-
-**Blob Mode** (`POST_SOURCE='blob'`):
 1. **CDC Integration**: Blog app fetches CDC cached blob files via Hono RPC
-2. **Injection**: `setBlobFiles()` injects blob file list into posts module
-3. **Content Download**: Downloads markdown content from blob URLs
-4. **Parsing**: Same front matter parsing and reading time calculation
-5. **Caching**: In-memory cache (1 hour) to reduce blob downloads
+2. **Explicit Parameters**: All post functions accept `blobFiles` as first parameter
+3. **Content Download**: Downloads markdown content from blob URLs in parallel
+4. **Front Matter Parsing**: Uses `gray-matter` to extract YAML metadata
+5. **Reading Time**: Calculates using `reading-time` library
+6. **Related Posts**: Scores posts by shared tags (×3), same category (×2), and recency (×0.5)
 
 **Usage Pattern**:
 ```typescript
-// Blog app must call setBlobFiles() before using post functions
-if (process.env.POST_SOURCE === 'blob') {
+import { getBlobFiles } from '@/lib/blob'
+import { getAllPosts, getPostBySlug } from '@repo/content'
+
+// Fetch blob file list from CDC cache via RPC
+const blobFiles = await getBlobFiles()
+
+// All post functions require blobFiles parameter
+const posts = await getAllPosts(blobFiles)
+const post = await getPostBySlug(blobFiles, 'DEV/my-post')
+const tags = await getAllTags(blobFiles)
+const relatedPosts = await getRelatedPosts(blobFiles, currentPost, 4)
+```
+
+**Helper Function** (`apps/blog/src/lib/blob.ts`):
+```typescript
+export async function getBlobFiles(): Promise<BlobFileInfo[]> {
   const response = await client.api.v1['blob-files'].$get({})
+  if (!response.ok) {
+    throw new Error('Failed to fetch blob files')
+  }
   const { files } = await response.json()
-  setBlobFiles(files.map(f => ({
+  return files.map(f => ({
     url: f.url,
     pathname: f.pathname,
     contentType: f.contentType
-  })))
+  }))
 }
-const posts = await getAllPosts() // Works in both modes
 ```
 
 ### View Tracking System (`src/lib/redis.ts`)
@@ -226,7 +235,7 @@ Custom renderers for MDX elements with Tailwind styling:
 ```
 Vercel Blob Storage (Source of Truth)
     ↓
-    ↓ Sync every 5 minutes
+    ↓ Sync every N minutes (configurable via BLOB_SYNC_INTERVAL_MINUTES)
     ↓
 PostgreSQL BlobFile table (Cache)
     ↓
@@ -257,7 +266,7 @@ Admin UI & Blog App
    - Calls Vercel Blob `list()` API once
    - Compares with DB cache
    - Adds new files, marks deleted files, updates timestamps
-   - Runs automatically every 5 minutes via `needsSync()` check
+   - Runs automatically based on `BLOB_SYNC_INTERVAL_MINUTES` (default: 30 minutes) via `needsSync()` check
 
 3. **Cache Read** (`getCachedBlobFiles()`):
    - Queries PostgreSQL instead of Blob API
@@ -281,7 +290,7 @@ Admin UI & Blog App
 **Admin Endpoints** (requires authentication):
 - `GET /api/rpc/blob-files/admin` - List cached files with auto-sync
   - Query params: `limit` (default: 100), `offset`, `search`, `autoSync` (default: true)
-  - Auto-syncs if 5+ minutes elapsed
+  - Auto-syncs if sync interval elapsed (configurable via `BLOB_SYNC_INTERVAL_MINUTES`)
 - `POST /api/rpc/blob-files/admin/sync` - Manual sync trigger
   - Returns sync statistics
 
@@ -325,16 +334,18 @@ const { files, total, hasMore } = await getCachedBlobFiles({
 ### Cost Reduction
 
 - **Before CDC**: ~2000+ Blob API calls/month (exceeded limit)
-- **After CDC**: ~288 Blob API calls/month (5-min intervals × 24h × 30d ÷ 60)
-- **Savings**: 99% reduction in API calls
+- **After CDC (30-min default)**: ~48 Blob API calls/month (30-min intervals × 24h × 30d ÷ 60)
+- **Savings**: 97.6% reduction in API calls
+- **Configurable**: Adjust `BLOB_SYNC_INTERVAL_MINUTES` environment variable to balance freshness vs. cost
 
 ### Important Notes
 
 1. **Soft Delete Pattern**: Files are marked `isDeleted: true` instead of removed from DB to maintain history
-2. **Eventually Consistent**: 5-minute sync interval means slight delay for manual Blob operations
+2. **Eventually Consistent**: Sync interval (default 30 minutes) means slight delay for manual Blob operations
 3. **Non-blocking Hooks**: Upload hook failures are logged but don't block uploads
 4. **Manual Sync**: Admins can trigger immediate sync via POST endpoint
-5. **Auto-sync**: Automatically triggers on GET requests if 5+ minutes elapsed
+5. **Auto-sync**: Automatically triggers on GET requests if sync interval elapsed
+6. **Configurable Interval**: Set `BLOB_SYNC_INTERVAL_MINUTES` environment variable (default: 30 minutes)
 
 ### When to Use CDC
 
@@ -442,6 +453,148 @@ NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 - **Typography**: `@tailwindcss/typography` for prose styling
 - **Utility**: `clsx` + `tailwind-merge` for conditional classes
 
+## Type-Safe Environment Variables
+
+### Architecture
+
+Uses `@t3-oss/env-nextjs` with Zod for runtime validation and type-safety:
+
+```
+Environment Variables (.env.local)
+    ↓ Runtime Validation (Zod schemas)
+    ↓ Type-safe env object
+    ↓
+Application Code (with autocomplete!)
+```
+
+### Configuration Files
+
+**Blog App** (`apps/blog/src/env.ts`):
+```typescript
+import { createEnv } from "@t3-oss/env-nextjs"
+import { z } from "zod"
+
+export const env = createEnv({
+  server: {
+    REDIS_URL: z.string().url().optional(),
+    REVALIDATION_SECRET: z.string().min(1).optional(),
+  },
+  client: {
+    NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_ADMIN_URL: z.string().url(),
+    NEXT_PUBLIC_GISCUS_REPO: z.string().optional(),
+    // ... other NEXT_PUBLIC_* variables
+  },
+  runtimeEnv: {
+    REDIS_URL: process.env.REDIS_URL,
+    REVALIDATION_SECRET: process.env.REVALIDATION_SECRET,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    // ... map all variables
+  },
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+})
+```
+
+**Blog-Admin App** (`apps/blog-admin/src/env.ts`):
+```typescript
+import { createEnv } from "@t3-oss/env-nextjs"
+import { z } from "zod"
+
+export const env = createEnv({
+  server: {
+    DATABASE_URL: z.string().url(),
+    AUTH_SECRET: z.string().min(1),
+    BLOB_READ_WRITE_TOKEN: z.string().min(1),
+    JWT_SECRET: z.string().min(1),
+    // ... other server-only variables
+  },
+  client: {
+    NEXT_PUBLIC_BLOG_URL: z.string().url(),
+  },
+  runtimeEnv: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    // ... map all variables
+  },
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+})
+```
+
+### Usage Pattern
+
+**❌ Old (Unsafe)**:
+```typescript
+const url = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+// No autocomplete, no validation, typos at runtime
+```
+
+**✅ New (Type-safe)**:
+```typescript
+import { env } from '@/env'
+
+const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+// ✅ Autocomplete works
+// ✅ Type checking prevents typos
+// ✅ Runtime validation catches missing vars
+```
+
+### Benefits
+
+1. **Type Safety**: Full TypeScript autocomplete and type checking
+2. **Runtime Validation**: Catches missing/invalid variables at build time
+3. **Server/Client Separation**: Prevents accidental exposure of secrets
+4. **Clear Error Messages**: Zod provides detailed validation errors
+5. **Centralized Configuration**: Single source of truth for all env vars
+
+### Validation Behavior
+
+- **Development**: Validates on first import, throws detailed error if invalid
+- **Build**: Validates during build, fails build if invalid
+- **Production**: Validates on server startup
+- **Skip Validation**: Set `SKIP_ENV_VALIDATION=true` for Docker builds
+
+### Adding New Environment Variables
+
+1. **Add to env.ts schema**:
+   ```typescript
+   server: {
+     NEW_API_KEY: z.string().min(1),
+   }
+   ```
+
+2. **Add to runtimeEnv**:
+   ```typescript
+   runtimeEnv: {
+     NEW_API_KEY: process.env.NEW_API_KEY,
+   }
+   ```
+
+3. **Add to turbo.json** (if needed for builds):
+   ```json
+   {
+     "globalEnv": ["NEW_API_KEY"]
+   }
+   ```
+
+4. **Add to .env.local**:
+   ```
+   NEW_API_KEY=your-key-here
+   ```
+
+5. **Use in code**:
+   ```typescript
+   import { env } from '@/env'
+   const apiKey = env.NEW_API_KEY
+   ```
+
+### Important Notes
+
+- **NEVER use `process.env.*` directly** - always import from `env.ts`
+- **Client variables MUST start with `NEXT_PUBLIC_`** - this is Next.js requirement
+- **Server variables are NEVER exposed to client** - enforced by t3-env
+- **All variables must be declared in both schema and runtimeEnv** - redundant but safe
+- **Optional variables use `.optional()`** - required variables will throw if missing
+
 ## Next.js Configuration
 
 **`next.config.ts`**:
@@ -541,6 +694,7 @@ AUTH_GOOGLE_ID=...                      # Google OAuth Client ID
 AUTH_GOOGLE_SECRET=...                  # Google OAuth Client Secret
 BLOB_READ_WRITE_TOKEN=...               # Vercel Blob Storage token
 BLOB_STORE_ID=...                       # Vercel Blob Store ID
+BLOB_SYNC_INTERVAL_MINUTES=30           # CDC sync interval in minutes (default: 30)
 BACKOFFICE_API_KEY=...                  # Legacy API key
 JWT_SECRET=...                          # openssl rand -base64 32
 NEXT_PUBLIC_BLOG_URL=https://...        # Public blog URL

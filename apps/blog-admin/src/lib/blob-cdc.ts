@@ -5,6 +5,7 @@
 
 import { list } from '@vercel/blob';
 import { prisma } from '@/shared/lib/db';
+import { env } from '@/env';
 
 /**
  * Blob 파일 목록을 DB와 동기화
@@ -175,12 +176,13 @@ export async function getLastSyncTime() {
 }
 
 /**
- * 동기화가 필요한지 확인 (5분 경과 시)
+ * 동기화가 필요한지 확인 (설정된 간격 경과 시)
  */
 export async function needsSync() {
   const lastSync = await getLastSyncTime();
   if (!lastSync) return true;
 
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  return lastSync < fiveMinutesAgo;
+  const syncIntervalMs = env.BLOB_SYNC_INTERVAL_MINUTES * 60 * 1000;
+  const syncThreshold = new Date(Date.now() - syncIntervalMs);
+  return lastSync < syncThreshold;
 }
