@@ -346,6 +346,10 @@ const { files, total, hasMore } = await getCachedBlobFiles({
 4. **Manual Sync**: Admins can trigger immediate sync via POST endpoint
 5. **Auto-sync**: Automatically triggers on GET requests if sync interval elapsed
 6. **Configurable Interval**: Set `BLOB_SYNC_INTERVAL_MINUTES` environment variable (default: 30 minutes)
+7. **File Overwrite on Update**: CRITICAL - Always use `addRandomSuffix: false` in `put()` calls to prevent duplicate file creation
+   - `createFile()`: ✅ Uses `addRandomSuffix: false` ([files.ts:407](apps/blog-admin/src/app/actions/files.ts#L407))
+   - `updateFile()`: ✅ Uses `addRandomSuffix: false` ([files.ts:112](apps/blog-admin/src/app/actions/files.ts#L112))
+   - Without this option, Vercel Blob creates new files with random suffixes instead of overwriting existing ones
 
 ### When to Use CDC
 
@@ -452,6 +456,53 @@ NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 - **Dark Mode**: `next-themes` with system preference detection
 - **Typography**: `@tailwindcss/typography` for prose styling
 - **Utility**: `clsx` + `tailwind-merge` for conditional classes
+
+## UI Layout
+
+### Blog-Admin App Layout
+
+**Full-Screen Layout**: The blog-admin app uses a full-screen layout without max-width constraints to maximize screen space for file management and content editing.
+
+**Key Files**:
+- `apps/blog-admin/src/app/dashboard/layout.tsx` - Main dashboard layout wrapper
+- `apps/blog-admin/src/app/dashboard/dashboard-nav.tsx` - Navigation header and tabs
+
+**Layout Structure**:
+```tsx
+// Dashboard Layout (apps/blog-admin/src/app/dashboard/layout.tsx)
+<div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+  <DashboardNav />
+  <main className="px-4 sm:px-6 lg:px-8 py-8">
+    {children}
+  </main>
+</div>
+
+// Navigation (apps/blog-admin/src/app/dashboard/dashboard-nav.tsx)
+// Header
+<header className="bg-white dark:bg-slate-800 border-b">
+  <div className="px-4 sm:px-6 lg:px-8">
+    {/* Logo, title, dark mode toggle, logout button */}
+  </div>
+</header>
+
+// Navigation Tabs
+<nav className="bg-white dark:bg-slate-800 border-b">
+  <div className="px-4 sm:px-6 lg:px-8">
+    {/* Tab buttons for: Create, Files, Upload, History, Settings */}
+  </div>
+</nav>
+```
+
+**Design Decisions**:
+- ❌ **No max-width constraints** - Removed `max-w-7xl mx-auto` for full-screen utilization
+- ✅ **Responsive padding** - Uses `px-4 sm:px-6 lg:px-8` for appropriate edge spacing
+- ✅ **Consistent spacing** - Same padding across header, nav, and main content
+- ✅ **Dark mode support** - All layout components support dark theme
+
+**Benefits**:
+- More horizontal space for file tables and content editors
+- Better use of wide monitors (especially for MDX editing)
+- Consistent with modern admin dashboards (Vercel, Netlify, etc.)
 
 ## Type-Safe Environment Variables
 
