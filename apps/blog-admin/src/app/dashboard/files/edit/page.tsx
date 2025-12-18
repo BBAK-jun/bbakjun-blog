@@ -331,7 +331,7 @@ function EditPageContent() {
               마크다운 편집
             </h2>
           </div>
-          <div ref={editorScrollRef} className="p-0 overflow-auto" style={{ height: "600px" }}>
+          <div ref={editorScrollRef} className="p-0 overflow-auto" style={{ height: "calc(100vh - 400px)", minHeight: "600px" }}>
             <CodeMirror
               value={formData.content}
               onChange={(value) =>
@@ -374,7 +374,7 @@ function EditPageContent() {
               미리보기
             </h2>
           </div>
-          <div ref={previewScrollRef} className="overflow-auto" style={{ height: "600px" }}>
+          <div ref={previewScrollRef} className="overflow-auto" style={{ height: "calc(100vh - 400px)", minHeight: "600px" }}>
             <article
               className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
               dangerouslySetInnerHTML={{ __html: previewHtml }}

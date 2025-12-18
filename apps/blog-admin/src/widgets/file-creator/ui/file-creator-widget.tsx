@@ -434,7 +434,7 @@ export function FileCreatorWidget() {
                   onChange={(value) =>
                     setFormData({ ...formData, content: value })
                   }
-                  height="500px"
+                  height="calc(100vh - 400px)"
                   onImageClick={() => setShowImageUploader(true)}
                   onImageDrop={handleImageDrop}
                 />
@@ -445,7 +445,7 @@ export function FileCreatorWidget() {
           {/* Preview */}
           {(viewMode === "preview" || viewMode === "split") && (
             <div className="p-4">
-              <div className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden" style={{ height: "500px" }}>
+              <div className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden" style={{ height: "calc(100vh - 400px)", minHeight: "500px" }}>
                 <div className="overflow-auto h-full">
                   {isPreviewLoading ? (
                     <div className="flex items-center justify-center h-full">
