@@ -53,10 +53,12 @@ export function useFileEditor(pathname: string | null) {
       const initialData = {
         title: frontMatter?.title || "",
         description: frontMatter?.description || "",
-        tags: frontMatter?.tags || [],
+        tags: Array.isArray(frontMatter?.tags) ? frontMatter.tags : [],
         author: frontMatter?.author || "",
         date: frontMatter?.date || "",
         draft: frontMatter?.draft || false,
+        series: frontMatter?.series,
+        seriesOrder: frontMatter?.seriesOrder,
         content: body,
       };
 

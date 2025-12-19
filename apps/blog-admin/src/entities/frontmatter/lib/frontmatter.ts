@@ -11,6 +11,8 @@ export interface FrontMatter {
   tags: string[];
   author: string;
   draft?: boolean;
+  series?: string;
+  seriesOrder?: number;
 }
 
 /**
@@ -30,7 +32,7 @@ export function parseFrontMatter(content: string): {
   const frontMatterText = match[1];
   const body = match[2];
 
-  const frontMatter: Partial<FrontMatter> = {};
+  const frontMatter: any = {};
 
   // Simple YAML parser
   frontMatterText.split("\n").forEach((line) => {
@@ -39,6 +41,9 @@ export function parseFrontMatter(content: string): {
 
     const key = line.substring(0, colonIndex).trim();
     let value: any = line.substring(colonIndex + 1).trim();
+
+    // Skip empty values
+    if (!value) return;
 
     // Remove quotes
     if (
@@ -57,11 +62,16 @@ export function parseFrontMatter(content: string): {
         .filter(Boolean);
     }
 
+    // Parse numbers
+    if (key === "seriesOrder" && !isNaN(Number(value))) {
+      value = Number(value);
+    }
+
     // Parse booleans
     if (value === "true") value = true;
     if (value === "false") value = false;
 
-    frontMatter[key as keyof FrontMatter] = value;
+    frontMatter[key] = value;
   });
 
   return { frontMatter, body };
