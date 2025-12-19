@@ -6,7 +6,8 @@ import { ArrowLeft, Save, ImageIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { markdown } from "@codemirror/lang-markdown";
 import { useFileEditor } from "@/features/file-edit";
-import { ImageUploader } from "@/shared/ui";
+import { ImageUploader, TagInput } from "@/shared/ui";
+import { toast } from "sonner";
 import "../../../markdown.css";
 
 const CodeMirror = dynamic(
@@ -34,7 +35,21 @@ function EditPageContent() {
     previewHtml,
     save,
     isSaving,
+    hasUnsavedChanges,
   } = useFileEditor(pathname);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleImageUploaded = (url: string, filename: string) => {
     // Insert markdown image syntax at cursor position or end of content
@@ -49,13 +64,17 @@ function EditPageContent() {
   const handleSave = () => {
     save(undefined, {
       onSuccess: () => {
-        alert("파일이 성공적으로 저장되었습니다");
+        toast.success("저장 완료", {
+          description: "파일이 성공적으로 저장되었습니다",
+        });
         router.push(
           `/dashboard/files/view?pathname=${encodeURIComponent(pathname || "")}`
         );
       },
       onError: (err) => {
-        alert(err instanceof Error ? err.message : "파일 저장에 실패했습니다");
+        toast.error("저장 실패", {
+          description: err instanceof Error ? err.message : "파일 저장에 실패했습니다",
+        });
       },
     });
   };
@@ -149,7 +168,13 @@ function EditPageContent() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {hasUnsavedChanges && (
+            <span className="text-sm text-amber-600 dark:text-amber-500 flex items-center gap-1">
+              <span className="w-2 h-2 bg-amber-600 dark:bg-amber-500 rounded-full"></span>
+              저장되지 않은 변경사항
+            </span>
+          )}
           <button
             onClick={() => setShowImageUploader(!showImageUploader)}
             className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
@@ -232,21 +257,16 @@ function EditPageContent() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              태그 (쉼표로 구분) *
+              태그 *
             </label>
-            <input
-              type="text"
-              value={Array.isArray(formData.tags) ? formData.tags.join(", ") : ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  tags: [e.target.value] as any, // Store raw input as single-element array
-                })
-              }
-              placeholder="예: nextjs, react, typescript"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              required
+            <TagInput
+              value={formData.tags}
+              onChange={(tags) => setFormData({ ...formData, tags })}
+              placeholder="태그를 입력하고 Enter를 누르세요 (예: nextjs, react, typescript)"
             />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Enter 또는 쉼표로 태그 추가, Backspace로 삭제
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

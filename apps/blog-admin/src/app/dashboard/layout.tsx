@@ -1,5 +1,6 @@
 import { auth } from "../../../auth";
 import DashboardNav from "./dashboard-nav";
+import { Toaster } from "@/shared/ui";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
       <main className="px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      <Toaster />
     </div>
   );
 }

@@ -9,7 +9,8 @@
 import { useState, useEffect } from "react";
 import { Save, Plus, AlertCircle, CheckCircle, Eye, PanelLeftClose, PanelLeft, X } from "lucide-react";
 import { useFileCreator, CategorySelector, PathPreview } from "@/features/file-create";
-import { ImageUploader, MarkdownEditor } from "@/shared/ui";
+import { ImageUploader, MarkdownEditor, TagInput } from "@/shared/ui";
+import { toast } from "sonner";
 
 export function FileCreatorWidget() {
   const {
@@ -60,7 +61,9 @@ export function FileCreatorWidget() {
       return data.url;
     } catch (error) {
       console.error("Image upload error:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      toast.error("이미지 업로드 실패", {
+        description: "이미지 업로드에 실패했습니다.",
+      });
     }
   };
 
@@ -272,21 +275,16 @@ export function FileCreatorWidget() {
           {/* Tags */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              태그 (쉼표로 구분) *
+              태그 *
             </label>
-            <input
-              type="text"
-              value={Array.isArray(formData.tags) ? formData.tags.join(", ") : ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  tags: [e.target.value] as any, // Store raw input as single-element array
-                })
-              }
-              placeholder="예: nextjs, react, typescript"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              required
+            <TagInput
+              value={formData.tags}
+              onChange={(tags) => setFormData({ ...formData, tags })}
+              placeholder="태그를 입력하고 Enter를 누르세요 (예: nextjs, react, typescript)"
             />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Enter 또는 쉼표로 태그 추가, Backspace로 삭제
+            </p>
           </div>
 
           {/* Series */}

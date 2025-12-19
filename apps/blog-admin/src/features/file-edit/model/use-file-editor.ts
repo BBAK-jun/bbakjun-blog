@@ -25,6 +25,9 @@ export function useFileEditor(pathname: string | null) {
     content: "",
   });
 
+  // Track initial data for change detection
+  const [initialFormData, setInitialFormData] = useState<EditorFormData | null>(null);
+
   // Fetch file data
   const {
     data: fileData,
@@ -47,7 +50,7 @@ export function useFileEditor(pathname: string | null) {
     if (fileData?.rawContent) {
       const { frontMatter, body } = parseFrontMatter(fileData.rawContent);
 
-      setFormData({
+      const initialData = {
         title: frontMatter?.title || "",
         description: frontMatter?.description || "",
         tags: frontMatter?.tags || [],
@@ -55,7 +58,10 @@ export function useFileEditor(pathname: string | null) {
         date: frontMatter?.date || "",
         draft: frontMatter?.draft || false,
         content: body,
-      });
+      };
+
+      setFormData(initialData);
+      setInitialFormData(initialData);
     }
   }, [fileData]);
 
@@ -79,6 +85,11 @@ export function useFileEditor(pathname: string | null) {
       .map((t) => t.trim())
       .filter(Boolean);
   };
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = initialFormData
+    ? JSON.stringify(formData) !== JSON.stringify(initialFormData)
+    : false;
 
   // Save mutation
   const saveMutation = useMutation({
@@ -104,6 +115,9 @@ export function useFileEditor(pathname: string | null) {
       }
     },
     onSuccess: () => {
+      // Update initial data after successful save
+      setInitialFormData(formData);
+
       // Invalidate current file query to refetch
       queryClient.invalidateQueries({ queryKey: ["file", pathname] });
       // Invalidate all file lists to show updated metadata
@@ -121,5 +135,6 @@ export function useFileEditor(pathname: string | null) {
     save: saveMutation.mutate,
     isSaving: saveMutation.isPending,
     saveError: saveMutation.error,
+    hasUnsavedChanges,
   };
 }

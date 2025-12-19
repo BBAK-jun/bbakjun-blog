@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { createFile, previewMarkdown, type CreateFileInput } from "@/app/actions/files";
 import { fileKeys } from "@/entities/file";
 import { useLocalStorage } from "@/shared/hooks/use-local-storage";
+import { toast } from "sonner";
 
 export interface EditorFormData {
   title: string;
@@ -221,8 +222,18 @@ export function useFileCreator() {
       // 파일 목록 캐시 무효화
       queryClient.invalidateQueries({ queryKey: fileKeys.lists() });
 
+      // Toast 알림
+      toast.success("파일 생성 완료", {
+        description: "새 파일이 성공적으로 생성되었습니다",
+      });
+
       // 생성된 파일로 이동
       router.push(`/dashboard/files/view?pathname=${encodeURIComponent(result.pathname!)}`);
+    },
+    onError: (error) => {
+      toast.error("파일 생성 실패", {
+        description: error instanceof Error ? error.message : "파일 생성에 실패했습니다",
+      });
     },
   });
 
