@@ -26,8 +26,13 @@ export async function getFileContent(pathname: string) {
       throw new Error(`File not found in Blob Storage: ${pathname}`);
     }
 
-    // Fetch content using the blob's URL
-    const response = await fetch(blob.url);
+    // Fetch content using the blob's URL with no-cache to ensure fresh data
+    const response = await fetch(blob.url, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch file: ${response.statusText}`);
@@ -213,8 +218,13 @@ export async function listFiles(limit = 100) {
     const filesWithMetadata = await Promise.all(
       markdownBlobs.map(async (blob) => {
         try {
-          // Fetch file content
-          const response = await fetch(blob.url);
+          // Fetch file content with no-cache to ensure fresh data
+          const response = await fetch(blob.url, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+          });
           if (!response.ok) {
             throw new Error("Failed to fetch file");
           }

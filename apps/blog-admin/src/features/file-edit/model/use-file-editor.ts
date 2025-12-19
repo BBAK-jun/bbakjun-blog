@@ -5,11 +5,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import {
-  combineContent,
   parseFrontMatter,
   type EditorFormData,
 } from "@/entities/frontmatter";
 import { getFileContent, updateFile, previewMarkdown } from "@/app/actions/files";
+import { fileKeys } from "@/entities/file";
 
 export function useFileEditor(pathname: string | null) {
   const queryClient = useQueryClient();
@@ -104,8 +104,10 @@ export function useFileEditor(pathname: string | null) {
       }
     },
     onSuccess: () => {
-      // Invalidate file query to refetch
+      // Invalidate current file query to refetch
       queryClient.invalidateQueries({ queryKey: ["file", pathname] });
+      // Invalidate all file lists to show updated metadata
+      queryClient.invalidateQueries({ queryKey: fileKeys.lists() });
     },
   });
 

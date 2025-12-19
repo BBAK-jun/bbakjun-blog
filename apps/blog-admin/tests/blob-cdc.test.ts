@@ -2,25 +2,25 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { testPrisma } from './setup';
 import { onBlobUpload, onBlobDelete } from '../src/lib/blob-cdc';
 
-describe('Blob CDC - Pathname Unique Constraint', () => {
+describe('Blob CDC - Pathname 고유 제약조건', () => {
   const testPathname = 'test/cdc-test.mdx';
 
   beforeEach(async () => {
-    // Clean up before each test
+    // 테스트 전 정리
     await testPrisma.blobFile.deleteMany({
       where: { pathname: testPathname },
     });
   });
 
   afterEach(async () => {
-    // Clean up after each test
+    // 테스트 후 정리
     await testPrisma.blobFile.deleteMany({
       where: { pathname: testPathname },
     });
   });
 
   describe('onBlobUpload', () => {
-    it('should create a new record on first upload', async () => {
+    it('첫 업로드 시 새 레코드가 생성되어야 함', async () => {
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -40,8 +40,8 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       expect(record?.isDeleted).toBe(false);
     });
 
-    it('should update existing record on re-upload (same pathname, different URL)', async () => {
-      // First upload
+    it('재업로드 시 기존 레코드가 업데이트되어야 함 (같은 pathname, 다른 URL)', async () => {
+      // 첫 번째 업로드
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -50,22 +50,22 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         contentType: 'text/markdown',
       });
 
-      // Second upload with same pathname but different URL
+      // 같은 pathname으로 두 번째 업로드 (다른 URL)
       await onBlobUpload({
-        url: 'https://example.com/file2.mdx', // Different URL
-        pathname: testPathname,                // Same pathname
+        url: 'https://example.com/file2.mdx', // 다른 URL
+        pathname: testPathname,                // 같은 pathname
         size: 2000,
         uploadedAt: new Date('2025-01-02'),
         contentType: 'text/markdown',
       });
 
-      // Should only have one record
+      // 하나의 레코드만 존재해야 함
       const count = await testPrisma.blobFile.count({
         where: { pathname: testPathname },
       });
       expect(count).toBe(1);
 
-      // Should have updated values
+      // 업데이트된 값을 가지고 있어야 함
       const record = await testPrisma.blobFile.findUnique({
         where: { pathname: testPathname },
       });
@@ -75,8 +75,8 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       expect(record?.isDeleted).toBe(false);
     });
 
-    it('should restore soft-deleted file on re-upload', async () => {
-      // Create and delete a file
+    it('재업로드 시 soft-delete된 파일이 복원되어야 함', async () => {
+      // 파일 생성 후 삭제
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -92,7 +92,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       });
       expect(record?.isDeleted).toBe(true);
 
-      // Re-upload should restore the file
+      // 재업로드 시 파일이 복원되어야 함
       await onBlobUpload({
         url: 'https://example.com/file2.mdx',
         pathname: testPathname,
@@ -109,8 +109,8 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       expect(record?.url).toBe('https://example.com/file2.mdx');
     });
 
-    it('should prevent duplicate records for same pathname', async () => {
-      // Upload multiple times with same pathname
+    it('같은 pathname으로 여러 번 업로드해도 중복 레코드가 생성되지 않아야 함', async () => {
+      // 같은 pathname으로 여러 번 업로드
       for (let i = 0; i < 5; i++) {
         await onBlobUpload({
           url: `https://example.com/file${i}.mdx`,
@@ -121,14 +121,14 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         });
       }
 
-      // Should only have one record
+      // 하나의 레코드만 존재해야 함
       const count = await testPrisma.blobFile.count({
         where: { pathname: testPathname },
       });
 
       expect(count).toBe(1);
 
-      // Should have the last uploaded values
+      // 마지막에 업로드한 값을 가지고 있어야 함
       const record = await testPrisma.blobFile.findUnique({
         where: { pathname: testPathname },
       });
@@ -137,7 +137,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       expect(record?.size).toBe(BigInt(5000));
     });
 
-    it('should update lastChecked timestamp on re-upload', async () => {
+    it('재업로드 시 lastChecked 타임스탬프가 업데이트되어야 함', async () => {
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -150,7 +150,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         where: { pathname: testPathname },
       });
 
-      // Wait a bit to ensure timestamp difference
+      // 타임스탬프 차이를 위해 잠시 대기
       await new Promise(resolve => setTimeout(resolve, 100));
 
       await onBlobUpload({
@@ -172,8 +172,8 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
   });
 
   describe('onBlobDelete', () => {
-    it('should mark file as deleted (soft delete)', async () => {
-      // Create a file
+    it('파일 삭제 시 soft-delete로 표시되어야 함', async () => {
+      // 파일 생성
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -182,10 +182,10 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         contentType: 'text/markdown',
       });
 
-      // Delete the file
+      // 파일 삭제
       await onBlobDelete(testPathname);
 
-      // Record should still exist but marked as deleted
+      // 레코드는 여전히 존재하지만 삭제로 표시되어야 함
       const record = await testPrisma.blobFile.findUnique({
         where: { pathname: testPathname },
       });
@@ -194,7 +194,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       expect(record?.isDeleted).toBe(true);
     });
 
-    it('should update lastChecked timestamp on delete', async () => {
+    it('삭제 시 lastChecked 타임스탬프가 업데이트되어야 함', async () => {
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: testPathname,
@@ -207,7 +207,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         where: { pathname: testPathname },
       });
 
-      // Wait a bit to ensure timestamp difference
+      // 타임스탬프 차이를 위해 잠시 대기
       await new Promise(resolve => setTimeout(resolve, 100));
 
       await onBlobDelete(testPathname);
@@ -221,16 +221,16 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       );
     });
 
-    it('should throw error if pathname does not exist', async () => {
+    it('존재하지 않는 pathname 삭제 시 에러가 발생해야 함', async () => {
       await expect(
         onBlobDelete('test/nonexistent.mdx')
       ).rejects.toThrow();
     });
   });
 
-  describe('Pathname Unique Constraint (Database Level)', () => {
-    it('should enforce unique constraint at database level', async () => {
-      // Try to create two records with same pathname directly via Prisma
+  describe('Pathname 고유 제약조건 (데이터베이스 레벨)', () => {
+    it('데이터베이스 레벨에서 고유 제약조건이 강제되어야 함', async () => {
+      // Prisma를 통해 같은 pathname으로 두 개의 레코드 생성 시도
       await testPrisma.blobFile.create({
         data: {
           url: 'https://example.com/file1.mdx',
@@ -241,12 +241,12 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
         },
       });
 
-      // Second insert with same pathname should fail
+      // 같은 pathname으로 두 번째 삽입은 실패해야 함
       await expect(
         testPrisma.blobFile.create({
           data: {
             url: 'https://example.com/file2.mdx',
-            pathname: testPathname, // Same pathname
+            pathname: testPathname, // 같은 pathname
             size: BigInt(2000),
             uploadedAt: new Date('2025-01-02'),
             contentType: 'text/markdown',
@@ -255,7 +255,7 @@ describe('Blob CDC - Pathname Unique Constraint', () => {
       ).rejects.toThrow(/Unique constraint failed/);
     });
 
-    it('should allow different files with different pathnames', async () => {
+    it('다른 pathname을 가진 파일들은 허용되어야 함', async () => {
       await onBlobUpload({
         url: 'https://example.com/file1.mdx',
         pathname: 'test/file1.mdx',

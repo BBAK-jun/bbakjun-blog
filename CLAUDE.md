@@ -789,6 +789,56 @@ pnpm --filter=blog-admin type-check
 pnpm --filter=blog-admin build
 ```
 
+### Test Writing Guidelines
+
+**IMPORTANT**: All tests must be written in Korean (한글).
+
+**Test Naming Convention**:
+- `describe()` blocks: Use Korean descriptive names
+  - ✅ Good: `describe('파일 업데이트 통합 테스트 - CDC 동기화', () => { ... })`
+  - ❌ Bad: `describe('File Update Integration - CDC Sync', () => { ... })`
+
+- `it()` blocks: Use Korean imperative sentences ending with `~해야 함`
+  - ✅ Good: `it('파일 업데이트 시 DB의 blob URL이 새 URL로 변경되어야 함', async () => { ... })`
+  - ❌ Bad: `it('should update blob URL in database when file is updated', async () => { ... })`
+
+**Comment Convention**:
+- Test comments: Use Korean for clarity
+  - ✅ Good: `// 1. DB에 초기 레코드 생성 (첫 업로드 시뮬레이션)`
+  - ❌ Bad: `// 1. Create initial record in DB (simulate first upload)`
+
+**Examples**:
+
+```typescript
+describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
+  beforeEach(async () => {
+    // 테스트 전 정리
+    await testPrisma.blobFile.deleteMany({ ... });
+  });
+
+  it('파일 업데이트 시 DB의 blob URL이 새 URL로 변경되어야 함', async () => {
+    // 1. DB에 초기 레코드 생성
+    await testPrisma.blobFile.create({ ... });
+
+    // 2. Vercel Blob put이 새 URL을 반환하도록 Mock
+    vi.mocked(blobModule.put).mockResolvedValue({ ... });
+
+    // 3. updateFile 액션 호출
+    const result = await updateFile({ ... });
+
+    // 4. 검증
+    expect(result.success).toBe(true);
+    expect(record?.url).toBe(newUrl);
+  });
+});
+```
+
+**Why Korean?**:
+- Better readability for Korean-speaking team members
+- Clearer intent and expectations in native language
+- Consistent with project documentation (CLAUDE.md is in Korean)
+- Test output shows Korean descriptions for better debugging
+
 ## Deployment Notes
 
 ### Blog App (apps/blog)

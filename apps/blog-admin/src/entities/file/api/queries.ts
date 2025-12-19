@@ -30,7 +30,7 @@ export function useFilesQuery(limit?: number) {
       }
       return (result.files || []) as BlobFile[];
     },
-    staleTime: 1000 * 60 * 5, // 5분
+    staleTime: 0, // Always fetch fresh data (blob URLs change on update)
   });
 }
 
@@ -54,7 +54,7 @@ export function useFileQuery(pathname: string | null) {
       return result as FileContent;
     },
     enabled: !!pathname,
-    staleTime: 1000 * 60 * 5, // 5분
+    staleTime: 0, // Always fetch fresh data (blob URLs change on update)
   });
 }
 
