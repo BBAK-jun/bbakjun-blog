@@ -70,6 +70,19 @@ const handleMarkdownUpload = async (c: Context<RpcEnv>) => {
       token: BLOB_TOKEN,
     });
 
+    // CDC: DB에 파일 정보 저장
+    try {
+      await onBlobUpload({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: file.size,
+        uploadedAt: new Date(),
+        contentType: file.type,
+      });
+    } catch (cdcError) {
+      console.error('CDC sync failed (non-critical):', cdcError);
+    }
+
     return c.json({
       success: true,
       path: blob.pathname,
