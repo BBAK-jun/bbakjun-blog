@@ -250,8 +250,8 @@ Admin UI & Blog App
    ```prisma
    model BlobFile {
      id          String   @id @default(cuid())
-     url         String   @unique
-     pathname    String
+     url         String              // Blob URL (changes on re-upload)
+     pathname    String   @unique    // File path (unique identifier)
      size        BigInt
      uploadedAt  DateTime
      contentType String?
@@ -259,8 +259,14 @@ Admin UI & Blog App
      lastChecked DateTime @default(now())
      isDeleted   Boolean  @default(false)  // Soft delete
      uploadedBy  String?
+
+     @@index([uploadedAt])
+     @@index([isDeleted])
+     @@index([lastChecked])
    }
    ```
+
+   **CRITICAL**: `pathname` is the unique identifier, NOT `url`. Vercel Blob generates new URLs on each upload even for the same pathname. Using `url` as unique would create duplicate records.
 
 2. **Sync Function** (`syncBlobToDatabase()`):
    - Calls Vercel Blob `list()` API once
@@ -277,6 +283,8 @@ Admin UI & Blog App
    - Real-time tracking of uploads/deletes
    - Called immediately after Blob operations
    - Non-critical: upload succeeds even if hook fails
+   - **`onBlobUpload()`**: Uses `upsert` with `where: { pathname }` to update existing records instead of creating duplicates
+   - **`onBlobDelete()`**: Marks files as deleted using `pathname` as identifier
 
 ### Hono RPC API Endpoints
 
@@ -340,13 +348,25 @@ const { files, total, hasMore } = await getCachedBlobFiles({
 
 ### Important Notes
 
-1. **Soft Delete Pattern**: Files are marked `isDeleted: true` instead of removed from DB to maintain history
-2. **Eventually Consistent**: Sync interval (default 30 minutes) means slight delay for manual Blob operations
-3. **Non-blocking Hooks**: Upload hook failures are logged but don't block uploads
-4. **Manual Sync**: Admins can trigger immediate sync via POST endpoint
-5. **Auto-sync**: Automatically triggers on GET requests if sync interval elapsed
-6. **Configurable Interval**: Set `BLOB_SYNC_INTERVAL_MINUTES` environment variable (default: 30 minutes)
-7. **File Overwrite on Update**: CRITICAL - Always use `addRandomSuffix: false` in `put()` calls to prevent duplicate file creation
+1. **Pathname as Unique Identifier**: `pathname` is the unique constraint, NOT `url`
+   - Vercel Blob generates new URLs on each upload even for the same pathname
+   - Using `url` as unique would create duplicate records
+   - CDC hooks use `where: { pathname }` for upsert operations
+   - Migration: `20251219112111_change_pathname_to_unique`
+
+2. **Soft Delete Pattern**: Files are marked `isDeleted: true` instead of removed from DB to maintain history
+
+3. **Eventually Consistent**: Sync interval (default 30 minutes) means slight delay for manual Blob operations
+
+4. **Non-blocking Hooks**: Upload hook failures are logged but don't block uploads
+
+5. **Manual Sync**: Admins can trigger immediate sync via POST endpoint
+
+6. **Auto-sync**: Automatically triggers on GET requests if sync interval elapsed
+
+7. **Configurable Interval**: Set `BLOB_SYNC_INTERVAL_MINUTES` environment variable (default: 30 minutes)
+
+8. **File Overwrite on Update**: CRITICAL - Always use `addRandomSuffix: false` in `put()` calls to prevent duplicate file creation
    - `createFile()`: ✅ Uses `addRandomSuffix: false` ([files.ts:407](apps/blog-admin/src/app/actions/files.ts#L407))
    - `updateFile()`: ✅ Uses `addRandomSuffix: false` ([files.ts:112](apps/blog-admin/src/app/actions/files.ts#L112))
    - Without this option, Vercel Blob creates new files with random suffixes instead of overwriting existing ones
@@ -705,6 +725,70 @@ Packages use `workspace:*` protocol for local dependencies:
 }
 ```
 
+## Testing
+
+### Blog-Admin Tests
+
+**Location**: `apps/blog-admin/tests/`
+
+**Framework**: Vitest (integration tests)
+
+**Test Commands**:
+```bash
+# Run tests in watch mode
+pnpm --filter=blog-admin test
+
+# Run once
+pnpm --filter=blog-admin test:run
+
+# UI mode
+pnpm --filter=blog-admin test:ui
+```
+
+### Test Strategy
+
+Uses **Integration Testing** approach:
+- Real PostgreSQL database (via `DATABASE_URL` from `.env.local`)
+- No Vercel Blob API mocking needed (CDC functions only handle metadata)
+- Fast execution (~6 seconds for 10 tests)
+- Test data uses `test/` prefix for isolation
+
+### CDC Tests (`tests/blob-cdc.test.ts`)
+
+**Coverage**:
+- ✅ `onBlobUpload()` - Create, update, prevent duplicates, restore soft-deleted files
+- ✅ `onBlobDelete()` - Soft delete, timestamp updates, error handling
+- ✅ Pathname unique constraint - Database-level validation
+- ✅ Multiple files with different pathnames
+
+**Key Test Cases**:
+1. **Duplicate Prevention**: Same pathname uploaded 5 times → only 1 record
+2. **Upsert Behavior**: Re-upload updates URL, size, and metadata
+3. **Soft Delete Recovery**: Deleted file re-uploaded → `isDeleted: false`
+4. **Unique Constraint**: Database rejects duplicate pathname inserts
+
+**Test Setup** (`tests/setup.ts`):
+- Automatic cleanup before/after all tests
+- Shared Prisma Client for all tests
+- Loads `.env.local` for database connection
+
+### Type Checking
+
+```bash
+# Run TypeScript type checking
+pnpm --filter=blog-admin type-check
+```
+
+**Note**: If VSCode shows type errors but `tsc` passes, restart TypeScript server:
+- `Cmd+Shift+P` → "TypeScript: Restart TS Server"
+
+### Build Verification
+
+```bash
+# Full production build (includes type checking)
+pnpm --filter=blog-admin build
+```
+
 ## Deployment Notes
 
 ### Blog App (apps/blog)
@@ -859,6 +943,11 @@ Session IDs are managed client-side (see `ViewCounter` component). The backend u
    - Note any special configuration required
    - Update package-specific README if needed
 
+6. **After Adding Tests**
+   - Update test documentation in `tests/README.md`
+   - Document test strategy if it's a new pattern
+   - Update CLAUDE.md with test commands
+
 ### Documentation Structure to Follow
 
 ```
@@ -878,6 +967,8 @@ Problem/Feature → Solution → Documentation Update
 |-------------|-------------------|
 | Deployment issue | `apps/blog-admin/docs/DEPLOYMENT.md`, `CLAUDE.md` |
 | New API endpoint | `apps/blog-admin/docs/API.md` |
+| Database schema change | `CLAUDE.md` (Vercel Blob CDC section), migration files |
+| New tests | `tests/README.md`, `CLAUDE.md` (Testing section) |
 | Architecture change | `apps/blog-admin/docs/ARCHITECTURE.md`, `CLAUDE.md` |
 | Environment variable | `turbo.json`, `CLAUDE.md`, `DEPLOYMENT.md` |
 | New pattern/convention | `CLAUDE.md`, relevant `/docs/` files |
@@ -925,6 +1016,8 @@ When documenting a resolved issue in DEPLOYMENT.md:
 - API changes
 - Architecture refactoring
 - New utilities
+- Database schema changes
+- New tests
 
 **LOW (Optional)**:
 - Internal helper functions
@@ -939,5 +1032,8 @@ Before marking a task complete, ask:
 3. ✅ Did I update API.md if I added/changed endpoints?
 4. ✅ Did I update turbo.json if I used new environment variables?
 5. ✅ Did I update ARCHITECTURE.md if structure changed?
+6. ✅ Did I write tests for critical functionality (CDC, API endpoints, business logic)?
+7. ✅ Did I update tests/README.md if I added new test patterns?
+8. ✅ Did I run type checking and tests before completing?
 
-**If any answer is YES but not done → Update documentation first, then complete task.**
+**If any answer is YES but not done → Update documentation/tests first, then complete task.**

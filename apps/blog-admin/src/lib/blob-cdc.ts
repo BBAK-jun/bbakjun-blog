@@ -134,7 +134,7 @@ export async function onBlobUpload(blob: {
   uploadedBy?: string;
 }) {
   return await prisma.blobFile.upsert({
-    where: { url: blob.url },
+    where: { pathname: blob.pathname },
     create: {
       url: blob.url,
       pathname: blob.pathname,
@@ -144,6 +144,10 @@ export async function onBlobUpload(blob: {
       uploadedBy: blob.uploadedBy,
     },
     update: {
+      url: blob.url, // URL은 재업로드 시 변경될 수 있음
+      size: BigInt(blob.size),
+      uploadedAt: blob.uploadedAt,
+      contentType: blob.contentType,
       lastChecked: new Date(),
       isDeleted: false, // 재업로드 시 복구
     },
@@ -153,9 +157,9 @@ export async function onBlobUpload(blob: {
 /**
  * 파일 삭제 시 DB에서 표시 (훅)
  */
-export async function onBlobDelete(url: string) {
+export async function onBlobDelete(pathname: string) {
   return await prisma.blobFile.update({
-    where: { url },
+    where: { pathname },
     data: {
       isDeleted: true,
       lastChecked: new Date(),

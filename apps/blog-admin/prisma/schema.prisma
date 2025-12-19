@@ -116,8 +116,8 @@ model Subscriber {
 
 model BlobFile {
   id          String   @id @default(cuid())
-  url         String   @unique  // Blob URL
-  pathname    String              // File path
+  url         String              // Blob URL (changes on re-upload)
+  pathname    String   @unique    // File path (unique identifier)
   size        BigInt              // File size in bytes
   uploadedAt  DateTime            // Upload timestamp from Blob
   contentType String?             // MIME type
@@ -130,8 +130,8 @@ model BlobFile {
   // Optional metadata
   uploadedBy  String?             // User who uploaded (if tracked)
 
-  @@index([pathname])
   @@index([uploadedAt])
   @@index([isDeleted])
+  @@index([lastChecked])
   @@map("blob_files")
 }

@@ -169,7 +169,7 @@ export async function deleteFile(pathname: string) {
     // CDC: DB에서 파일 삭제 표시
     if (fileToDelete) {
       try {
-        await onBlobDelete(fileToDelete.url);
+        await onBlobDelete(fileToDelete.pathname);
       } catch (cdcError) {
         console.error('CDC sync failed (non-critical):', cdcError);
       }
@@ -200,8 +200,6 @@ export async function listFiles(limit = 100) {
   try {
     // Use CDC cached file list instead of direct Blob API call
     const { files } = await getCachedBlobFiles({ limit: 1000 });
-
-    console.log(files)
 
     const markdownBlobs = files
       .filter(
