@@ -4,6 +4,8 @@
  * Parse and serialize YAML frontmatter in markdown files
  */
 
+import matter from "gray-matter";
+
 export interface FrontMatter {
   title: string;
   description: string;
@@ -17,64 +19,25 @@ export interface FrontMatter {
 
 /**
  * Parse frontmatter from raw markdown content
+ * Uses gray-matter for proper YAML parsing (handles multiline strings, etc.)
  */
 export function parseFrontMatter(content: string): {
   frontMatter: Partial<FrontMatter> | null;
   body: string;
 } {
-  const frontMatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-  const match = content.match(frontMatterRegex);
+  try {
+    const { data, content: body } = matter(content);
 
-  if (!match) {
+    // gray-matter returns empty object if no frontmatter exists
+    if (Object.keys(data).length === 0) {
+      return { frontMatter: null, body: content };
+    }
+
+    return { frontMatter: data as Partial<FrontMatter>, body };
+  } catch (error) {
+    console.error("Failed to parse frontmatter:", error);
     return { frontMatter: null, body: content };
   }
-
-  const frontMatterText = match[1];
-  const body = match[2];
-
-  const frontMatter: any = {};
-
-  // Simple YAML parser
-  frontMatterText.split("\n").forEach((line) => {
-    const colonIndex = line.indexOf(":");
-    if (colonIndex <= 0) return;
-
-    const key = line.substring(0, colonIndex).trim();
-    let value: any = line.substring(colonIndex + 1).trim();
-
-    // Skip empty values
-    if (!value) return;
-
-    // Remove quotes
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    // Parse arrays
-    if (value.startsWith("[") && value.endsWith("]")) {
-      value = value
-        .slice(1, -1)
-        .split(",")
-        .map((v: string) => v.trim().replace(/^["']|["']$/g, ""))
-        .filter(Boolean);
-    }
-
-    // Parse numbers
-    if (key === "seriesOrder" && !isNaN(Number(value))) {
-      value = Number(value);
-    }
-
-    // Parse booleans
-    if (value === "true") value = true;
-    if (value === "false") value = false;
-
-    frontMatter[key] = value;
-  });
-
-  return { frontMatter, body };
 }
 
 /**
@@ -83,19 +46,17 @@ export function parseFrontMatter(content: string): {
 export function serializeFrontMatter(
   frontMatter: Partial<FrontMatter>
 ): string {
-  const lines = Object.entries(frontMatter)
+  // Filter out undefined and null values
+  const cleanedData = Object.entries(frontMatter)
     .filter(([_, value]) => value !== undefined && value !== null)
-    .map(([key, value]) => {
-      if (Array.isArray(value)) {
-        return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
-      }
-      if (typeof value === "boolean") {
-        return `${key}: ${value}`;
-      }
-      return `${key}: "${value}"`;
-    });
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
-  return lines.join("\n");
+  // Use gray-matter's stringify for proper YAML formatting
+  const result = matter.stringify("", cleanedData);
+
+  // Extract just the YAML part (between --- markers)
+  const match = result.match(/^---\n([\s\S]*?)\n---/);
+  return match ? match[1] : "";
 }
 
 /**
@@ -105,6 +66,11 @@ export function combineContent(
   frontMatter: Partial<FrontMatter>,
   content: string
 ): string {
-  const yaml = serializeFrontMatter(frontMatter);
-  return `---\n${yaml}\n---\n${content}`;
+  // Filter out undefined and null values
+  const cleanedData = Object.entries(frontMatter)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+  // Use gray-matter's stringify for proper YAML formatting
+  return matter.stringify(content, cleanedData);
 }
