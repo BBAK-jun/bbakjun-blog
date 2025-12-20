@@ -48,13 +48,15 @@ export default async function PostsPage({ searchParams }: PageProps) {
   // nuqs로 타입세이프한 searchParams 파싱
   const { q: searchQuery } = await searchParamsCache.parse(searchParams)
 
+  // getBlobFiles는 React.cache로 중복 호출 방지
+  const blobFiles = await getBlobFiles()
+
   // 병렬 데이터 페칭
-  const [blobFiles, tags] = await Promise.all([
-    getBlobFiles(),
-    getAllTags(await getBlobFiles())
+  const [allPosts, tags] = await Promise.all([
+    getAllPosts(blobFiles),
+    getAllTags(blobFiles)
   ])
 
-  const allPosts = await getAllPosts(blobFiles)
   const filteredPosts = filterPosts(allPosts, searchQuery)
 
   return (
