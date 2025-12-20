@@ -1,61 +1,18 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-
-interface PopularPost {
-  slug: string
-  title: string
-  views: number
-  date: string
-  description?: string
-  tags?: string[]
-  readingTime?: string
-}
-
-interface ViewStats {
-  popularPosts: PopularPost[]
-  totalViews: number
-  totalPosts: number
-}
+import { getPopularPostsStats } from '@/lib/stats'
 
 interface PopularPostsGridProps {
   limit?: number
   className?: string
 }
 
-export default function PopularPostsGrid({
+export default async function PopularPostsGrid({
   limit = 12,
   className = ''
 }: PopularPostsGridProps) {
-  const [stats, setStats] = useState<ViewStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchPopularPosts = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch('/api/views/stats')
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch popular posts')
-        }
-
-        const data = await response.json()
-        setStats(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPopularPosts()
-  }, [])
+  // 서버에서 직접 데이터 조회 (API 호출 불필요)
+  const stats = await getPopularPostsStats()
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -66,50 +23,7 @@ export default function PopularPostsGrid({
     })
   }
 
-  if (loading) {
-    return (
-      <div className={`space-y-6 ${className}`}>
-        <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                  <div className="flex space-x-2">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className={`${className}`}>
-        <div className="text-center p-12">
-          <div className="text-red-600 dark:text-red-400 p-6 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <h3 className="text-lg font-medium mb-2">인기 글을 불러올 수 없습니다</h3>
-            <p className="text-sm">{error}</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // 빈 데이터 처리
   if (!stats || stats.popularPosts.length === 0) {
     return (
       <div className={`${className}`}>

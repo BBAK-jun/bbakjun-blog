@@ -1,20 +1,5 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-
-interface PopularPost {
-  slug: string
-  title: string
-  views: number
-  date: string
-}
-
-interface ViewStats {
-  popularPosts: PopularPost[]
-  totalViews: number
-  totalPosts: number
-}
+import { getPopularPostsStats } from '@/lib/stats'
 
 interface PopularPostsProps {
   limit?: number
@@ -23,80 +8,16 @@ interface PopularPostsProps {
   compact?: boolean
 }
 
-export default function PopularPosts({
+export default async function PopularPosts({
   limit = 5,
   showHeader = true,
   className = '',
   compact = false
 }: PopularPostsProps) {
-  const [stats, setStats] = useState<ViewStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // 서버에서 직접 데이터 조회 (API 호출 불필요)
+  const stats = await getPopularPostsStats()
 
-  useEffect(() => {
-    const fetchPopularPosts = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch('/api/views/stats')
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch popular posts')
-        }
-
-        const data = await response.json()
-        setStats(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPopularPosts()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className={`space-y-4 ${className}`}>
-        {showHeader && (
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            🔥 인기 글
-          </h3>
-        )}
-        <div className="space-y-3">
-          {Array.from({ length: limit }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className={`${className}`}>
-        {showHeader && (
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            🔥 인기 글
-          </h3>
-        )}
-        <div className="text-sm text-red-600 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-          인기 글을 불러올 수 없습니다
-        </div>
-      </div>
-    )
-  }
-
+  // 빈 데이터 처리
   if (!stats || stats.popularPosts.length === 0) {
     return (
       <div className={`${className}`}>
