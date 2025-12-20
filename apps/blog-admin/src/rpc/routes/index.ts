@@ -12,3 +12,4 @@ export {
 } from './upload';
 
 export { newsletterRoutes } from './newsletter';
+export { viewsRoutes } from './views';

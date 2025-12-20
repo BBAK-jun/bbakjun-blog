@@ -7,13 +7,15 @@ import {
   legacyMarkdownUploadRoutes,
   legacyPublicBlobFilesRoutes,
   newsletterRoutes,
-  uploadRoutes
+  uploadRoutes,
+  viewsRoutes
 } from './routes';
  
 const v1 = new Hono<RpcEnv>()
   .route('/blob-files', blobFilesRoutes)
   .route('/upload', uploadRoutes)
   .route('/newsletter', newsletterRoutes)
+  .route('/views', viewsRoutes)
   .route('/public/blob-files', legacyPublicBlobFilesRoutes)
   .route('/admin/blob-files', legacyAdminBlobFilesRoutes)
   .route('/admin/upload', legacyMarkdownUploadRoutes)

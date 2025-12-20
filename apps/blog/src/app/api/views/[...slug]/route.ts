@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ViewCounter } from '@repo/analytics'
+import { env } from '@/env'
 
 // 조회수 조회
 export async function GET(
@@ -9,17 +9,23 @@ export async function GET(
   try {
     const { slug } = await params
     const slugString = slug.join('/')
-    const views = await ViewCounter.get(slugString)
 
-    return NextResponse.json(
-      { slug: slugString, views },
-      {
-        status: 200,
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
-        }
-      }
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_ADMIN_URL}/api/v1/views/${slugString}`
     )
+
+    if (!response.ok) {
+      throw new Error('Failed to get view count from RPC')
+    }
+
+    const data = await response.json()
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
+      }
+    })
   } catch (error) {
     console.error('Error getting view count:', error)
     return NextResponse.json(
@@ -39,59 +45,34 @@ export async function POST(
     const slugString = slug.join('/')
 
     const userAgent = request.headers.get('user-agent') || 'unknown'
-
-    // 봇이나 크롤러 제외
-    const botPatterns = [
-      /bot/i,
-      /crawler/i,
-      /spider/i,
-      /scraper/i,
-      /facebookexternalhit/i,
-      /twitterbot/i,
-      /linkedinbot/i,
-      /pinterest/i
-    ]
-
-    const isBot = botPatterns.some(pattern => pattern.test(userAgent))
-
-    if (isBot) {
-      const views = await ViewCounter.get(slugString)
-      return NextResponse.json({ slug: slugString, views, incremented: false })
-    }
-
-    // 세션 ID 확인
     const sessionId = request.cookies.get('sessionId')?.value
 
-    if (sessionId) {
-      // 세션 기반 조회수 증가 (원자적 연산으로 중복 방지)
-      const [views, incremented] = await ViewCounter.incrementWithSession(
-        sessionId,
-        slugString
-      )
-
-      return NextResponse.json(
-        { slug: slugString, views, incremented },
-        {
-          status: 200,
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate'
-          }
-        }
-      )
-    }
-
-    // 세션 ID가 없는 경우 기존대로 조회수 증가
-    const views = await ViewCounter.increment(slugString)
-
-    return NextResponse.json(
-      { slug: slugString, views, incremented: true },
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_ADMIN_URL}/api/v1/views/${slugString}`,
       {
-        status: 200,
+        method: 'POST',
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sessionId,
+          userAgent
+        })
       }
     )
+
+    if (!response.ok) {
+      throw new Error('Failed to increment view count from RPC')
+    }
+
+    const data = await response.json()
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    })
   } catch (error) {
     console.error('Error incrementing view count:', error)
     return NextResponse.json(
