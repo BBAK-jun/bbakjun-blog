@@ -1,39 +1,32 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useQueryState, parseAsString } from 'nuqs'
 
 interface SearchBarClientProps {
   placeholder?: string
   className?: string
-  initialValue?: string
 }
 
 export default function SearchBarClient({
   placeholder = "포스트 검색...",
-  className = "",
-  initialValue = ""
+  className = ""
 }: SearchBarClientProps) {
-  const router = useRouter()
-  const [query, setQuery] = useState(initialValue)
-
-  // Update internal query when initialValue changes
-  useEffect(() => {
-    setQuery(initialValue)
-  }, [initialValue])
+  // nuqs로 타입세이프한 URL 상태 관리
+  const [query, setQuery] = useQueryState(
+    'q',
+    parseAsString.withDefault('').withOptions({
+      scroll: false,
+      shallow: true
+    })
+  )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    setQuery(value)
-
-    // Update URL with search query
-    const newUrl = value.trim() ? `/blog?q=${encodeURIComponent(value)}` : '/blog'
-    router.push(newUrl, { scroll: false })
+    setQuery(value || null) // 빈 문자열이면 URL에서 파라미터 제거
   }
 
   const clearSearch = () => {
-    setQuery('')
-    router.push('/blog', { scroll: false })
+    setQuery(null) // URL에서 q 파라미터 제거
   }
 
   return (

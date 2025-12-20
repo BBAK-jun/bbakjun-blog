@@ -1,6 +1,7 @@
 import BlogPostsList from '@/components/BlogPostsList'
 import SearchBarClient from '@/components/SearchBarClient'
 import { getBlobFiles } from '@/lib/blob'
+import { searchParamsCache } from '@/lib/searchParams'
 import { getAllPosts, getAllTags } from '@repo/content'
 import { Post } from '@repo/content'
 import { Metadata } from 'next'
@@ -11,10 +12,8 @@ export const metadata: Metadata = {
   description: 'DEV_BBAK 블로그의 모든 포스트를 확인해보세요.',
 }
 
-interface PostsPageProps {
-  searchParams: Promise<{
-    q?: string
-  }>
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 // 서버에서 검색 필터링 수행
@@ -45,8 +44,9 @@ function filterPosts(posts: Post[], query: string): Post[] {
   })
 }
 
-export default async function PostsPage({ searchParams }: PostsPageProps) {
-  const { q: searchQuery } = await searchParams
+export default async function PostsPage({ searchParams }: PageProps) {
+  // nuqs로 타입세이프한 searchParams 파싱
+  const { q: searchQuery } = await searchParamsCache.parse(searchParams)
 
   // 병렬 데이터 페칭
   const [blobFiles, tags] = await Promise.all([
@@ -55,7 +55,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   ])
 
   const allPosts = await getAllPosts(blobFiles)
-  const filteredPosts = filterPosts(allPosts, searchQuery || '')
+  const filteredPosts = filterPosts(allPosts, searchQuery)
 
   return (
     <div className="space-y-8">
@@ -74,10 +74,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
 
       {/* 검색 바 (클라이언트 컴포넌트) */}
       <section className="max-w-2xl mx-auto">
-        <SearchBarClient
-          placeholder="제목, 내용, 태그로 검색..."
-          initialValue={searchQuery || ''}
-        />
+        <SearchBarClient placeholder="제목, 내용, 태그로 검색..." />
       </section>
 
       {/* 태그 필터 */}
@@ -109,7 +106,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
       {/* 포스트 목록 */}
       <BlogPostsList
         posts={filteredPosts}
-        searchQuery={searchQuery || ''}
+        searchQuery={searchQuery}
         totalPosts={allPosts.length}
       />
 
