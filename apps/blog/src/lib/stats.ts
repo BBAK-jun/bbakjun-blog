@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { client } from '@/lib/rpc'
 
 export interface PopularPost {
   slug: string
@@ -14,20 +14,25 @@ export interface ViewStats {
   popularPosts: PopularPost[]
   totalViews: number
   totalPosts: number
+  averageViews?: number
+  recentPosts?: PopularPost[]
 }
 
 /**
  * 서버 컴포넌트용 통계 데이터 조회 함수
  * - Blog-Admin RPC로 통계 데이터 조회
+ * - Hono RPC 클라이언트 사용 (타입 안전)
  */
 export async function getPopularPostsStats(): Promise<ViewStats> {
   try {
     console.log('[getPopularPostsStats] RPC 통계 조회 시작')
 
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_ADMIN_URL}/api/v1/views/stats`,
+    const response = await client.api.rpc.getViewsStats.$get(
+      {},
       {
-        next: { revalidate: 300 } // 5분 캐시
+        init: {
+          next: { revalidate: 300 } // 5분 캐시
+        }
       }
     )
 
@@ -42,7 +47,9 @@ export async function getPopularPostsStats(): Promise<ViewStats> {
     return {
       popularPosts: data.popularPosts,
       totalViews: data.totalViews,
-      totalPosts: data.totalPosts
+      totalPosts: data.totalPosts,
+      averageViews: data.averageViews,
+      recentPosts: data.recentPosts
     }
   } catch (error) {
     console.error('[getPopularPostsStats] 에러 발생:', error)
@@ -51,7 +58,9 @@ export async function getPopularPostsStats(): Promise<ViewStats> {
     return {
       popularPosts: [],
       totalViews: 0,
-      totalPosts: 0
+      totalPosts: 0,
+      averageViews: 0,
+      recentPosts: []
     }
   }
 }
