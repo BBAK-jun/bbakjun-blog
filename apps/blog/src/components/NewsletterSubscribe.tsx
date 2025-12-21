@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react'
-import { env } from '@/env'
+import { client } from '@/lib/rpc'
 
 interface NewsletterSubscribeProps {
   source?: string
@@ -11,36 +12,38 @@ interface NewsletterSubscribeProps {
 
 export default function NewsletterSubscribe({ source = 'footer', compact = false }: NewsletterSubscribeProps) {
   const [email, setEmail] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setStatus('loading')
-    setMessage('')
-
-    try {
-      const adminUrl = env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
-      const response = await fetch(`${adminUrl}/api/newsletter/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source }),
+  const subscribeMutation = useMutation({
+    mutationFn: async ({ email, source }: { email: string; source: string }) => {
+      const response = await client.api.rpc.subscribeNewsletter.$post({
+        json: { email, source }
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
+        const data = await response.json()
         throw new Error(data.error || '구독 처리 중 오류가 발생했습니다')
       }
 
-      setStatus('success')
-      setMessage(data.message)
+      return response.json()
+    },
+    onSuccess: () => {
       setEmail('')
-    } catch (error) {
-      setStatus('error')
-      setMessage(error instanceof Error ? error.message : '구독 처리 중 오류가 발생했습니다')
     }
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    subscribeMutation.mutate({ email, source })
   }
+
+  const status = subscribeMutation.isPending ? 'loading'
+    : subscribeMutation.isSuccess ? 'success'
+    : subscribeMutation.isError ? 'error'
+    : 'idle'
+
+  const message = subscribeMutation.isSuccess
+    ? subscribeMutation.data?.message || '구독이 완료되었습니다!'
+    : subscribeMutation.error?.message || ''
 
   if (compact) {
     return (

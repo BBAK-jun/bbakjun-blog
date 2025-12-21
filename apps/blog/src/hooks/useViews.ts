@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { client } from '@/lib/rpc'
+import { useEffect } from 'react'
 
 interface ViewData {
   views: number
@@ -9,78 +11,57 @@ interface ViewData {
 }
 
 export function useViews(slug: string, increment: boolean = false): ViewData {
-  const [viewData, setViewData] = useState<ViewData>({
-    views: 0,
-    loading: true,
-    error: null
+  const queryClient = useQueryClient()
+
+  // 조회수 조회
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['views', slug],
+    queryFn: async () => {
+      const response = await client.api.rpc.getViewsBySlug[':slug'].$get({
+        param: { slug }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch views')
+      }
+
+      return response.json()
+    },
+    staleTime: 60 * 1000, // 1 minute
+    enabled: !!slug,
   })
 
-  useEffect(() => {
-    if (!slug) return
+  // 조회수 증가 mutation
+  const incrementMutation = useMutation({
+    mutationFn: async () => {
+      const response = await client.api.rpc.incrementViewsBySlug[':slug'].$post({
+        param: { slug },
+        json: {}
+      })
 
-    let isMounted = true
-
-    const fetchViews = async () => {
-      try {
-        setViewData(prev => ({ ...prev, loading: true, error: null }))
-
-        if (increment) {
-          // 조회수 증가
-          const response = await fetch(`/api/views/${slug}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to increment views')
-          }
-
-          const data = await response.json()
-
-          if (isMounted) {
-            setViewData({
-              views: data.views,
-              loading: false,
-              error: null
-            })
-          }
-        } else {
-          // 조회수만 조회
-          const response = await fetch(`/api/views/${slug}`)
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch views')
-          }
-
-          const data = await response.json()
-
-          if (isMounted) {
-            setViewData({
-              views: data.views,
-              loading: false,
-              error: null
-            })
-          }
-        }
-      } catch (error) {
-        if (isMounted) {
-          setViewData(prev => ({
-            ...prev,
-            loading: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          }))
-        }
+      if (!response.ok) {
+        throw new Error('Failed to increment views')
       }
+
+      return response.json()
+    },
+    onSuccess: (data) => {
+      // 캐시 업데이트
+      queryClient.setQueryData(['views', slug], data)
+    },
+  })
+
+  // increment가 true이고 아직 증가시키지 않은 경우 한 번만 실행
+  useEffect(() => {
+    if (increment && slug && !incrementMutation.isSuccess) {
+      incrementMutation.mutate()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [increment, slug])
 
-    fetchViews()
-
-    return () => {
-      isMounted = false
-    }
-  }, [slug, increment])
-
-  return viewData
+  return {
+    views: data?.views ?? 0,
+    loading: isLoading || (increment && incrementMutation.isPending),
+    error: error?.message ?? incrementMutation.error?.message ?? null
+  }
 }

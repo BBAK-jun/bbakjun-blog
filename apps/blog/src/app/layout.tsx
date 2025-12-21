@@ -5,6 +5,7 @@ import "./markdown.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/theme-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { env } from "@/env";
@@ -47,22 +48,24 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <NuqsAdapter>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="grow container mx-auto px-4 py-8 max-w-[1536px]">
-                {children}
-              </main>
-              <Footer />
-            </div>
-          </ThemeProvider>
-        </NuqsAdapter>
+        <QueryProvider>
+          <NuqsAdapter>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="grow container mx-auto px-4 py-8 max-w-[1536px]">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+            </ThemeProvider>
+          </NuqsAdapter>
+        </QueryProvider>
         <Analytics />
       </body>
     </html>
