@@ -4,16 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getPopularPostsStats } from '@/lib/stats'
 import { getBlobFiles } from '@/lib/blob'
 import { getAllPosts } from '@repo/content'
-import { Github, Linkedin, Mail, ExternalLink } from 'lucide-react'
+import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
-  description: '프론트엔드 개발자 박준형을 소개합니다.',
+  description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
   openGraph: {
     title: '소개 - DEV_BBAK 블로그',
-    description: '프론트엔드 개발자 박준형을 소개합니다.',
+    description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다.',
   },
 }
 
@@ -42,12 +42,23 @@ export default async function AboutPage() {
       username: '@BBAK-jun',
     },
     {
+      icon: Linkedin,
+      label: 'LinkedIn',
+      href: 'https://www.linkedin.com/in/bbakjun0913/',
+      username: 'bbakjun0913',
+    },
+    {
       icon: Mail,
       label: 'Email',
-      href: 'mailto:your-email@example.com',
-      username: 'your-email@example.com',
+      href: 'mailto:wnsguddl789@gmail.com',
+      username: 'wnsguddl789@gmail.com',
     },
-    // LinkedIn 등 추가 가능
+    {
+      icon: FileText,
+      label: '이력서',
+      href: 'https://bbakjun.notion.site/25c42b6fc4ab807b8b24d8e40d935819',
+      username: 'Notion Resume',
+    },
   ]
 
   return (
@@ -58,9 +69,12 @@ export default async function AboutPage() {
           박
         </div>
         <h1 className="text-4xl md:text-5xl font-bold">박준형</h1>
-        <p className="text-xl text-muted-foreground">Frontend Developer</p>
-        <p className="text-lg max-w-2xl mx-auto leading-relaxed">
-          안녕하세요! 사용자 경험을 중시하는 프론트엔드 개발자입니다.
+        <p className="text-xl text-muted-foreground">Frontend Engineer</p>
+        <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary">
+          2026년 5년차
+        </div>
+        <p className="text-lg max-w-2xl mx-auto leading-relaxed text-muted-foreground">
+          사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.
           <br />
           React와 TypeScript로 확장 가능하고 유지보수하기 쉬운 웹 애플리케이션을 만듭니다.
         </p>
@@ -193,7 +207,7 @@ export default async function AboutPage() {
       <section className="space-y-6">
         <h2 className="text-3xl font-bold">연락처</h2>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {contacts.map((contact) => (
             <Card key={contact.label}>
               <CardHeader>
@@ -203,13 +217,13 @@ export default async function AboutPage() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{contact.label}</CardTitle>
-                    <CardDescription>{contact.username}</CardDescription>
+                    <CardDescription className="text-xs truncate">{contact.username}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <Link href={contact.href} target="_blank">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" size="sm">
                     방문하기
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </Button>
