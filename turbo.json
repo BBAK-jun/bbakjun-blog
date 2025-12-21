@@ -21,7 +21,12 @@
     "REVALIDATION_SECRET",
     "JWT_SECRET",
     "REDIS_URL",
-    "RESEND_API_KEY"
+    "RESEND_API_KEY",
+    "QDRANT_URL",
+    "QDRANT_API_KEY",
+    "GLM_API_KEY",
+    "OPENAI_API_KEY",
+    "NEXT_PUBLIC_RAG_URL"
   ],
   "tasks": {
     "build": {
@@ -43,7 +48,11 @@
         "REVALIDATION_SECRET",
         "JWT_SECRET",
         "REDIS_URL",
-        "RESEND_API_KEY"
+        "RESEND_API_KEY",
+        "QDRANT_URL",
+        "QDRANT_API_KEY",
+        "GLM_API_KEY",
+        "OPENAI_API_KEY"
       ]
     },
     "build:rpc" : {
