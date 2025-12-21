@@ -17,6 +17,7 @@ export default defineConfig({
     'next-auth',
     'hono',
     'hono/vercel',
+    '@hono/zod-openapi',
     '@vercel/blob',
     'resend',
     '@prisma/client',
