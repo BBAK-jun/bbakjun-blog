@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// Path params
+export const viewsSlugParamSchema = z.object({
+  slug: z.string().min(1),
+});
+
 // GET /api/v1/views/:slug
 export const viewsGetQuerySchema = z.object({
   slug: z.string().min(1),

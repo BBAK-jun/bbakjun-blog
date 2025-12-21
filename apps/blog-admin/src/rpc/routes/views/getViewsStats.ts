@@ -1,128 +1,41 @@
-import { Hono } from 'hono';
-import type { Context } from 'hono';
+import { createRoute } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import { getAllPosts } from '@repo/content';
-import { getCachedBlobFiles } from '../../lib/blob-cdc';
-import type { RpcEnv } from '../env';
+import { getCachedBlobFiles } from '../../../lib/blob-cdc';
 import {
-  viewsGetResponseSchema,
-  viewsIncrementBodySchema,
-  viewsIncrementResponseSchema,
   viewsStatsResponseSchema,
   viewsErrorSchema,
-} from '../../contract/schemas/views';
+} from '../../../contract/schemas/views';
 
-// GET /api/v1/views/:slug - 조회수 조회
-const getViewsHandler = async (c: Context<RpcEnv>) => {
-  try {
-    const slug = c.req.param('slug');
+/**
+ * GET /api/v1/views/stats - 조회수 통계
+ */
+export const getViewsStatsRoute = createRoute({
+  method: 'get',
+  path: '/api/rpc/getViewsStats',
+  summary: 'Get view statistics',
+  description: 'Retrieve view statistics including total views, popular posts, and recent posts',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: viewsStatsResponseSchema,
+        },
+      },
+      description: 'Successfully retrieved view statistics',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: viewsErrorSchema,
+        },
+      },
+      description: 'Internal server error',
+    },
+  },
+});
 
-    if (!slug) {
-      return c.json(
-        viewsErrorSchema.parse({ error: 'Slug parameter is required' }),
-        400
-      );
-    }
-
-    const views = await ViewCounter.get(slug);
-
-    return c.json(
-      viewsGetResponseSchema.parse({ slug, views }),
-      200,
-      {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      }
-    );
-  } catch (error) {
-    console.error('Error getting view count:', error);
-    return c.json(
-      viewsErrorSchema.parse({ error: 'Failed to get view count' }),
-      500
-    );
-  }
-};
-
-// POST /api/v1/views/:slug - 조회수 증가
-const incrementViewsHandler = async (c: Context<RpcEnv>) => {
-  try {
-    const slug = c.req.param('slug');
-
-    if (!slug) {
-      return c.json(
-        viewsErrorSchema.parse({ error: 'Slug parameter is required' }),
-        400
-      );
-    }
-
-    const body = await c.req.json();
-    const parsed = viewsIncrementBodySchema.safeParse(body);
-
-    if (!parsed.success) {
-      return c.json(
-        viewsErrorSchema.parse({ error: parsed.error.issues[0].message }),
-        400
-      );
-    }
-
-    const { sessionId, userAgent } = parsed.data;
-
-    // 봇이나 크롤러 제외
-    const botPatterns = [
-      /bot/i,
-      /crawler/i,
-      /spider/i,
-      /scraper/i,
-      /facebookexternalhit/i,
-      /twitterbot/i,
-      /linkedinbot/i,
-      /pinterest/i,
-    ];
-
-    const isBot = botPatterns.some((pattern) => pattern.test(userAgent));
-
-    if (isBot) {
-      const views = await ViewCounter.get(slug);
-      return c.json(
-        viewsIncrementResponseSchema.parse({
-          slug,
-          views,
-          incremented: false,
-        })
-      );
-    }
-
-    // 세션 ID가 있으면 세션 기반 증가, 없으면 일반 증가
-    let views: number;
-    let incremented: boolean;
-
-    if (sessionId) {
-      [views, incremented] = await ViewCounter.incrementWithSession(
-        sessionId,
-        slug
-      );
-    } else {
-      views = await ViewCounter.increment(slug);
-      incremented = true;
-    }
-
-    return c.json(
-      viewsIncrementResponseSchema.parse({ slug, views, incremented }),
-      200,
-      {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      }
-    );
-  } catch (error) {
-    console.error('Error incrementing view count:', error);
-    return c.json(
-      viewsErrorSchema.parse({ error: 'Failed to increment view count' }),
-      500
-    );
-  }
-};
-
-// GET /api/v1/views/stats - 조회수 통계
-const getStatsHandler = async (c: Context<RpcEnv>) => {
+export const getViewsStatsHandler = async (c: any) => {
   try {
     console.log('[stats] RPC API 호출 시작');
 
@@ -209,7 +122,7 @@ const getStatsHandler = async (c: Context<RpcEnv>) => {
 
     console.log('[stats] RPC API 응답 준비 완료');
 
-    return c.json(viewsStatsResponseSchema.parse(stats), 200, {
+    return c.json(stats, 200, {
       'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     });
   } catch (error) {
@@ -241,20 +154,15 @@ const getStatsHandler = async (c: Context<RpcEnv>) => {
         })),
       };
 
-      return c.json(viewsStatsResponseSchema.parse(fallbackStats), 200, {
+      return c.json(fallbackStats, 200, {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
       });
     } catch (fallbackError) {
       console.error('[stats] Fallback도 실패:', fallbackError);
       return c.json(
-        viewsErrorSchema.parse({ error: 'Failed to get stats' }),
+        { error: 'Failed to get stats' },
         500
       );
     }
   }
 };
-
-export const viewsRoutes = new Hono<RpcEnv>()
-  .get('/stats', getStatsHandler)
-  .get('/:slug', getViewsHandler)
-  .post('/:slug', incrementViewsHandler);

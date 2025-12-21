@@ -7,13 +7,15 @@ import type { BlobFileInfo } from '@repo/content'
  * React.cache로 렌더링 컨텍스트 내에서 중복 호출 방지
  */
 export const getBlobFiles = cache(async (): Promise<BlobFileInfo[]> => {
-  const response = await client.api.v1['blob-files'].$get({})
+  const response = await client.api.rpc.getBlobFiles.$get({
+    query: {}
+  })
   if (!response.ok) {
     throw new Error('Failed to fetch blob files')
   }
 
   const { files } = await response.json()
-  return files.map(f => ({
+  return files.map((f) => ({
     url: f.url,
     pathname: f.pathname,
     contentType: f.contentType

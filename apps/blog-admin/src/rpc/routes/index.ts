@@ -1,15 +1,49 @@
+// Blob Files RPC
 export {
-  adminBlobFilesRoutes,
-  blobFilesRoutes,
+  // Routes and Handlers
+  getBlobFilesRoute,
+  getBlobFilesHandler,
+  getBlobFilesAdminRoute,
+  getBlobFilesAdminHandler,
+  syncBlobFilesRoute,
+  syncBlobFilesHandler,
+  // Legacy routes
   legacyAdminBlobFilesRoutes,
   legacyPublicBlobFilesRoutes,
 } from './blob-files';
 
+// Upload RPC
 export {
+  // Routes and Handlers
+  uploadMarkdownRoute,
+  uploadMarkdownHandler,
+  uploadImageRoute,
+  uploadImageHandler,
+  // Legacy routes
   legacyImageUploadRoutes,
   legacyMarkdownUploadRoutes,
-  uploadRoutes,
 } from './upload';
 
-export { newsletterRoutes } from './newsletter';
-export { viewsRoutes } from './views';
+// Newsletter RPC
+export {
+  // Routes and Handlers
+  subscribeNewsletterRoute,
+  subscribeNewsletterHandler,
+  unsubscribeNewsletterRoute,
+  unsubscribeNewsletterHandler,
+  getNewsletterSubscribersRoute,
+  getNewsletterSubscribersHandler,
+  // Legacy routes
+  legacyNewsletterRoutes,
+} from './newsletter';
+
+// Views RPC
+export {
+  // Routes and Handlers
+  getViewsBySlugRoute,
+  getViewsBySlugHandler,
+  incrementViewsBySlugRoute,
+  incrementViewsBySlugHandler,
+  getViewsStatsRoute,
+  getViewsStatsHandler,
+} from './views';

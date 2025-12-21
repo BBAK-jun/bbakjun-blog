@@ -1,39 +1,109 @@
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
 import type { RpcEnv } from './env';
 import {
-  blobFilesRoutes,
+  // Blob Files
+  getBlobFilesRoute,
+  getBlobFilesHandler,
+  getBlobFilesAdminRoute,
+  getBlobFilesAdminHandler,
+  syncBlobFilesRoute,
+  syncBlobFilesHandler,
+  // Upload
+  uploadMarkdownRoute,
+  uploadMarkdownHandler,
+  uploadImageRoute,
+  uploadImageHandler,
+  // Newsletter
+  subscribeNewsletterRoute,
+  subscribeNewsletterHandler,
+  unsubscribeNewsletterRoute,
+  unsubscribeNewsletterHandler,
+  getNewsletterSubscribersRoute,
+  getNewsletterSubscribersHandler,
+  // Views
+  getViewsBySlugRoute,
+  getViewsBySlugHandler,
+  incrementViewsBySlugRoute,
+  incrementViewsBySlugHandler,
+  getViewsStatsRoute,
+  getViewsStatsHandler,
+  // Legacy routes for backward compatibility
   legacyAdminBlobFilesRoutes,
   legacyImageUploadRoutes,
   legacyMarkdownUploadRoutes,
   legacyPublicBlobFilesRoutes,
-  newsletterRoutes,
-  uploadRoutes,
-  viewsRoutes
+  legacyNewsletterRoutes,
 } from './routes';
- 
-const v1 = new Hono<RpcEnv>()
-  .route('/blob-files', blobFilesRoutes)
-  .route('/upload', uploadRoutes)
-  .route('/newsletter', newsletterRoutes)
-  .route('/views', viewsRoutes)
-  .route('/public/blob-files', legacyPublicBlobFilesRoutes)
-  .route('/admin/blob-files', legacyAdminBlobFilesRoutes)
-  .route('/admin/upload', legacyMarkdownUploadRoutes)
-  .route('/admin/upload-image', legacyImageUploadRoutes);
+import { requireAdminSession, requireSession } from './middleware/session';
+import { env } from '../env';
 
-const api = new Hono<RpcEnv>().route('/v1', v1)
-
-const rootApp = new Hono<RpcEnv>();
-rootApp.notFound((c) => c.json({ error: 'Not Found' }, 404));
-rootApp.onError((err, c) => {
-  console.error('RPC error:', err);
-  return c.json({ error: 'Internal Server Error' }, 500);
-});
+const corsHeaders = {
+  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 /**
  * Hono RPC app with all blog-admin API routes.
  * `AppType` should be derived from `typeof rpcApp` for best type inference with `hc<AppType>()`.
+ *
+ * RPC routes with function-based naming:
+ * - /api/rpc/getBlobFiles
+ * - /api/rpc/getBlobFilesAdmin
+ * - /api/rpc/syncBlobFiles
+ * - /api/rpc/uploadMarkdown
+ * - /api/rpc/uploadImage
+ * - /api/rpc/subscribeNewsletter
+ * - /api/rpc/unsubscribeNewsletter
+ * - /api/rpc/getNewsletterSubscribers
+ * - /api/rpc/getViewsBySlug/:slug
+ * - /api/rpc/incrementViewsBySlug/:slug
+ * - /api/rpc/getViewsStats
  */
-export const rpcApp = rootApp.route('/api', api);
+const app = new OpenAPIHono<RpcEnv>()
+  // Blob Files RPC
+  .openapi(getBlobFilesRoute, getBlobFilesHandler)
+  .openapi(getBlobFilesAdminRoute, async (c) => {
+    await requireSession(c, async () => {});
+    return getBlobFilesAdminHandler(c);
+  })
+  .openapi(syncBlobFilesRoute, async (c) => {
+    await requireAdminSession(c, async () => {});
+    return syncBlobFilesHandler(c);
+  })
+  // Upload RPC
+  .openapi(uploadMarkdownRoute, uploadMarkdownHandler)
+  .openapi(uploadImageRoute, uploadImageHandler)
+  // Newsletter RPC
+  .openapi(subscribeNewsletterRoute, subscribeNewsletterHandler)
+  .openapi(unsubscribeNewsletterRoute, unsubscribeNewsletterHandler)
+  .openapi(getNewsletterSubscribersRoute, async (c) => {
+    await requireAdminSession(c, async () => {});
+    return getNewsletterSubscribersHandler(c);
+  })
+  // Views RPC
+  .openapi(getViewsStatsRoute, getViewsStatsHandler)
+  .openapi(getViewsBySlugRoute, getViewsBySlugHandler)
+  .openapi(incrementViewsBySlugRoute, incrementViewsBySlugHandler);
+
+// CORS preflight - must be added after all .openapi() calls
+app.options('/api/rpc/subscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
+app.options('/api/rpc/unsubscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
+
+// Legacy v1 routes for backward compatibility
+app.route('/api/v1/public/blob-files', legacyPublicBlobFilesRoutes);
+app.route('/api/v1/admin/blob-files', legacyAdminBlobFilesRoutes);
+app.route('/api/v1/admin/upload', legacyMarkdownUploadRoutes);
+app.route('/api/v1/admin/upload-image', legacyImageUploadRoutes);
+app.route('/api/v1/newsletter', legacyNewsletterRoutes);
+
+// Global error handling
+app.notFound((c) => c.json({ error: 'Not Found' }, 404));
+app.onError((err, c) => {
+  console.error('RPC error:', err);
+  return c.json({ error: 'Internal Server Error' }, 500);
+});
+
+export const rpcApp = app;
 
 export type AppType = typeof rpcApp;
