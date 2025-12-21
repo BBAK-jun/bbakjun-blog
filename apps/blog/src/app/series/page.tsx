@@ -1,9 +1,9 @@
 import { getSeriesSummaries } from '@repo/content'
 import Link from 'next/link'
 import { Metadata } from 'next'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/ui'
 import { getBlobFiles } from '@/lib/blob'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
 import { BookOpen, Calendar, FileText } from 'lucide-react'
 
 export const metadata: Metadata = {

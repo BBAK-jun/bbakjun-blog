@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { Badge } from '@/components/ui'
 import { Briefcase, Calendar } from 'lucide-react'
 import { getExperiences, type Experience as DBExperience, type Achievement } from '@/lib/experience'
 

@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
@@ -49,16 +51,9 @@
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-}
-
-@layer components {
-  .container {
-    @apply px-4 sm:px-6 lg:px-8; /* Removed max-width for full-screen layout */
+    @apply bg-background text-foreground;
   }
 }

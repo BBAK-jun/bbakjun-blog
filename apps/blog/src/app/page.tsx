@@ -1,7 +1,6 @@
 import PopularPostsGrid from '@/components/PopularPostsGrid'
 import PostCard from '@/components/PostCard'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui'
 import { getAllPosts } from '@repo/content'
 import Link from 'next/link'
 import { getBlobFiles } from '@/lib/blob'

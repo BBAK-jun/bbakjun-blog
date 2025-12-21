@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { Badge } from '@/components/ui'
+import { Separator } from '@/components/ui'
 import { BookOpen, ChevronLeft, ChevronRight, List } from 'lucide-react'
 import type { Series, Post } from '@repo/types'
 

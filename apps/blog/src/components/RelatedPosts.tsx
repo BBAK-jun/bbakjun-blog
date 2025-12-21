@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { Post } from '@repo/content'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-
+import { Card, CardContent } from '@/components/ui'
+import { Badge } from '@/components/ui'
 interface RelatedPostsProps {
   posts: Post[]
 }

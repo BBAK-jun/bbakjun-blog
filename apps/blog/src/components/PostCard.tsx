@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { Post } from '@repo/content'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-
+import { Card, CardContent } from '@/components/ui'
+import { Badge } from '@/components/ui'
 interface PostCardProps {
   post: Post
 }
@@ -54,10 +53,7 @@ export default function PostCard({ post }: PostCardProps) {
                   </Badge>
                 ))}
                 {tags.length > 3 && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs font-normal"
-                  >
+                  <Badge variant="outline" className="text-xs font-normal">
                     +{tags.length - 3}
                   </Badge>
                 )}

@@ -1,0 +1,36 @@
+// Re-export all UI components from @repo/ui
+export {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  badgeVariants,
+  Button,
+  buttonVariants,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Separator,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Textarea,
+  cn,
+} from '@repo/ui'
+
+// Re-export types with proper naming
+export type { BadgeProps, ButtonProps, InputProps, TextareaProps } from '@repo/ui'
