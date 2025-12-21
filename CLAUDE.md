@@ -1182,3 +1182,8 @@ Before marking a task complete, ask:
 8. ✅ Did I run type checking and tests before completing?
 
 **If any answer is YES but not done → Update documentation/tests first, then complete task.**
+- 한 줄에서 여러 에이전트 명시적으로 호출
+코드를 분석해줄래. 다음을 병렬로 실행해:
+- Use code-analyst to extract facts
+- 그 다음 domain-analyst와 feature-spec-writer를 동시에 실행해서 
+  facts.md를 기반으로 context.md와 FEATURE_SPEC.md를 생성해줄래

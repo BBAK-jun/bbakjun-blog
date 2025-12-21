@@ -1,7 +1,6 @@
 ---
 name: code-analyst
 description: Use this agent when you need to extract factual information about page structures, schemas, and API endpoints from the codebase. Examples: When a developer needs to understand the project architecture, when documenting existing endpoints, or when analyzing the codebase structure for refactoring planning. Context: The user asks '코드 분석가: 코드베이스에서 페이지 구조, 스키마, API 엔드포인트를 추출 (Fact 위주)' and wants a detailed technical analysis of the codebase structure.
-tools: Skill, SlashCommand, mcp__ide__getDiagnostics, mcp__ide__executeCode, Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, Bash
 model: opus
 color: cyan
 ---
