@@ -7,6 +7,7 @@ import { getAllPosts } from '@repo/content'
 import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import ExperienceTimeline from '@/components/ExperienceTimeline'
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
@@ -164,6 +165,12 @@ export default async function AboutPage() {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      {/* 경력 */}
+      <section className="space-y-6">
+        <h2 className="text-3xl font-bold">경력</h2>
+        <ExperienceTimeline />
       </section>
 
       {/* 주요 프로젝트 */}
