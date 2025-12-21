@@ -7,14 +7,15 @@ import { getAllPosts } from '@repo/content'
 import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import ExperienceTimeline from '@/components/ExperienceTimeline'
+import ExperienceTimeline, { calculateTotalExperience, formatExperience } from '@/components/ExperienceTimeline'
+import { getExperiences, type Experience as DBExperience } from '@/lib/experience'
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
-  description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
+  description: `프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.`,
   openGraph: {
     title: '소개 - DEV_BBAK 블로그',
-    description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다.',
+    description: `프론트엔드 엔지니어 박준형입니다.`,
   },
 }
 
@@ -26,6 +27,20 @@ export default async function AboutPage() {
   const stats = await getPopularPostsStats()
   const blobFiles = await getBlobFiles()
   const posts = await getAllPosts(blobFiles)
+
+  // DB에서 경력 데이터 가져오기
+  let experiences: DBExperience[] = []
+  let experienceText = "정보 없음"
+  const currentYear = new Date().getFullYear()
+
+  try {
+    experiences = await getExperiences()
+    const totalExperienceMonths = calculateTotalExperience(experiences)
+    experienceText = formatExperience(totalExperienceMonths)
+  } catch (error) {
+    console.error('Failed to load experiences:', error)
+    // 실패 시 fallback 처리
+  }
 
   // 기술 스택
   const techStack = {
@@ -72,7 +87,7 @@ export default async function AboutPage() {
         <h1 className="text-4xl md:text-5xl font-bold">박준형</h1>
         <p className="text-xl text-muted-foreground">Frontend Engineer</p>
         <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary">
-          2026년 5년차
+          {currentYear}년 {experienceText} 차
         </div>
         <p className="text-lg max-w-2xl mx-auto leading-relaxed text-muted-foreground">
           사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.

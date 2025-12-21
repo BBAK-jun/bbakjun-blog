@@ -1,14 +1,60 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Briefcase, Calendar } from 'lucide-react'
+import { getExperiences, type Experience as DBExperience, type Achievement } from '@/lib/experience'
 
-interface Experience {
+// 경력 기간을 기반으로 총 경력 개월 수를 계산하는 함수
+export function calculateTotalExperience(experiences: DBExperience[]): number {
+  let totalMonths = 0
+
+  experiences.forEach((exp) => {
+    const periodMatch = exp.period.match(/(\d{4})\.(\d{2})\s*~\s*(재직중|\d{4}\.(\d{2}))?/)
+    if (periodMatch) {
+      const startYear = parseInt(periodMatch[1])
+      const startMonth = parseInt(periodMatch[2])
+
+      let endYear, endMonth
+      if (periodMatch[3] === '재직중') {
+        const now = new Date()
+        endYear = now.getFullYear()
+        endMonth = now.getMonth() + 1
+      } else if (periodMatch[4]) {
+        endYear = parseInt(periodMatch[3])
+        endMonth = parseInt(periodMatch[4])
+      } else {
+        return // 종료 연도가 없는 경우 건너뛰기
+      }
+
+      const months = (endYear - startYear) * 12 + (endMonth - startMonth) + 1
+      totalMonths += Math.max(0, months)
+    }
+  })
+
+  return totalMonths
+}
+
+// 총 경력 기간을 "X년 Y개월" 형식으로 변환
+export function formatExperience(totalMonths: number): string {
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+
+  if (years === 0) {
+    return `${months}개월`
+  } else if (months === 0) {
+    return `${years}년`
+  } else {
+    return `${years}년 ${months}개월`
+  }
+}
+
+// 타일라인 컴포넌트에서 사용할 Experience 타입
+export interface Experience {
   company: string
   position: string
   team?: string
   period: string
   current?: boolean
-  description: string
+  description?: string
   achievements: {
     title: string
     description: string
@@ -16,108 +62,41 @@ interface Experience {
   }[]
 }
 
-const experiences: Experience[] = [
-  {
-    company: '비바리퍼블리카 (토스)',
-    position: 'Frontend Developer',
-    team: '토스 플레이스',
-    period: '2026.01 ~ 재직중',
-    current: true,
-    description: 'TBD..',
-    achievements: [],
-  },
-  {
-    company: '데이원컴퍼니',
-    position: 'Frontend Developer',
-    team: '포도 사업부문 테크팀',
-    period: '2024.10 ~ 2025.12',
-    description: '글로벌 외국어 레슨 플랫폼 BEP 달성 기여',
-    achievements: [
-      {
-        title: '멀티존 마이크로프론트엔드 아키텍처 설계 및 구축',
-        description: 'PHP, Nuxt.js(Vue), Next.js로 개발된 세 개의 독립 웹앱을 하나의 도메인으로 통합. Next.js Rewrite 기반 멀티존 아키텍처 설계로 쿠키 공유 환경 구축 및 점진적 마이그레이션 구조 구현',
-        tags: ['Next.js', 'Vue2', 'Microservices', 'Architecture'],
-      },
-      {
-        title: 'Blue-Green 배포 전략 및 인프라 최적화',
-        description: 'Rolling Deployment에서 Blue-Green 배포로 전환, 5초 내 롤백 가능한 안전장치 구축. Keel Approve 기반 반자동화 배포로 프로덕션 안정성 확보',
-        tags: ['DevOps', 'Kubernetes', 'CI/CD'],
-      },
-      {
-        title: '디자인 시스템 구축 및 개발 생산성 개선',
-        description: 'shadcn + Tailwind CSS 기반 디자인 시스템 구축. Figma Design Token 자동화 파이프라인으로 디자인-개발 간 일관성 확보',
-        tags: ['Design System', 'Tailwind CSS', 'Automation'],
-      },
-    ],
-  },
-  {
-    company: '휴톰',
-    position: 'Software Engineer',
-    team: '플랫폼팀',
-    period: '2023.06 ~ 2024.10',
-    description: '의료 데이터 라벨링 및 예측 플랫폼 개발',
-    achievements: [
-      {
-        title: '영상 데이터 라벨링 솔루션 개발 및 팀 리딩',
-        description: '레거시 시스템 전면 개편 프로젝트 주도. 1인 시작에서 3인 팀으로 성장시키며 팀 리딩. Nest.js + TypeORM 마스터하여 풀스택 개발',
-        tags: ['Team Leading', 'Nest.js', 'TypeORM', 'PostgreSQL'],
-      },
-      {
-        title: '의료 데이터 보안 아키텍처 설계',
-        description: 'GCS Signed URL 기반 미디어 접근 제어 시스템 구축. 수술 영상 데이터 보안을 위한 4가지 접근 방식 비교 분석 후 최적 솔루션 도출',
-        tags: ['Security', 'GCS', 'Architecture'],
-      },
-      {
-        title: '모노레포 기반 개발 환경 통합',
-        description: 'Turborepo 기반 모노레포 환경 구축으로 코드 재사용성 극대화. CI/CD 시간 평균 2분대 단축',
-        tags: ['Turborepo', 'Monorepo', 'DevOps'],
-      },
-      {
-        title: '클라우드 인프라 최적화',
-        description: 'Google Compute Engine → Cloud Run 전환으로 서버리스 아키텍처 구현. 서버 운영 비용 35% 절감',
-        tags: ['GCP', 'Cloud Run', 'Cost Optimization'],
-      },
-    ],
-  },
-  {
-    company: '세진마인드',
-    position: 'Frontend Engineer',
-    team: '개발팀',
-    period: '2022.03 ~ 2023.05',
-    description: '특허관리 백오피스 및 온라인 상표 출원 서비스 개발',
-    achievements: [
-      {
-        title: 'PIIP Intranet & Markiny 프론트엔드 개발',
-        description: 'Next.js, GraphQL, Apollo Client를 활용한 효율적인 데이터 관리. Lerna 기반 Monorepo 환경에서 코드 일관성 유지',
-        tags: ['Next.js', 'GraphQL', 'Apollo Client', 'Lerna'],
-      },
-      {
-        title: '단위 테스트 도입으로 코드 안정성 확보',
-        description: 'Jest와 React Testing Library를 활용한 140개의 테스트 케이스 작성. 기획 변경에 대응하는 안정성 향상',
-        tags: ['Jest', 'Testing Library', 'TDD'],
-      },
-    ],
-  },
-  {
-    company: '무른모',
-    position: 'Web Developer Intern',
-    period: '2021.08 ~ 2021.12',
-    description: '사내 백오피스 시스템 개발',
-    achievements: [
-      {
-        title: '연차 관리 시스템 개발',
-        description: 'Laravel 프레임워크와 MySQL을 활용한 백오피스 구축. Linux Crontab을 이용한 자동화 알림 기능 개발',
-        tags: ['Laravel', 'MySQL', 'jQuery'],
-      },
-    ],
-  },
-]
+// DB 데이터를 컴포넌트 형식으로 변환
+function convertDBExperienceToComponent(dbExperience: DBExperience): Experience {
+  return {
+    company: dbExperience.company,
+    position: dbExperience.position,
+    team: dbExperience.team || undefined,
+    period: dbExperience.period,
+    current: dbExperience.isCurrent,
+    description: dbExperience.description || undefined,
+    achievements: dbExperience.achievements.map(achievement => ({
+      title: achievement.title,
+      description: achievement.description,
+      tags: achievement.tags ? achievement.tags.split(',').map(tag => tag.trim()) : undefined,
+    })),
+  }
+}
 
-export default function ExperienceTimeline() {
+export default async function ExperienceTimeline() {
+  // DB에서 경력 데이터 가져오기
+  let dbExperiences: DBExperience[] = []
+
+  try {
+    dbExperiences = await getExperiences()
+  } catch (error) {
+    console.error('Failed to load experiences from DB:', error)
+    // 실패 시 빈 배열로 처리 (Fallback)
+  }
+
+  // DB 데이터를 컴포넌트 형식으로 변환
+  const experiences: Experience[] = dbExperiences.map(convertDBExperienceToComponent)
+
   return (
     <div className="space-y-8">
       {experiences.map((exp, index) => (
-        <div key={index} className="relative">
+        <div key={exp.company + exp.period} className="relative">
           {/* Timeline connector */}
           {index !== experiences.length - 1 && (
             <div className="absolute left-6 top-20 bottom-0 w-px bg-border hidden md:block" />

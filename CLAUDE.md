@@ -8,18 +8,32 @@ DEV_BBAK 블로그 - A modern blog built with Next.js 15, TypeScript, MDX, and R
 
 ## Development Commands
 
+This project uses **pnpm** as the package manager. All commands should be run with `pnpm`:
+
 ```bash
-# Start development server
-npm run dev
+# Start development servers for both apps
+pnpm dev
+
+# Start specific app only
+pnpm dev:blog       # Blog only (port 3000)
+pnpm dev:admin      # Admin dashboard only (port 3001)
 
 # Build for production
-npm run build
+pnpm build          # Build all apps and packages
+pnpm build:blog     # Build blog only
+pnpm build:admin    # Build admin dashboard only
 
 # Start production server
-npm start
+pnpm start
 
 # Run linter
-npm run lint
+pnpm lint
+
+# Type checking
+pnpm type-check
+
+# Clean build artifacts
+pnpm clean          # Removes .next and dist folders, plus node_modules
 ```
 
 ## Content Architecture
@@ -524,6 +538,31 @@ NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 - Better use of wide monitors (especially for MDX editing)
 - Consistent with modern admin dashboards (Vercel, Netlify, etc.)
 
+## Experience Management System
+
+A career timeline management system for the blog's About page:
+
+### Database Schema
+- **Experience**: Stores company, position, period, current status
+- **Achievement**: Stores specific accomplishments with descriptions and tags
+- Supports ordering by recency (sortOrder field)
+
+### Admin Interface
+- Location: `src/app/dashboard/experience/`
+- CRUD operations for experiences and achievements
+- Timeline visualization on About page in blog
+
+### Blog Integration
+- **About Page**: `/about` displays career timeline
+- **ExperienceTimeline Component**: Renders chronological career history
+- **RPC Routes**: Type-safe API endpoints for data fetching
+
+### Key Files
+- `prisma/schema.prisma`: Experience and Achievement models
+- `src/rpc/routes/experience.ts`: Hono RPC endpoints
+- `src/app/actions/experience.ts`: Server actions for CRUD
+- `src/app/dashboard/experience/page.tsx`: Admin interface
+
 ## Type-Safe Environment Variables
 
 ### Architecture
@@ -698,7 +737,7 @@ pnpm dev
 
 # Run specific app
 pnpm dev:admin        # blog-admin only (port 3001)
-pnpm dev              # blog only (port 3000)
+pnpm dev:blog         # blog only (port 3000)
 
 # Build specific app
 pnpm build:admin      # blog-admin
@@ -724,6 +763,29 @@ Packages use `workspace:*` protocol for local dependencies:
   }
 }
 ```
+
+### Utility Scripts
+
+The `scripts/` directory contains utilities for managing the blog:
+
+#### Root Scripts (`scripts/`)
+- `upload-posts.js`: Uploads blog posts to Vercel Blob Storage
+  - `pnpm upload-posts`: Upload posts locally
+  - `pnpm upload-posts:prod`: Upload posts to production with admin URL
+- `list-posts.js`: Lists all posts in the content directory
+- `migrate-images.js`: Migrates image references in markdown files
+- `update-mdx-paths.js`: Updates MDX file paths and converts structure
+- `cleanup-blob-duplicates.js`: Removes duplicate files from Blob storage
+- `cleanup-duplicate-content.js`: Cleans up duplicate content entries
+
+#### Blog-Admin Scripts (`apps/blog-admin/scripts/`)
+- `initial-blob-sync.js`: **Critical for setup** - Populates BlobFile table with existing files
+  - Usage: `node scripts/initial-blob-sync.js`
+  - Must run after first deployment to sync existing Blob files
+- `check-duplicates.ts`: Identifies duplicate blob files in database
+- `cleanup-duplicates.ts`: Removes duplicate blob file records
+- `test-pathname-unique.ts`: Tests pathname unique constraint
+- `check-prisma-types.ts`: Verifies Prisma client types
 
 ## Testing
 
@@ -771,6 +833,19 @@ Uses **Integration Testing** approach:
 - Automatic cleanup before/after all tests
 - Shared Prisma Client for all tests
 - Loads `.env.local` for database connection
+
+### Testing Tips
+- **Database Testing**: Tests use real PostgreSQL instance (not mocked)
+- **Test Data Prefix**: All test data uses `test/` prefix for easy cleanup
+- **CDC Testing**: Tests verify CDC hooks work correctly with real Vercel Blob operations
+- **Test Isolation**: Each test runs in clean state, no shared state between tests
+
+### Debugging Tests
+If tests fail:
+1. **Check Database Connection**: Ensure `DATABASE_URL` is set in `.env.local`
+2. **Prisma Client Restart**: Run `rm -rf node_modules/.prisma && pnpm install`
+3. **Test Cleanup**: Manually clean test data from database
+4. **Blob Mocks**: Some functions interact with real Blob API (check `vi.mocked()` calls)
 
 ### Type Checking
 
@@ -885,6 +960,26 @@ JWT_SECRET=...                          # openssl rand -base64 32
 NEXT_PUBLIC_BLOG_URL=https://...        # Public blog URL
 RESEND_API_KEY=...                      # Resend email API key (for newsletter)
 ```
+
+### **CRITICAL: First-Time Setup After Deployment**
+
+After deploying blog-admin for the first time, you MUST run the initial blob sync:
+
+```bash
+# SSH into the deployment environment or run locally with correct env vars
+node scripts/initial-blob-sync.js
+```
+
+**Why This Is Critical**:
+- The BlobFile table starts empty
+- Existing files in Vercel Blob won't appear in admin UI without this
+- Admin dashboard relies on CDC cache, not direct Blob API
+
+**Steps**:
+1. Deploy blog-admin to Vercel
+2. Set all environment variables in Vercel dashboard
+3. Run initial sync script to populate database
+4. Verify files appear in admin dashboard
 
 **Critical Setup**:
 1. **Prisma Client Generation**: `postinstall` script runs `prisma generate`

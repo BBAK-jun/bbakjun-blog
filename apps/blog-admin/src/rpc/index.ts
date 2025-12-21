@@ -27,6 +27,9 @@ import {
   incrementViewsBySlugHandler,
   getViewsStatsRoute,
   getViewsStatsHandler,
+  // Experience
+  experienceRoutes,
+  experienceHandlers,
   // Legacy routes for backward compatibility
   legacyAdminBlobFilesRoutes,
   legacyImageUploadRoutes,
@@ -84,7 +87,9 @@ const app = new OpenAPIHono<RpcEnv>()
   // Views RPC
   .openapi(getViewsStatsRoute, getViewsStatsHandler)
   .openapi(getViewsBySlugRoute, getViewsBySlugHandler)
-  .openapi(incrementViewsBySlugRoute, incrementViewsBySlugHandler);
+  .openapi(incrementViewsBySlugRoute, incrementViewsBySlugHandler)
+  // Experience RPC
+  .openapi(experienceRoutes.getExperiences, experienceHandlers.getExperiences);
 
 // CORS preflight - must be added after all .openapi() calls
 app.options('/api/rpc/subscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
