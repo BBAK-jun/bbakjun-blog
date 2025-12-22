@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { put } from '@vercel/blob';
 import { verifyApiKeySync } from '../../../shared/lib/auth';
 import { onBlobUpload } from '../../../lib/blob-cdc';
@@ -8,6 +8,7 @@ import {
   uploadErrorSchema,
 } from '../../../contract/schemas/upload';
 import { env } from '../../../env';
+import type { AppType } from '../../../rpc';
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
@@ -70,7 +71,7 @@ export const uploadMarkdownRoute = createRoute({
   },
 });
 
-export const uploadMarkdownHandler = async (c: any) => {
+export const uploadMarkdownHandler = async (c: Context<AppType>) => {
   try {
     if (!BLOB_TOKEN) {
       return c.json(

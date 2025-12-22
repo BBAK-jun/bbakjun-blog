@@ -39,7 +39,7 @@ export async function syncBlobToDatabase() {
           pathname: blob.pathname,
           size: BigInt(blob.size),
           uploadedAt: blob.uploadedAt,
-          contentType: (blob as any).contentType || null,
+          contentType: blob.contentType || null,
         })),
         skipDuplicates: true,
       });

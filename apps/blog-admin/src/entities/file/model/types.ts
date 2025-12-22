@@ -23,6 +23,6 @@ export interface FileMetadata {
 export interface FileContent {
   rawContent: string;
   htmlContent: string;
-  frontMatter: Record<string, any> | null;
+  frontMatter: Record<string, unknown> | null;
   metadata: FileMetadata;
 }

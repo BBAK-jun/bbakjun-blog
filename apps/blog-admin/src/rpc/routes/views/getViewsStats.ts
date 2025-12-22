@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import { getAllPosts } from '@repo/content';
 import { getCachedBlobFiles } from '../../../lib/blob-cdc';
@@ -6,6 +6,7 @@ import {
   viewsStatsResponseSchema,
   viewsErrorSchema,
 } from '../../../contract/schemas/views';
+import type { AppType } from '../../../rpc';
 
 /**
  * GET /api/v1/views/stats - 조회수 통계
@@ -35,7 +36,7 @@ export const getViewsStatsRoute = createRoute({
   },
 });
 
-export const getViewsStatsHandler = async (c: any) => {
+export const getViewsStatsHandler = async (c: Context<AppType>) => {
   try {
     console.log('[stats] RPC API 호출 시작');
 

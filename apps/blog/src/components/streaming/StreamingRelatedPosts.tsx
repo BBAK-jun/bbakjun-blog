@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { usePost } from '@/lib/hooks/use-posts'
 import { getRelatedPosts } from '@repo/content'
 import { useState, useEffect } from 'react'
+import type { Post } from '@repo/types'
 
 interface StreamingRelatedPostsProps {
   currentSlug: string
@@ -12,7 +13,7 @@ interface StreamingRelatedPostsProps {
 }
 
 export default function StreamingRelatedPosts({ currentSlug, limit = 4 }: StreamingRelatedPostsProps) {
-  const [relatedPosts, setRelatedPosts] = useState<any[]>([])
+  const [relatedPosts, setRelatedPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -87,27 +88,27 @@ export default function StreamingRelatedPosts({ currentSlug, limit = 4 }: Stream
           >
             <article className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 line-clamp-2">
-                {post.title}
+                {post.frontMatter.title}
               </h4>
 
-              {post.description && (
+              {post.frontMatter.description && (
                 <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-                  {post.description}
+                  {post.frontMatter.description}
                 </p>
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <time dateTime={post.date}>
-                  {formatDate(post.date)}
+                <time dateTime={post.frontMatter.date}>
+                  {formatDate(post.frontMatter.date)}
                 </time>
                 {post.readingTime && (
                   <span>{post.readingTime}</span>
                 )}
               </div>
 
-              {post.tags && post.tags.length > 0 && (
+              {post.frontMatter.tags && post.frontMatter.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {post.tags.slice(0, 3).map((tag: string) => (
+                  {post.frontMatter.tags.slice(0, 3).map((tag: string) => (
                     <Badge
                       key={tag}
                       variant="secondary"

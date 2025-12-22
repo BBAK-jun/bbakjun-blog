@@ -7,7 +7,7 @@ import { Post } from '@repo/types'
 export const postKeys = {
   all: ['posts'] as const,
   lists: () => [...postKeys.all, 'list'] as const,
-  list: (filters?: Record<string, any>) => [...postKeys.lists(), filters] as const,
+  list: (filters?: Record<string, unknown>) => [...postKeys.lists(), filters] as const,
   details: () => [...postKeys.all, 'detail'] as const,
   detail: (slug: string) => [...postKeys.details(), slug] as const,
   tags: () => [...postKeys.all, 'tags'] as const,

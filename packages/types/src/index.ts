@@ -82,3 +82,12 @@ export interface SeriesSummary {
   startedAt?: string
   updatedAt?: string
 }
+
+/**
+ * Series navigation information
+ */
+export interface SeriesNavigation {
+  prev: Post | null
+  next: Post | null
+  currentIndex: number
+}

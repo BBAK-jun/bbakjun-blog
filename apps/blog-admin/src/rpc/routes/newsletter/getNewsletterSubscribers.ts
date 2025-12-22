@@ -1,9 +1,10 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { prisma } from '../../../shared/lib/db';
 import {
   newsletterErrorSchema,
   newsletterSubscribersResponseSchema,
 } from '../../../contract/schemas/newsletter';
+import type { AppType } from '../../../rpc';
 
 /**
  * GET /api/rpc/getNewsletterSubscribers - 구독자 목록 조회
@@ -34,7 +35,7 @@ export const getNewsletterSubscribersRoute = createRoute({
   },
 });
 
-export const getNewsletterSubscribersHandler = async (c: any) => {
+export const getNewsletterSubscribersHandler = async (c: Context<AppType>) => {
   try {
     const subscribers = await prisma.subscriber.findMany({
       orderBy: { subscribedAt: 'desc' },

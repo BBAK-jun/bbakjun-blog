@@ -1,6 +1,7 @@
-import { createRoute, z } from '@hono/zod-openapi';
+import { createRoute, z, Context } from '@hono/zod-openapi';
 import { syncBlobToDatabase } from '../../../lib/blob-cdc';
 import { blobFilesErrorSchema } from '../../../contract/schemas/blob-files';
+import type { AppType } from '../../../rpc';
 
 const syncBlobFilesResponseSchema = z.object({
   message: z.string(),
@@ -49,7 +50,7 @@ export const syncBlobFilesRoute = createRoute({
   },
 });
 
-export const syncBlobFilesHandler = async (c: any) => {
+export const syncBlobFilesHandler = async (c: Context<AppType>) => {
   try {
     const stats = await syncBlobToDatabase();
 

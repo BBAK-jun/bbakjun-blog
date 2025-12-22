@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { Resend } from 'resend';
 import { prisma } from '../../../shared/lib/db';
 import {
@@ -7,6 +7,7 @@ import {
   newsletterSubscribeResponseSchema,
 } from '../../../contract/schemas/newsletter';
 import { env } from '../../../env';
+import type { AppType } from '../../../rpc';
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
@@ -61,7 +62,7 @@ export const subscribeNewsletterRoute = createRoute({
   },
 });
 
-export const subscribeNewsletterHandler = async (c: any) => {
+export const subscribeNewsletterHandler = async (c: Context<AppType>) => {
   try {
     const { email, source } = c.req.valid('json');
 

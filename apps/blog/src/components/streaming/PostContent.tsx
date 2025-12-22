@@ -10,10 +10,11 @@ import MermaidRenderer from '@/components/MermaidRenderer'
 import CodeBlockWrapper from '@/components/CodeBlockWrapper'
 import { usePost } from '@/lib/hooks/use-posts'
 import Link from 'next/link'
+import type { Post } from '@repo/types'
 
 interface PostContentProps {
   slug: string
-  initialPost?: any
+  initialPost?: Post
   initialHtmlContent?: string
 }
 

@@ -1,4 +1,4 @@
-import type { Series, SeriesSummary, Post } from '@repo/types'
+import type { Series, SeriesSummary, SeriesNavigation, Post } from '@repo/types'
 import { getAllPosts } from './posts'
 import type { BlobFileInfo } from './posts-blob'
 
@@ -93,16 +93,17 @@ export async function getSeriesBySlug(blobFiles: BlobFileInfo[], slug: string): 
 export function getSeriesNavigation(
   series: Series,
   currentSlug: string
-): { prev: Post | null; next: Post | null } {
+): SeriesNavigation {
   const currentIndex = series.posts.findIndex(p => p.slug === currentSlug)
 
   if (currentIndex === -1) {
-    return { prev: null, next: null }
+    return { prev: null, next: null, currentIndex: -1 }
   }
 
   return {
     prev: currentIndex > 0 ? series.posts[currentIndex - 1] : null,
     next: currentIndex < series.posts.length - 1 ? series.posts[currentIndex + 1] : null,
+    currentIndex,
   }
 }
 

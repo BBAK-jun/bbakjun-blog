@@ -2,6 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// Mermaid 전역 객체 타입 정의
+declare global {
+  interface Window {
+    mermaid?: {
+      initialize: (config: any) => void
+      render: (id: string, text: string, container?: Element) => Promise<{ svg: string }>
+    }
+  }
+}
+
 interface MermaidProps {
   chart: string
   id?: string
@@ -22,7 +32,7 @@ export default function Mermaid({ chart, id }: MermaidProps) {
     const renderChart = async () => {
       try {
         // CDN에서 Mermaid 동적 로드
-        if (typeof window !== 'undefined' && !(window as any).mermaid) {
+        if (typeof window !== 'undefined' && !window.mermaid) {
           await new Promise((resolve, reject) => {
             const script = document.createElement('script')
             script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js'
@@ -32,7 +42,7 @@ export default function Mermaid({ chart, id }: MermaidProps) {
           })
         }
 
-        const mermaid = (window as any).mermaid
+        const mermaid = window.mermaid!
 
         // 다크모드 감지
         const isDarkMode = document.documentElement.classList.contains('dark')

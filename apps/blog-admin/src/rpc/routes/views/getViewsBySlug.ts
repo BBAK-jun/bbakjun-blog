@@ -1,10 +1,11 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import {
   viewsSlugParamSchema,
   viewsGetResponseSchema,
   viewsErrorSchema,
 } from '../../../contract/schemas/views';
+import type { AppType } from '../../../rpc';
 
 /**
  * GET /api/v1/views/:slug - 조회수 조회
@@ -45,7 +46,7 @@ export const getViewsBySlugRoute = createRoute({
   },
 });
 
-export const getViewsBySlugHandler = async (c: any) => {
+export const getViewsBySlugHandler = async (c: Context<AppType>) => {
   try {
     const { slug } = c.req.valid('param');
 

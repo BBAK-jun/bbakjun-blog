@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { prisma } from '../../../shared/lib/db';
 import {
   newsletterErrorSchema,
@@ -6,6 +6,7 @@ import {
   newsletterUnsubscribeResponseSchema,
 } from '../../../contract/schemas/newsletter';
 import { env } from '../../../env';
+import type { AppType } from '../../../rpc';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
@@ -66,7 +67,7 @@ export const unsubscribeNewsletterRoute = createRoute({
   },
 });
 
-export const unsubscribeNewsletterHandler = async (c: any) => {
+export const unsubscribeNewsletterHandler = async (c: Context<AppType>) => {
   try {
     const { token } = c.req.valid('json');
 

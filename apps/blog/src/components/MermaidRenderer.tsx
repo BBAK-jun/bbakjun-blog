@@ -3,6 +3,16 @@
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
+// Mermaid 전역 객체 타입 정의
+declare global {
+  interface Window {
+    mermaid?: {
+      initialize: (config: any) => void
+      render: (id: string, text: string, container?: Element) => Promise<any>
+    }
+  }
+}
+
 // Mermaid 컴포넌트를 동적으로 임포트 (CSR에서만 로드)
 const Mermaid = dynamic(() => import('./Mermaid'), {
   ssr: false,
@@ -49,7 +59,7 @@ export default function MermaidRenderer({ content }: MermaidRendererProps) {
         const loadAndRenderMermaid = async () => {
           try {
             // CDN에서 Mermaid 로드
-            if (typeof window !== 'undefined' && !(window as any).mermaid) {
+            if (typeof window !== 'undefined' && !window.mermaid) {
               await new Promise((resolve, reject) => {
                 const script = document.createElement('script')
                 script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js'
@@ -59,7 +69,7 @@ export default function MermaidRenderer({ content }: MermaidRendererProps) {
               })
             }
 
-            const mermaid = (window as any).mermaid
+            const mermaid = window.mermaid!
 
             // 다크모드 감지
             const isDarkMode = document.documentElement.classList.contains('dark')

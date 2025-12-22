@@ -4,14 +4,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import type { Series, SeriesNavigation } from '@repo/types'
 
 interface StreamingSeriesNavigationProps {
   currentSlug: string
 }
 
 export default function StreamingSeriesNavigation({ currentSlug }: StreamingSeriesNavigationProps) {
-  const [series, setSeries] = useState<any>(null)
-  const [seriesNav, setSeriesNav] = useState<any>(null)
+  const [series, setSeries] = useState<Series | null>(null)
+  const [seriesNav, setSeriesNav] = useState<SeriesNavigation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

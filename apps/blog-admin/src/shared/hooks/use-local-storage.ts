@@ -3,19 +3,19 @@ import { useSyncExternalStore, useRef, useCallback } from 'react';
 /**
  * Deep equality check for objects and arrays
  */
-function deepEqual(a: any, b: any): boolean {
+function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
 
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
+  const keysA = Object.keys(a as Record<string, unknown>);
+  const keysB = Object.keys(b as Record<string, unknown>);
 
   if (keysA.length !== keysB.length) return false;
 
   for (const key of keysA) {
     if (!keysB.includes(key)) return false;
-    if (!deepEqual(a[key], b[key])) return false;
+    if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
   }
 
   return true;
@@ -25,7 +25,7 @@ function deepEqual(a: any, b: any): boolean {
  * Cache to store previous snapshots for each key
  * This prevents unnecessary re-renders when content hasn't changed
  */
-const snapshotCache = new Map<string, { value: any; serialized: string }>();
+const snapshotCache = new Map<string, { value: unknown; serialized: string }>();
 
 /**
  * Hook to sync state with localStorage using useSyncExternalStore

@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import {
   viewsSlugParamSchema,
@@ -6,6 +6,7 @@ import {
   viewsIncrementResponseSchema,
   viewsErrorSchema,
 } from '../../../contract/schemas/views';
+import type { AppType } from '../../../rpc';
 
 /**
  * POST /api/v1/views/:slug - 조회수 증가
@@ -53,7 +54,7 @@ export const incrementViewsBySlugRoute = createRoute({
   },
 });
 
-export const incrementViewsBySlugHandler = async (c: any) => {
+export const incrementViewsBySlugHandler = async (c: Context<AppType>) => {
   try {
     const { slug } = c.req.valid('param');
     const { sessionId, userAgent } = c.req.valid('json');

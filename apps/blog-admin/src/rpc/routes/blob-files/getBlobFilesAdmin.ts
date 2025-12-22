@@ -1,4 +1,4 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import {
   getCachedBlobFiles,
   needsSync,
@@ -9,6 +9,7 @@ import {
   blobFilesErrorSchema,
   blobFilesResponseSchema,
 } from '../../../contract/schemas/blob-files';
+import type { AppType } from '../../../rpc';
 
 /**
  * GET /api/rpc/getBlobFilesAdmin - 관리자 Blob 파일 목록 조회 (자동 동기화 지원)
@@ -58,7 +59,7 @@ export const getBlobFilesAdminRoute = createRoute({
   },
 });
 
-export const getBlobFilesAdminHandler = async (c: any) => {
+export const getBlobFilesAdminHandler = async (c: Context<AppType>) => {
   try {
     const { limit, offset, search: searchTerm, autoSync } = c.req.valid('query');
 

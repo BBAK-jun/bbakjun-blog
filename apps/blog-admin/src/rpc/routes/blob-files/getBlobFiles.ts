@@ -1,10 +1,11 @@
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, Context } from '@hono/zod-openapi';
 import { getCachedBlobFiles } from '../../../lib/blob-cdc';
 import {
   blobFilesQuerySchema,
   blobFilesErrorSchema,
   blobFilesResponseSchema,
 } from '../../../contract/schemas/blob-files';
+import type { AppType } from '../../../rpc';
 
 /**
  * GET /api/rpc/getBlobFiles - 공개 Blob 파일 목록 조회 (CDC 캐시)
@@ -45,7 +46,7 @@ export const getBlobFilesRoute = createRoute({
   },
 });
 
-export const getBlobFilesHandler = async (c: any) => {
+export const getBlobFilesHandler = async (c: Context<AppType>) => {
   try {
     const { limit, offset, search: searchTerm } = c.req.valid('query');
     const result = await getCachedBlobFiles({ limit, offset, searchTerm });
