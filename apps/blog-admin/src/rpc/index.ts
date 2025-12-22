@@ -35,13 +35,8 @@ import {
   legacyNewsletterRoutes,
 } from './routes';
 import { requireAdminSession, requireSession } from './middleware/session';
+import { cors } from './middleware/cors';
 import { env } from '../env';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
 
 /**
  * Hono RPC app with all blog-admin API routes.
@@ -61,6 +56,8 @@ const corsHeaders = {
  * - /api/rpc/getViewsStats
  */
 const app = new OpenAPIHono<RpcEnv>()
+  // Apply CORS middleware to all routes
+  .use(cors)
   // Blob Files RPC
   .openapi(getBlobFilesRoute, getBlobFilesHandler)
   .openapi(getBlobFilesAdminRoute, async (c) => {
@@ -86,9 +83,7 @@ const app = new OpenAPIHono<RpcEnv>()
   .openapi(getViewsBySlugRoute, getViewsBySlugHandler)
   .openapi(incrementViewsBySlugRoute, incrementViewsBySlugHandler);
 
-// CORS preflight - must be added after all .openapi() calls
-app.options('/api/rpc/subscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
-app.options('/api/rpc/unsubscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
+// CORS preflight is handled by the cors middleware
 
 // Legacy v1 routes for backward compatibility
 app.route('/api/v1/public/blob-files', legacyPublicBlobFilesRoutes);
