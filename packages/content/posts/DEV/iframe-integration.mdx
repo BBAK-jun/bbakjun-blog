@@ -49,6 +49,7 @@ Vue 애플리케이션 내에서 React로 개발된 Dialog 컴포넌트를 ifram
 마이크로프론트엔드 통합은 크게 두 가지 접근법으로 분류할 수 있습니다:
 
 #### 런타임 통합 방식
+
 런타임 통합은 애플리케이션 실행 중에 서로 다른 마이크로프론트엔드를 동적으로 로드하고 결합하는 방식입니다.
 
 - **장점**:
@@ -64,6 +65,7 @@ Vue 애플리케이션 내에서 React로 개발된 Dialog 컴포넌트를 ifram
   - **상태 관리 복잡성**: 공유 상태 관리가 어려움
 
 #### 빌드타임 통합 방식
+
 빌드타임 통합은 애플리케이션을 빌드하는 시점에 서로 다른 마이크로프론트엔드를 정적으로 결합하는 방식입니다.
 
 - **장점**:
@@ -146,12 +148,14 @@ iframe을 통한 Vue-React 통합은 크게 세 부분으로 나누어 구현했
 Vue와 React 간 통신은 `window.postMessage` API를 통해 이루어집니다. 다음과 같은 표준화된 메시지 타입을 정의했습니다
 
 #### 부모(Vue) → 자식(React) 메시지
+
 - `부모_자식_다이얼로그_열기`: Dialog 열기
 - `부모_자식_다이얼로그_닫기`: Dialog 닫기
 - `부모_자식_다이얼로그_타입`: Dialog 타입 지정
 - `부모_자식_다이얼로그_높이_설정`: Dialog 높이 요청
 
 #### 자식(React) → 부모(Vue) 메시지
+
 - `자식_부모_다이얼로그_열림`: Dialog 열림 상태 알림
 - `자식_부모_다이얼로그_닫힘`: Dialog 닫힘 상태 알림
 - `자식_부모_다이얼로그_타입`: Dialog 타입 응답
@@ -165,56 +169,49 @@ Vue 애플리케이션에서는 `ExternalDialog` 컴포넌트를 만들어 ifram
 ```html
 <template>
   <div v-show="isVisible" class="dimmed">
-    <iframe
-      ref="dialogIframe"
-      :src="dialogUrl"
-      class="iframe"
-    />
+    <iframe ref="dialogIframe" :src="dialogUrl" class="iframe" />
   </div>
 </template>
 
 <script>
-export default {
-  props: {
-    dialogUrl: String,
-    isVisible: Boolean
-  },
-  mounted() {
-    window.addEventListener('message', this.handleChildMessage)
-  },
-  beforeDestroy() {
-    window.removeEventListener('message', this.handleChildMessage)
-  },
-  methods: {
-    sendMessageToIframe(messageType, payload = {}) {
-      this.$refs.dialogIframe.contentWindow.postMessage(
-        { type: messageType, payload },
-        '*'
-      )
+  export default {
+    props: {
+      dialogUrl: String,
+      isVisible: Boolean,
     },
-    handleChildMessage(event) {
-      const { type, payload } = event.data
+    mounted() {
+      window.addEventListener('message', this.handleChildMessage);
+    },
+    beforeDestroy() {
+      window.removeEventListener('message', this.handleChildMessage);
+    },
+    methods: {
+      sendMessageToIframe(messageType, payload = {}) {
+        this.$refs.dialogIframe.contentWindow.postMessage({ type: messageType, payload }, '*');
+      },
+      handleChildMessage(event) {
+        const { type, payload } = event.data;
 
-      switch (type) {
-        case '자식_부모_다이얼로그_닫힘':
-          this.$emit('dialogClose')
-          break
-        case '자식_부모_다이얼로그_높이_설정':
-          this.$refs.dialogIframe.style.height = `${payload.height}px`
-          break
-      }
-    }
-  },
-  watch: {
-    isVisible(value) {
-      if (value) {
-        this.sendMessageToIframe('부모_자식_다이얼로그_열기')
-      } else {
-        this.sendMessageToIframe('부모_자식_다이얼로그_닫기')
-      }
-    }
-  }
-}
+        switch (type) {
+          case '자식_부모_다이얼로그_닫힘':
+            this.$emit('dialogClose');
+            break;
+          case '자식_부모_다이얼로그_높이_설정':
+            this.$refs.dialogIframe.style.height = `${payload.height}px`;
+            break;
+        }
+      },
+    },
+    watch: {
+      isVisible(value) {
+        if (value) {
+          this.sendMessageToIframe('부모_자식_다이얼로그_열기');
+        } else {
+          this.sendMessageToIframe('부모_자식_다이얼로그_닫기');
+        }
+      },
+    },
+  };
 </script>
 ```
 
@@ -229,29 +226,38 @@ export const useExternalDialog = (options = {}) => {
 
   // 다이얼로그 열기
   const handleOpen = useCallback(() => {
-    window.parent.postMessage({
-      type: '자식_부모_다이얼로그_열림'
-    }, '*')
-  }, [])
+    window.parent.postMessage(
+      {
+        type: '자식_부모_다이얼로그_열림',
+      },
+      '*'
+    );
+  }, []);
 
   // 다이얼로그 닫기
   const handleClose = useCallback(() => {
-    window.parent.postMessage({
-      type: '자식_부모_다이얼로그_닫힘'
-    }, '*')
-  }, [])
+    window.parent.postMessage(
+      {
+        type: '자식_부모_다이얼로그_닫힘',
+      },
+      '*'
+    );
+  }, []);
 
   // 부모 창에 높이 전달
   const updateHeight = useCallback(() => {
-    window.parent.postMessage({
-      type: '자식_부모_다이얼로그_높이_설정',
-      payload: { height: dialogHeight }
-    }, '*')
-  }, [dialogHeight])
+    window.parent.postMessage(
+      {
+        type: '자식_부모_다이얼로그_높이_설정',
+        payload: { height: dialogHeight },
+      },
+      '*'
+    );
+  }, [dialogHeight]);
 
   // 부모 메시지 리스너 설정
   useEffect(() => {
-    const handleParentMessage = (event) => {
+    const handleParentMessage = event => {
       const { type } = event.data;
 
       if (type === '부모_자식_다이얼로그_열기') {
@@ -268,7 +274,7 @@ export const useExternalDialog = (options = {}) => {
   }, [handleOpen, handleClose, updateHeight]);
 
   return [handleOpen, handleClose];
-}
+};
 ```
 
 ### 사용 예시: React Dialog 컴포넌트
@@ -279,7 +285,7 @@ React Dialog 컴포넌트에서 useExternalDialog 훅을 활용한 간단한 예
 // 핵심 구현 컨셉만 표시한 의사 코드입니다
 function Dialog() {
   const [handleOpen, handleClose] = useExternalDialog({
-    dialogHeight: 400
+    dialogHeight: 400,
   });
 
   return (
@@ -313,8 +319,9 @@ iframe 통합 방식은 구현이, 단순하지만 보안 측면에서 몇 가�
 
 2. **출처 검증**
    - `postMessage` 메시지 수신 시 발신자의 origin을 항상 검증해야 합니다.
+
    ```javascript
-   window.addEventListener('message', (event) => {
+   window.addEventListener('message', event => {
      // 알려진 출처에서만 메시지 수신
      if (event.origin !== 'https://trusted-domain.com') return;
 
@@ -328,7 +335,7 @@ iframe 통합 방식은 구현이, 단순하지만 보안 측면에서 몇 가�
 현재 구현에서는 보안을 위해 다음과 같은 개선을 계획하고 있습니다:
 
 1. **보안 강화**
-   - 현재는 `postMessage`의 origin을 '*'로 설정하여 모든 출처를 허용하고 있으나, 향후 특정 도메인만 허용하도록 변경 예정
+   - 현재는 `postMessage`의 origin을 '\*'로 설정하여 모든 출처를 허용하고 있으나, 향후 특정 도메인만 허용하도록 변경 예정
    - 암호화된 토큰을 통한 안전한 파라미터 전달 구현
 
 2. **성능 최적화**

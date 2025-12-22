@@ -1,7 +1,7 @@
 # TypeScript Types and Interfaces
 
 - **Scope**: TypeScript 타입 정의 및 인터페이스
-- **Source of Truth**: src/entities/*/model/types.ts, src/shared/types/
+- **Source of Truth**: src/entities/\*/model/types.ts, src/shared/types/
 - **Last Verified**: 2025-12-22
 - **Repo Ref**: main
 
@@ -161,8 +161,8 @@ type BlobFilesQuery = {
 };
 
 type AdminBlobFilesQuery = BlobFilesQuery & {
-  limit?: number;  // default: 100
-  autoSync?: boolean;  // default: true
+  limit?: number; // default: 100
+  autoSync?: boolean; // default: true
 };
 
 type BlobFile = {
@@ -268,7 +268,7 @@ type ViewsGetResponse = {
 
 type ViewsIncrementBody = {
   sessionId?: string;
-  userAgent?: string;  // default: 'unknown'
+  userAgent?: string; // default: 'unknown'
 };
 
 type ViewsIncrementResponse = {
@@ -319,13 +319,7 @@ type SubscriberWhereUniqueInput = Prisma.SubscriberWhereUniqueInput;
 
 ```typescript
 // 탭 네비게이션
-type DashboardTab =
-  | 'create'
-  | 'files'
-  | 'upload'
-  | 'history'
-  | 'settings'
-  | 'newsletter';
+type DashboardTab = 'create' | 'files' | 'upload' | 'history' | 'settings' | 'newsletter';
 
 // 정렬 상태
 type SortState = {
@@ -396,24 +390,22 @@ type FileSize = number; // bytes
 ## 타입 안전성 패턴
 
 ### 1. 브랜디드 타입
+
 ```typescript
 type Pathname = string & { readonly __brand: unique symbol };
 type Email = string & { readonly __brand: unique symbol };
 ```
 
 ### 2. Discriminated Unions
+
 ```typescript
-type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };
 ```
 
 ### 3. 타입 가드
+
 ```typescript
 function isBlobFile(obj: unknown): obj is BlobFile {
-  return typeof obj === 'object' &&
-         obj !== null &&
-         'pathname' in obj &&
-         'size' in obj;
+  return typeof obj === 'object' && obj !== null && 'pathname' in obj && 'size' in obj;
 }
 ```

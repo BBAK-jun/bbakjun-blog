@@ -4,6 +4,7 @@ date: '2024-11-04'
 tags: ['DEV']
 summary: 'RSC 그리고 Single Source Of Truth (Design)'
 ---
+
 # **런타임과 제로런타임 CSS-in-JS**
 
 프론트엔드 스타일링 기법은 웹의 발전과 함께 단계적으로 진화해왔다.
@@ -30,8 +31,8 @@ CSS 전처리기는 이러한 문제를 해결하기 위해 등장했다. Sass�
 컴포넌트 기반 프레임워크인 React의 등장과 함께 CSS-in-JS 기법이 인기를 끌기 시작했다. 스타일을 JavaScript 코드 안에서 정의함으로써, 스타일이 컴포넌트와 긴밀하게 연계되고, 동적 스타일링이 가능해졌다.
 
 - 장점:
-    - 동적 스타일링: JavaScript 변수와 조건에 따라 스타일을 변경할 수 있다.
-    - 범위 제한: 각 컴포넌트에 고유한 스타일을 적용하여 이름 충돌 문제를 방지한다.
+  - 동적 스타일링: JavaScript 변수와 조건에 따라 스타일을 변경할 수 있다.
+  - 범위 제한: 각 컴포넌트에 고유한 스타일을 적용하여 이름 충돌 문제를 방지한다.
 - 단점: 런타임에 스타일이 생성되므로 성능 문제가 발생할 수 있으며, 특히 초기 렌더링 속도에 부정적인 영향을 미친다.
 
 웹 애플리케이션이 성장할 수록 성능은 중요해진다. SPA 환경에서의 성능 문제가 대두되며 SSR환경이 중요해졌으며 Runtime Css in JS는 컴포넌트의 라이프사이클과 스타일이 함께 한다는 장점이 존재했지만, 점차 성능 문제가 대두되기도 했다. 이러한 성능 문제들은 서버에서 템플릿을 엔진을 사용한 시절처럼 되돌아 가는것처럼 빌드 시점에 스타일을 생성하던 방법으로 되돌아가는것으로 이야기가 나오고있다.
@@ -53,37 +54,38 @@ CSS 전처리기는 이러한 문제를 해결하기 위해 등장했다. Sass�
 브라우저 렌더링 과정에서 CSS를 어떻게 정의하느냐에 따라 성능에 영향을 미칠수가있다. CSS가 브라우저에 적용되려면 3가지 정도의 방법이 존재하며, 이 방법들은 혼재할수도 하나의 방법만 사용할 수 도있다.
 
 - Inline CSS
-    - HTML은 문서를 전달하기 위한 파일 포맷으로, 컨텐츠에 강조 표시를 하거나 레이아웃을 다르게할때 `style` attribute를 작성하여 스타일을 입힐 수 있다.
-    ```html
-    <p>
-        이것은 
-        <span style="color: red; font-weight: 700;">글</span>
-        입니다
-    </p>
-    ```
+  - HTML은 문서를 전달하기 위한 파일 포맷으로, 컨텐츠에 강조 표시를 하거나 레이아웃을 다르게할때 `style` attribute를 작성하여 스타일을 입힐 수 있다.
+  ```html
+  <p>
+    이것은
+    <span style="color: red; font-weight: 700;">글</span>
+    입니다
+  </p>
+  ```
 - Internal CSS
-    - Inline CSS로 스타일을 입히는 방식은 중복이 많아지며 가독성이 떨어지기때문에 나타난 개념이다.
-    - style 태그를 작성하고 접근자를 사용하여 스타일을 입힐 수 있다.
-    ```html
-    <head>
-        <style>
-            span {
-                color: red;
-                font-weight: 700;
-            }
-        </style>
-    </head>
-    ```
+  - Inline CSS로 스타일을 입히는 방식은 중복이 많아지며 가독성이 떨어지기때문에 나타난 개념이다.
+  - style 태그를 작성하고 접근자를 사용하여 스타일을 입힐 수 있다.
+  ```html
+  <head>
+    <style>
+      span {
+        color: red;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  ```
 - External CSS
-    - CSS 파일을 외부 리소스로 빼는 방법으로 Internal CSS는 모든 스타일이 style 태그에 정의되어야해서 어느 부분이 스타일이 입혀지고 있는지 파악하기 어렵다.
-    - 따라서 여러개의 CSS 파일을 만들어 link 태그로 외부경로를 작성하여 다운로드시킨다.
-    ```html
-    <head>
-        <link rel="stylesheet" type="text/css" href="./style.css"/>
-    </head>
-    ```
+  - CSS 파일을 외부 리소스로 빼는 방법으로 Internal CSS는 모든 스타일이 style 태그에 정의되어야해서 어느 부분이 스타일이 입혀지고 있는지 파악하기 어렵다.
+  - 따라서 여러개의 CSS 파일을 만들어 link 태그로 외부경로를 작성하여 다운로드시킨다.
+  ```html
+  <head>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+  </head>
+  ```
 
 ## CSS-in-JS
+
 CSS-in-JS는 자바스크립트 파일 안에서 CSS를 정의하고 스타일을 적용한다. 대표적인 경우는 아래와 같다.
 
 - 런타임 스타일시트 (보통 런타임 CSS-in-JS에서 사용)
@@ -93,8 +95,8 @@ CSS-in-JS는 자바스크립트 파일 안에서 CSS를 정의하고 스타일�
 
 CSS-in-JS는 자바스크립트 파일이 브라우저에서 실행되며 스타일이 입혀진다.
 
-대표적으로 `styled-component`와 `emotion`이 있다. 두 라이브러리는 자바스크립트 코드 내부에 탬플릿 리터럴을 통해 스타일을 정의하고 컴포넌트에 적용한다. 
-이 코드는 브라우저로 번들링된 소스 코드에 포함되어 **런타임**에 평가된다. 
+대표적으로 `styled-component`와 `emotion`이 있다. 두 라이브러리는 자바스크립트 코드 내부에 탬플릿 리터럴을 통해 스타일을 정의하고 컴포넌트에 적용한다.
+이 코드는 브라우저로 번들링된 소스 코드에 포함되어 **런타임**에 평가된다.
 
 HTML 파일이 브라우저에 로드되었을때 Internal CSS 및 External CSS가 없는 상태로 로드된후 일련의 과정을 거친 후 스타일이 입혀진다.
 
@@ -102,7 +104,7 @@ HTML 파일이 브라우저에 로드되었을때 Internal CSS 및 External CSS�
 
 런타임 CSS-in-JS는 브라우저에서 자바스크립트 코드가 모두 로드 완료된후 스타일을 생성하기때문에 스타일을 생성하는 코드가 번들파일에 포함이 되어야한다.
 
-모던 웹 프론트엔드 프레임워크가 대부분 컴포넌트 기반의 개발 방법론을 채택하고 있기때문에 컴포넌트 단위로 CSS를 작성할 수 있는데 많은 역할을 하게 되었다. 
+모던 웹 프론트엔드 프레임워크가 대부분 컴포넌트 기반의 개발 방법론을 채택하고 있기때문에 컴포넌트 단위로 CSS를 작성할 수 있는데 많은 역할을 하게 되었다.
 
 하지만 이런 방법들은 다음과 같은 한계점을 가지고 있다.
 
@@ -132,15 +134,15 @@ HTML 파일이 브라우저에 로드되었을때 Internal CSS 및 External CSS�
 
 ### **빌드 타임 CSS-in-JS**
 
-Runtime CSS-in-JS는 런타임에 스타일을 생성하기때문에 이러한 작업이 오버헤드가 존재한다는 것을 알수있다. 
+Runtime CSS-in-JS는 런타임에 스타일을 생성하기때문에 이러한 작업이 오버헤드가 존재한다는 것을 알수있다.
 
-이를 개선하기위해서는 정말 간단하게도 시점을 옮기는 방법이 답이 된다. 
+이를 개선하기위해서는 정말 간단하게도 시점을 옮기는 방법이 답이 된다.
 
-사실 빌드 타임에 스타일을 생성하는 방법은 이미 존재했었다. SCSS등의 전처리기를 사용하는 방법이 있었다. 
+사실 빌드 타임에 스타일을 생성하는 방법은 이미 존재했었다. SCSS등의 전처리기를 사용하는 방법이 있었다.
 
 이런 방법이 잘 쓰이지않던 이유는 SPA라는 웹프론트엔드의 변화가 오며 빌드타임에 스타일을 만드는 방법이 효율적(?)이지 않았기 때문이다. 하지만 SSR환경이 중요해지며 빌드타임에 스타일을 만드는 방법이 효율적이라는 것이 증명되면서 빌드 타임 CSS-in-JS가 주목을 받기 시작했다.
 
-정적 CSS 추출은 서버에서 정의되어있는 CSS 파일을 빌드시점에 생성하여 브라우저에서는 External CSS 파일을 다운로드 받아 사용하는 방법이다. 
+정적 CSS 추출은 서버에서 정의되어있는 CSS 파일을 빌드시점에 생성하여 브라우저에서는 External CSS 파일을 다운로드 받아 사용하는 방법이다.
 이러한 방법은 HTML, CSS, JS파일을 웹서버에서 정적으로 서빙하는 방법이며 런타임 추출 비용이 전혀 들지않는다.
 
 Runtime CSS-in-JS는 Developer Experience(DX)를 향상시키기 위해 등장했지만, 성능 문제로 인해 트레이드 오프가 꽤나 많이 발생한다. 그래서 요즘은 번들크기와 성능 등의 문제로 Sass 또는 테일윈드로 많이 돌아가고있는 추세로 보인다.
@@ -164,8 +166,8 @@ export const button = style({
   backgroundColor: 'blue',
   padding: '10px',
   ':hover': {
-    backgroundColor: 'darkblue'
-  }
+    backgroundColor: 'darkblue',
+  },
 });
 ```
 
@@ -188,9 +190,11 @@ export const button = style({
 디자인 시스템의 핵심은 일관성이다. Vanilla Extract는 Sprinkles라는 유틸리티를 통해 디자인 토큰을 활용해 단일 진실 공급 원칙(Single Source of Truth)을 지킨다. Sprinkles는 스타일 속성을 정의하고 관리할 수 있는 강력한 도구다.
 
 ### **디자인 토큰의 중요성**
+
 디자인 토큰은 색상, 간격, 타이포그래피 등 재사용 가능한 디자인 요소들을 의미한다. Sprinkles는 이러한 토큰을 기반으로 컴포넌트 스타일을 생성함으로써, 전체 디자인 시스템의 일관성을 유지한다. 예를 들어, 색상 팔레트나 간격 값이 변경될 때, 모든 스타일이 동기화된다.
 
 ### **실제 사용 사례**
+
 Sprinkles를 사용해 디자인 토큰을 정의하고 활용하는 코드 예제는 다음과 같다:
 
 ```ts
@@ -200,27 +204,27 @@ import { createSprinkles, defineProperties } from '@vanilla-extract/sprinkles';
 const space = {
   small: '4px',
   medium: '8px',
-  large: '16px'
+  large: '16px',
 };
 
 const colors = {
   primary: '#007bff',
   secondary: '#6c757d',
-  success: '#28a745'
+  success: '#28a745',
 };
 
 const responsiveProperties = defineProperties({
   conditions: {
     mobile: {},
     tablet: { '@media': 'screen and (min-width: 768px)' },
-    desktop: { '@media': 'screen and (min-width: 1024px)' }
+    desktop: { '@media': 'screen and (min-width: 1024px)' },
   },
   defaultCondition: 'mobile',
   properties: {
     padding: space,
     margin: space,
-    backgroundColor: colors
-  }
+    backgroundColor: colors,
+  },
 });
 
 export const sprinkles = createSprinkles(responsiveProperties);
@@ -233,9 +237,9 @@ import { sprinkles } from './sprinkles.css.ts';
 const buttonStyles = sprinkles({
   padding: {
     mobile: 'small',
-    desktop: 'medium'
+    desktop: 'medium',
   },
-  backgroundColor: 'primary'
+  backgroundColor: 'primary',
 });
 
 const Button = () => <button className={buttonStyles}>Click me</button>;

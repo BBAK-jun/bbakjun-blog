@@ -26,7 +26,12 @@ summary: 직렬을 병렬 처리로 그리고 필요한 타이밍에 스플래�
 다시 한번 포도의 스플래시 화면부터 첫 화면 진입까지의 과정을 면밀히 살펴보았습니다.
 
 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-  <Image src="/static/images/DEV/splash-ux/as-is-splash.gif" alt="as-is-splash" width={200} height={500} />
+  <Image
+    src="/static/images/DEV/splash-ux/as-is-splash.gif"
+    alt="as-is-splash"
+    width={200}
+    height={500}
+  />
 </div>
 
 스플래시 이미지가 종료된 후 웹뷰를 로딩하고 화면이 그려지기 시작합니다. 그런데 문제는 여기서부터입니다. 웹뷰가 HTML 문서를 전달받아 화면에 렌더링한 이후에도, 여러 페이지를 거쳐 리다이렉션하면서 최종적으로 사용자가 실제로 사용할 화면에 도달하는 구조였습니다.
@@ -53,7 +58,12 @@ summary: 직렬을 병렬 처리로 그리고 필요한 타이밍에 스플래�
 정확히 어떤 단계를 거치는지 파악해보니 총 4단계의 리다이렉션이 발생하고 있었습니다.
 
 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-  <Image src="/static/images/DEV/splash-ux/as-is-flow.png" alt="as-is-flow" width={200} height={500} />
+  <Image
+    src="/static/images/DEV/splash-ux/as-is-flow.png"
+    alt="as-is-flow"
+    width={200}
+    height={500}
+  />
 </div>
 
 각 단계를 거칠 때마다 다음과 같은 작업들이 순차적으로 실행됩니다.
@@ -151,16 +161,16 @@ function 루트레이아웃() {
 ```typescript
 // 네이티브 ↔ 웹 간 공유할 상태 정의
 type 브리지상태 = {
-  앱시작시간: number
-  앱로드완료시간: number
-  앱로드완료: boolean
+  앱시작시간: number;
+  앱로드완료시간: number;
+  앱로드완료: boolean;
   // ...
-}
+};
 
 type 브리지액션 = {
-  앱로드완료설정: () => void
+  앱로드완료설정: () => void;
   // ...
-}
+};
 
 // 브리지 초기화
 브리지생성({
@@ -170,9 +180,9 @@ type 브리지액션 = {
 
   // 웹에서 호출할 수 있는 액션
   앱로드완료설정: () => {
-    상태업데이트({ 앱로드완료: true, 앱로드완료시간: 현재시간() })
-  }
-})
+    상태업데이트({ 앱로드완료: true, 앱로드완료시간: 현재시간() });
+  },
+});
 ```
 
 ### 작동 원리
@@ -185,6 +195,7 @@ type 브리지액션 = {
 ![](/static/images/DEV/splash-ux/to-be-flow-condition.png)
 
 **핵심 장점:**
+
 - 앱이 **빠르게 로드**되어도 최소 시간은 스플래시를 유지 → 깜빡임 방지
 - 앱 로딩이 **오래 걸려도** 로드 완료를 기다림 → 빈 화면 방지
 - 페이드 효과로 부드러운 전환 제공
@@ -219,26 +230,26 @@ function 웹브리지프로바이더({ children }) {
 ```typescript
 // 웹 앱의 초기화 로직
 function 앱초기화훅() {
-  const { 앱로드완료알림 } = 네이티브브리지사용()
+  const { 앱로드완료알림 } = 네이티브브리지사용();
 
   useEffect(() => {
     async function 초기화() {
       try {
         // 필요한 초기화 작업 (인증, 데이터 로드 등)
-        await 인증처리()
-        await 초기데이터로드()
+        await 인증처리();
+        await 초기데이터로드();
 
         // ✅ 모든 준비 완료 후 네이티브에 알림
-        앱로드완료알림()
+        앱로드완료알림();
       } catch (error) {
         // ⚠️ 에러 발생 시에도 스플래시는 해제
-        앱로드완료알림()
-        에러처리(error)
+        앱로드완료알림();
+        에러처리(error);
       }
     }
 
-    초기화()
-  }, [])
+    초기화();
+  }, []);
 }
 ```
 
@@ -247,6 +258,7 @@ function 앱초기화훅() {
 ![](/static/images/DEV/splash-ux/to-be-sequence.png)
 
 **핵심 포인트:**
+
 - 웹 앱이 **실제로 사용 가능한 시점**에 로드 완료 신호 전송
 - 필요한 초기화 작업(인증, 데이터 로드 등)이 완료된 후 알림
 - 에러 발생 시에도 스플래시가 영구적으로 남지 않도록 에러 처리 블록에서도 신호 전송
@@ -307,10 +319,16 @@ function 페이지() {
 ### Before
 
 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-  <Image src="/static/images/DEV/splash-ux/as-is-flow-fail.png" alt="as-is-flow-fail" width={200} height={500} />
+  <Image
+    src="/static/images/DEV/splash-ux/as-is-flow-fail.png"
+    alt="as-is-flow-fail"
+    width={200}
+    height={500}
+  />
 </div>
 
 **문제점:**
+
 - 네이티브 스플래시가 빠르게 사라짐
 - WebView 로딩 중 흰 화면 노출
 - 앱 로드 상태 체크 없음
@@ -318,14 +336,25 @@ function 페이지() {
 ### After
 
 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-  <Image src="/static/images/DEV/splash-ux/to-be-splash.gif" alt="to-be-splash" width={400} height={500} />
+  <Image
+    src="/static/images/DEV/splash-ux/to-be-splash.gif"
+    alt="to-be-splash"
+    width={400}
+    height={500}
+  />
 </div>
 
 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-  <Image src="/static/images/DEV/splash-ux/to-be-flow-success.png" alt="to-be-flow-success" width={400} height={500} />
+  <Image
+    src="/static/images/DEV/splash-ux/to-be-flow-success.png"
+    alt="to-be-flow-success"
+    width={400}
+    height={500}
+  />
 </div>
 
 **개선점:**
+
 - 네이티브 스플래시가 자동으로 숨겨지지 않음 (`preventAutoHide`)
 - 최소 4초 보장 + 앱 로드 완료 확인
 - 브리지를 통한 정확한 상태 전달
@@ -334,30 +363,33 @@ function 페이지() {
 ## 체감 효과 요약
 
 ### 시각적 개선
+
 - **앱 실행 직후 즉시 스플래시 노출** - 초기 흰 화면 완전 제거
 - **부드러운 전환** - 네이티브 스플래시 → 오버레이 → 실제 화면으로 자연스러운 전환
 - **깜빡임 최소화** - 안전 영역 배경색 일관화로 레이아웃 점프 감소
 
 ### 로딩 경험 개선
+
 - **최소 노출 시간 보장** - 너무 짧은 스플래시로 인한 깜빡임 방지
 - **이중 조건 체크** - 시간 조건과 로딩 조건을 모두 만족해야 해제
 - **부드러운 전환** - 페이드 아웃 효과로 자연스러운 전환
 - **브리지 기반 제어** - 웹 앱이 실제로 사용 가능한 시점에 네이티브에 알림
 
 ### 안정성 향상
+
 - **이중 조건 체크** - 시간과 로딩 상태 모두 확인하여 안정적인 스플래시 해제
 - **브리지 기반 통신** - 네이티브 ↔ 웹 간 명확한 상태 공유
 - **네이티브 리소스 동기화** - 빌드 프로세스 안정성 확보
 
 ## 실제 측정 결과
 
-| 지표 | Before | After | 개선 효과 |
-|-----|--------|-------|----------|
-| 초기 흰 화면 노출 | 발생 | 제거 | **네이티브 스플래시 즉시 표시** |
-| 스플래시 최소 시간 | 불안정 | 보장 | **깜빡임 방지** |
-| 페이드 전환 | 없음 | 적용 | **부드러운 전환** |
-| 앱 로드 체크 | 없음 | 브리지로 확인 | **정확한 타이밍** |
-| UI 일관성 | 불안정 | 통합 관리 | **시각적 안정성** |
+| 지표               | Before | After         | 개선 효과                       |
+| ------------------ | ------ | ------------- | ------------------------------- |
+| 초기 흰 화면 노출  | 발생   | 제거          | **네이티브 스플래시 즉시 표시** |
+| 스플래시 최소 시간 | 불안정 | 보장          | **깜빡임 방지**                 |
+| 페이드 전환        | 없음   | 적용          | **부드러운 전환**               |
+| 앱 로드 체크       | 없음   | 브리지로 확인 | **정확한 타이밍**               |
+| UI 일관성          | 불안정 | 통합 관리     | **시각적 안정성**               |
 
 # 배운 점
 
@@ -378,12 +410,12 @@ function 페이지() {
 
 ```typescript
 try {
-  await 초기화작업()
-  앱로드완료알림()
+  await 초기화작업();
+  앱로드완료알림();
 } catch (error) {
   // ⚠️ 에러 발생 시에도 스플래시는 해제해야 함
-  앱로드완료알림()
-  에러처리(error)
+  앱로드완료알림();
+  에러처리(error);
 }
 ```
 
@@ -392,6 +424,7 @@ try {
 ## 4. 브리지 아키텍처의 위력
 
 네이티브와 웹 간의 브리지 패턴을 통해:
+
 - **양방향 통신** - 네이티브에서 상태 구독, 웹에서 액션 호출
 - **타입 안전성** - 상태와 액션의 명확한 인터페이스 정의
 - **명확한 책임 분리** - 네이티브는 UI 제어, 웹은 비즈니스 로직

@@ -5,6 +5,7 @@
 ## 문서 목록
 
 ### [recommendations.md](./recommendations.md)
+
 Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을 제시합니다.
 
 - **즉시 실행 (0-3개월)**: 로깅/모니터링, 테스트 자동화, 문서화 개선, 보안 강화
@@ -12,11 +13,13 @@ Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을
 - **장기 전략 (6-18개월)**: 마이크로서비스 전환, 멀티테넌트 지원, 고급 개인화, API monetization
 
 각 권장사항별로 다음을 포함합니다:
+
 - 비즈니스 정당성 및 ROI 추정
 - 리소스 요구사항 및 의존성
 - 성공 지표 및 위험 완화 전략
 
 ### [tradeoffs.md](./tradeoffs.md)
+
 주요 기술적/비즈니스적 결정에 따른 상충 관계를 심층적으로 분석합니다.
 
 - **관찰 가능성 도구**: Sentry vs 자체구축 vs 서버리스 조합
@@ -31,12 +34,14 @@ Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을
 ## 실행 가이드
 
 ### 1. 의사결정 프로세스
+
 1. [recommendations.md](./recommendations.md)에서 전체 로드맵 검토
 2. [tradeoffs.md](./tradeoffs.md)에서 구체적인 옵션 분석
 3. 현재 상태와 예산에 맞는 옵션 선택
 4. 단기적 퀵윈부터 실행 시작
 
 ### 2. 우선순위 매트릭스
+
 ```
 높은 영향/낮은 노력: 즉시 실행
   - 구조화된 로깅
@@ -54,11 +59,13 @@ Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을
 ```
 
 ### 3. 리소스 계획
+
 - **Phase 1** (3개월): 1,650만원, 개발자 1-2명
 - **Phase 2** (3개월): 2,700만원, 개발자 2명
 - **Phase 3** (12개월): 15,000만원, 개발자 3-4명
 
 ### 4. 성공 측정
+
 - 기술적 KPI: 안정성 99.9%, 성능 LCP < 1.5s
 - 비즈니스 KPI: 개발 속도 2배 향상, 비용 30% 절감
 - 운영 KPI: MTTR < 2시간, 문서 완성도 > 90%
@@ -66,10 +73,12 @@ Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을
 ## 관련 문서
 
 ### Facts
+
 - [../../../facts/apps/blog-admin/config/observability.md](../../../../facts/apps/blog-admin/config/observability.md)
 - [../../../facts/apps/blog-admin/dependencies/key-libs.md](../../../../facts/apps/blog-admin/dependencies/key-libs.md)
 
 ### Impact Analysis
+
 - [../impact/roi.md](../impact/roi.md)
 - [../impact/risk.md](../impact/risk.md)
 
@@ -82,4 +91,4 @@ Blog-Admin 애플리케이션의 전략적 우선순위와 18개월 로드맵을
 
 ---
 
-*이 문서들은 living document로서 정기적으로 업데이트되어야 합니다. 월간 리뷰를 통해 진행 상황을 모니터링하고 필요시 조정하세요.*
+_이 문서들은 living document로서 정기적으로 업데이트되어야 합니다. 월간 리뷰를 통해 진행 상황을 모니터링하고 필요시 조정하세요._

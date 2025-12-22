@@ -8,6 +8,7 @@
 ## 1. Core Framework (Next.js, React)
 
 ### Next.js
+
 - **Location**: `package.json` (L53)
 - **Purpose**: React 기반 풀스택 프레임워크
 - **Key Details**:
@@ -22,6 +23,7 @@
   - `src/app/`: App Router 기반 페이지 구조
 
 ### React
+
 - **Location**: `package.json` (L58-59)
 - **Purpose**: UI 라이브러리
 - **Key Details**:
@@ -34,6 +36,7 @@
 ## 2. Authentication (NextAuth.js)
 
 ### NextAuth.js
+
 - **Location**: `package.json` (L54)
 - **Purpose**: 인증/인가 솔루션
 - **Key Details**:
@@ -50,6 +53,7 @@
   - `prisma/schema.prisma`: User, Account, Session 모델
 
 ### @auth/prisma-adapter
+
 - **Location**: `package.json` (L25)
 - **Purpose**: NextAuth.js ↔ Prisma 연결
 - **Key Details**:
@@ -63,6 +67,7 @@
 ## 3. Database & ORM (Prisma)
 
 ### Prisma
+
 - **Location**: `package.json` (L79, L32-33)
 - **Purpose**: 데이터베이스 ORM 및 클라이언트
 - **Key Details**:
@@ -79,6 +84,7 @@
   - `postinstall` 스크립트: `prisma generate`
 
 ### @prisma/adapter-pg
+
 - **Location**: `package.json` (L31)
 - **Purpose**: Prisma PostgreSQL 어댑터
 - **Key Details**:
@@ -91,6 +97,7 @@
 ## 4. UI & Styling (Tailwind, Radix)
 
 ### Tailwind CSS v4
+
 - **Location**: `package.json` (L80)
 - **Purpose**: 유틸리티 퍼스트 CSS 프레임워크
 - **Key Details**:
@@ -107,6 +114,7 @@
   - `src/app/globals.css`: 글로벌 스타일
 
 ### Radix UI
+
 - **Location**: `package.json` (L33-35)
 - **Purpose**: 접근 가능한 UI 프리미티브
 - **Key Details**:
@@ -121,6 +129,7 @@
   - `src/shared/ui/`: Radix 기반 UI 컴포넌트들
 
 ### class-variance-authority
+
 - **Location**: `package.json` (L47)
 - **Purpose**: 컴포넌트 변형 관리
 - **Key Details**:
@@ -131,6 +140,7 @@
   - `src/shared/ui/`: CVA 패턴 적용된 컴포넌트들
 
 ### clsx & tailwind-merge
+
 - **Location**: `package.json` (L48, L63)
 - **Purpose**: 조건부 클래스 결합
 - **Key Details**:
@@ -142,6 +152,7 @@
 ## 5. State Management (React Query)
 
 ### @tanstack/react-query
+
 - **Location**: `package.json` (L43)
 - **Purpose**: 서버 상태 관리
 - **Key Details**:
@@ -156,6 +167,7 @@
 ## 6. File Storage (Vercel Blob)
 
 ### @vercel/blob
+
 - **Location**: `package.json` (L45)
 - **Purpose**: 파일 저장소 서비스
 - **Key Details**:
@@ -170,6 +182,7 @@
 ## 7. API & Validation (Hono, Zod)
 
 ### Hono
+
 - **Location**: `package.json` (L78 - devDependency)
 - **Purpose**: 경량 웹 프레임워크
 - **Key Details**:
@@ -185,6 +198,7 @@
   - `tsup.config.ts`: RPC 빌드 설정
 
 ### Zod
+
 - **Location**: `package.json` (L66)
 - **Purpose**: 타입 세이프 밸리데이션
 - **Key Details**:
@@ -199,6 +213,7 @@
 ## 8. Code Editing (CodeMirror)
 
 ### @uiw/react-codemirror
+
 - **Location**: `package.json` (L44)
 - **Purpose**: React CodeMirror 컴포넌트
 - **Key Details**:
@@ -215,6 +230,7 @@
 ## 9. Testing (Vitest)
 
 ### Vitest
+
 - **Location**: `package.json` (L82, L75)
 - **Purpose**: 단위/통합 테스트 프레임워크
 - **Key Details**:
@@ -231,6 +247,7 @@
 ## 10. Build Tools (tsup, Turbo)
 
 ### tsup
+
 - **Location**: `package.json` - devDependency (설치됨)
 - **Purpose**: TypeScript 번들러
 - **Key Details**:
@@ -242,6 +259,7 @@
   - `package.json` exports: `./rpc` 경로
 
 ### Turbo
+
 - **Location**: `turbo.json` (root)
 - **Purpose**: 모노레포 빌드 시스템
 - **Key Details**:
@@ -255,6 +273,7 @@
 ## 11. Workspace Dependencies (Monorepo)
 
 ### @repo/packages
+
 - **Location**: `package.json` (L36-39)
 - **Purpose**: 모노레포 공유 패키지들
 - **Key Details**:
@@ -269,6 +288,7 @@
 ## 12. Form Handling
 
 ### react-hook-form
+
 - **Location**: `package.json` (L60)
 - **Purpose**: 폼 상태 관리
 - **Key Details**:
@@ -283,6 +303,7 @@
 ## 13. Utility Libraries
 
 ### @t3-oss/env-nextjs
+
 - **Location**: `package.json` (L40)
 - **Purpose**: 타입 세이프 환경변수
 - **Key Details**:
@@ -293,6 +314,7 @@
   - `src/env.ts`: 환경변수 스키마 정의
 
 ### gray-matter
+
 - **Location**: `package.json` (L50)
 - **Purpose**: 프론트매터 파서
 - **Key Details**:
@@ -302,6 +324,7 @@
   - `src/lib/markdown.ts`: 마크다운 처리
 
 ### nuqs
+
 - **Location**: `package.json` (L55)
 - **Purpose**: URL 상태 관리
 - **Key Details**:
@@ -311,6 +334,7 @@
   - 파일 필터링/검색 상태
 
 ### overlay-kit
+
 - **Location**: `package.json` (L56)
 - **Purpose**: 오버레이 상태 관리
 - **Key Details**:
@@ -320,6 +344,7 @@
   - 파일 편집 모달
 
 ### sonner
+
 - **Location**: `package.json` (L62)
 - **Purpose**: 토스트 알림
 - **Key Details**:
@@ -329,6 +354,7 @@
   - 액션 성공/실패 알림
 
 ### jose
+
 - **Location**: `package.json` (L51)
 - **Purpose**: JWT 처리 라이브러리
 - **Key Details**:
@@ -338,6 +364,7 @@
   - 인증 미들웨어에서 사용
 
 ### bcryptjs
+
 - **Location**: `package.json` (L46)
 - **Purpose**: 비밀번호 해싱
 - **Key Details**:
@@ -349,6 +376,7 @@
   - 초기 관리자 설정 스크립트
 
 ### resend
+
 - **Location**: `package.json` (L61)
 - **Purpose**: 이메일 발송 서비스
 - **Key Details**:
@@ -358,6 +386,7 @@
   - `src/actions/newsletter.ts`: 뉴스레터 액션
 
 ### uuid
+
 - **Location**: `package.json` (L65)
 - **Purpose**: 고유 ID 생성
 - **Key Details**:
@@ -367,6 +396,7 @@
   - 파일 업로드 핸들러
 
 ### lucide-react
+
 - **Location**: `package.json` (L52)
 - **Purpose**: 아이콘 라이브러리
 - **Key Details**:
@@ -376,6 +406,7 @@
   - UI 컴포넌트들에서 아이콘 사용
 
 ### dotenv
+
 - **Location**: `package.json` (L49)
 - **Purpose**: 환경변수 로딩
 - **Key Details**:
@@ -387,25 +418,30 @@
 ## 버전 제약 조건
 
 ### React 19 호환성
+
 - Next.js 16.0.8 ↔ React 19.2.1 정식 호환
 - `@types/react` 19.x 타입 호환
 
 ### Prisma 7 업그레이드
+
 - `@prisma/client` 7.1.0 최신
 - `@prisma/adapter-pg` 7.x 동기화
 - `prisma` CLI 7.1.0 동기화
 
 ### NextAuth.js v5 Beta
+
 - 5.0.0-beta.30 사용 (최신 v5)
 - Auth.js v5 패턴 준수
 
 ### 빌드 시점
+
 - `postinstall`: Prisma generate + RPC 빌드
 - `build`: Prisma generate → Next.js 빌드 순서
 
 ## 상호 의존성
 
 ### 1. 인증 흐름
+
 ```
 NextAuth.js → @auth/prisma-adapter → Prisma Client → PostgreSQL
       ↓
@@ -413,22 +449,26 @@ NextAuth.js → @auth/prisma-adapter → Prisma Client → PostgreSQL
 ```
 
 ### 2. 파일 관리 흐름
+
 ```
 Vercel Blob → CDC Sync → PostgreSQL → Prisma → Hono RPC → Blog App
 ```
 
 ### 3. 상태 관리 흐름
+
 ```
 Server State: React Query → Prisma/External APIs
 Client State: React State + URL State (nuqs)
 ```
 
 ### 4. 빌드 흐름
+
 ```
 TypeScript → tsup (RPC) + Next.js (App) → Turbo (Monorepo)
 ```
 
 ### 5. 폼 처리 흐름
+
 ```
 react-hook-form → @hookform/resolvers → zod → API Validation
 ```
@@ -436,19 +476,23 @@ react-hook-form → @hookform/resolvers → zod → API Validation
 ## 특수 설정
 
 ### 1. 환경변수 유효성 검사
+
 - 모든 env 변수는 Zod 스키마로 검증
 - `SKIP_ENV_VALIDATION`으로 빌드 시 건너뛰기 가능
 
 ### 2. CORS 설정
+
 - Next.js 헤더 설정으로 blog-app 접근 허용
 - `NEXT_PUBLIC_BLOG_URL` 환경변수 사용
 
 ### 3. 라이브러리 빌드
+
 - RPC API 별도 빌드 (tsup)
 - ESM 포맷 + 타입 정의
 - 외부 의존성 번들 제외
 
 ### 4. 테스트 환경
+
 - 실제 PostgreSQL DB 연동
 - 환경변수 공유 (turbo.json)
 - Node.js 환경에서만 실행

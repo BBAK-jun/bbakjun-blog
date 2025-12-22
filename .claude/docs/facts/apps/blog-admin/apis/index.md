@@ -112,7 +112,7 @@
 - **Dependencies**:
   - Hono 라우팅: 중첩 라우트 지원
 - **Evidence**:
-  - `<apps/blog-admin/src/rpc/index.ts>`: legacy*Routes 가져와 app.route로 연결
+  - `<apps/blog-admin/src/rpc/index.ts>`: legacy\*Routes 가져와 app.route로 연결
 
 ### 글로벌 에러 핸들링
 
@@ -120,8 +120,7 @@
 - **Purpose**: RPC 앱 전체의 에러 일관성 보장
 - **Key Details**:
   - 404: "Not Found" 표준 응답
-  - 500: "Internal Server Error" 로깅 포함
-  -统一된 에러 형식
+  - 500: "Internal Server Error" 로깅 포함 -统一된 에러 형식
 - **Dependencies**:
   - Hono 에러 핸들러: 글로벌 에러 캐치
 - **Evidence**:

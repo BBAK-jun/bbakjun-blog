@@ -44,25 +44,25 @@ touch index.ts
 
 ```ts
 // browser.ts
-import { setupWorker } from 'msw'
-import { handlers } from '/static/images/DEV/msw/handlers'
+import { setupWorker } from 'msw';
+import { handlers } from '/static/images/DEV/msw/handlers';
 
-export const worker = setupWorker(...handlers)
+export const worker = setupWorker(...handlers);
 ```
 
 ```ts
 // server.ts
-import { setupServer } from 'msw/node'
-import { handlers } from '/static/images/DEV/msw/handlers'
+import { setupServer } from 'msw/node';
+import { handlers } from '/static/images/DEV/msw/handlers';
 
-export const server = setupServer(...handlers)
+export const server = setupServer(...handlers);
 ```
 
 ```ts
 // handler
-import { graphql } from 'msw'
+import { graphql } from 'msw';
 
-const user = { ...userInfo }
+const user = { ...userInfo };
 
 export const handlers = [
   graphql.query('fetchUserInfo', (req, res, ctx) => {
@@ -70,26 +70,26 @@ export const handlers = [
       ctx.data({
         user,
       })
-    )
+    );
   }),
-]
+];
 ```
 
 ```ts
 // index.ts
 async function initMocks() {
   if (typeof window === 'undefined') {
-    const { server } = await import('/static/images/DEV/msw/server')
-    server.listen()
+    const { server } = await import('/static/images/DEV/msw/server');
+    server.listen();
   } else {
-    const { worker } = await import('/static/images/DEV/msw/browser')
-    worker.start()
+    const { worker } = await import('/static/images/DEV/msw/browser');
+    worker.start();
   }
 }
 
-initMocks()
+initMocks();
 
-export {}
+export {};
 ```
 
 ```ts

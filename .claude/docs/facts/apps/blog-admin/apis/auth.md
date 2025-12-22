@@ -99,8 +99,8 @@
 
 ```typescript
 // 1. 요청 헤더에서 토큰 추출
-const authHeader = headersList.get("authorization");
-const token = authHeader.replace("Bearer ", "");
+const authHeader = headersList.get('authorization');
+const token = authHeader.replace('Bearer ', '');
 
 // 2. 환경변수와 비교
 const API_KEY = env.BACKOFFICE_API_KEY;

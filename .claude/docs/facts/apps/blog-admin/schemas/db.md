@@ -121,6 +121,7 @@
 ## 데이터베이스 제약조건
 
 ### 유니크 제약조건
+
 1. `users.email`: 이메일 중복 방지
 2. `users.username`: 사용자명 중복 방지 (레거시)
 3. `accounts.provider_providerAccountId`: OAuth 계정 중복 방지
@@ -130,10 +131,12 @@
 7. `blob_files.pathname`: 파일 경로 중복 방지
 
 ### 복합 유니크 제약조건
+
 1. `verification_tokens.identifier_token`: 이메일+토큰 조합 유니크
 2. `accounts.provider_providerAccountId`: 제공자+계정ID 조합 유니크
 
 ### 인덱스
+
 - 성능 최적화를 위한 인덱스가 주요 컬럼에 설정됨
 - 쿼리 패턴에 따라 정렬, 필터링, 조인 최적화
 

@@ -42,10 +42,10 @@ tags: ['REACT']
 
 ```jsx
 // src/index.js
-import App from './App'
-import { createRoot } from 'react-dom/client'
+import App from './App';
+import { createRoot } from 'react-dom/client';
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(<App />);
 ```
 
 ### Re-renders when state updates (상태가 변경된 경우)
@@ -76,11 +76,11 @@ export default function Gallery() {
       <Image />
       <Image />
     </section>
-  )
+  );
 }
 
 function Image() {
-  return <img src="대충 이미지 경로.." alt="'대충 이미지 설명.." />
+  return <img src="대충 이미지 경로.." alt="'대충 이미지 설명.." />;
 }
 ```
 

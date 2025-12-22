@@ -74,13 +74,15 @@ function main() {
   });
 
   // Print grouped by category
-  Object.entries(byCategory).sort().forEach(([category, posts]) => {
-    console.log(`\n📁 ${category} (${posts.length} files)`);
-    posts.forEach(({ path, file }) => {
-      console.log(`  → ${path}`);
-      console.log(`    ${file}`);
+  Object.entries(byCategory)
+    .sort()
+    .forEach(([category, posts]) => {
+      console.log(`\n📁 ${category} (${posts.length} files)`);
+      posts.forEach(({ path, file }) => {
+        console.log(`  → ${path}`);
+        console.log(`    ${file}`);
+      });
     });
-  });
 
   console.log(`\n✅ Total: ${files.length} files\n`);
 }

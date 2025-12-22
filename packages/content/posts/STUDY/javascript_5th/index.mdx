@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 5회'
 date: '2023-01-31T11:47:03.284Z'
 summary: '자바스크립트 스터디 21장 ~ 22장 + 추가학습'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 # ES2019
@@ -15,11 +15,11 @@ Object.entries의 반대 기능이다. entries가 객체를 2차원 배열로 �
 const array = [
   ['name', 'BBAKJUN'],
   ['age', 28],
-]
+];
 
-const obj = Object.fromEntries(array)
+const obj = Object.fromEntries(array);
 
-console.log(obj) // { name: 'BBAKJUN', age: 28 }
+console.log(obj); // { name: 'BBAKJUN', age: 28 }
 ```
 
 ## Array.flat Array.flatMap
@@ -27,24 +27,24 @@ console.log(obj) // { name: 'BBAKJUN', age: 28 }
 flat은 다중 배열을 펼치는 기능이다.(기본은 1단계 펼침) 인자로 숫자를 넣어주면 연달아 몇번 펼칠지 결정한다.
 
 ```js
-const array = [1, 2, [3, [4, [5]]]]
-console.log(array.flat()) // [1, 2, 3, [4, [5]]];
+const array = [1, 2, [3, [4, [5]]]];
+console.log(array.flat()); // [1, 2, 3, [4, [5]]];
 
-const array = [1, 2, [3, [4, [5]]]]
-console.log(array.flat(2)) // [1, 2, 3, 4, [5]];
+const array = [1, 2, [3, [4, [5]]]];
+console.log(array.flat(2)); // [1, 2, 3, 4, [5]];
 
-const array = [1, 2, [3, [4, [5]]]]
-console.log(array.flat(Infinity)) // [1, 2, 3, 4, 5];
+const array = [1, 2, [3, [4, [5]]]];
+console.log(array.flat(Infinity)); // [1, 2, 3, 4, 5];
 ```
 
 flatMap은 map과 flat을 섞은 메서드다. map후에 flat을 하는게 살짝 더 효율적이라고 생각된다.
 
 ```js
-const array = ['abc', 'def']
+const array = ['abc', 'def'];
 
-const first = array.map((v) => v.split('')) // [['a', 'b', 'c'], ['d', 'e', 'f']]
-const second = array.map((v) => v.split('')).flat() // ['a', 'b', 'c', 'd', 'e', 'f']
-const third = array.flatMap((v) => v.split('')) // ['a', 'b', 'c', 'd', 'e', 'f']
+const first = array.map(v => v.split('')); // [['a', 'b', 'c'], ['d', 'e', 'f']]
+const second = array.map(v => v.split('')).flat(); // ['a', 'b', 'c', 'd', 'e', 'f']
+const third = array.flatMap(v => v.split('')); // ['a', 'b', 'c', 'd', 'e', 'f']
 ```
 
 second와 third는 같은 값을 반환한다. 하지만 왜 효율적일까?
@@ -65,15 +65,15 @@ catch의 매개변수를 쓰지않는 경우 error 매개변수를 작성하지 
 
 ```js
 try {
-  new Error('error')
+  new Error('error');
 } catch (error) {
-  console.log('이전 방법')
+  console.log('이전 방법');
 }
 
 try {
-  new Error('error')
+  new Error('error');
 } catch {
-  console.log('최신 방법')
+  console.log('최신 방법');
 }
 ```
 
@@ -90,17 +90,17 @@ try {
 const 집에_몇번_가고싶나 =
   '집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...집에가고싶음...'.matchAll(
     /집에가고싶음/g
-  )
+  );
 
-let num = 0
+let num = 0;
 
 while (true) {
-  const { value, done } = 집에_몇번_가고싶나.next()
-  if (done) break
-  num++
+  const { value, done } = 집에_몇번_가고싶나.next();
+  if (done) break;
+  num++;
 }
 
-console.log(num) // 8
+console.log(num); // 8
 ```
 
 정표현식에 일치하는 문자열은 8개이므로 8개의 iterator 형식으로 반환되었다. 그래서 나는 총 8번 집에 가고싶었던것이다...
@@ -116,15 +116,15 @@ JS에서는 큰 숫자를 표현하는데 문제가있었다. 2^53-1보다 큰 �
 Promise.all 의 아쉬운점이 여러 프라미스중 하나만 실패해도 catch로 이동하는 점이 아쉬웠다.
 
 ```js
-const fetchFirstData = () => new Promise((resolve, reject) => resolve('성공'))
-const fetchSecondData = () => new Promise((resolve, reject) => reject('실패'))
-const fetchThirdData = () => new Promise((resolve, reject) => resolve('성공'))
+const fetchFirstData = () => new Promise((resolve, reject) => resolve('성공'));
+const fetchSecondData = () => new Promise((resolve, reject) => reject('실패'));
+const fetchThirdData = () => new Promise((resolve, reject) => resolve('성공'));
 
-Promise.allSettled([fetchFirstData(), fetchSecondData(), fetchThirdData()]).then((res) => {
-  console.log(res[0]) // { status: 'fulfilled', value: '성공' }
-  console.log(res[1]) // { status: 'rejected', reason: '실패' }
-  console.log(res[2]) // { status: 'fulfilled', value: '성공' }
-})
+Promise.allSettled([fetchFirstData(), fetchSecondData(), fetchThirdData()]).then(res => {
+  console.log(res[0]); // { status: 'fulfilled', value: '성공' }
+  console.log(res[1]); // { status: 'rejected', reason: '실패' }
+  console.log(res[2]); // { status: 'fulfilled', value: '성공' }
+});
 ```
 
 Promise.allSettled를 사용하면 개별적으로 성공여부를 알려준다. 성공한 경우 status는 fulfilled를 실패한 경우 rejected로 반환한다.
@@ -134,7 +134,7 @@ Promise.allSettled를 사용하면 개별적으로 성공여부를 알려준다.
 기존의 브라우저의 전역객체는 window, 노드는 global이었기 때문에 분기처리를 해줘야했던 경우가있었는데 globalThis라는 것으로 통일되었다
 
 ```js
-const isServer = globalThis !== window
+const isServer = globalThis !== window;
 ```
 
 ## Optional Chaining
@@ -158,7 +158,7 @@ console.log(
   '' || 'hello', // ""
   null || 'hello', // "hello"
   undefined || 'hello' // "hello"
-)
+);
 ```
 
 # ES2021
@@ -168,10 +168,10 @@ console.log(
 문자열을 한번에 여러개 바꿀 수있는 기능이다. 이전에는 정규표현식으로 사용했어야했다
 
 ```js
-const string = 'hello, my name is Park Jun Hyeong'
+const string = 'hello, my name is Park Jun Hyeong';
 
-console.log(string.replaceAll(',', ' ')) // 최신 방법
-console.log(string.replace(/,/g, ' ')) // 이전 방법
+console.log(string.replaceAll(',', ' ')); // 최신 방법
+console.log(string.replace(/,/g, ' ')); // 이전 방법
 ```
 
 ## Promise.any
@@ -179,11 +179,11 @@ console.log(string.replace(/,/g, ' ')) // 이전 방법
 여러개의 프라미스 중에 하나라도 통과하면 resolve 모두 실패할 경우 reject된다.
 
 ```js
-const Promises = [Promise.reject(1), Promise.reject(3), Promise.resolve(5)]
+const Promises = [Promise.reject(1), Promise.reject(3), Promise.resolve(5)];
 
-Promise.any(Promises).then((res) => console.log(res === 5)) // Promise.resolve(5)가 가장 먼저 성공한다.
+Promise.any(Promises).then(res => console.log(res === 5)); // Promise.resolve(5)가 가장 먼저 성공한다.
 
-Promise.any(Promises).catch((err) => console.log(err)) // AggregationError
+Promise.any(Promises).catch(err => console.log(err)); // AggregationError
 ```
 
 race와 헷갈릴수있지만 race는 실패하던 성공하던 상관없이 가장 먼저 끝나는 것을 resolve하기때문에 any는 반드시 성공하는것이 resolve된다.
@@ -195,9 +195,9 @@ race와 헷갈릴수있지만 race는 실패하던 성공하던 상관없이 가
 기존에 사용하던 논리연산자에 할당문이 붙은거다. 잘쓰지는 않았던 문법이라 생소하긴하다.
 
 ```js
-a = a || 2
+a = a || 2;
 
-a ||= 2
+a ||= 2;
 ```
 
 ## Numeric Separators
@@ -214,15 +214,15 @@ a ||= 2
 
 ```js
 class User {
-  name = 'BBAKJUN'
-  #age = 28
-  static isHuman = false
+  name = 'BBAKJUN';
+  #age = 28;
+  static isHuman = false;
 }
 
-console.log(new User().name) // "BBAKJUN"
-console.log(new User().age) // undefined
+console.log(new User().name); // "BBAKJUN"
+console.log(new User().age); // undefined
 
-console.log(User.isHuman) // false
+console.log(User.isHuman); // false
 ```
 
 private 속성이 추가되었다
@@ -234,20 +234,20 @@ static 속성은 앞에 `static`을 붙이면된다. 정적메서드혹은 정�
 ```js
 class BBAKJUN {
   static #is(type) {
-    return type === 'noHuman'
+    return type === 'noHuman';
   }
 
   #isHuman() {
-    return BBAKJUN.#is('noHuman')
+    return BBAKJUN.#is('noHuman');
   }
   isHuman() {
-    return this.#isHuman()
+    return this.#isHuman();
   }
 }
 
-console.log(new BBAKJUN().isHuman) // undefined
-console.log(BBAKJUN.is) // undefined
-console.log(new BBAKJUN().isHuman()) // true
+console.log(new BBAKJUN().isHuman); // undefined
+console.log(BBAKJUN.is); // undefined
+console.log(new BBAKJUN().isHuman()); // true
 ```
 
 ## at
@@ -255,10 +255,10 @@ console.log(new BBAKJUN().isHuman()) // true
 배열과 문자열에 at 메서드가 추가되었다.
 
 ```js
-const array = [1, 2, 3]
+const array = [1, 2, 3];
 
-console.log(array.at(2)) // 3
-console.log(array.at(-1)) // 3
+console.log(array.at(2)); // 3
+console.log(array.at(-1)); // 3
 ```
 
 ## hasOwn
@@ -266,11 +266,11 @@ console.log(array.at(-1)) // 3
 Object에 hasOwn 정적메서드가 추가되었다. 첫번째 인자로 넘겨준 객체의 자기 자신의 속성인지 체크한다.
 
 ```js
-const me = { name: 'BBAKJUN' }
+const me = { name: 'BBAKJUN' };
 
-Object.hasOwn(me, 'name') // true
-Object.hasOwn(me, 'age') // false
-Object.hasOwn(me, 'job') // false
+Object.hasOwn(me, 'name'); // true
+Object.hasOwn(me, 'age'); // false
+Object.hasOwn(me, 'job'); // false
 ```
 
 # ES2023
@@ -282,9 +282,9 @@ find 메서드는 배열에서 조건을 만족하는 첫번째 요소를 찾고
 findLastIndex는 요소대신 인덱스를 찾는다.
 
 ```js
-const arr = [1, 2, 3, 1]
+const arr = [1, 2, 3, 1];
 
-arr.find((num) => num === 1) // 1
-arr.findLast는((num) => num === 1) // 1
-arr.findLastIndex는((num) => num === 1) // 3
+arr.find(num => num === 1); // 1
+arr.findLast는(num => num === 1); // 1
+arr.findLastIndex는(num => num === 1); // 3
 ```

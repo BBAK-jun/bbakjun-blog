@@ -1,14 +1,14 @@
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
-import remarkGfm from 'remark-gfm'
-import remarkRehype from 'remark-rehype'
-import rehypeSlug from 'rehype-slug'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings'
-import rehypeHighlight from 'rehype-highlight'
-import rehypeStringify from 'rehype-stringify'
-import type { Element } from 'hast'
-import { rehypeMermaid } from './rehype-mermaid'
-import { rehypeOptimizeImages } from './rehype-optimize-images'
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeStringify from 'rehype-stringify';
+import type { Element } from 'hast';
+import { rehypeMermaid } from './rehype-mermaid';
+import { rehypeOptimizeImages } from './rehype-optimize-images';
 
 // 마크다운을 HTML로 변환하는 함수
 export async function processMarkdown(content: string): Promise<string> {
@@ -53,8 +53,8 @@ export async function processMarkdown(content: string): Promise<string> {
     }) // 코드 하이라이팅
     .use(rehypeMermaid) // Mermaid 차트 처리
     .use(rehypeOptimizeImages) // 이미지 최적화 (lazy loading, 반응형)
-    .use(rehypeStringify, { allowDangerousHtml: true }) // HTML 문자열로 변환
+    .use(rehypeStringify, { allowDangerousHtml: true }); // HTML 문자열로 변환
 
-  const result = await processor.process(content)
-  return String(result)
+  const result = await processor.process(content);
+  return String(result);
 }

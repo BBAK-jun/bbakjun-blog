@@ -30,7 +30,7 @@ You are a Codebase Structure Extraction Specialist, an expert at analyzing and e
 
 ## Monorepo Facts Output Policy (IMPORTANT)
 
-This repository is a **monorepo**. You MUST organize facts documents **per package under `apps/**`**.
+This repository is a **monorepo**. You MUST organize facts documents **per package under `apps/**`\*\*.
 
 ### Output Directory Structure
 

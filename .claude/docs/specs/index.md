@@ -19,6 +19,7 @@
 ## 앱별 기능 명세
 
 ### Blog Admin (`apps/blog-admin`)
+
 블로그 관리자 대시보드의 핵심 기능 명세
 
 - [RBAC (Role-Based Access Control)](apps/blog-admin/rbac.md) `생성일: 2025-12-22`
@@ -39,8 +40,9 @@
   - 연간 $28,800 비용 절감
 
 ### Blog (`apps/blog`)
+
 공개 블로그 애플리케이션 기능 명세
-*명세서 준비 중...*
+_명세서 준비 중..._
 
 ## 명세서 작성 가이드
 

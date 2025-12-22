@@ -204,8 +204,8 @@
 - **Location**: `apps/blog-admin/src/rpc/index.ts` (L82-87)
 - **Purpose**: 기존 클라이언트 지원을 위한 레거시 경로 유지
 - **Key Details**:
-  - /api/v1/public/*: 공개 엔드포인트
-  - /api/v1/admin/*: 관리자 엔드포인트
+  - /api/v1/public/\*: 공개 엔드포인트
+  - /api/v1/admin/\*: 관리자 엔드포인트
   - 동일한 핸들러 재사용
 - **Dependencies**:
   - Hono 라우팅: 중첩 라우트 지원

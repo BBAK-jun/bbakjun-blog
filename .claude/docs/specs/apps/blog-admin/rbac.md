@@ -115,6 +115,7 @@
 ## 데이터 구조 (Data Structure)
 
 - **모델/스키마**:
+
   ```prisma
   model User {
     id            String    @id @default(cuid())

@@ -21,14 +21,14 @@ pnpm dev:admin
 
 ## 개발 명령어
 
-| 명령어 | 설명 | 포트 |
-|--------|------|------|
-| `pnpm dev:blog` | blog만 실행 | 3000 |
-| `pnpm dev:admin` | blog-admin만 실행 | 3001 |
-| `pnpm dev:all` | blog + admin 동시 | 3000, 3001 |
-| `pnpm build:blog` | blog 빌드 | - |
-| `pnpm build:admin` | blog-admin 빌드 | - |
-| `pnpm build` | 전체 빌드 | - |
+| 명령어             | 설명              | 포트       |
+| ------------------ | ----------------- | ---------- |
+| `pnpm dev:blog`    | blog만 실행       | 3000       |
+| `pnpm dev:admin`   | blog-admin만 실행 | 3001       |
+| `pnpm dev:all`     | blog + admin 동시 | 3000, 3001 |
+| `pnpm build:blog`  | blog 빌드         | -          |
+| `pnpm build:admin` | blog-admin 빌드   | -          |
+| `pnpm build`       | 전체 빌드         | -          |
 
 ## 디렉토리 구조
 
@@ -46,20 +46,24 @@ bbakjun-blog/
 ## 주요 파일
 
 ### blog-admin/src/lib/
+
 - `auth.ts` - API 인증 (Bearer Token)
 - `azure.ts` - Azure Blob Storage 클라이언트
 
 ### blog-admin/src/app/api/admin/
+
 - `upload/route.ts` - 파일 업로드
 - `files/route.ts` - 파일 목록 조회
 
 ### blog-admin/src/app/
+
 - `dashboard/page.tsx` - 관리 대시보드 UI
 - `layout.tsx` - 레이아웃
 
 ## API 테스트
 
 ### 파일 업로드
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/upload \
   -H "Authorization: Bearer your-secret-key" \
@@ -69,6 +73,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 ```
 
 ### 파일 목록
+
 ```bash
 curl http://localhost:3001/api/admin/files?category=DEV \
   -H "Authorization: Bearer your-secret-key"
@@ -76,20 +81,23 @@ curl http://localhost:3001/api/admin/files?category=DEV \
 
 ## 환경 변수
 
-| 변수 | 설명 | 예시 |
-|-----|------|------|
+| 변수                    | 설명             | 예시                    |
+| ----------------------- | ---------------- | ----------------------- |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 토큰 | `vercel_blob_rw_abc...` |
-| `BACKOFFICE_API_KEY` | API 인증 토큰 | `secret-key-123` |
+| `BACKOFFICE_API_KEY`    | API 인증 토큰    | `secret-key-123`        |
 
 ## 일반적인 문제
 
 ### "BLOB_READ_WRITE_TOKEN is not set"
+
 → Vercel Blob 토큰이 설정되지 않았습니다. `.env.local` 파일에 `BLOB_READ_WRITE_TOKEN`을 추가하세요.
 
 ### "PORT 3001 is already in use"
+
 → 포트가 이미 사용 중입니다. 다른 터미널이나 프로세스를 종료하세요.
 
 ### "Unauthorized" 에러
+
 → API 키가 잘못되었습니다. `BACKOFFICE_API_KEY` 값을 확인하세요.
 
 ## 배포 (Vercel)
@@ -105,7 +113,7 @@ curl http://localhost:3001/api/admin/files?category=DEV \
 ## 문서
 
 - 📖 **BACKOFFICE_PLAN.md** - 전체 시스템 기획
-- 📖 **BLOG_ADMIN_SETUP.md** - 상세 설정 가이드  
+- 📖 **BLOG_ADMIN_SETUP.md** - 상세 설정 가이드
 - 📖 **apps/blog-admin/README.md** - 프로젝트 문서
 
 ---

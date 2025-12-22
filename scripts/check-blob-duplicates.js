@@ -15,7 +15,7 @@ async function checkDuplicates() {
     // Group by filename (without path)
     const filesByName = new Map();
 
-    blobs.forEach((blob) => {
+    blobs.forEach(blob => {
       const filename = blob.pathname.split('/').pop() || blob.pathname;
 
       if (!filesByName.has(filename)) {
@@ -47,7 +47,7 @@ async function checkDuplicates() {
 
     duplicates.forEach(({ filename, files }) => {
       console.log(`📄 ${filename} (${files.length} copies):`);
-      files.forEach((file) => {
+      files.forEach(file => {
         console.log(`   - ${file.pathname}`);
         console.log(`     Size: ${file.size} bytes`);
         console.log(`     Uploaded: ${file.uploadedAt?.toISOString() || 'Unknown'}`);
@@ -61,8 +61,9 @@ async function checkDuplicates() {
     console.log(`Total files: ${blobs.length}`);
     console.log(`Unique filenames: ${filesByName.size}`);
     console.log(`Duplicate filenames: ${duplicates.length}`);
-    console.log(`Total duplicate instances: ${duplicates.reduce((sum, d) => sum + d.files.length, 0)}`);
-
+    console.log(
+      `Total duplicate instances: ${duplicates.reduce((sum, d) => sum + d.files.length, 0)}`
+    );
   } catch (error) {
     console.error('Error checking duplicates:', error);
     process.exit(1);

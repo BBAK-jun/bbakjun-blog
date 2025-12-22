@@ -20,11 +20,11 @@ const person = {
 
   // 메서드 - 상태 데이터를 참조하고 조작하는 동작
   greet() {
-    return `Hello ${person.name}`
+    return `Hello ${person.name}`;
   },
-}
+};
 
-console.log(person.greet()) // "Hello bbakjun"
+console.log(person.greet()); // "Hello bbakjun"
 ```
 
 `greet` 메서드 내에서 메서드 자신이 속한 객체를 가리키는 person 식별자를 참조하고있다. **이 참조 표현식이 평가되는 시점은 `greet` 메서드가 호출되어 함수 몸체가 실행되는 시점이다.**
@@ -68,26 +68,26 @@ this는 JSEngine에 의해 암묵적으로 생성되며, 코드 어디서든 참
 const person = {
   name: 'bbakjun',
   greet() {
-    return `Hello ${this.name}`
+    return `Hello ${this.name}`;
   },
-}
+};
 
-console.log(person.greet()) // "Hello bbakjun"
+console.log(person.greet()); // "Hello bbakjun"
 ```
 
 객체 리터럴 메서드 내부에서 this는 메서드를 호출한 객체 즉 person을 가리킨다.
 
 ```js
 function Person(name) {
-  this.name = name
+  this.name = name;
 }
 
 Person.prototype.greet = function () {
-  return `Hello ${this.name}`
-}
+  return `Hello ${this.name}`;
+};
 
-const person = new Person('bbakjun')
-console.log(person.greet()) // "Hello bbakjun"
+const person = new Person('bbakjun');
+console.log(person.greet()); // "Hello bbakjun"
 ```
 
 생성자 함수 내부의 this는 생성자 함수가 생성할 인스턴스를 가리킨다. 이처럼 this는 상황에 따라 가리키는 대상이 다르다.
@@ -109,24 +109,24 @@ this바인딩은 함수호출 방식, 즉 함수가 어떻게 호출되었는지
 
 ```js
 const foo = function () {
-  console.log(this)
-}
+  console.log(this);
+};
 
 // 1. 일반함수 호출
-foo() // window
+foo(); // window
 
 // 2. 메서드 호출
-const obj = { foo }
-obj.foo() // obj
+const obj = { foo };
+obj.foo(); // obj
 
 // 3. 생성자 함수 호출
-new foo() // foo
+new foo(); // foo
 
 // 4. apply/call/bind 메서드에 의한 간접호출
-const bar = { name: 'bar' }
-foo.apply(bar) // bar
-foo.call(bar) // bar
-foo.bind(bar) // bar
+const bar = { name: 'bar' };
+foo.apply(bar); // bar
+foo.call(bar); // bar
+foo.bind(bar); // bar
 ```
 
 > 일반함수로 호출시에는 전역객체 window를 가리킨다.<br/>
@@ -140,16 +140,16 @@ foo.bind(bar) // bar
 
 ```js
 function foo() {
-  console.log(this) // window
+  console.log(this); // window
 
   function bar() {
-    console.log(this) // window
+    console.log(this); // window
   }
 
-  bar()
+  bar();
 }
 
-foo()
+foo();
 ```
 
 위에서 this가 가리키는 객체는 호출될때 결정된다고 말했었다.
@@ -158,58 +158,58 @@ foo()
 
 ```js
 function foo() {
-  'use strict'
-  console.log(this) // undefined
+  'use strict';
+  console.log(this); // undefined
 
   function bar() {
-    console.log(this) // undefined
+    console.log(this); // undefined
   }
 
-  bar()
+  bar();
 }
 
-foo()
+foo();
 ```
 
 ```js
-let score = 100
+let score = 100;
 
 const person = {
   score: 99,
   getScore() {
-    console.log(this) // {score:99, getScore: f}
-    console.log(`person's score is ${this.score}.`) // 99
+    console.log(this); // {score:99, getScore: f}
+    console.log(`person's score is ${this.score}.`); // 99
 
     function fn() {
-      console.log(this) // window
-      console.log(this.score) // 100
+      console.log(this); // window
+      console.log(this.score); // 100
     }
-    fn()
+    fn();
   },
-}
+};
 
-person.getScore()
+person.getScore();
 ```
 
 메서드 내부에서 정의한 중첩함수도 일반함수로 호출되면 중첨함수 내부의 this에는 전역 객체가 바인딩된다.
 
 ```js
-let score = 100
+let score = 100;
 
 const person = {
   score: 99,
   getScore() {
-    console.log(this) // {score:99, getScore: f}
-    console.log(`person's score is ${this.score}.`) // 99
+    console.log(this); // {score:99, getScore: f}
+    console.log(`person's score is ${this.score}.`); // 99
 
     setTimeout(function () {
-      console.log(this) // window
-      console.log(this.score) // 100
-    }, 100)
+      console.log(this); // window
+      console.log(this.score); // 100
+    }, 100);
   },
-}
+};
 
-person.getScore()
+person.getScore();
 ```
 
 콜백함수가 일반함수로 호출된다면 콜백 함수 내부의 this에도 전역 객체가 바인딩된다. 어떠한 함수라도 일반함수로 호출되면 this에 전역 객체가 바인딩된다.
@@ -219,20 +219,20 @@ person.getScore()
 메서드내에서 정의한 중첩함수 또는 메서드에게 전달한 콜백 함수가 일반함수로 호출될때 메서드 내의 중첩함수 또는 콜백함수가 globalThis를 바인딩하는것은 문제가 있다. 중첩함수 또는 콜백함수는 외부함수를 돕는 Helper Function의 역할을 해야하기때문에 외부함수의 일부 로직을 대신하는 경우가 대부분이기 때문이다.
 
 ```js
-let score = 100
+let score = 100;
 
 const person = {
   score: 99,
   getScore() {
-    const _this = this
+    const _this = this;
 
     setTimeout(function () {
-      console.log(_this.score) // 99
-    }, 100)
+      console.log(_this.score); // 99
+    }, 100);
   },
-}
+};
 
-person.getScore()
+person.getScore();
 ```
 
 위와 같은 방법으로 this를 일반함수 호출또는 콜백함수내부에 같은 this를 바라보게 만들수도있다.
@@ -249,19 +249,19 @@ getScore 메서드의 지역스코프안에 setTimeOut 콜백함수의 지역스
 const person = {
   name: 'bbakjun',
   greet() {
-    return `Hello ${this.name}!`
+    return `Hello ${this.name}!`;
   },
-}
+};
 
 const anotherPerson = {
   name: 'anotherPerson',
-}
+};
 
-console.log(person.greet()) // "Hello bbakjun!"
+console.log(person.greet()); // "Hello bbakjun!"
 
-anotherPerson.greet = person.greet
+anotherPerson.greet = person.greet;
 
-console.log(anotherPerson.greet()) // 결과는 뭘까?
+console.log(anotherPerson.greet()); // 결과는 뭘까?
 ```
 
 위 예제에서 greet 메서드는 person 객체의 메서드로 정의되었다.<br/>
@@ -276,20 +276,20 @@ console.log(anotherPerson.greet()) // 결과는 뭘까?
 
 ```js
 function Person(name) {
-  this.name = name
+  this.name = name;
 }
 
 Person.prototype.getName = function () {
-  return this.name
-}
+  return this.name;
+};
 
-const bbakjun = Person('BBAKJUN')
+const bbakjun = Person('BBAKJUN');
 
-console.log(bbakjun.getName()) // "BBAKJUN" - 1
+console.log(bbakjun.getName()); // "BBAKJUN" - 1
 
-console.log(Person.prototype.name) // "BBAKJUN" - 2
+console.log(Person.prototype.name); // "BBAKJUN" - 2
 
-console.log(Person.prototype.getName()) // "BBAKJUN" - 3
+console.log(Person.prototype.getName()); // "BBAKJUN" - 3
 ```
 
 1번의 경우 getName메서드를 호출한 객체는 bbakjun이므로 생성자함수로 생성해준 객체 인스턴스를 가리키게 되므로 getName 메서드 내부의 this는 인스턴스 bbakjun을 가리키게된다.
@@ -300,17 +300,17 @@ console.log(Person.prototype.getName()) // "BBAKJUN" - 3
 
 ```js
 function Person(name) {
-  this.name = name
+  this.name = name;
   this.getName = function () {
-    return this.name
-  }
+    return this.name;
+  };
 }
 
-const personOne = new Person('person1')
-const personTwo = new Person('person2')
+const personOne = new Person('person1');
+const personTwo = new Person('person2');
 
-console.log(personOne.getName()) // 'person1'
-console.log(personTwo.getName()) // 'person2'
+console.log(personOne.getName()); // 'person1'
+console.log(personTwo.getName()); // 'person2'
 ```
 
 생성자 함수는 인스턴스를 생성하는 함수다. 일반 함수와 동일한 방법으로 생성자 함수를 정의하고 new 연산자와 함께 호출하면 해당함수는 생성자 함수로 동작한다.
@@ -319,15 +319,15 @@ console.log(personTwo.getName()) // 'person2'
 
 ```js
 function Person(name) {
-  this.name = name
+  this.name = name;
   this.getName = function () {
-    return this.name
-  }
+    return this.name;
+  };
 }
 
-const person = Person('BBAKJUN')
+const person = Person('BBAKJUN');
 
-console.log(person) // undefined
+console.log(person); // undefined
 ```
 
 new 연산자와 생성자 함수로 호출하지않은 함수는 일반함수로 호출된다. 그러므로 객체인스턴스가 없기에 undefined를 가리키게 되는것이다.
@@ -340,15 +340,15 @@ new 연산자와 생성자 함수로 호출하지않은 함수는 일반함수�
 
 ```js
 function getThisBinding() {
-  return this
+  return this;
 }
 
-const thisArg = { name: 'BBAKJUN' }
+const thisArg = { name: 'BBAKJUN' };
 
-console.log(getThisBinding()) // window
+console.log(getThisBinding()); // window
 
-console.log(getThisBinding.apply(thisArg)) // { name: "BBAKJUN" }
-console.log(getThisBinding.call(thisArg)) // { name: "BBAKJUN" }
+console.log(getThisBinding.apply(thisArg)); // { name: "BBAKJUN" }
+console.log(getThisBinding.call(thisArg)); // { name: "BBAKJUN" }
 ```
 
 apply와 call 메서드의 본질적인 기능은 함수를 호출하는 것이다. apply, call 메서드는 함수를 호출하면서 첫번째 인자로 전달한 특정 객체를 호출한 함수의 this에 바인딩한다.
@@ -357,16 +357,16 @@ apply와 call 메서드의 본질적인 기능은 함수를 호출하는 것이�
 
 ```js
 function getThisBinding() {
-  console.log(arguments)
-  return this
+  console.log(arguments);
+  return this;
 }
 
-const thisArg = { name: 'BBAKJUN' }
+const thisArg = { name: 'BBAKJUN' };
 
-console.log(getThisBinding.apply(thisArg, [1, 2, 3]))
+console.log(getThisBinding.apply(thisArg, [1, 2, 3]));
 // Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
 // { name: "BBAKJUN" }
-console.log(getThisBinding.call(thisArg, 1, 2, 3))
+console.log(getThisBinding.call(thisArg, 1, 2, 3));
 // Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
 // { name: "BBAKJUN" }
 ```
@@ -377,11 +377,11 @@ apply 메서드는 호출할 함수의 인수를 배열로 묶어 전달한다. 
 
 ```js
 function convertArgsToArray() {
-  console.log(arguments)
-  return Array.prototype.slice.call(arguments)
+  console.log(arguments);
+  return Array.prototype.slice.call(arguments);
 }
 
-console.log(convertArgsToArray(1, 2, 3, 4, 5)) // [1, 2, 3, 4, 5]
+console.log(convertArgsToArray(1, 2, 3, 4, 5)); // [1, 2, 3, 4, 5]
 ```
 
 #### bind
@@ -390,14 +390,14 @@ bind메서드는 apply call 메서드와 달리 함수를 호출하지 않는다
 
 ```js
 function getThisBinding() {
-  return this
+  return this;
 }
 
-const thisArg = { name: 'BBAKJUN' }
+const thisArg = { name: 'BBAKJUN' };
 
-console.log(getThisBinding.bind(thisArg)) // getThisBinding - 함수객체
+console.log(getThisBinding.bind(thisArg)); // getThisBinding - 함수객체
 
-console.log(getThisBinding.bind(thisArg)()) // { name: "BBAKJUN" }; - 함수실행값
+console.log(getThisBinding.bind(thisArg)()); // { name: "BBAKJUN" }; - 함수실행값
 ```
 
 bind 메서드는 메서드의 this와 메서드 내부의 중첩 함수 또는 콜백함수의 this가 불일치하는 문제를 해결하기위해 사용되곤한다.
@@ -406,14 +406,14 @@ bind 메서드는 메서드의 this와 메서드 내부의 중첩 함수 또는 
 const person = {
   name: 'BBAKJUN',
   greet(callbackFn) {
-    console.log(this) // 1 - person
-    setTimeout(callbackFn, 3000) // 2 - globalThis
+    console.log(this); // 1 - person
+    setTimeout(callbackFn, 3000); // 2 - globalThis
   },
-}
+};
 
 person.greet(function () {
-  console.log(`Hello ${this.name}`)
-})
+  console.log(`Hello ${this.name}`);
+});
 ```
 
 person.greet의 콜백함수가 이전인 1번에서는 person객체 자신을 가리킨다.
@@ -426,11 +426,11 @@ person.greet의 콜백함수가 이전인 1번에서는 person객체 자신을 �
 const person = {
   name: 'BBAKJUN',
   greet(callbackFn) {
-    setTimeout(callbackFn.bind(this), 3000) // 2 - person
+    setTimeout(callbackFn.bind(this), 3000); // 2 - person
   },
-}
+};
 
 person.greet(function () {
-  console.log(`Hello ${this.name}`) // "Hello BBAKJUN"
-})
+  console.log(`Hello ${this.name}`); // "Hello BBAKJUN"
+});
 ```

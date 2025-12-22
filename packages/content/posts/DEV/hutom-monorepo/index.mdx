@@ -59,7 +59,6 @@ summary: 흩어져있는 프론트엔드 한곳으로 뭉치기
 ![](/static/images/DEV/hutom-monorepo/pnpm.png)
 
 - **node_modules의 문제점**
-
   - node.js에서 require 함수를 실행하면 모듈을 찾을 때까지 상위 디렉토리를 순회하는데 이때 느린 Disk I/O 동작이 경로의 깊이만큼 발생하게 됩니다.
 
 - **저장공간과 설치시간**
@@ -67,9 +66,7 @@ summary: 흩어져있는 프론트엔드 한곳으로 뭉치기
   - 복잡한 폴더 구조이기 때문에 설치가 유효한지 검증하기 어렵습니다. 수백 개의 패키지가 서로를 의존하는 복잡한 의존성 트리에서 디렉토리 구조는 깊어집니다.
   - 디스크 I/O 호출은 메모리의 자료구조를 다루는 것보다 훨씬 느립니다.
 - **유령의존성**
-
   - 왼쪽 트리에서 A와 C 패키지는 B 패키지를 의존성을 띠게 되는데 A와 C를 설치하며 B를 두 번 설치하게 되어 디스크 공간 낭비를 하게 됩니다.
-
     - 이때 package-1에서는 직접 require(’B’) 가 불가합니다.
 
   - 이를 해결하기 위해 오른쪽 트리처럼 원래의 트리의 모양을 바꿉니다.
@@ -391,21 +388,17 @@ Turborepo의 루트 디렉토리에 `.turbo/config.json` 파일을 생성하여 
 ### **개발규칙**
 
 - **브랜치 푸시로 개발 진행**
-
   - 개발 작업은 모두 브랜치 푸시를 통해 이루어집니다.
 
 - **브랜치 푸시란?**
-
   - Trunk 브랜치에서 새로운 피쳐 브랜치(Feature)를 생성합니다.
     -Feature 브랜치에서 작업을 완료한 후, Pull Request(PR)를 통해 Trunk 브랜치로 스쿼시 머지합니다. 스쿼시 머지는 여러 커밋을 하나로 합쳐서 머지하는 것을 의미합니다.
 
 - **직접 푸시 금지**
-
   - 개발 중에는 Trunk 브랜치나 다른 브랜치에 직접 푸시하는 것을 허용하지 않습니다.
   - 반드시 Feature 브랜치를 사용해 작업하고, PR을 통해 머지해야 합니다.
 
 - **PR 올린 후 Trunk 브랜치가 업데이트되고 해당 브랜치에 반영해야 하는 경우**
-
   - 작업 중인 브랜치에서 git merge trunk 로 반영합니다.
 
 - **작업 단위의 크기**
@@ -413,7 +406,6 @@ Turborepo의 루트 디렉토리에 `.turbo/config.json` 파일을 생성하여 
   -Feature 브랜치는 가능한 한 작은 작업 단위로 나눠서 작업합니다. 작은 단위로 나누면 코드 리뷰가 쉽고, 버그 발생 시 문제를 빠르게 찾을 수 있습니다.
 
 - **장기간 작업에 대한 규칙**
-
   - 장기간 지속되어야 하는 큰 기능 개발의 경우, 피쳐 플래그와 인터페이스를 사용해 작업 단위를 나눕니다.
   - 피쳐 플래그는 특정 기능을 켜고 끌 수 있는 설정을 말하며, 이를 통해 단계적으로 기능을 개발하고 배포할 수 있습니다.
   - 인터페이스를 사용해 모듈화된 작업을 수행함으로써 다른 기능에 영향을 최소화합니다.
@@ -421,23 +413,19 @@ Turborepo의 루트 디렉토리에 `.turbo/config.json` 파일을 생성하여 
 ### **배포 규칙**
 
 - **브랜치 만들기**
-
   - Trunk 브랜치에서 Release 브랜치를 생성합니다
   - Trunk 브랜치는 기본 개발 브랜치입니다. 새로운 릴리즈를 준비할 때는 Trunk 브랜치에서 Release 브랜치를 만듭니다.
 
 - **변경 사항 적용하기**
-
   - Release 브랜치에서 변경이 필요할 때, Trunk 브랜치의 커밋을 cherry-picking 합니다
   - Release 브랜치에서 수정이나 새로운 기능 추가가 필요하면 Trunk 브랜치에 있는 커밋을 선택적으로 가져와서 Release 브랜치에 적용합니다(cherry-picking).
   - 중요한 점: Trunk 브랜치에 없는 커밋은 Release 브랜치에 포함되어서는 안 됩니다. 즉, Trunk 브랜치에 없는 변경 사항이 Release 브랜치에 존재해서는 안 됩니다.
 
 - **핫픽스 처리**
-
   - 핫픽스도 동일한 방식으로 처리합니다
   - Release 브랜치에서 버그 수정(hotfix)이 필요할 때도 Trunk 브랜치에서 cherry-picking으로 커밋을 가져와서 적용합니다.
 
 - **릴리즈 완료 후 버전 태깅**
-
   - 릴리즈 완료 후 버전 태그를 달아야 합니다
   - 버전 태깅은 릴리즈가 완료된 커밋에 특정 버전 번호를 부여하는 것입니다.
   - 만약 cherry-picking이 발생하지 않은 경우: Trunk 브랜치에 있는 커밋에서 태깅을 합니다.
@@ -591,34 +579,34 @@ TBD는 Trunk 브랜치에서 협업하며, 긴 작업단위의 브랜치 생성�
 
 ```tsx
 export async function middleware(req: NextRequest) {
-  const url = req.nextUrl.clone()
+  const url = req.nextUrl.clone();
 
   switch (env.SCOPE) {
     case 'development': {
       if (!url.searchParams.has('scope')) {
-        url.searchParams.set('scope', 'development')
-        return NextResponse.redirect(url)
+        url.searchParams.set('scope', 'development');
+        return NextResponse.redirect(url);
       }
-      break
+      break;
     }
 
     case 'staging': {
       if (!url.searchParams.has('scope')) {
-        url.searchParams.set('scope', 'staging')
-        return NextResponse.redirect(url)
+        url.searchParams.set('scope', 'staging');
+        return NextResponse.redirect(url);
       }
-      break
+      break;
     }
     case 'production': {
       if (url.searchParams.has('scope')) {
-        url.searchParams.delete('scope')
-        return NextResponse.redirect(url)
+        url.searchParams.delete('scope');
+        return NextResponse.redirect(url);
       }
-      break
+      break;
     }
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 ```
 
@@ -662,29 +650,29 @@ const LoginPage = ({ searchParams }: Props) => {
 ```tsx
 describe('Login FeatureFlag 테스트', () => {
   it('development 환경에서는 화면이 보인다.', () => {
-    cy.visit('/login?scope=development')
+    cy.visit('/login?scope=development');
 
-    cy.location().should((location) => {
-      expect(location.pathname).to.eq('/login')
-    })
-  })
+    cy.location().should(location => {
+      expect(location.pathname).to.eq('/login');
+    });
+  });
 
   it('staging 환경에서는 랜딩페이지로 리다이렉트된다.', () => {
-    cy.visit('/login?scope=staging')
+    cy.visit('/login?scope=staging');
 
-    cy.location().should((location) => {
-      expect(location.pathname).to.eq('/')
-    })
-  })
+    cy.location().should(location => {
+      expect(location.pathname).to.eq('/');
+    });
+  });
 
   it('production 환경에서는 랜딩페이지로 리다이렉트된다.', () => {
-    cy.visit('/login')
+    cy.visit('/login');
 
-    cy.location().should((location) => {
-      expect(location.pathname).to.eq('/')
-    })
-  })
-})
+    cy.location().should(location => {
+      expect(location.pathname).to.eq('/');
+    });
+  });
+});
 ```
 
 각 케이스에맞게 시나리오대로 케이스를 작성하였습니다.

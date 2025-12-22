@@ -1,6 +1,6 @@
 // Re-export types
-export type { Post, PostMatter, Series, SeriesSummary } from '@repo/types'
-export type { BlobFileInfo } from './posts-blob'
+export type { Post, PostMatter, Series, SeriesSummary } from '@repo/types';
+export type { BlobFileInfo } from './posts-blob';
 
 // Re-export everything from posts
 export {
@@ -10,7 +10,7 @@ export {
   getPostsByTag,
   getAllTags,
   getRelatedPosts,
-} from './posts'
+} from './posts';
 
 // Re-export series functions
 export {
@@ -19,10 +19,10 @@ export {
   getSeriesBySlug,
   getSeriesNavigation,
   getPostSeries,
-} from './series'
+} from './series';
 
 // Re-export markdown processing
-export { processMarkdown } from './markdown'
+export { processMarkdown } from './markdown';
 
 // Re-export rehype plugin
-export { rehypeMermaid } from './rehype-mermaid'
+export { rehypeMermaid } from './rehype-mermaid';

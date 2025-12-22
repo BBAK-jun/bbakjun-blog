@@ -3,6 +3,7 @@
 ## Overview
 
 This document summarizes the implementation of two major features:
+
 1. **Newsletter Subscription System** - Email subscription with Resend integration
 2. **Vercel Blob CDC Pipeline** - Caching layer to reduce Blob API calls by 99%
 
@@ -20,6 +21,7 @@ A complete email newsletter subscription system allowing blog readers to subscri
 ### Features Implemented
 
 ✅ **Email Subscription API** (`POST /api/newsletter/subscribe`)
+
 - Email validation
 - Duplicate detection (reactivates inactive subscriptions)
 - Source tracking (footer, popup, blog-post, etc.)
@@ -27,27 +29,32 @@ A complete email newsletter subscription system allowing blog readers to subscri
 - Welcome email via Resend
 
 ✅ **Unsubscription API** (`POST /api/newsletter/unsubscribe`)
+
 - Token-based unsubscription (secure, no auth required)
 - Soft delete pattern (preserves data)
 
 ✅ **Admin Subscriber List** (`GET /api/newsletter/subscribers`)
+
 - Pagination support
 - Active/inactive filtering
 - Admin-only access (role-based)
 
 ✅ **Frontend Component** (`apps/blog/src/components/NewsletterSubscribe.tsx`)
+
 - Full and compact layouts
 - Loading states
 - Success/error messaging
 - Responsive design with dark mode
 
 ✅ **Database Schema** (Subscriber model)
+
 - Email storage
 - Subscription tracking
 - Unsubscribe tokens
 - Source analytics
 
 ✅ **Email Integration** (Resend)
+
 - Welcome email template
 - Domain verification support (dev-bbak.site)
 - Graceful degradation if API key missing
@@ -55,31 +62,38 @@ A complete email newsletter subscription system allowing blog readers to subscri
 ### Files Created/Modified
 
 **Database**:
+
 - `apps/blog-admin/prisma/schema.prisma` - Added Subscriber model
 
 **API Routes**:
+
 - `apps/blog-admin/src/app/api/newsletter/subscribe/route.ts` (new)
 - `apps/blog-admin/src/app/api/newsletter/unsubscribe/route.ts` (new)
 - `apps/blog-admin/src/app/api/newsletter/subscribers/route.ts` (new)
 
 **Frontend**:
+
 - `apps/blog/src/components/NewsletterSubscribe.tsx` (new)
 
 **Documentation**:
+
 - `apps/blog-admin/docs/NEWSLETTER.md` (new)
 - `CLAUDE.md` - Updated with environment variables
 
 **Configuration**:
+
 - `turbo.json` - Added RESEND_API_KEY, NEXT_PUBLIC_ADMIN_URL
 
 ### Environment Variables Added
 
 **Blog App** (`apps/blog`):
+
 ```bash
 NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 ```
 
 **Blog-Admin App** (`apps/blog-admin`):
+
 ```bash
 RESEND_API_KEY=re_xxxxx
 NEXT_PUBLIC_BLOG_URL=http://localhost:3000  # or production URL
@@ -88,6 +102,7 @@ NEXT_PUBLIC_BLOG_URL=http://localhost:3000  # or production URL
 ### CORS Configuration
 
 All newsletter API endpoints include CORS headers:
+
 ```typescript
 {
   'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_BLOG_URL,
@@ -106,14 +121,15 @@ Plus OPTIONS handlers for preflight requests.
 | Type | Name | Value |
 |------|------|-------|
 | TXT | @ | `v=spf1 include:_spf.resend.com ~all` |
-| TXT | resend._domainkey | `[DKIM from Resend]` |
-| TXT | _dmarc | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` |
+| TXT | resend.\_domainkey | `[DKIM from Resend]` |
+| TXT | \_dmarc | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` |
 
 **Note**: DNS propagation takes 24-48 hours.
 
 ### Next Steps for Newsletter
 
 1. **Run Prisma Migration**:
+
    ```bash
    cd apps/blog-admin
    npx prisma migrate dev --name add_subscriber_model
@@ -143,6 +159,7 @@ Plus OPTIONS handlers for preflight requests.
 ### Solution Implemented
 
 CDC (Change Data Capture) pipeline that caches Blob file listings in PostgreSQL:
+
 - Syncs every 5 minutes (auto-triggered on API calls)
 - Serves file lists from DB instead of Blob API
 - Reduces API calls by **99%** (from 2000+ to ~288/month)
@@ -150,11 +167,13 @@ CDC (Change Data Capture) pipeline that caches Blob file listings in PostgreSQL:
 ### Features Implemented
 
 ✅ **BlobFile Database Model**
+
 - Mirrors Blob file metadata
 - Soft delete pattern (`isDeleted` flag)
 - Indexed for fast queries
 
 ✅ **Sync Function** (`syncBlobToDatabase()`)
+
 - Compares Blob storage with DB cache
 - Adds new files
 - Marks deleted files
@@ -162,46 +181,56 @@ CDC (Change Data Capture) pipeline that caches Blob file listings in PostgreSQL:
 - Returns sync statistics
 
 ✅ **Cache Read** (`getCachedBlobFiles()`)
+
 - Pagination support
 - Search by pathname
 - Fast DB queries (no Blob API calls)
 
 ✅ **Auto-Sync Logic** (`needsSync()`)
+
 - Checks if 5+ minutes elapsed
 - Triggers sync automatically on GET requests
 
 ✅ **Upload Hooks** (`onBlobUpload`, `onBlobDelete`)
+
 - Real-time tracking of uploads/deletes
 - Non-critical (upload succeeds even if hook fails)
 
 ✅ **API Endpoints**
+
 - `GET /api/admin/blob-files` - Fetch cached list (with auto-sync)
 - `POST /api/admin/blob-files/sync` - Manual sync (admin only)
 
 ### Files Created/Modified
 
 **Database**:
+
 - `apps/blog-admin/prisma/schema.prisma` - Added BlobFile model
 
 **Core Logic**:
+
 - `apps/blog-admin/src/lib/blob-cdc.ts` (new)
 
 **API Routes**:
+
 - `apps/blog-admin/src/app/api/admin/blob-files/route.ts` (new)
 - `apps/blog-admin/src/app/api/admin/upload-image/route.ts` - Added CDC hook
 
 **Documentation**:
+
 - `apps/blog-admin/docs/BLOB_CDC.md` (new)
 - `CLAUDE.md` - Added comprehensive CDC section
 
 ### Cost Reduction Analysis
 
 **Before CDC**:
+
 - Image picker: 1 `list()` per page load
 - Multiple admin users × refreshes
 - **Result**: ~2,000+ API calls/month ❌ **LIMIT EXCEEDED**
 
 **After CDC**:
+
 - Sync interval: 5 minutes
 - Calls per day: (60 ÷ 5) × 24 = 288
 - Calls per month: 288 ÷ 30 ≈ **10 calls/day** or **~288/month** ✅
@@ -242,6 +271,7 @@ Admin UI & Blog App
 ### Next Steps for CDC
 
 1. **Run Prisma Migration**:
+
    ```bash
    cd apps/blog-admin
    npx prisma migrate dev --name add_blob_cdc
@@ -249,6 +279,7 @@ Admin UI & Blog App
    ```
 
 2. **Initial Sync**:
+
    ```bash
    curl -X POST http://localhost:3001/api/admin/blob-files/sync \
      -H "Cookie: [admin-session-cookie]"
@@ -256,15 +287,17 @@ Admin UI & Blog App
 
 3. **Update Admin UI** (if exists):
    Replace:
+
    ```typescript
-   import { list } from '@vercel/blob'
-   const { blobs } = await list()
+   import { list } from '@vercel/blob';
+   const { blobs } = await list();
    ```
 
    With:
+
    ```typescript
-   const res = await fetch('/api/admin/blob-files?limit=100')
-   const { files } = await res.json()
+   const res = await fetch('/api/admin/blob-files?limit=100');
+   const { files } = await res.json();
    ```
 
 4. **Monitor Blob Usage**:
@@ -325,6 +358,7 @@ RESEND_API_KEY=re_xxxxx
 ### turbo.json
 
 Ensure all new variables are declared:
+
 ```json
 {
   "globalEnv": [
@@ -360,6 +394,7 @@ npx prisma generate
 ```
 
 **New Models**:
+
 1. `Subscriber` - Newsletter subscriptions
 2. `BlobFile` - Blob storage cache
 
@@ -456,6 +491,7 @@ npx prisma generate
 ### Cost Savings (Blob CDC)
 
 **Expected Reduction**:
+
 - Before: 2,000+ Blob API calls/month ❌
 - After: ~288 Blob API calls/month ✅
 - **Savings**: 85-99% reduction
@@ -491,6 +527,7 @@ npx prisma generate
 ### Immediate (Required for Features to Work)
 
 1. **Run Prisma Migrations**:
+
    ```bash
    cd apps/blog-admin
    npx prisma migrate dev --name add_newsletter_and_blob_cdc
@@ -540,11 +577,13 @@ npx prisma generate
 ## Conclusion
 
 Both features are **fully implemented** and **ready for deployment** pending:
+
 1. Database migrations
 2. Environment variable configuration
 3. DNS setup (newsletter only)
 
 The implementation follows best practices:
+
 - ✅ Comprehensive error handling
 - ✅ CORS security
 - ✅ Role-based access control

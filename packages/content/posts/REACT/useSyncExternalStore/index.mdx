@@ -28,15 +28,15 @@ tags: ['REACT']
 
 ```tsx
 const NetworkStatusDisplay = () => {
-  const start = Date.now()
+  const start = Date.now();
   while (Date.now() - start < 50) {
     // force yielding to main thread in concurrent mode
   }
 
-  const network = getNetworkStatus()
+  const network = getNetworkStatus();
 
-  return <div>{network}</div>
-}
+  return <div>{network}</div>;
+};
 ```
 
 이 컴포넌트는 외부 상태(networkStatus)를 직접 읽어와 표시합니다. 이러한 방식에는 다음과 같은 문제가 있습니다
@@ -71,11 +71,11 @@ Tearing 현상은 React의 동시성 렌더링 환경에서 발생할 수 있는
 
 ```tsx
 export default function TearingExample() {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    startTransition(() => setVisible(true))
-  }, [])
+    startTransition(() => setVisible(true));
+  }, []);
 
   return (
     <>
@@ -91,7 +91,7 @@ export default function TearingExample() {
         <p>preparing..</p>
       )}
     </>
-  )
+  );
 }
 ```
 
@@ -180,21 +180,17 @@ export function useSyncExternalStore<T>(
 > 위의 내부 구현을 통해 useSyncExternalStore의 동작 원리를 알아보겠습니다.
 
 1. 초기화
-
    - 컴포넌트가 처음 렌더링 될때, useSyncExternalStore는 getSnapshot을 호출하여 초기 상태를 가져옵니다.
    - subscribe을 사용하여 외부 스토어의 변경을 구독합니다.
 
 2. 상태 변경 감지
-
    - 외부 스토어의 상태가 변경되면 subscribe 함수가 이를 감지하고 내부 매커니즘을 트리깅 합니다.
 
 3. 스냅샷 비교
-
    - 상태 변경이 감지되면 새로운 getSnapshot 결과와 이전 스냅샷을 비교합니다.
    - `Object.is`를 사용하여 동일성(동등성X)을 비교합니다.
 
 4. 리렌더링 결정
-
    - 새로운 스냅샷이 이전과 다르다면 리렌더링을 예약합니다.
    - 같다면 리렌더링을 하지않습니다.
 
@@ -241,9 +237,10 @@ useSyncExternalStore는 React의 동시성 렌더링 모델과 함께 사용할 
 - 이전 예제의 getNetworkStatus 함수 직접 호출 대신 useSyncExternalStore를 사용합니다.
   ```ts
   const network = useSyncExternalStore(() => {
-    return () => {}
-  }, getNetworkStatus)
+    return () => {};
+  }, getNetworkStatus);
   ```
+
   - 첫번째 인자로 빈 구독함수를 전달합니다. (상기 예제에서는 구독이 필요없기 때문에 빈함수를 전달합니다.)
   - 두번째 인자로 getNetworkStatus 함수를 전달합니다.
 - 모든 NetworkStatusDisplay 컴포넌트는 처음에 **'**disconnected**'** 상태로 렌더링을 시작합니다.

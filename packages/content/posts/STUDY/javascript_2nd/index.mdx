@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 2회'
 date: '2023-01-16T23:57:03.284Z'
 summary: '자바스크립트 스터디 6장 ~ 10장'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 # 6장
@@ -21,10 +21,10 @@ mdn에서는 아래와 같이 정의한다.
 var person = {
   name: '빡준',
   age: 28,
-}
+};
 
-var name = person.name
-var age = person.age
+var name = person.name;
+var age = person.age;
 ```
 
 ES6이전에는 이런 방법을 사용했었다.
@@ -35,9 +35,9 @@ ES6이전에는 이런 방법을 사용했었다.
 const person = {
   name: '빡준',
   age: 28,
-}
+};
 
-const { name, age } = person
+const { name, age } = person;
 ```
 
 변수의 이름을 객체의 속성과 동일하게 지정하지않고 다른 이름을 사용할수도있다.
@@ -45,27 +45,27 @@ const { name, age } = person
 기본값도 지정해줄수도있다.
 
 ```js
-const { name: userName } = person
+const { name: userName } = person;
 
-const { name: useName = '빡준'}
+const { name: useName = '빡준' };
 ```
 
 ### 배열 구조분해할당
 
 ```js
-const ArrayForMe = ['빡준', 28, 'FrontEnd Developer']
+const ArrayForMe = ['빡준', 28, 'FrontEnd Developer'];
 
-const [name, age] = ArrayForMe
-console.log(name, age) // "빡준", 28
+const [name, age] = ArrayForMe;
+console.log(name, age); // "빡준", 28
 ```
 
 나머지 값을 얻고싶다면 `rest operator`를 사용하면된다.
 
 ```js
-const ArrayForMe = ['빡준', 28, 'FrontEnd Developer', '나머지값']
+const ArrayForMe = ['빡준', 28, 'FrontEnd Developer', '나머지값'];
 
-const [name, age, ...rest] = ArrayForMe
-console.log(name, age, rest) // "빡준", 28 , ["FrontEnd Developer", "나머지값"]
+const [name, age, ...rest] = ArrayForMe;
+console.log(name, age, rest); // "빡준", 28 , ["FrontEnd Developer", "나머지값"]
 ```
 
 <hr />
@@ -82,29 +82,29 @@ for ... of 명령문은 반복가능한 객체(Array, Map, Set, String, TypedArr
  * @iterable : 반복되는 열거가능한 속성이 있는 객체
  */
 for (variable of iterable) {
-  statement
+  statement;
 }
 ```
 
 ```js
 // Array에 대한 반복
-const iterable = [10, 20, 30]
+const iterable = [10, 20, 30];
 for (const variable of iterable) {
-  console.log(variable)
+  console.log(variable);
 }
 // 10, 20, 30
 
 // String에 대한 반복
-const iterable = 'BBAKJUN'
+const iterable = 'BBAKJUN';
 for (const variable of iterable) {
-  console.log(variable)
+  console.log(variable);
 }
 // "B", "B", "A", "K", "J", "U", "N"
 
 // TypedArray에 대한 반복
-const iterable = new Uint8Array([0x00, 0xff])
+const iterable = new Uint8Array([0x00, 0xff]);
 for (const variable of iterable) {
-  console.log(variable)
+  console.log(variable);
 }
 // 0, 255
 
@@ -112,23 +112,23 @@ for (const variable of iterable) {
 const iterable = new Map([
   ['name', 'BBAK_JUN'],
   ['age', 28],
-])
+]);
 for (const variable of iterable) {
-  console.log(variable)
+  console.log(variable);
 }
 // ["name", "BBAK_JUN"], ["age", 28]
 
 // Set에 대한 반복
-const iterable = new Set([1, 1, 2, 2, 3, 3])
+const iterable = new Set([1, 1, 2, 2, 3, 3]);
 for (const variable of iterable) {
-  console.log(variable)
+  console.log(variable);
 }
 // 1, 2, 3
 
 // DocumentCollections에 대한 반복
-const currentItems = document.querySelectorAll('li.current_item')
+const currentItems = document.querySelectorAll('li.current_item');
 for (const item of currentItems) {
-  item.classList.add('text-red')
+  item.classList.add('text-red');
 }
 // NodeList와 같은 DOM컬렉션에대해 반복할때 클래스를 추가할수도있다.
 ```
@@ -152,18 +152,18 @@ for ...of 구문은 컬렉션 전용이다. 모든 객체보다는 [Symbol.itera
 아래에서 둘의 차이를 알수있다.
 
 ```js
-Object.prototype.objCustom = () => {}
-Array.prototype.arrCustom = () => {}
+Object.prototype.objCustom = () => {};
+Array.prototype.arrCustom = () => {};
 
-let iterable = [100, 200, 300]
-iterable.name = 'BBAK_JUN'
+let iterable = [100, 200, 300];
+iterable.name = 'BBAK_JUN';
 
 for (const i in iterable) {
-  console.log(i) // 0, 1, 2, "name", "arrCustom", "objCustom"
+  console.log(i); // 0, 1, 2, "name", "arrCustom", "objCustom"
 }
 
 for (const i of iterable) {
-  console.log(i) // 100, 200, 300
+  console.log(i); // 100, 200, 300
 }
 ```
 
@@ -180,11 +180,11 @@ for (const i of iterable) {
 배열은 리스트와 비슷한 객체로서 순회와 변형 작업을 수행하는 메서드를 갖는다. Javascript 배열은 길이도, 각 요소의 자료형도 고정되어있지 않다. 배열의 길이가 언제든지 늘어나거나 줄어들 수 있고 데이터를 연속적이지 않은 곳에 저장할 수 있으므로 배열의 밀집성을 보장하지 않는다.
 
 ```js
-const fruits = ['사과', '바나나']
+const fruits = ['사과', '바나나'];
 
-const newFruits = fruits
-fruits[0] = '그린애플'
-console.log(newFruits) // ["그린애플", "바나나"]
+const newFruits = fruits;
+fruits[0] = '그린애플';
+console.log(newFruits); // ["그린애플", "바나나"]
 ```
 
 배열을 새로운 변수에 할당하더라도 배열이 복사되지는 않는다. 그 이유는 새로운 변수에는 원본 배열을 가리키는 참조만 할당되기 때문이다.
@@ -193,9 +193,9 @@ console.log(newFruits) // ["그린애플", "바나나"]
 Javascript에서는 이를 위해 아래와 같은 방법을 사용할 수 있다.
 
 ```js
-const shallowCopyWithSpread = [...fruits]
-const shallowCopyWithSlice = fruits.slice()
-const shallowCopyWithFrom = Array.from(fruits)
+const shallowCopyWithSpread = [...fruits];
+const shallowCopyWithSlice = fruits.slice();
+const shallowCopyWithFrom = Array.from(fruits);
 ```
 
 위 세 코드는 모두 `얕은 복사`를 생성한다.
@@ -221,15 +221,15 @@ const shallowCopyWithFrom = Array.from(fruits)
 reduce 메서드는 배열의 각 요소에 대해 주어진 리듀서 함수를 실행하고, 하나의 결과를 반환한다.
 
 ```js
-const array = [1, 2, 3, 4, 5]
-const initialNumber = 0
+const array = [1, 2, 3, 4, 5];
+const initialNumber = 0;
 
 const sumWithInitial = array.reduce(
   (accumulator, currentValue) => accumulator + currentValue,
   initialValue
-)
+);
 
-console.log(sumWithInitialValue) // 10
+console.log(sumWithInitialValue); // 10
 ```
 
 reduce 메서드는 네개의 인자를 가진다.
@@ -265,15 +265,15 @@ const commonRoutes = [
   { path: '/', element: <HomePage /> },
   { path: '/signIn', element: <SignInPage /> },
   { path: '/signUp', element: <SignUpPage /> },
-]
+];
 const NotProtectedWithAuthRoutes = [
   { path: '/post', element: <PostListPage /> },
   { path: '/post/:id', element: <PostDetailPage /> },
-]
+];
 const protectedWithAuthRoutes = [
   { path: '/post/:id/edit', element: <PostEditPage /> },
   { path: '/post/:id/destroy', element: <PostDestroyPage /> },
-]
+];
 ```
 
 위의 예시는 권한별 라우트의 예시다.
@@ -285,19 +285,19 @@ const protectedWithAuthRoutes = [
 로그인하지않은 유저가 접근 가능한 라우트는 아래가 전부일 것이다.
 
 ```js
-const routes = [...commonRoutes]
+const routes = [...commonRoutes];
 ```
 
 로그인한 유저의 최소 라우트 권한은 아래와 같을것이다.
 
 ```js
-const routes = [...commonRoutes, ...NotProtectedWithAuthRoutes]
+const routes = [...commonRoutes, ...NotProtectedWithAuthRoutes];
 ```
 
 로그인한 유저의 최대 라우트 권한은 아래와 같을것이다.
 
 ```js
-const routes = [...commonRoutes, ...NotProtectedWithAuthRoutes, ...protectedWithAuthRoutes]
+const routes = [...commonRoutes, ...NotProtectedWithAuthRoutes, ...protectedWithAuthRoutes];
 ```
 
 이렇게 권한에 맞게 접근가능한 라우트를 부여할수있고 여기서 사용된 방법이 `Spread Operator`를 이용한 배열의 결합이다.
@@ -309,14 +309,14 @@ const routes = [...commonRoutes, ...NotProtectedWithAuthRoutes, ...protectedWith
 ```js
 // 기존 방법
 const sumEveryElement = (a, b, c) => {
-  return a + b + c
-}
+  return a + b + c;
+};
 
-const args = [1, 2, 3]
-console.log(sumEveryElement.apply(null, args)) // 6
+const args = [1, 2, 3];
+console.log(sumEveryElement.apply(null, args)); // 6
 
 // 스프레드 문법 사용
-console.log(sumEveryElement(...args)) // 6
+console.log(sumEveryElement(...args)); // 6
 ```
 
 위의 예제에서 sumEveryElement 함수는 3개의 매개변수를 받는다. sumEveryElement함수를 호출할때 args 배열을 ...args로 사용하여 전달하면 굳이 apply 메서드 사용에 의존하지 않아도 된다.
@@ -364,13 +364,13 @@ nextJS의 getServerSideProps API를 사용하다보면 context의 필요한 값�
 
 ```js
 const DetailPage = ({ message }) => {
-  return <Typography>{message}</Typography>
-}
+  return <Typography>{message}</Typography>;
+};
 
 export async function getServerSideProps({ query, params, ...context }) {
   return {
     props: { message: `Next.js is awesome` }, // will be passed to the page component as props
-  }
+  };
 }
 ```
 
@@ -388,9 +388,9 @@ ES6 이전에는
 const person = {
   name: '빡준',
   greet: function () {
-    console.log(this.name) // 빡준
+    console.log(this.name); // 빡준
   },
-}
+};
 ```
 
 ES6 이후부터는 function 이라는 키워드를 없애고 사용해도 된다.
@@ -399,20 +399,20 @@ ES6 이후부터는 function 이라는 키워드를 없애고 사용해도 된�
 const person = {
   name: '빡준',
   greet() {
-    console.log(this.name) // 빡준
+    console.log(this.name); // 빡준
   },
-}
+};
 ```
 
 객체 속성을 동적으로 생성해줄수도 있다.
 
 ```js
-const objKeys = ['name', 'age', 'job']
+const objKeys = ['name', 'age', 'job'];
 
-const obj = {}
+const obj = {};
 
-objKeys.forEach((key) => (obj[key] = key))
-console.log(obj)
+objKeys.forEach(key => (obj[key] = key));
+console.log(obj);
 
 // { name : "name", age: "age", job: "job" }
 ```

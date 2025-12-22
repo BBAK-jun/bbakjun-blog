@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 3회'
 date: '2023-01-17T19:04:03.284Z'
 summary: '자바스크립트 스터디 11장 ~ 15장'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 # 11장
@@ -14,9 +14,9 @@ tags: ['STUDY','JS']
 심볼은 항상 고유하며 객체 속성의 식별자로 사용할 수 있다.
 
 ```js
-const me = Symbol('BBAK_JUN')
+const me = Symbol('BBAK_JUN');
 
-console.log(me)
+console.log(me);
 
 // Symbol(BBAK_JUN)
 ```
@@ -24,10 +24,10 @@ console.log(me)
 심벌은 항상 고유하다고 했는데 그렇다면 같은 값을 가진 두 심벌은 같을까?
 
 ```js
-const me = Symbol('BBAK_JUN')
-const copyMe = Symbol('BBAK_JUN')
+const me = Symbol('BBAK_JUN');
+const copyMe = Symbol('BBAK_JUN');
 
-console.log(me === copyMe) // false
+console.log(me === copyMe); // false
 ```
 
 두 심벌의 값은 동일하지만, 각 심벌은 항상 고유하므로 다른 심벌과 겹치지 않는다.
@@ -38,19 +38,19 @@ console.log(me === copyMe) // false
 const personObject = {
   name: 'BBAK_JUN',
   age: 28,
-}
+};
 
 const personObjectWithSymbol = {
   [Symbol('name')]: 'BBAK_JUN',
   [Symbol('age')]: 28,
-}
+};
 
 for (info in personObject) {
-  console.log(info) // "BBAK_JUN", 28
+  console.log(info); // "BBAK_JUN", 28
 }
 
 for (info in personObjectWithSymbol) {
-  console.log(info) // undefined
+  console.log(info); // undefined
 }
 ```
 
@@ -62,10 +62,10 @@ for (info in personObjectWithSymbol) {
 const personObjectWithSymbol = {
   [Symbol('name')]: 'BBAK_JUN',
   [Symbol('age')]: 28,
-}
-const symbols = Object.getOwnPropertySymbols(personObjectWithSymbol)
+};
+const symbols = Object.getOwnPropertySymbols(personObjectWithSymbol);
 
-console.log(symbols)
+console.log(symbols);
 // 0 : "BBAK_JUN"
 // 1 : 28
 ```
@@ -85,16 +85,16 @@ Class는 사실 특별한 함수다. 함수를 함수 표현식과 함수 선언
 
 ```js
 function Person(name, age) {
-  this.name = name
-  this.age = age
+  this.name = name;
+  this.age = age;
 }
 
 Person.prototype.sayHello = function () {
-  console.log('Hello, my name is' + this.name)
-}
-const bbakjun = new Person('BBAK_JUN', 28)
+  console.log('Hello, my name is' + this.name);
+};
+const bbakjun = new Person('BBAK_JUN', 28);
 
-bbakjun.sayHello() // Hello, my name is BBAK_JUN"
+bbakjun.sayHello(); // Hello, my name is BBAK_JUN"
 ```
 
 Person의 프로토타입에 새 메서드를 추가하여 Person 객체의 인스턴스들이 접근 가능하도록 만들었다.
@@ -106,7 +106,7 @@ Person의 프로토타입에 새 메서드를 추가하여 Person 객체의 인�
 ```js
 class Person {} // 선언
 
-const person = class Person {} // 표현식
+const person = class Person {}; // 표현식
 ```
 
 선언 및 클래스 표현식은 호이스팅되지 않는다.
@@ -114,27 +114,27 @@ const person = class Person {} // 표현식
 클래스 접근하기전에 클래스를 선언하지 않으면 ReferenceError가 발생한다.
 
 ```js
-const bbakjun = new Person('박준형', 28) // ReferenceError Person is not defined
+const bbakjun = new Person('박준형', 28); // ReferenceError Person is not defined
 
 class Person {
   constructor(name, age) {
-    this.name = name
-    this.age = age
+    this.name = name;
+    this.age = age;
   }
 
   greet() {
-    console.log(`Hi my name is ${this.name}, and i am ${this.age} years old`)
+    console.log(`Hi my name is ${this.name}, and i am ${this.age} years old`);
   }
 
   fareWell() {
-    console.log('잘부탁한다')
+    console.log('잘부탁한다');
   }
 }
 
-const bbakjun = new Person('박준형', 28)
+const bbakjun = new Person('박준형', 28);
 
-bbakjun.greet() //Hi my name is 박준형, and i am 28 years old
-bbakjun.fareWell() // 잘부탁한다
+bbakjun.greet(); //Hi my name is 박준형, and i am 28 years old
+bbakjun.fareWell(); // 잘부탁한다
 ```
 
 보면 함수 선언과 다를게 없이 동작한다. 이래서 자바스크립트의 클래스는 문법적 설탕이라고 표현한다.
@@ -167,9 +167,9 @@ const App = () => {
 Javascript는 동기적으로 작동한다.
 
 ```js
-const data = fetch(URL) // 1
-console.log('fetching is finished') // 2
-console.log(data) // 3
+const data = fetch(URL); // 1
+console.log('fetching is finished'); // 2
+console.log(data); // 3
 ```
 
 위의 예제가 동기 코드일 경우 1 작업이 완료된다음에 2 작업이 호출되고 3 작업까지 호출된다음 종료할것이라고 예상이된다.
@@ -201,23 +201,23 @@ A -> B -> C -> D ... -> F 까지 발생하면 콜백지옥이 발생하게된다
 한번 아래의 예시로 로그인 버튼 클릭시 2초뒤에 성공과 실패를 알리는 함수를 작성해보겠다
 
 ```js
-const signInAction = (name) => {
+const signInAction = name => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'))
-    }, 2000)
-  })
-}
+      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'));
+    }, 2000);
+  });
+};
 
-;(() => {
+(() => {
   const isMe = signInAction('빡준')
-    .then((res) => console.log(res)) // "넌 내가 맞아"
-    .catch((err) => console.log(err))
+    .then(res => console.log(res)) // "넌 내가 맞아"
+    .catch(err => console.log(err));
 
   const isNotMe = signInAction('빡준2')
-    .then((res) => console.log(res))
-    .catch((err) => console.log(err)) // Error : "넌 내가 아냐"
-})()
+    .then(res => console.log(res))
+    .catch(err => console.log(err)); // Error : "넌 내가 아냐"
+})();
 ```
 
 ### 프로미스 체이닝
@@ -225,17 +225,17 @@ const signInAction = (name) => {
 프로미스 성공 실패 여부와 무관하게 이전 프로미스에서 반환된것을 후속 프로미스의 기반으로 사용하여 프로미스를 계속 체이닝 할 수 있다.
 
 ```js
-const signInAction = (name) => {
+const signInAction = name => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'))
-    }, 2000)
-  })
-}
+      return name === '빡준' ? resolve('넌 내가 맞아') : reject(new Error('넌 내가 아냐'));
+    }, 2000);
+  });
+};
 
 const me = signInAction('빡준')
-  .then((name) => `hello my name is ${name}`)
-  .then((string) => console.log(string)) // hello my name is 빡준
+  .then(name => `hello my name is ${name}`)
+  .then(string => console.log(string)); // hello my name is 빡준
 ```
 
 ### Promise.resolve, Promise.reject
@@ -264,20 +264,20 @@ Promise.race()는 첫번째 인자인 배열에서 가장 먼저 완료된것의
 
 ```js
 function* sayNames() {
-  yield '박준형'
-  yield '빡준'
-  yield 'BBAK_JUN'
+  yield '박준형';
+  yield '빡준';
+  yield 'BBAK_JUN';
 }
 
-const names = sayNames()
+const names = sayNames();
 
-names.next()
+names.next();
 // { value : '박준형', done : false }
-names.next()
+names.next();
 // { value : '빡준', done : false }
-names.next()
+names.next();
 // { value : 'BBAK_JUN', done : false }
-names.next()
+names.next();
 // { value : undefined, done : true }
 ```
 
@@ -291,29 +291,29 @@ names.next()
 ### 제너레이터로 배열 반복하기
 
 ```js
-const names = ['박준형', '빡준', 'BBAK_JUN']
+const names = ['박준형', '빡준', 'BBAK_JUN'];
 function* getNames() {
   for (name in names) {
-    yield name
+    yield name;
   }
 }
 
-const sayNames = getNames()
+const sayNames = getNames();
 
-names.next()
+names.next();
 // { value : '박준형', done : false }
-names.next()
+names.next();
 // { value : '빡준', done : false }
-names.next()
+names.next();
 // { value : 'BBAK_JUN', done : false }
-names.next()
+names.next();
 // { value : undefined, done : true }
 ```
 
 ### 함수 종료
 
 ```js
-names.return() // 이렇게 함수 종료가 가능하다.
+names.return(); // 이렇게 함수 종료가 가능하다.
 ```
 
 ### 제너레이터와 프로미스를 같이 사용하기
@@ -331,7 +331,7 @@ names.return() // 이렇게 함수 종료가 가능하다.
 프록시 객체는 기본작업(속성조회, 할당, 열거, 함수호출)에 대해 사용자 지정 동작을 추가로 정의하는데 사용된다.
 
 ```js
-const x = new Proxy(target, handler)
+const x = new Proxy(target, handler);
 ```
 
 - target은 객체, 함수 다른 프록시 무엇이든 가능

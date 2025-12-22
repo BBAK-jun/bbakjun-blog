@@ -10,6 +10,7 @@
 ### Facts Documents (Primary Sources)
 
 #### APIs
+
 - **[../../facts/apps/blog-admin/apis/index.md](../../../facts/apps/blog-admin/apis/index.md)**
   - 제목: Blog-Admin API Architecture Overview
   - 최종 업데이트: 2025-12-22
@@ -31,6 +32,7 @@
   - 내용: NextAuth.js v5 구현 상세
 
 #### Components
+
 - **[../../facts/apps/blog-admin/components/index.md](../../../facts/apps/blog-admin/components/index.md)**
   - 제목: Component Architecture
   - 최종 업데이트: 2025-12-22
@@ -42,6 +44,7 @@
   - 내용: 17개 공유 UI 컴포넌트 목록
 
 #### Schemas
+
 - **[../../facts/apps/blog-admin/schemas/db.md](../../../facts/apps/blog-admin/schemas/db.md)**
   - 제목: Database Schema
   - 최종 업데이트: 2025-12-22
@@ -53,6 +56,7 @@
   - 내용: Zod 유효성 검사 스키마
 
 #### Utils
+
 - **[../../facts/apps/blog-admin/utils/caching.md](../../../facts/apps/blog-admin/utils/caching.md)**
   - 제목: Caching Strategies
   - 최종 업데이트: 2025-12-22
@@ -64,6 +68,7 @@
   - 내용: 데이터 변환 유틸리티 함수
 
 #### Config
+
 - **[../../facts/apps/blog-admin/config/deployment.md](../../../facts/apps/blog-admin/config/deployment.md)**
   - 제목: Deployment Configuration
   - 최종 업데이트: 2025-12-22
@@ -90,6 +95,7 @@
 ## 계산 방법론 (Calculation Methodologies)
 
 ### ROI 계산 공식
+
 ```javascript
 // 기본 ROI 공식
 ROI = (Net Profit / Initial Investment) × 100
@@ -106,6 +112,7 @@ Annual ROI = (Annual Savings / Total Investment) × 100
 ```
 
 ### 개발 생산성 계산
+
 ```javascript
 // 시간 절감 가치
 TimeValue = HoursSaved × HourlyRate
@@ -118,6 +125,7 @@ ReuseValue = (ComponentsReused × AvgDevTimePerComponent) × HourlyRate
 ```
 
 ### 인프라 비용 계산
+
 ```javascript
 // Vercel Blob 비용 절감
 BlobSavings = (APIcallsBefore - APIcallsAfter) × CostPer1000Calls
@@ -132,6 +140,7 @@ CacheEfficiency = (CacheHits / TotalRequests) × 100
 ## 리스크 평가 프레임워크 (Risk Assessment Frameworks)
 
 ### 기술 리스크 매트릭스
+
 ```yaml
 확률 × 영향도 = 리스크 점수
 
@@ -151,6 +160,7 @@ CacheEfficiency = (CacheHits / TotalRequests) × 100
 ```
 
 ### 재무 리스크 평가
+
 ```javascript
 // 예상 손실 계산
 ExpectedLoss = Probability × Impact
@@ -165,6 +175,7 @@ RiskReductionEfficiency = RiskReduction / MitigationCost
 ## 외부 출처 (External Sources)
 
 ### 기술 문서
+
 1. **Feature-Sliced Design (FSD) Documentation**
    - URL: https://feature-sliced.design/
    - 참조: 아키텍처 패턴 및 레이어 정의
@@ -186,6 +197,7 @@ RiskReductionEfficiency = RiskReduction / MitigationCost
    - 참조: Database modeling, Migrations
 
 ### 비용 데이터
+
 1. **Vercel Pricing Page**
    - URL: https://vercel.com/pricing
    - 데이터:
@@ -205,6 +217,7 @@ RiskReductionEfficiency = RiskReduction / MitigationCost
    - 데이터: 개발자 시급 평균 $50-100/시간
 
 ### 벤치마크 데이터
+
 1. **GitLab CI/CD Benchmark Report 2024**
    - URL: https://about.gitlab.com/resources/ci-cd-benchmark/
    - 데이터: 평균 배포 시간 10분, 성공률 92%
@@ -216,6 +229,7 @@ RiskReductionEfficiency = RiskReduction / MitigationCost
 ## 계산 예시 (Calculation Examples)
 
 ### 1. 개발 생산성 ROI
+
 ```javascript
 // 기본 데이터
 Base: {
@@ -238,6 +252,7 @@ AnnualSavings = $4,000 × 12 = $48,000
 ```
 
 ### 2. 인프라 비용 절감
+
 ```javascript
 // Vercel Blob API
 Before: {
@@ -267,22 +282,23 @@ AnnualSavings = $19.52 × 12 = $234.24
 
 ## 버전 히스토리
 
-| 버전 | 날짜 | 변경사항 | 작성자 |
-|------|------|----------|--------|
-| 1.0 | 2024-12-22 | 초기 생성 | Claude |
-| 0.9 | 2024-12-21 | 초안 검토 | - |
+| 버전 | 날짜       | 변경사항  | 작성자 |
+| ---- | ---------- | --------- | ------ |
+| 1.0  | 2024-12-22 | 초기 생성 | Claude |
+| 0.9  | 2024-12-21 | 초안 검토 | -      |
 
 ## 검증 상태
 
 - **[x]** 내부 문서 참조 확인
 - **[x]** 외부 링크 유효성 검증 (2024-12-22 기준)
 - **[x]** 계산公式 검토
-- **[ ] 외부 데이터 최신화 (2025-01-31 예정)
-- **[ ] 벤치마크 데이터 업데이트 (분기별)
+- \*\*[ ] 외부 데이터 최신화 (2025-01-31 예정)
+- \*\*[ ] 벤치마크 데이터 업데이트 (분기별)
 
 ## 피드백 및 업데이트
 
 이 문서에 대한 수정 제안이나 업데이트가 필요한 경우:
+
 1. GitHub Issue 생성
 2. 변경사항 Pull Request 제출
 3. 검토 후 머지

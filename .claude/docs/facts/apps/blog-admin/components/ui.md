@@ -28,6 +28,7 @@ interface ImageUploaderProps {
 ```
 
 **Features**:
+
 - Drag-and-drop visual feedback
 - Loading state with spinner
 - Error message display
@@ -71,6 +72,7 @@ interface MarkdownEditorProps {
 ```
 
 **Toolbar Features**:
+
 - Headings (H1, H2, H3)
 - Text formatting (bold, italic)
 - Links and images
@@ -79,6 +81,7 @@ interface MarkdownEditorProps {
 - Lists (ordered and unordered)
 
 **Keyboard Shortcuts**:
+
 - `Cmd/Ctrl+B`: Bold
 - `Cmd/Ctrl+I`: Italic
 - `Cmd/Ctrl+K`: Link
@@ -113,6 +116,7 @@ interface TagInputProps {
 ```
 
 **Features**:
+
 - Tag visualization with pills
 - Individual tag removal
 - Add tags via Enter key or comma
@@ -149,6 +153,7 @@ interface DeleteConfirmModalProps {
 ```
 
 **Features**:
+
 - Backdrop blur effect
 - Warning icon and styling
 - File name in monospace font
@@ -172,6 +177,7 @@ interface DeleteConfirmModalProps {
 - **Evidence**: Positioned at top-right with custom styling
 
 **Features**:
+
 - Toast type-specific styling
 - Rich colors support
 - Close button
@@ -214,6 +220,7 @@ All shared components follow consistent styling patterns:
 ### Dark Mode Support
 
 All components support dark mode via Tailwind dark prefixes:
+
 - Backgrounds: `bg-white dark:bg-slate-900`
 - Text: `text-slate-900 dark:text-white`
 - Borders: `border-slate-200 dark:border-slate-600`
@@ -222,18 +229,21 @@ All components support dark mode via Tailwind dark prefixes:
 ## Accessibility Features
 
 ### Keyboard Navigation
+
 - All inputs keyboard accessible
 - Tab order logical
 - Focus states visible
 - Modals trap focus
 
 ### ARIA Support
+
 - Semantic HTML elements
 - Proper button types
 - Label associations
 - Error announcements
 
 ### Visual Accessibility
+
 - High contrast ratios
 - Clear visual hierarchy
 - Loading states communicated
@@ -242,27 +252,26 @@ All components support dark mode via Tailwind dark prefixes:
 ## Usage Patterns
 
 ### Form Integration
+
 ```tsx
 // TagInput in forms
 <div className="form-group">
   <label>Tags</label>
-  <TagInput
-    value={tags}
-    onChange={setTags}
-    placeholder="Add tags..."
-  />
+  <TagInput value={tags} onChange={setTags} placeholder="Add tags..." />
 </div>
 ```
 
 ### Modal Usage
+
 ```tsx
 // Lazy-loaded modal for performance
 const DeleteConfirmModal = lazy(() =>
-  import("@/shared/ui/modal").then(m => ({ default: m.DeleteConfirmModal }))
+  import('@/shared/ui/modal').then(m => ({ default: m.DeleteConfirmModal }))
 );
 ```
 
 ### Editor Integration
+
 ```tsx
 // MarkdownEditor with image upload
 <MarkdownEditor

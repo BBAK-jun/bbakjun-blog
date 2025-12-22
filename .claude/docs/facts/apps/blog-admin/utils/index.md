@@ -10,6 +10,7 @@
 ### Shared Layer 유틸리티
 
 **Location**: `src/shared/lib/`
+
 - **Purpose**: 애플리케이션 전반에서 공통으로 사용되는 유틸리티 모음
 - **Key Details**:
   - 인증 관련 기능 (JWT 기반 세션, 비밀번호 해싱)
@@ -28,6 +29,7 @@
 ### Entity Layer 유틸리티
 
 **Location**: `src/entities/*/lib/`
+
 - **Purpose**: 각 도메인 엔티티별 비즈니스 로직 및 데이터 처리
 - **Key Details**:
   - File 엔티티: Blob CDC 캐싱 구현
@@ -46,6 +48,7 @@
 ### 1. 인증 (Authentication)
 
 **Location**: `src/shared/lib/auth/`
+
 - **Purpose**: JWT 기반 인증 및 세션 관리
 - **Functions**:
   - `hashPassword()`: bcrypt를 이용한 비밀번호 해싱
@@ -60,6 +63,7 @@
 ### 2. 데이터 포매팅 (Data Formatting)
 
 **Location**: `src/shared/lib/format/`
+
 - **Purpose**: 다양한 데이터 형식 변환 및 포매팅
 - **Functions**:
   - `formatDate()`: 한국어 형식 날짜 포맷팅
@@ -72,6 +76,7 @@
 ### 3. 캐싱 (Caching)
 
 **Location**: 여러 레이어에 분산
+
 - **Purpose**: 데이터 조회 성능 최적화
 - **Components**:
   - React Query: 클라이언트 캐싱
@@ -84,6 +89,7 @@
 ### 4. API 서비스 (API Services)
 
 **Location**: `src/shared/api/`
+
 - **Purpose**: 외부 API 호출 및 응답 처리
 - **Services**:
   - Blob Files API: 파일 목록 조회
@@ -97,6 +103,7 @@
 ### 5. 검증 (Validation)
 
 **Location**: `src/shared/lib/schemas/`
+
 - **Purpose**: 입력 데이터 검증 및 타입 안전성 보장
 - **Schemas**:
   - Frontmatter 스키마: 블로그 포스트 메타데이터
@@ -110,18 +117,21 @@
 ### 권장 임포트 패턴
 
 1. **Shared 유틸리티**:
+
 ```typescript
 import { formatFileSize, formatDate } from '@/shared/lib';
 import { frontmatterSchema } from '@/shared/lib/schemas';
 ```
 
 2. **Entity 유틸리티**:
+
 ```typescript
 import { parseFrontMatter } from '@/entities/frontmatter/lib/frontmatter';
 import { syncBlobToDatabase } from '@/entities/file/lib/blob-cdc';
 ```
 
 3. **API 서비스**:
+
 ```typescript
 import { listFiles } from '@/shared/api';
 import { blobFilesQuerySchema } from '@/shared/api/blob-files';

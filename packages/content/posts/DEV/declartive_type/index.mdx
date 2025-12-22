@@ -18,51 +18,51 @@ modal Store가 존재하고 store는 state와 state를 변경하는 action으로
 
 ```ts
 // src/slices/modalSlice.ts
-import { StoreApi } from 'zustand'
+import { StoreApi } from 'zustand';
 
-type SetState = StoreApi<CreateModalSlice>['setState']
+type SetState = StoreApi<CreateModalSlice>['setState'];
 
 type State = {
-  visible: Record<string, boolean>
-}
+  visible: Record<string, boolean>;
+};
 
 type Action = {
-  open: (modalName: string) => void
-  close: (modalName: string) => void
-}
+  open: (modalName: string) => void;
+  close: (modalName: string) => void;
+};
 
-type CreateModalSlice = State & { action: Action }
+type CreateModalSlice = State & { action: Action };
 
 const initialState: State = {
   visible: {},
-}
+};
 
 const createModalSlice = (set: SetState): CreateModalSlice => ({
   ...initialState,
   action: {
-    open: (modalName) => {
-      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }))
+    open: modalName => {
+      set(prev => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }));
     },
-    close: (modalName) => {
-      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }))
+    close: modalName => {
+      set(prev => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }));
     },
   },
-})
+});
 
-export default createModalSlice
+export default createModalSlice;
 
 // src/stores/useModalStore.ts
-const useModalStore = create(createModalSlice)
+const useModalStore = create(createModalSlice);
 
 const useModalState = () => {
-  return useModalStore((state) => ({
+  return useModalStore(state => ({
     visible: state.visible,
-  }))
-}
+  }));
+};
 
 const useModalAction = () => {
-  return useModalStore((state) => state.action)
-}
+  return useModalStore(state => state.action);
+};
 ```
 
 문제는 없어보인다!
@@ -93,13 +93,13 @@ button을 클릭하면 **create**라는 키값이 on되지만 **visible.crate**�
 
 ```ts
 type State<T extends string> = {
-  visible: Record<T, boolean>
-}
+  visible: Record<T, boolean>;
+};
 
 type Action<T> = {
-  open: (modalName: T) => void
-  close: (modalName: T) => void
-}
+  open: (modalName: T) => void;
+  close: (modalName: T) => void;
+};
 ```
 
 원하는 부분은 이곳이다. visible의 key값이 string이 아닌 사용처에서 지정해준 `KeyType`일것이다.
@@ -108,30 +108,30 @@ type Action<T> = {
 
 ```ts
 // src/slices/modalSlice.ts
-type CreateModalSlice<T extends string> = State<T> & { action: Action<T> }
+type CreateModalSlice<T extends string> = State<T> & { action: Action<T> };
 
 const createModalSlice = <T extends string>(set: SetState<T>): CreateModalSlice<T> => ({
   ...initialState,
   action: {
-    open: (modalName) => {
-      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }))
+    open: modalName => {
+      set(prev => ({ ...prev, visible: { ...prev.visible, [modalName]: true } }));
     },
-    close: (modalName) => {
-      set((prev) => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }))
+    close: modalName => {
+      set(prev => ({ ...prev, visible: { ...prev.visible, [modalName]: false } }));
     },
   },
-})
+});
 
 // src/stores/useModalStore.ts
-import createModalStore, { CreateModalSlice } from '../slices/ModalSliceBottomUp'
+import createModalStore, { CreateModalSlice } from '../slices/ModalSliceBottomUp';
 
-const modalStore = createModalStore<string>()
+const modalStore = createModalStore<string>();
 
 const useModalStore = <T extends string>() => {
-  return modalStore() as CreateModalSlice<T>
-}
+  return modalStore() as CreateModalSlice<T>;
+};
 
-export { useModalStore }
+export { useModalStore };
 ```
 
 타입단언으로 리턴타입을 명시해주었다. 이로써 사용처에서 타입을 전달하여 modalStore까지 타입이 전달되고 State, Action에 타입이 전달될수있는 구조가 되었다.

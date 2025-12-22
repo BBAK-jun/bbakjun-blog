@@ -16,7 +16,7 @@ async function cleanupDuplicates() {
     // Group MDX files by pathname (excluding .metadata.json files)
     const mdxFilesByPath = new Map();
 
-    blobs.forEach((blob) => {
+    blobs.forEach(blob => {
       // Only process .mdx files
       if (!blob.pathname.endsWith('.mdx')) {
         return;
@@ -90,7 +90,9 @@ async function cleanupDuplicates() {
           console.log(`   ❌ Deleted: ${file.uploadedAt?.toISOString()} (${file.size} bytes)`);
           deletedCount++;
         } catch (error) {
-          console.log(`   ⚠️  Failed to delete: ${file.uploadedAt?.toISOString()} - ${error.message}`);
+          console.log(
+            `   ⚠️  Failed to delete: ${file.uploadedAt?.toISOString()} - ${error.message}`
+          );
           errorCount++;
         }
       }
@@ -102,7 +104,6 @@ async function cleanupDuplicates() {
     if (errorCount > 0) {
       console.log(`Failed to delete: ${errorCount} files`);
     }
-
   } catch (error) {
     console.error('Error during cleanup:', error);
     process.exit(1);

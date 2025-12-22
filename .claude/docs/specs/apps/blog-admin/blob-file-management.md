@@ -73,6 +73,7 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
+
   ```
   Blog-Admin UI
       ↓
@@ -129,6 +130,7 @@
 ## 데이터 구조 (Data Structure)
 
 - **모델/스키마**:
+
   ```prisma
   model BlobFile {
     id          String   @id @default(cuid())

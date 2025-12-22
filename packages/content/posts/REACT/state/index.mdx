@@ -49,7 +49,7 @@ export default App () {
 `useState` hook은 두가지 Interface를 제공한다.
 
 ```js
-const [state, setState] = useState(initialState)
+const [state, setState] = useState(initialState);
 ```
 
 - state : 렌더링 간에 데이터를 유지하기 위한 **상태 변수**
@@ -75,7 +75,7 @@ export default App () {
 리액트에게 **상태 변수**를 업데이트하며 **리렌더 트리거**를 주기위해선 위와같이 작성해야합니다.
 
 ```js
-const [state, setState] = useState(0)
+const [state, setState] = useState(0);
 ```
 
 useState의 매개변수는 오직 초기값뿐이다. 위의 코드에서는 state에게 초기값(initialValue)로 0을 할당해주었다.
@@ -96,22 +96,22 @@ useState의 매개변수는 오직 초기값뿐이다. 위의 코드에서는 st
 React를 사용하는 엔지니어는 하나의 컴포넌트에 여러 타입의 여러 상태를 작성할 수 있다.
 
 ```jsx
-import { useState } from 'react'
-import { sculptureList } from './data.js'
+import { useState } from 'react';
+import { sculptureList } from './data.js';
 
 export default function App() {
-  const [index, setIndex] = useState(0)
-  const [showMore, setShowMore] = useState(false)
+  const [index, setIndex] = useState(0);
+  const [showMore, setShowMore] = useState(false);
 
   function handleNextClick() {
-    setIndex(index + 1)
+    setIndex(index + 1);
   }
 
   function handleMoreClick() {
-    setShowMore(!showMore)
+    setShowMore(!showMore);
   }
 
-  let sculpture = sculptureList[index]
+  let sculpture = sculptureList[index];
   return (
     <>
       <button onClick={handleNextClick}>Next</button>
@@ -126,7 +126,7 @@ export default function App() {
       {showMore && <p>{sculpture.description}</p>}
       <img src={sculpture.url} alt={sculpture.alt} />
     </>
-  )
+  );
 }
 ```
 
@@ -149,53 +149,53 @@ useState에는 어떠한 식별자도 없는데 어떻게 상태 변수를 반�
 아래의 코드는 React를 사용하지 않지만 내부적으로 작동방식을 설명하는 아이디어를 제공해준다.
 
 ```js
-let componentHooks = []
-let currentHookIndex = 0
+let componentHooks = [];
+let currentHookIndex = 0;
 
 // useState 정의
 function useState(initialState) {
   // 상태쌍의 배열
-  let pair = componentHooks[currentHookIndex]
+  let pair = componentHooks[currentHookIndex];
 
   if (pair) {
     /*
      * 첫번째 렌더에는 해당코드 실행X
      * 상태 쌍의 배열이 존재할경우 반환하고 다음 hooks 호출을 준비한다
      */
-    currentHookIndex++
-    return pair
+    currentHookIndex++;
+    return pair;
   }
 
   // 최초렌더시에 pair에 상태를 생성하고 저장한다
-  pair = [initialState, setState]
+  pair = [initialState, setState];
 
   // 유저가 상태변경을 요청했을때 새로운 값을 쌍에 넣어준다.
   function setState(nextState) {
-    pair[0] = nextState
-    updateDOM()
+    pair[0] = nextState;
+    updateDOM();
   }
 
   // 다음 렌더링의 상태쌍을 저장하고 다음 hooks 호출을 준비한다
-  componentHooks[currentHookIndex] = pair
-  currentHookIndex++
-  return pair
+  componentHooks[currentHookIndex] = pair;
+  currentHookIndex++;
+  return pair;
 }
 
 // 컴포넌트
 function Gallery() {
   // Each useState() call will get the next pair.
-  const [index, setIndex] = useState(0)
-  const [showMore, setShowMore] = useState(false)
+  const [index, setIndex] = useState(0);
+  const [showMore, setShowMore] = useState(false);
 
   function handleNextClick() {
-    setIndex(index + 1)
+    setIndex(index + 1);
   }
 
   function handleMoreClick() {
-    setShowMore(!showMore)
+    setShowMore(!showMore);
   }
 
-  let sculpture = sculptureList[index]
+  let sculpture = sculptureList[index];
 
   // 이부분은 JSX(React)가 맡아야할 부분이지만, 예시를 위해 작성했다.
   return {
@@ -207,35 +207,35 @@ function Gallery() {
     description: showMore ? sculpture.description : null,
     imageSrc: sculpture.url,
     imageAlt: sculpture.alt,
-  }
+  };
 }
 
 // 리렌더 발생을 위한 함수
 function updateDOM() {
   // 현재 훅 인덱스를 리렌더 이전에 초기화한다.
-  currentHookIndex = 0
-  let output = Gallery()
+  currentHookIndex = 0;
+  let output = Gallery();
 
   // 컴포넌트 반환값과 맞는 DOM요소를 연결해주는데 이 역할은 리액트가 제공해준다.
-  nextButton.onclick = output.onNextClick
-  header.textContent = output.header
-  moreButton.onclick = output.onMoreClick
-  moreButton.textContent = output.more
-  image.src = output.imageSrc
-  image.alt = output.imageAlt
+  nextButton.onclick = output.onNextClick;
+  header.textContent = output.header;
+  moreButton.onclick = output.onMoreClick;
+  moreButton.textContent = output.more;
+  image.src = output.imageSrc;
+  image.alt = output.imageAlt;
   if (output.description !== null) {
-    description.textContent = output.description
-    description.style.display = ''
+    description.textContent = output.description;
+    description.style.display = '';
   } else {
-    description.style.display = 'none'
+    description.style.display = 'none';
   }
 }
 
-let nextButton = document.getElementById('nextButton')
-let header = document.getElementById('header')
-let moreButton = document.getElementById('moreButton')
-let description = document.getElementById('description')
-let image = document.getElementById('image')
+let nextButton = document.getElementById('nextButton');
+let header = document.getElementById('header');
+let moreButton = document.getElementById('moreButton');
+let description = document.getElementById('description');
+let image = document.getElementById('image');
 ```
 
 React를 사용하기 위해 이 모든과정을 이해할필요는 없지만, 유용한 사실인건 틀림없다.
@@ -245,7 +245,7 @@ React를 사용하기 위해 이 모든과정을 이해할필요는 없지만, �
 State는 컴포넌트 인스턴스의 로컬 요소다. 즉 동일한 컴포넌트를 두번 렌더링하면 각 복사본이 완전히 격리된 상태가 된다. 둘중 하나의 컴포넌트에서 내부 상태를 변경하더라도 다른 컴포넌트는 영향을 받지않는다.
 
 ```jsx
-import Gallery from './Gallery.js'
+import Gallery from './Gallery.js';
 
 export default function Page() {
   return (
@@ -253,7 +253,7 @@ export default function Page() {
       <Gallery />
       <Gallery />
     </div>
-  )
+  );
 }
 ```
 

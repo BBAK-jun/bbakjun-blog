@@ -27,20 +27,20 @@ DEV_BBAK은 **pnpm Workspace + Turbo**를 사용하는 모노레포 기반의 �
 
 ### 기술 스택
 
-| 레이어 | 기술 |
-|--------|------|
-| **프레임워크** | Next.js 15 (App Router) |
-| **언어** | TypeScript |
-| **패키지 관리자** | pnpm (workspace) |
-| **빌드 도구** | Turbo |
-| **스타일링** | Tailwind CSS v4 |
-| **콘텐츠** | MDX (gray-matter, unified) |
-| **스토리지** | Vercel Blob Storage |
-| **데이터베이스** | Redis (Vercel KV) |
-| **검증** | Zod |
-| **상태 관리** | TanStack Query (React Query) |
-| **폼 관리** | React Hook Form + Zod |
-| **배포** | Vercel |
+| 레이어            | 기술                         |
+| ----------------- | ---------------------------- |
+| **프레임워크**    | Next.js 15 (App Router)      |
+| **언어**          | TypeScript                   |
+| **패키지 관리자** | pnpm (workspace)             |
+| **빌드 도구**     | Turbo                        |
+| **스타일링**      | Tailwind CSS v4              |
+| **콘텐츠**        | MDX (gray-matter, unified)   |
+| **스토리지**      | Vercel Blob Storage          |
+| **데이터베이스**  | Redis (Vercel KV)            |
+| **검증**          | Zod                          |
+| **상태 관리**     | TanStack Query (React Query) |
+| **폼 관리**       | React Hook Form + Zod        |
+| **배포**          | Vercel                       |
 
 ---
 
@@ -158,12 +158,12 @@ content/posts/
 
 ```yaml
 ---
-title: "포스트 제목"             # 필수
-date: "2024-11-15"             # 필수, YYYY-MM-DD
-description: "포스트 설명"       # 필수
-tags: ["nextjs", "react"]      # 필수, 배열
-author: "bbakjun"              # 필수
-draft: false                   # 옵션, 기본값 false
+title: '포스트 제목' # 필수
+date: '2024-11-15' # 필수, YYYY-MM-DD
+description: '포스트 설명' # 필수
+tags: ['nextjs', 'react'] # 필수, 배열
+author: 'bbakjun' # 필수
+draft: false # 옵션, 기본값 false
 ---
 ```
 
@@ -353,14 +353,14 @@ apps/blog-admin/src/
 
 ```typescript
 export const createFileSchema = z.object({
-  pathname: z.string().min(1, "경로는 필수입니다"),
-  title: z.string().min(1, "제목은 필수입니다"),
-  description: z.string().min(1, "설명은 필수입니다"),
+  pathname: z.string().min(1, '경로는 필수입니다'),
+  title: z.string().min(1, '제목은 필수입니다'),
+  description: z.string().min(1, '설명은 필수입니다'),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   tags: z.array(z.string().min(1)).min(1),
-  author: z.string().min(1, "작성자는 필수입니다"),
+  author: z.string().min(1, '작성자는 필수입니다'),
   draft: z.boolean().optional(),
-  content: z.string().min(1, "내용은 필수입니다"),
+  content: z.string().min(1, '내용은 필수입니다'),
 });
 
 export type CreateFileInput = z.infer<typeof createFileSchema>;
@@ -387,8 +387,8 @@ export const frontmatterEntitySchema = z.object({
 
 ```typescript
 export const fileCreateFormSchema = z.object({
-  title: z.string().min(1, "제목을 입력해주세요"),
-  description: z.string().min(1, "설명을 입력해주세요"),
+  title: z.string().min(1, '제목을 입력해주세요'),
+  description: z.string().min(1, '설명을 입력해주세요'),
   // ... 클라이언트 검증용 스키마
 });
 ```
@@ -416,16 +416,16 @@ export async function createFile(input: CreateFileInput) {
 
 **위치**: `apps/blog-admin/src/app/actions/files.ts`
 
-| 함수 | 설명 | 검증 |
-|------|------|------|
-| `getFileContent(pathname)` | 파일 내용 조회 | - |
-| `createFile(input)` | 파일 생성 | ✅ Zod |
-| `updateFile(input)` | 파일 업데이트 | ✅ Zod |
-| `deleteFile(pathname)` | 파일 삭제 | ✅ Zod |
-| `listFiles(limit)` | 파일 목록 조회 | - |
-| `uploadMarkdown(formData)` | MDX 업로드 | 수동 |
-| `previewMarkdown(content)` | 마크다운 미리보기 | - |
-| `listImages(prefix, limit)` | 이미지 목록 조회 | - |
+| 함수                        | 설명              | 검증   |
+| --------------------------- | ----------------- | ------ |
+| `getFileContent(pathname)`  | 파일 내용 조회    | -      |
+| `createFile(input)`         | 파일 생성         | ✅ Zod |
+| `updateFile(input)`         | 파일 업데이트     | ✅ Zod |
+| `deleteFile(pathname)`      | 파일 삭제         | ✅ Zod |
+| `listFiles(limit)`          | 파일 목록 조회    | -      |
+| `uploadMarkdown(formData)`  | MDX 업로드        | 수동   |
+| `previewMarkdown(content)`  | 마크다운 미리보기 | -      |
+| `listImages(prefix, limit)` | 이미지 목록 조회  | -      |
 
 ### API 라우트
 
@@ -436,12 +436,14 @@ MDX 파일을 Blob Storage에 업로드합니다.
 **인증**: `Authorization: Bearer {BACKOFFICE_API_KEY}`
 
 **Request (multipart/form-data)**:
+
 ```
 - file: File (.md 또는 .mdx)
 - path: string (저장 경로, 예: "DEV/my-post")
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -456,12 +458,14 @@ MDX 파일을 Blob Storage에 업로드합니다.
 이미지를 Blob Storage에 업로드합니다.
 
 **Request (multipart/form-data)**:
+
 ```
 - file: File (image/jpeg, image/png, image/gif, image/webp)
 - pathname: string (옵션, 커스텀 경로)
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -499,6 +503,7 @@ export const useDeleteFileMutation = () => useMutation({...});
 #### 실행 순서
 
 1. **이미지 업로드**: `apps/blog/public/static/images/` → Vercel Blob
+
    ```bash
    export BACKOFFICE_API_KEY=your-key
    node scripts/migrate-images.js
@@ -539,6 +544,7 @@ NEXT_PUBLIC_BLOG_URL=https://your-blog.com
 마크다운 처리 및 포스트 로딩 로직을 제공합니다.
 
 **주요 함수**:
+
 - `processMarkdown(content: string)`: Markdown → HTML
 - `getAllPosts()`: 모든 포스트 로드
 - `getPostBySlug(slug: string)`: 특정 포스트 로드
@@ -553,9 +559,11 @@ NEXT_PUBLIC_BLOG_URL=https://your-blog.com
 Redis 기반 뷰 트래킹 클래스를 제공합니다.
 
 **주요 클래스**:
+
 - `ViewCounter`: Redis 뷰 카운터 관리
 
 **메서드**:
+
 - `getViews(slug)`: 조회수 조회
 - `incrementViews(slug, sessionId)`: 조회수 증가 (중복 방지)
 - `getTopPosts(limit)`: 인기 포스트
@@ -567,6 +575,7 @@ Redis 기반 뷰 트래킹 클래스를 제공합니다.
 공유 TypeScript 타입 정의를 제공합니다.
 
 **주요 타입**:
+
 - `Post`: 블로그 포스트 타입
 - `FrontMatter`: Front Matter 타입
 - `Tag`: 태그 타입
@@ -578,6 +587,7 @@ Redis 기반 뷰 트래킹 클래스를 제공합니다.
 공유 UI 컴포넌트 및 유틸리티를 제공합니다.
 
 **주요 함수**:
+
 - `cn(...inputs)`: clsx + tailwind-merge 유틸리티
 
 ### @repo/config
@@ -691,10 +701,10 @@ pnpm add @repo/my-package@workspace:*
 
 ```typescript
 // apps/blog-admin/src/shared/lib/schemas/my.schema.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 export const mySchema = z.object({
-  field: z.string().min(1, "필드는 필수입니다"),
+  field: z.string().min(1, '필드는 필수입니다'),
 });
 
 export type MyInput = z.infer<typeof mySchema>;
@@ -704,7 +714,7 @@ export type MyInput = z.infer<typeof mySchema>;
 
 ```typescript
 // apps/blog-admin/src/app/actions/my-actions.ts
-import { mySchema } from "@/shared/lib/schemas/my.schema";
+import { mySchema } from '@/shared/lib/schemas/my.schema';
 
 export async function myAction(input: MyInput) {
   const result = mySchema.safeParse(input);
@@ -832,7 +842,7 @@ Admin에서 파일을 수정하면 자동으로 Blog의 ISR 재검증 API를 호
 ```typescript
 // apps/blog-admin/src/app/actions/files.ts
 await fetch(`${blogUrl}/api/revalidate?path=/blog/${slug}`, {
-  method: "POST",
+  method: 'POST',
 });
 ```
 

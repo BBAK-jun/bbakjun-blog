@@ -84,12 +84,14 @@ Pages (app router)
 ## Naming Conventions
 
 ### File Naming
+
 - **Components**: kebab-case with `Component` suffix (e.g., `file-list-item.tsx`)
 - **Features**: feature-name with descriptive sub-components
 - **Widgets**: widget-name with `-widget.tsx` suffix
 - **Shared UI**: descriptive names without prefixes (e.g., `tag-input.tsx`)
 
 ### Directory Structure
+
 ```
 [layer]/[domain]/
   ├── model/     - Types, interfaces, business logic
@@ -101,6 +103,7 @@ Pages (app router)
 ## Import Patterns
 
 ### Allowed Dependencies
+
 - **Widgets** → Features → Entities → Shared
 - **Features** → Entities → Shared
 - **Entities** → Shared
@@ -110,30 +113,33 @@ Pages (app router)
 
 ```typescript
 // Widget importing features
-import { useFileSearch } from "@/features/file-search"
-import { useFileFilter } from "@/features/file-filter"
+import { useFileSearch } from '@/features/file-search';
+import { useFileFilter } from '@/features/file-filter';
 
 // Feature importing entities
-import { type BlobFile } from "@/entities/file"
+import { type BlobFile } from '@/entities/file';
 
 // Any layer importing shared
-import { TagInput } from "@/shared/ui/tag-input"
-import { formatFileSize } from "@/shared/lib/format"
+import { TagInput } from '@/shared/ui/tag-input';
+import { formatFileSize } from '@/shared/lib/format';
 ```
 
 ## State Management Patterns
 
 ### Entity State
+
 - Managed at entity level
 - React Query for server state
 - Example: `useFilesQuery()` in file entity
 
 ### Feature State
+
 - Local to feature
 - Custom hooks for feature logic
 - Example: `useFileSearch()` hook with search state
 
 ### Widget State
+
 - Composes feature and entity states
 - Handles cross-feature interactions
 - Example: FileManagerWidget orchestrates multiple features
@@ -141,6 +147,7 @@ import { formatFileSize } from "@/shared/lib/format"
 ## Styling Approach
 
 ### Tailwind CSS v4
+
 - Utility-first CSS
 - Dark mode support via `dark:` prefixes
 - Consistent color scheme:
@@ -169,17 +176,20 @@ import { formatFileSize } from "@/shared/lib/format"
 ## Accessibility Features
 
 ### Keyboard Navigation
+
 - All interactive elements keyboard accessible
 - Focus management in modals
 - Keyboard shortcuts in MarkdownEditor (Cmd/Ctrl+B, I, K)
 
 ### ARIA Support
+
 - Semantic HTML elements
 - Proper button types
 - Descriptive labels and placeholders
 - Screen reader friendly error messages
 
 ### Focus Management
+
 - Visible focus states on all interactive elements
 - Modal focus trapping
 - Skip links consideration
@@ -187,6 +197,7 @@ import { formatFileSize } from "@/shared/lib/format"
 ## Composition Patterns
 
 ### Feature Composition in Widgets
+
 ```tsx
 // FileManagerWidget composing multiple features
 const { searchQuery, setSearchQuery } = useFileSearch(files);
@@ -195,6 +206,7 @@ const { deleteFile } = useFileDelete();
 ```
 
 ### Shared UI in Features
+
 ```tsx
 // FileCreator using shared components
 <MarkdownEditor value={content} onChange={setContent} />
@@ -203,16 +215,14 @@ const { deleteFile } = useFileDelete();
 ```
 
 ### Entity UI in Features
+
 ```tsx
 // FileListWidget using entity component
-{files.map(file => (
-  <FileListItem
-    key={file.id}
-    file={file}
-    onView={handleView}
-    onDelete={handleDelete}
-  />
-))}
+{
+  files.map(file => (
+    <FileListItem key={file.id} file={file} onView={handleView} onDelete={handleDelete} />
+  ));
+}
 ```
 
 ## Error Boundaries
@@ -225,16 +235,19 @@ const { deleteFile } = useFileDelete();
 ## Performance Considerations
 
 ### Code Splitting
+
 - Lazy loading for modals
 - Dynamic imports for large components
 - Route-based splitting at app level
 
 ### Optimizations
+
 - React.memo for expensive components
 - Debounced search inputs
 - Virtualization for large lists (when needed)
 
 ### Bundle Size
+
 - Shared components optimized for reuse
 - Feature-based code organization
 - Tree-shaking friendly exports

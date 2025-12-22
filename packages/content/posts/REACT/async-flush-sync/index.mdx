@@ -18,8 +18,8 @@ tags: ['REACT']
 ```tsx
 const handleClick = () => {
   setCount(count + 1); // 첫번째 업데이트
-  setVisible((visible) => !visible); // 두번째 업데이트
-}
+  setVisible(visible => !visible); // 두번째 업데이트
+};
 ```
 
 위 코드에서 `handleClick` 함수는 두 개의 상태 업데이트를 포함합니다. 이 경우, 두 개의 업데이트가 모두 동시에 적용되지 않고, 한번의 렌더링 사이클에서 순서대로 처리됩니다.
@@ -32,8 +32,8 @@ const handleClick = () => {
 // 리액트 18 이전에는 두번의 리렌더링이 발생합니다.
 setTimeout(() => {
   setCount(count + 1);
-  setVisible((visible) => !visible);
-}, 1000)
+  setVisible(visible => !visible);
+}, 1000);
 ```
 
 리액트 18 이후에는 모든 비동기 콜백에서도 배치가 작동합니다.
@@ -42,8 +42,8 @@ setTimeout(() => {
 // 리액트 18 이후에는 한번의 리렌더링이 발생합니다.
 setTimeout(() => {
   setCount(count + 1);
-  setVisible((visible) => !visible);
-}, 1000)
+  setVisible(visible => !visible);
+}, 1000);
 ```
 
 리액트는 내부적으로 `executionContext` 라는 개념을 사용하여 배치 업데이트를 관리합니다. 이벤트 핸들러가 시작되면 `BatchedContext` 플래그가 설정되고, 모든 상태 업데이트는 큐에 추가됩니다. 이벤트 핸들러가 종료되면 `NoBatchingContext` 가 설정됩니다.
@@ -81,14 +81,15 @@ function dispatchAction(fiber, queue, action) {
   const alternate = fiber.alternate;
 
   // 현재 렌더링 중인지 확인
-  if (fiber === currentlyRenderingFiber ||
-      (alternate !== null && alternate === currentlyRenderingFiber)) {
+  if (
+    fiber === currentlyRenderingFiber ||
+    (alternate !== null && alternate === currentlyRenderingFiber)
+  ) {
     // 렌더 단계 업데이트로 표시
     didScheduleRenderPhaseUpdateDuringThisPass = didScheduleRenderPhaseUpdate = true;
   } else {
     // 상태 업데이트 최적화: 변경이 없으면 렌더링 생략
-    if (fiber.lanes === NoLanes &&
-        (alternate === null || alternate.lanes === NoLanes)) {
+    if (fiber.lanes === NoLanes && (alternate === null || alternate.lanes === NoLanes)) {
       const lastRenderedReducer = queue.lastRenderedReducer;
       if (lastRenderedReducer !== null) {
         try {
@@ -134,7 +135,7 @@ function dispatchAction(fiber, queue, action) {
 const handleClick = () => {
   flushSync(() => {
     setCount(count + 1);
-    setVisible((visible) => !visible);
+    setVisible(visible => !visible);
   });
 
   // 이 시점에서 DOM은 이미 업데이트되어 있습니다.
@@ -142,7 +143,7 @@ const handleClick = () => {
   // 이 업데이트는 별도로 배치 처리됩니다.
   setFlag(flag => !flag);
   setName('John');
-}
+};
 ```
 
 ## 다양한 업데이트 메커니즘
@@ -298,15 +299,12 @@ export function flushControlled(fn: () => mixed): void {
 // 개별 업데이트 플러시
 export function flushDiscreteUpdates() {
   // 이미 렌더링 중인 경우 처리
-  if (
-    (executionContext & (BatchedContext | RenderContext | CommitContext)) !==
-    NoContext
-  ) {
+  if ((executionContext & (BatchedContext | RenderContext | CommitContext)) !== NoContext) {
     if (__DEV__) {
       if ((executionContext & RenderContext) !== NoContext) {
         console.error(
           'unstable_flushDiscreteUpdates: Cannot flush updates when React is ' +
-            'already rendering.',
+            'already rendering.'
         );
       }
     }
@@ -353,26 +351,26 @@ function flushPendingDiscreteUpdates() {
 ```tsx
 const syncFunction = () => {
   flushSync(() => {
-    setCount((count) => count + 1)
-  })
+    setCount(count => count + 1);
+  });
 
-  setText('Hello syncFunction')
-}
+  setText('Hello syncFunction');
+};
 
 const asyncFunctionWithoutFlushSync = async () => {
-  await delay(1000)
-  setCount((count) => count + 1)
-  setText('Hello asyncFunctionWithoutFlushSync')
-}
+  await delay(1000);
+  setCount(count => count + 1);
+  setText('Hello asyncFunctionWithoutFlushSync');
+};
 
 const asyncFunctionWithFlushSync = async () => {
   flushSync(async () => {
-    await delay(1000)
-    setCount((count) => count + 1)
-  })
+    await delay(1000);
+    setCount(count => count + 1);
+  });
 
-  setText('Hello asyncFunctionWithFlushSync')
-}
+  setText('Hello asyncFunctionWithFlushSync');
+};
 ```
 
 여기서 주목해야할 차이점은 `flushSync` 내부에서 동기 처리 컨텍스트 밖에서 실행되는 것입니다.
@@ -407,10 +405,10 @@ const asyncFunctionWithFlushSync = async () => {
 
 ```js
 async function foo(x) {
-   let y = x + 5;
-   let a = await somethingAsync(y);
-   let b = await somethingAsync2(a);
-   return b;
+  let y = x + 5;
+  let a = await somethingAsync(y);
+  let b = await somethingAsync2(a);
+  return b;
 }
 ```
 
@@ -426,10 +424,10 @@ JavaScript 엔진에서 async 함수는 실제로 "상태 머신(State Machine)"
 
 ```js
 async function foo(x) {
-   let y = x + 5;
-   let a = await somethingAsync(y);
-   let b = await somethingAsync2(a);
-   return b;
+  let y = x + 5;
+  let a = await somethingAsync(y);
+  let b = await somethingAsync2(a);
+  return b;
 }
 ```
 
@@ -510,7 +508,7 @@ const handleClick = () => {
   });
 
   // 이 코드는 setData 전에 실행됨
-}
+};
 ```
 
 위 코드의 실행 순서는 다음과 같습니다

@@ -188,7 +188,7 @@ console.error('[API] Context: Error message', {
   error: error.message,
   stack: error.stack,
   userId: session?.user?.id,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 ```
 

@@ -5,15 +5,18 @@ This directory contains business insights and analysis extracted from the codeba
 ## Applications Overview
 
 ### 📊 Blog-Admin Application
+
 **Path**: [apps/blog-admin/](apps/blog-admin/)
 
 **Key Metrics**:
+
 - 💰 **Annual Savings**: $39,960/year (ROI: 1,738% over 3 years)
 - 🚀 **Productivity**: +45% developer efficiency
 - 🛡️ **Infrastructure**: -97.6% API calls (CDC caching)
 - ⚡ **Break-even**: 2 months
 
 **Available Analyses**:
+
 - [Stakeholder Mapping](apps/blog-admin/stakeholders/mapping.md) - Complete stakeholder analysis and engagement strategies
 - [ROI Analysis](apps/blog-admin/impact/roi.md) - Complete return on investment with projections
 - [Impact Overview](apps/blog-admin/impact/index.md) - Business impact summary
@@ -23,7 +26,8 @@ This directory contains business insights and analysis extracted from the codeba
 - [Full Insights](apps/blog-admin/index.md) - Complete insight directory
 
 ### 📝 Blog Application
-*Insights coming soon...*
+
+_Insights coming soon..._
 
 ## Insights Framework
 
@@ -41,16 +45,19 @@ apps/<app-name>/
 ## How to Use This Dashboard
 
 ### For Executives
+
 - Start with **exec/summary.md** for high-level business value
 - Review **impact/roi.md** for financial implications
 - Check **stakeholders/mapping.md** to understand organizational impact
 
 ### For Technical Leaders
+
 - Review **decisions/recommendations.md** for strategic initiatives
 - Check **tradeoffs.md** for architectural decisions
 - Use **appendix/needed-data.md** to identify metrics gaps
 
 ### For Product Managers
+
 - Review **impact/customer.md** for user experience implications
 - Check **decisions/recommendations.md** for feature prioritization
 - Use **stakeholders/mapping.md** for cross-functional alignment

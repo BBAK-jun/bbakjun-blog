@@ -37,11 +37,13 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 ## 문서 구조
 
 ### Pages
+
 - [Routes](pages/routes.md) - 페이지 라우팅 구조
 - [Layouts](pages/layouts.md) - 레이아웃 구성
 - [Rendering](pages/rendering.md) - 렌더링 전략
 
 ### APIs
+
 - [API Overview](apis/index.md) - API 아키텍처
 - [HTTP Routes](apis/http.md) - HTTP API 라우트
 - [RPC Routes](apis/rpc.md) - Hono RPC 라우트
@@ -49,27 +51,32 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - [Error Handling](apis/errors.md) - 에러 처리
 
 ### Schemas
+
 - [Database](schemas/db.md) - 데이터베이스 스키마
 - [Validation](schemas/validation.md) - 유효성 검사
 - [Types](schemas/types.md) - 타입 정의
 
 ### Components
+
 - [Component Architecture](components/index.md) - 컴포넌트 구조
 - [UI Components](components/ui.md) - 공용 UI 컴포넌트
 - [Patterns](components/patterns.md) - 컴포넌트 패턴
 
 ### Config
+
 - [Environment](config/env.md) - 환경 변수
 - [Next.js](config/next.md) - Next.js 설정
 - [Deployment](config/deployment.md) - 배포 설정
 - [Observability](config/observability.md) - 모니터링
 
 ### Utils
+
 - [Utilities Overview](utils/index.md) - 유틸리티 함수
 - [Data Transform](utils/data-transform.md) - 데이터 변환
 - [Caching](utils/caching.md) - 캐싱 전략
 
 ### Dependencies
+
 - [Key Libraries](dependencies/key-libs.md) - 핵심 라이브러리
 
 ## 빠른 참조

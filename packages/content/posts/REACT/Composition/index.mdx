@@ -15,15 +15,15 @@ tags: ['REACT']
 
 ```tsx
 class Person {
-  private readonly age: number
-  private readonly name: string
+  private readonly age: number;
+  private readonly name: string;
 }
 
 class Student extends Person {
   constrcotor(age, name) {
-    super()
-    this.age = age
-    this.name = name
+    super();
+    this.age = age;
+    this.name = name;
   }
 }
 ```
@@ -41,7 +41,7 @@ class Knife {
 }
 
 class 어린아이 {
-  private readonly weapon: Knife
+  private readonly weapon: Knife;
 }
 ```
 
@@ -97,10 +97,10 @@ const Modal = ({ children }) => {
       <ModalMain>{children}</ModalMain> // children이 존재한다.
       <ModalBottom></ModalBottom>
     </ModalContainer>
-  )
-}
+  );
+};
 
-export default Modal
+export default Modal;
 ```
 
 왜 이렇게 작성했을까?

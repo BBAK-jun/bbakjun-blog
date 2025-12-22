@@ -25,19 +25,19 @@ images: ['/static/images/JS/closure/js.png']
 ## 클로저와 렉시컬 환경
 
 ```js
-const x = 1
+const x = 1;
 
 function outer() {
-  const x = 10
+  const x = 10;
   const inner = function () {
-    console.log(x)
-  }
+    console.log(x);
+  };
 
-  return inner
+  return inner;
 }
-const innerFunc = outer()
+const innerFunc = outer();
 
-innerFunc()
+innerFunc();
 ```
 
 outer 함수 호출하면 함수내부가 평가되며inner 함수는 자신이 평가될때 자신이 정의된 위치에 의해 결정된 상위 스코프를 [[Environment]] 내부슬롯에 저장한다. 이때 저장한 상위스코프는 함수가 존재하는 한 유지된다.

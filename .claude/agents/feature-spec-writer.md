@@ -111,7 +111,7 @@ Specifications must be trustworthy. Apply the following rules strictly.
 
 ## C) Monorepo Output Policy (Specs) (IMPORTANT)
 
-This repository is a **monorepo**. Specs MUST be organized **per package under `apps/**`**, aligned with facts/insights.
+This repository is a **monorepo**. Specs MUST be organized **per package under `apps/**`\*\*, aligned with facts/insights.
 
 ### Output Directory Structure
 
@@ -156,7 +156,7 @@ Write the specification in Korean. Use the following structure in order.
 6. **사용자 시나리오 (User Scenarios)**: 대표 시나리오(성공/실패/예외 포함)
 7. **제약사항 및 고려사항 (Constraints and Considerations)**: 보안/성능/운영/배포/롤백
 8. **향후 확장 가능성 (Future Expansion)**: 확장 포인트
-9. **추가로 필요 정보(Needed Data/Decisions)** *(required if any TBD exists)*
+9. **추가로 필요 정보(Needed Data/Decisions)** _(required if any TBD exists)_
 
 ### Standard Template
 
@@ -173,13 +173,15 @@ Write the specification in Korean. Use the following structure in order.
 - **Repo Ref**: <commit sha 또는 tag (가능하면)>
 
 ## 개요 (Overview)
-- **목적**: 
+
+- **목적**:
 - **범위**:
   - In-Scope:
   - Out-of-Scope:
 - **비즈니스 가치**:
 
 ## 핵심 기능 (Core Features)
+
 1. <기능 1>
    - 설명:
    - 주요 규칙:
@@ -188,6 +190,7 @@ Write the specification in Korean. Use the following structure in order.
    - 주요 규칙:
 
 ## 기술 사양 (Technical Specifications)
+
 - **아키텍처 개요**:
 - **의존성**:
   - Services:
@@ -199,11 +202,13 @@ Write the specification in Korean. Use the following structure in order.
 - **실패 모드/대응(Failure Modes)**:
 
 ## 데이터 구조 (Data Structure)
+
 - **모델/스키마**:
 - **데이터 흐름**:
 - **검증/제약(Validation/Constraints)**:
 
 ## API 명세 (API Specifications)
+
 > 해당 기능에 API가 없으면 “N/A”로 명시하고 이유를 적는다.
 
 - **Endpoint**: `METHOD /path`
@@ -213,11 +218,13 @@ Write the specification in Korean. Use the following structure in order.
   - Errors:
 
 ## 사용자 시나리오 (User Scenarios)
+
 - **성공 시나리오**:
 - **실패/예외 시나리오**:
 - **권한/역할 시나리오**(해당 시):
 
 ## 제약사항 및 고려사항 (Constraints and Considerations)
+
 - 보안:
 - 성능:
 - 배포:
@@ -225,10 +232,12 @@ Write the specification in Korean. Use the following structure in order.
 - 호환성/마이그레이션:
 
 ## 향후 확장 가능성 (Future Expansion)
+
 - <확장 아이디어 1>
 - <확장 아이디어 2>
 
 ## 추가로 필요 정보(Needed Data/Decisions)
+
 - TBD: <결정/데이터 필요 항목>
   - 질문:
   - 오너:

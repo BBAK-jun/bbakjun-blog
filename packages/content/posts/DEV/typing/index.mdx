@@ -41,16 +41,16 @@ Typescript의 타입 호환성은 구조적 타이핑을 기반으로 한다. **
 
 ```ts
 class FakePerson {
-  name: string
+  name: string;
 }
 
 interface Person {
-  name: string
+  name: string;
 }
 
-let person: Person
+let person: Person;
 
-person = new FakePerson() // 타입 통과! 이유는 구조적 타이핑에 의해서다.
+person = new FakePerson(); // 타입 통과! 이유는 구조적 타이핑에 의해서다.
 ```
 
 C# 혹은 Java 같이 강타입 언어에서는 FakePerson 클래스가 Person의 구현체라고 명시적으로 나타내지 않기 때문에 동등한 코드가 오류가 날 것이다.
@@ -65,28 +65,28 @@ Typesciprt의 구조적 타이핑의 기본 규칙은 x와 y가 최소한 동일
 
 ```ts
 interface Person {
-  name: string
+  name: string;
 }
-let person: Person
+let person: Person;
 
 // fakePerson's inferred type is { name: string; age: number; }
-let fakePerson = { name: '박준형', age: 28 }
-person = fakePerson
+let fakePerson = { name: '박준형', age: 28 };
+person = fakePerson;
 ```
 
 person에 fakePerson를 할당할 수 있는지 확인하기 위해 타입스크립트의 컴파일러는 Person의 각 프로퍼티를 검사하여 해당되는 호환 프로퍼티를 찾는다. 이경우엔 name이라는 멤버가 필요한데 fakePerson에는 name이 존재하므로 할당이 허용되는것이다.
 
 ```ts
 interface Person {
-  name: string
+  name: string;
 }
-let fakePerson = { name: '박준형', age: 28 }
+let fakePerson = { name: '박준형', age: 28 };
 
 function sayHello(person: Person) {
-  console.log(`Hello ${person.name}`)
+  console.log(`Hello ${person.name}`);
 }
 
-sayHello(fakePerson)
+sayHello(fakePerson);
 ```
 
 fakePerson에는 age라는 추가 멤버 속성이 있지만, 오류가 발생하지는 않는다. 타입 호환성을 확인할때에는 대상 유형의 멤버만 고려된다. 비러한 비교 프로세스는 각 멤버와 하위 멤버의 유형을 탐색하면서 재귀적으로 진행된다.
@@ -95,9 +95,9 @@ fakePerson에는 age라는 추가 멤버 속성이 있지만, 오류가 발생�
 
 ```ts
 interface Person {
-  name: string
+  name: string;
 }
-let fakePerson: Person = { name: '박준형', age: 28 } // Error
+let fakePerson: Person = { name: '박준형', age: 28 }; // Error
 ```
 
 - 같은 속성의 타입이 있는지를 체크하기 때문에 위 두 인터페이스는 호환된다.

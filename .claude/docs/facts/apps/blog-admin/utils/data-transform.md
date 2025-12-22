@@ -196,7 +196,7 @@ const files = validatedData.files.map(transformToFileEntity);
 const formattedFiles = files.map(file => ({
   ...file,
   size: formatFileSize(file.size),
-  uploadedAt: formatDate(file.uploadedAt)
+  uploadedAt: formatDate(file.uploadedAt),
 }));
 ```
 

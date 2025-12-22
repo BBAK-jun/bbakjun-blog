@@ -1,7 +1,7 @@
 # Validation Schemas (Zod)
 
 - **Scope**: Zod 기반 데이터 유효성 검사 스키마
-- **Source of Truth**: src/shared/lib/schemas/, src/features/*/model/form-schema.ts
+- **Source of Truth**: src/shared/lib/schemas/, src/features/\*/model/form-schema.ts
 - **Last Verified**: 2025-12-22
 - **Repo Ref**: main
 
@@ -240,6 +240,7 @@ export type UploadImageInput = z.infer<typeof uploadImageInputSchema>;
 ## 유효성 검사 패턴
 
 ### 1. 경로 검증 패턴
+
 ```typescript
 // '/'로 시작하거나 끝나지 않음
 .refine(
@@ -249,12 +250,14 @@ export type UploadImageInput = z.infer<typeof uploadImageInputSchema>;
 ```
 
 ### 2. 날짜 형식 검증 패턴
+
 ```typescript
 // YYYY-MM-DD 형식
 .regex(/^\d{4}-\d{2}-\d{2}$/, "날짜는 YYYY-MM-DD 형식이어야 합니다")
 ```
 
 ### 3. 파일 타입 검증 패턴
+
 ```typescript
 .refine(
   (file) => {
@@ -266,6 +269,7 @@ export type UploadImageInput = z.infer<typeof uploadImageInputSchema>;
 ```
 
 ### 4. 배열 최소 요소 검증 패턴
+
 ```typescript
 .array(z.string().min(1))
 .min(1, "최소 1개의 태그가 필요합니다")

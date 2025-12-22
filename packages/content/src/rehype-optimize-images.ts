@@ -1,5 +1,5 @@
-import { visit, SKIP } from 'unist-util-visit'
-import type { Element, Root } from 'hast'
+import { visit, SKIP } from 'unist-util-visit';
+import type { Element, Root } from 'hast';
 
 /**
  * Rehype plugin to optimize images for Next.js
@@ -9,11 +9,11 @@ export function rehypeOptimizeImages() {
   return (tree: Root) => {
     visit(tree, 'element', (node: Element, index, parent) => {
       if (node.tagName === 'img' && parent && typeof index === 'number') {
-        const src = node.properties?.src as string
-        const alt = (node.properties?.alt as string) || ''
+        const src = node.properties?.src as string;
+        const alt = (node.properties?.alt as string) || '';
 
         // Skip if src is missing
-        if (!src) return
+        if (!src) return;
 
         // Add loading="lazy" for better performance
         node.properties = {
@@ -25,7 +25,7 @@ export function rehypeOptimizeImages() {
           className: 'blog-image rounded-lg my-6 w-full h-auto',
           // Add dimensions if not already present (prevents layout shift)
           style: 'max-width: 100%; height: auto;',
-        }
+        };
 
         // Wrap image in a figure with optional caption
         if (alt && parent.type === 'element') {
@@ -51,15 +51,15 @@ export function rehypeOptimizeImages() {
                 ],
               },
             ],
-          }
+          };
 
           // Replace the img node with the figure in the parent's children
-          parent.children[index] = figure
+          parent.children[index] = figure;
 
           // Skip visiting the newly created figure to avoid infinite loop
-          return SKIP
+          return SKIP;
         }
       }
-    })
-  }
+    });
+  };
 }

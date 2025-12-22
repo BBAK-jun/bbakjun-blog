@@ -177,7 +177,7 @@ async function uploadUpdatedMdx(pathname, content) {
     const response = await fetch(`${API_URL}/api/admin/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
       },
       body: formData,
     });
@@ -210,7 +210,11 @@ async function processMdxFile(filePath, mapping) {
   const content = fs.readFileSync(filePath, 'utf8');
 
   // Replace image paths
-  const { content: updatedContent, replacementCount, replacements } = replaceImagePaths(content, mapping);
+  const {
+    content: updatedContent,
+    replacementCount,
+    replacements,
+  } = replaceImagePaths(content, mapping);
 
   // Skip if no changes
   if (replacementCount === 0) {

@@ -46,7 +46,7 @@
         "RESEND_API_KEY"
       ]
     },
-    "build:rpc" : {
+    "build:rpc": {
       "cache": false,
       "persistent": true
     },

@@ -13,6 +13,7 @@ The blog-admin application demonstrates significant ROI through:
 3. **Operational ROI**: Automated deployments and reduced manual intervention
 
 Key metrics:
+
 - Annual cost savings: $39,960
 - Break-even period: 2 months
 - 3-year cumulative ROI: 1,738%

@@ -5,6 +5,7 @@ date: '2025-05-10'
 tags: ['DEV', 'FRONTEND', 'MARKETING']
 draft: false
 ---
+
 # OAuth2 인증 플로우에서 복잡한 리다이렉션 처리하기
 
 카카오톡 알림톡으로 특정 페이지 링크를 보내는 단순한 요구사항이 어떻게 Redis를 활용한 리다이렉트 게이트웨이 시스템으로 발전했는지 그 과정을 정리했습니다.
@@ -63,6 +64,7 @@ https://our-service.com/lesson?level=5&duration=25&lang=EN&section=intermediate
 ```
 
 문제는 OAuth2 state 파라미터의 한계였습니다:
+
 - URL 길이 제한으로 인해 담을 수 있는 정보가 제한적
 - 복잡한 JSON 구조를 URL-safe하게 인코딩하면 길이가 더 길어짐
 - 일부 OAuth 제공자는 state 길이를 제한하기도 함
@@ -75,6 +77,7 @@ OAuth2 RFC 6749에서 state 파라미터는 두 가지 주요 목적으로 설�
 2. **애플리케이션 상태 유지**: 인증 전후의 애플리케이션 상태 정보 전달
 
 RFC에서는 다음과 같이 명시하고 있습니다:
+
 ```
 The authorization server SHOULD require the client to provide the
 complete redirection URI (the client MAY use the "state" request
@@ -99,12 +102,16 @@ const destination = searchParams.get('destination');
 const redisKey = `redirect-${destination}-${sessionId}`;
 
 // Redis에 상세 파라미터 저장 (TTL 300초)
-await redis.setex(redisKey, 300, JSON.stringify({
-  level: 5,
-  duration: 25,
-  language: 'EN',
-  section: 'intermediate'
-}));
+await redis.setex(
+  redisKey,
+  300,
+  JSON.stringify({
+    level: 5,
+    duration: 25,
+    language: 'EN',
+    section: 'intermediate',
+  })
+);
 
 // OAuth state에는 세션 ID만 전달
 const oauthUrl = `${OAUTH_URL}?state=${sessionId}`;
@@ -172,12 +179,14 @@ function processRedirect<T extends keyof DestinationParams>(
 ## 구현 시 주요 고려사항
 
 ### 보안 관련
+
 - Redis 키에 TTL 설정 (300초) - 사용자가 로그인하고 목적지까지 도달하는데 충분한 시간 확보
 - 세션 ID는 미들웨어에서 통일되게 관리하여 예측 불가능성 보장
 - 일회성 사용 후 즉시 삭제로 재사용 공격 방지
 - 파라미터 검증 및 sanitization 적용
 
 ### 확장성 관련
+
 - 목적지별 파라미터 타입 정의로 타입 안전성 확보
 - 새로운 목적지 추가가 용이한 구조 설계
 - 모니터링 및 로깅 시스템 통합
@@ -185,12 +194,15 @@ function processRedirect<T extends keyof DestinationParams>(
 ## 실무에서 배운 점들
 
 ### 요구사항은 점진적으로 복잡해진다
+
 "단순한 링크 리다이렉션"이라고 생각했던 기능이 결국 복잡한 시스템으로 발전했습니다. 처음부터 어느 정도의 확장성을 고려한 설계가 필요합니다.
 
 ### 기존 시스템의 제약을 창의적으로 해결하기
+
 OAuth2 state 파라미터의 한계를 Redis라는 외부 저장소로 우회하여 해결했습니다. 때로는 프로토콜의 제약을 그대로 받아들이기보다는, 실용적인 해결책을 찾는 것이 중요합니다.
 
 ### 타입 안전성의 중요성
+
 TypeScript를 활용해 목적지별 파라미터를 타입으로 정의함으로써, 런타임 에러를 줄이고 개발 경험을 개선할 수 있었습니다.
 
 ## 현재 시스템의 활용 사례

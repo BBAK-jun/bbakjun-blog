@@ -22,6 +22,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 ## ✨ 주요 기능
 
 ### Blog App (공개 블로그)
+
 - 📝 **MDX 기반 블로그 포스트**: 마크다운에 React 컴포넌트 사용 가능
 - 👁️ **조회수 추적**: Redis(Vercel KV) 기반 실시간 조회수 카운팅
 - 🏷️ **태그 시스템**: 포스트를 태그별로 분류 및 필터링
@@ -31,6 +32,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 - 🔍 **SEO 최적화**: 메타태그, Open Graph, Twitter Cards 지원
 
 ### Blog-Admin App (관리자 대시보드)
+
 - 🔐 **인증 시스템**: Auth.js v5 + Google OAuth
 - 👥 **역할 기반 접근 제어**: SUPER_ADMIN, ADMIN, GUEST
 - 📂 **파일 관리**: Vercel Blob Storage를 통한 MDX 파일 업로드/관리
@@ -41,6 +43,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 ## 🛠️ 기술 스택
 
 ### Frontend
+
 - **프레임워크**: Next.js 15 (Blog), Next.js 16 (Admin)
 - **언어**: TypeScript
 - **스타일링**: Tailwind CSS v4
@@ -48,6 +51,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 - **상태 관리**: React Query (Admin)
 
 ### Backend
+
 - **데이터베이스**:
   - PostgreSQL (Neon) - Admin 인증 및 사용자 관리
   - Redis (Vercel KV) - 조회수 추적
@@ -56,6 +60,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 - **스토리지**: Vercel Blob Storage
 
 ### Build & Deploy
+
 - **모노레포**: Turborepo
 - **패키지 관리**: pnpm
 - **배포**: Vercel
@@ -64,6 +69,7 @@ Next.js, TypeScript, MDX, Redis를 사용한 현대적인 블로그 모노레포
 ## 🚀 빠른 시작
 
 ### 사전 요구사항
+
 - Node.js v24 이상
 - pnpm v10.25.0 이상
 
@@ -89,32 +95,40 @@ pnpm dev
 
 **특정 앱만 실행:**
 \`\`\`bash
-pnpm dev:admin   # Blog-Admin (http://localhost:3001)
+pnpm dev:admin # Blog-Admin (http://localhost:3001)
+
 # 또는 blog만 실행 (http://localhost:3000)
+
 \`\`\`
 
 ### 4. 빌드
 
 \`\`\`bash
+
 # 전체 빌드
+
 pnpm build
 
 # 특정 앱 빌드
-pnpm build:admin  # Blog-Admin
-pnpm build:blog   # Blog
+
+pnpm build:admin # Blog-Admin
+pnpm build:blog # Blog
 \`\`\`
 
 ## 📚 문서
 
 ### 루트 문서
+
 - [CLAUDE.md](CLAUDE.md) - Claude Code를 위한 프로젝트 가이드 (모노레포 구조, 배포 지침 포함)
 - [QUICKSTART.md](QUICKSTART.md) - 빠른 시작 가이드
 - [DOCUMENTATION.md](DOCUMENTATION.md) - 프로젝트 전체 문서
 
 ### Blog App 문서
+
 블로그 앱은 기본적으로 환경 변수 없이 작동합니다 (Redis 없이 조회수 0 표시).
 
 ### Blog-Admin App 문서
+
 - [apps/blog-admin/README.md](apps/blog-admin/README.md) - 개요
 - [apps/blog-admin/docs/SETUP.md](apps/blog-admin/docs/SETUP.md) - 환경 설정 가이드
 - [apps/blog-admin/docs/DEPLOYMENT.md](apps/blog-admin/docs/DEPLOYMENT.md) - **Vercel 배포 가이드 (Prisma, Turborepo 이슈 해결 포함)**
@@ -127,14 +141,15 @@ pnpm build:blog   # Blog
 
 ### 포스트 파일 구조
 
-\`\`\`mdx
----
+## \`\`\`mdx
+
 title: "포스트 제목"
 date: "2024-11-15"
 description: "포스트 설명"
 tags: ["nextjs", "react", "typescript"]
 author: "bbakjun"
 draft: false
+
 ---
 
 # 안녕하세요!
@@ -149,7 +164,7 @@ console.log(greeting);
 \\\`\\\`\\\`
 
 > 인용구도 사용할 수 있습니다.
-\`\`\`
+> \`\`\`
 
 ## 🚀 Vercel 배포하기
 
@@ -196,17 +211,17 @@ NEXT_PUBLIC_AUTHOR_EMAIL=your-email@example.com
 
 \`\`\`
 ├── content/
-│   └── posts/           # 블로그 포스트 (MDX)
+│ └── posts/ # 블로그 포스트 (MDX)
 ├── src/
-│   ├── app/            # Next.js App Router
-│   │   ├── api/        # API 라우트
-│   │   ├── posts/      # 포스트 페이지
-│   │   └── tags/       # 태그 페이지
-│   ├── components/     # React 컴포넌트
-│   ├── hooks/          # 커스텀 훅
-│   └── lib/            # 유틸리티 함수
-├── public/             # 정적 파일
-└── tailwind.config.ts  # Tailwind CSS 설정
+│ ├── app/ # Next.js App Router
+│ │ ├── api/ # API 라우트
+│ │ ├── posts/ # 포스트 페이지
+│ │ └── tags/ # 태그 페이지
+│ ├── components/ # React 컴포넌트
+│ ├── hooks/ # 커스텀 훅
+│ └── lib/ # 유틸리티 함수
+├── public/ # 정적 파일
+└── tailwind.config.ts # Tailwind CSS 설정
 \`\`\`
 
 ## 🎨 커스터마이징
@@ -217,11 +232,11 @@ NEXT_PUBLIC_AUTHOR_EMAIL=your-email@example.com
 
 \`\`\`typescript
 theme: {
-  extend: {
-    colors: {
-      // 여기서 색상을 커스터마이징
-    }
-  }
+extend: {
+colors: {
+// 여기서 색상을 커스터마이징
+}
+}
 }
 \`\`\`
 

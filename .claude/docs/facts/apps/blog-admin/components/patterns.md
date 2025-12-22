@@ -27,8 +27,8 @@
 ```tsx
 // Schema definition
 const schema = z.object({
-  title: z.string().min(1, "제목을 입력해주세요"),
-  content: z.string().min(1, "내용을 입력해주세요"),
+  title: z.string().min(1, '제목을 입력해주세요'),
+  content: z.string().min(1, '내용을 입력해주세요'),
   tags: z.array(z.string()).optional(),
 });
 
@@ -42,18 +42,14 @@ export function MyForm() {
   const onSubmit = async (data: FormData) => {
     const result = await createAction(data);
     if (result.success) {
-      toast.success("성공적으로 저장되었습니다");
-      router.push("/dashboard");
+      toast.success('성공적으로 저장되었습니다');
+      router.push('/dashboard');
     } else {
       toast.error(result.error);
     }
   };
 
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      {/* Form fields */}
-    </form>
-  );
+  return <form onSubmit={form.handleSubmit(onSubmit)}>{/* Form fields */}</form>;
 }
 ```
 
@@ -93,7 +89,7 @@ export function MyForm() {
 ```tsx
 // Modal usage in components
 const handleDeleteClick = (item: Item) => {
-  import("overlay-kit").then(({ overlay }) => {
+  import('overlay-kit').then(({ overlay }) => {
     overlay.open(({ isOpen, close }) => (
       <ConfirmModal
         isOpen={isOpen}
@@ -152,7 +148,7 @@ const handleDeleteClick = (item: Item) => {
       처리 중...
     </>
   ) : (
-    "제출"
+    '제출'
   )}
 </button>
 ```
@@ -177,12 +173,8 @@ try {
   return (
     <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg">
       <AlertCircle className="w-5 h-5 text-red-600 mb-2" />
-      <p className="text-red-600 dark:text-red-400">
-        오류가 발생했습니다. 새로고침해주세요.
-      </p>
-      <button onClick={() => window.location.reload()}>
-        새로고침
-      </button>
+      <p className="text-red-600 dark:text-red-400">오류가 발생했습니다. 새로고침해주세요.</p>
+      <button onClick={() => window.location.reload()}>새로고침</button>
     </div>
   );
 }
@@ -270,7 +262,7 @@ export function FileManagerWidget() {
 // React Query pattern
 export function useFilesQuery() {
   return useQuery({
-    queryKey: ["files"],
+    queryKey: ['files'],
     queryFn: fetchFiles,
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
@@ -299,9 +291,10 @@ export function useFilesQuery() {
 ```tsx
 // Debounced search pattern
 const debouncedSearch = useMemo(
-  () => debounce((query: string) => {
-    setSearchQuery(query);
-  }, 300),
+  () =>
+    debounce((query: string) => {
+      setSearchQuery(query);
+    }, 300),
   []
 );
 ```
@@ -326,15 +319,13 @@ const debouncedSearch = useMemo(
 ```tsx
 // Button variants pattern
 const buttonVariants = {
-  primary: "bg-blue-600 hover:bg-blue-700 text-white",
-  secondary: "bg-slate-200 hover:bg-slate-300 text-slate-900",
-  danger: "bg-red-600 hover:bg-red-700 text-white",
+  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+  secondary: 'bg-slate-200 hover:bg-slate-300 text-slate-900',
+  danger: 'bg-red-600 hover:bg-red-700 text-white',
 };
 
 // Usage
-<button className={buttonVariants[type]}>
-  {children}
-</button>
+<button className={buttonVariants[type]}>{children}</button>;
 ```
 
 ### Responsive Design
@@ -380,12 +371,12 @@ const buttonVariants = {
 
 ```tsx
 // Lazy loading pattern
-const HeavyComponent = lazy(() => import("./HeavyComponent"));
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
 
 // Usage with Suspense
 <Suspense fallback={<div>로딩 중...</div>}>
   <HeavyComponent />
-</Suspense>
+</Suspense>;
 ```
 
 ### Memoization

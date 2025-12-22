@@ -72,6 +72,7 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
+
   ```
   Vercel Blob Storage (Source of Truth)
       ↓
@@ -122,6 +123,7 @@
 ## 데이터 구조 (Data Structure)
 
 - **모델/스키마**: BlobFile 모델 (`prisma/schema.prisma`)
+
   ```prisma
   model BlobFile {
     id          String   @id @default(cuid())

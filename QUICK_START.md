@@ -19,11 +19,13 @@ npx prisma generate
 ### 2. Set Environment Variables
 
 **Blog App** (`.env.local`):
+
 ```bash
 NEXT_PUBLIC_ADMIN_URL=http://localhost:3001
 ```
 
 **Blog-Admin App** (`.env.local`):
+
 ```bash
 RESEND_API_KEY=re_xxxxx  # Get from resend.com
 NEXT_PUBLIC_BLOG_URL=http://localhost:3000
@@ -47,17 +49,18 @@ curl -X POST http://localhost:3001/api/admin/blob-files/sync \
 
 Add these records to Gabia for `dev-bbak.site`:
 
-| Type | Name | Value |
-|------|------|-------|
-| TXT | @ | `v=spf1 include:_spf.resend.com ~all` |
-| TXT | resend._domainkey | [Get from Resend dashboard] |
-| TXT | _dmarc | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` |
+| Type | Name               | Value                                              |
+| ---- | ------------------ | -------------------------------------------------- |
+| TXT  | @                  | `v=spf1 include:_spf.resend.com ~all`              |
+| TXT  | resend.\_domainkey | [Get from Resend dashboard]                        |
+| TXT  | \_dmarc            | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` |
 
 **Wait 24-48 hours** for DNS propagation.
 
 ### 5. Test Features
 
 **Newsletter**:
+
 ```bash
 curl -X POST http://localhost:3001/api/newsletter/subscribe \
   -H "Content-Type: application/json" \
@@ -65,6 +68,7 @@ curl -X POST http://localhost:3001/api/newsletter/subscribe \
 ```
 
 **Blob CDC**:
+
 ```bash
 curl http://localhost:3001/api/admin/blob-files?limit=10
 ```
@@ -98,10 +102,12 @@ SELECT MAX("lastChecked") FROM blob_files;
 ## 🎯 What This Solves
 
 ### Before
+
 - ❌ Vercel Blob: 2,000+ API calls/month → **LIMIT EXCEEDED**
 - ❌ Newsletter: Not available
 
 ### After
+
 - ✅ Vercel Blob: ~288 API calls/month → **85-99% reduction**
 - ✅ Newsletter: Fully functional with email delivery
 
@@ -135,6 +141,7 @@ SELECT MAX("lastChecked") FROM blob_files;
 ### CORS Errors
 
 Verify environment variables match:
+
 - Blog app: `NEXT_PUBLIC_ADMIN_URL=http://localhost:3001`
 - Admin app: `NEXT_PUBLIC_BLOG_URL=http://localhost:3000`
 
