@@ -2,13 +2,13 @@
  * File Create Feature - File Creator Hook
  */
 
-import { fileKeys } from "@/entities/file";
-import { createFile, previewMarkdown, type CreateFileInput } from "@/shared/api/file-service";
-import { useLocalStorage } from "@/shared/hooks/use-local-storage";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { fileKeys } from '@/entities/file';
+import { createFile, previewMarkdown, type CreateFileInput } from '@/shared/api/file-service';
+import { useLocalStorage } from '@/shared/hooks/use-local-storage';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 export interface EditorFormData {
   title: string;
@@ -27,35 +27,32 @@ interface DraftData extends EditorFormData {
   category: string;
 }
 
-const AUTOSAVE_KEY = "blog-admin-draft-autosave";
+const AUTOSAVE_KEY = 'blog-admin-draft-autosave';
 
 const getDefaultFormData = (): EditorFormData => ({
-  title: "",
-  description: "",
+  title: '',
+  description: '',
   tags: [],
-  author: "bbakjun",
-  date: new Date().toISOString().split("T")[0],
+  author: 'bbakjun',
+  date: new Date().toISOString().split('T')[0],
   draft: false,
-  content: "",
+  content: '',
 });
 
 const getDefaultDraftData = (): DraftData => ({
   ...getDefaultFormData(),
-  category: "",
+  category: '',
 });
 
 export function useFileCreator() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewHtml, setPreviewHtml] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Use localStorage hook for automatic syncing
-  const [draftData, setDraftData] = useLocalStorage<DraftData>(
-    AUTOSAVE_KEY,
-    getDefaultDraftData()
-  );
+  const [draftData, setDraftData] = useLocalStorage<DraftData>(AUTOSAVE_KEY, getDefaultDraftData());
 
   // Local state for form data and category
   const [formData, setFormData] = useState<EditorFormData>({
@@ -63,7 +60,7 @@ export function useFileCreator() {
     description: draftData.description,
     tags: draftData.tags,
     author: draftData.author,
-    date: draftData.date || new Date().toISOString().split("T")[0],
+    date: draftData.date || new Date().toISOString().split('T')[0],
     draft: draftData.draft,
     content: draftData.content,
   });
@@ -81,7 +78,7 @@ export function useFileCreator() {
       return;
     }
 
-    setFormData((prev) => {
+    setFormData(prev => {
       // Only update if content actually changed
       const hasChanged =
         prev.title !== draftData.title ||
@@ -103,13 +100,13 @@ export function useFileCreator() {
         description: draftData.description,
         tags: draftData.tags,
         author: draftData.author,
-        date: draftData.date || new Date().toISOString().split("T")[0],
+        date: draftData.date || new Date().toISOString().split('T')[0],
         draft: draftData.draft,
         content: draftData.content,
       };
     });
 
-    setCategory((prev) => (prev !== draftData.category ? draftData.category : prev));
+    setCategory(prev => (prev !== draftData.category ? draftData.category : prev));
   }, [draftData]);
 
   // Auto-save to localStorage with debounce
@@ -150,15 +147,15 @@ export function useFileCreator() {
       if (!result.success) throw new Error(result.error);
       return result.data?.htmlContent;
     },
-    onSuccess: (html) => {
-      setPreviewHtml(html || "");
+    onSuccess: html => {
+      setPreviewHtml(html || '');
     },
   });
 
   // Auto-preview with debounce when content changes
   useEffect(() => {
     if (!formData.content) {
-      setPreviewHtml("");
+      setPreviewHtml('');
       return;
     }
 
@@ -172,27 +169,27 @@ export function useFileCreator() {
   // Parse tags from string to array
   const parseTags = (tags: string[]): string[] => {
     // If already an array, join and re-parse to normalize
-    const tagString = Array.isArray(tags) ? tags.join(", ") : String(tags);
+    const tagString = Array.isArray(tags) ? tags.join(', ') : String(tags);
     return tagString
-      .split(",")
-      .map((t) => t.trim())
+      .split(',')
+      .map(t => t.trim())
       .filter(Boolean);
   };
 
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!category.trim()) throw new Error("카테고리를 선택해주세요");
-      if (!formData.title.trim()) throw new Error("제목을 입력해주세요");
-      if (!formData.content.trim()) throw new Error("내용을 입력해주세요");
+      if (!category.trim()) throw new Error('카테고리를 선택해주세요');
+      if (!formData.title.trim()) throw new Error('제목을 입력해주세요');
+      if (!formData.content.trim()) throw new Error('내용을 입력해주세요');
 
       // Use custom slug if provided, otherwise auto-generate from title
       const slug = formData.slug?.trim()
         ? formData.slug.trim()
         : formData.title
             .toLowerCase()
-            .replace(/[^a-z0-9가-힣]+/g, "-")
-            .replace(/^-|-$/g, "");
+            .replace(/[^a-z0-9가-힣]+/g, '-')
+            .replace(/^-|-$/g, '');
 
       const pathname = `${category.trim()}/${slug}`;
 
@@ -215,7 +212,7 @@ export function useFileCreator() {
 
       return result.data;
     },
-    onSuccess: (result) => {
+    onSuccess: result => {
       // Clear autosave
       clearDraft();
 
@@ -223,16 +220,16 @@ export function useFileCreator() {
       queryClient.invalidateQueries({ queryKey: fileKeys.lists() });
 
       // Toast 알림
-      toast.success("파일 생성 완료", {
-        description: "새 파일이 성공적으로 생성되었습니다",
+      toast.success('파일 생성 완료', {
+        description: '새 파일이 성공적으로 생성되었습니다',
       });
 
       // 생성된 파일로 이동
       router.push(`/dashboard/files/view?pathname=${encodeURIComponent(result?.pathname || '')}`);
     },
-    onError: (error) => {
-      toast.error("파일 생성 실패", {
-        description: error instanceof Error ? error.message : "파일 생성에 실패했습니다",
+    onError: error => {
+      toast.error('파일 생성 실패', {
+        description: error instanceof Error ? error.message : '파일 생성에 실패했습니다',
       });
     },
   });
@@ -245,7 +242,7 @@ export function useFileCreator() {
 
     // Update local state
     setFormData(defaultData);
-    setCategory("");
+    setCategory('');
     setLastSavedAt(null);
   };
 

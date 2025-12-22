@@ -17,10 +17,12 @@ export const newsletterErrorSchema = z.object({
 
 export const newsletterSubscribeResponseSchema = z.object({
   message: z.string(),
-  subscriber: z.object({
-    email: z.string(),
-    subscribedAt: z.coerce.date(),
-  }).optional(),
+  subscriber: z
+    .object({
+      email: z.string(),
+      subscribedAt: z.coerce.date(),
+    })
+    .optional(),
   reactivated: z.boolean().optional(),
 });
 
@@ -48,4 +50,3 @@ export const newsletterSubscribersResponseSchema = z.object({
   subscribers: z.array(newsletterSubscriberSchema),
   stats: newsletterStatsSchema,
 });
-

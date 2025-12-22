@@ -1,10 +1,10 @@
-import { put, list, del, head } from "@vercel/blob";
-import { createHash } from "crypto";
+import { put, list, del, head } from '@vercel/blob';
+import { createHash } from 'crypto';
 
 export async function uploadBlob(
   path: string,
   content: Buffer | string,
-  contentType: string = "text/markdown"
+  contentType: string = 'text/markdown'
 ): Promise<{
   url: string;
   pathname: string;
@@ -12,13 +12,13 @@ export async function uploadBlob(
 }> {
   try {
     // Create hash
-    const buffer = typeof content === "string" ? Buffer.from(content) : content;
-    const hash = createHash("sha256").update(buffer).digest("hex");
+    const buffer = typeof content === 'string' ? Buffer.from(content) : content;
+    const hash = createHash('sha256').update(buffer).digest('hex');
 
     // Upload to Vercel Blob
     const blob = await put(path, buffer, {
       contentType,
-      access: "public",
+      access: 'public',
     });
 
     return {
@@ -27,7 +27,7 @@ export async function uploadBlob(
       hash: `sha256:${hash}`,
     };
   } catch (error) {
-    console.error("Upload blob error:", error);
+    console.error('Upload blob error:', error);
     throw error;
   }
 }
@@ -48,7 +48,7 @@ export async function downloadBlob(path: string): Promise<Buffer> {
 
     return Buffer.from(await response.arrayBuffer());
   } catch (error) {
-    console.error("Download blob error:", error);
+    console.error('Download blob error:', error);
     throw error;
   }
 }
@@ -57,7 +57,7 @@ export async function deleteBlob(path: string): Promise<void> {
   try {
     await del(path);
   } catch (error) {
-    console.error("Delete blob error:", error);
+    console.error('Delete blob error:', error);
     throw error;
   }
 }
@@ -68,15 +68,15 @@ export async function listBlobs(prefix?: string) {
       prefix,
     });
 
-    return blobs.map((blob) => ({
-      filename: blob.pathname.split("/").pop() || blob.pathname,
+    return blobs.map(blob => ({
+      filename: blob.pathname.split('/').pop() || blob.pathname,
       pathname: blob.pathname,
       size: blob.size,
       uploadedAt: blob.uploadedAt?.toISOString() || new Date().toISOString(),
       url: blob.url,
     }));
   } catch (error) {
-    console.error("List blobs error:", error);
+    console.error('List blobs error:', error);
     throw error;
   }
 }
@@ -94,7 +94,7 @@ export async function getBlobMetadata(path: string) {
     });
 
     // Find exact match
-    const blob = blobs.find((b) => b.pathname === path);
+    const blob = blobs.find(b => b.pathname === path);
 
     if (!blob) {
       return null;
@@ -107,7 +107,7 @@ export async function getBlobMetadata(path: string) {
       url: blob.url,
     };
   } catch (error) {
-    console.error("Get blob metadata error:", error);
+    console.error('Get blob metadata error:', error);
     return null;
   }
 }

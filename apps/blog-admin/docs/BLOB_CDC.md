@@ -13,6 +13,7 @@ Vercel Blob free tier limits to **2,000 operations per month**. The `list()` API
 ## Solution: CDC Pipeline
 
 Implement a Change Data Capture (CDC) pattern that:
+
 1. Caches Vercel Blob file listings in PostgreSQL
 2. Syncs periodically (every 5 minutes) instead of on-demand
 3. Serves file lists from DB cache instead of Blob API
@@ -85,11 +86,13 @@ PostgreSQL `BIGINT` supports file sizes up to 9,223,372,036,854,775,807 bytes (~
 ### Soft Delete Pattern
 
 Instead of deleting records when files are removed from Blob:
+
 - Set `isDeleted: true`
 - Set `lastChecked: new Date()`
 - Keep record for audit trail
 
 **Benefits**:
+
 - Historical data preserved
 - Can detect "resurrection" (re-uploaded files)
 - Simplifies sync logic (no cascade deletes)
@@ -103,6 +106,7 @@ Instead of deleting records when files are removed from Blob:
 **Purpose**: Synchronize Blob storage state with PostgreSQL cache
 
 **Algorithm**:
+
 ```typescript
 1. Fetch all files from Vercel Blob (1 API call)
 2. Fetch all non-deleted files from DB
@@ -114,11 +118,12 @@ Instead of deleting records when files are removed from Blob:
 ```
 
 **Code**:
+
 ```typescript
 export async function syncBlobToDatabase() {
   const { blobs } = await list(); // Only API call
   const dbFiles = await prisma.blobFile.findMany({
-    where: { isDeleted: false }
+    where: { isDeleted: false },
   });
 
   const dbFileUrlsSet = new Set(dbFiles.map(f => f.url));
@@ -140,9 +145,7 @@ export async function syncBlobToDatabase() {
   }
 
   // Mark deleted files
-  const deletedUrls = dbFiles
-    .filter(f => !blobUrlsSet.has(f.url))
-    .map(f => f.url);
+  const deletedUrls = dbFiles.filter(f => !blobUrlsSet.has(f.url)).map(f => f.url);
   if (deletedUrls.length > 0) {
     await prisma.blobFile.updateMany({
       where: { url: { in: deletedUrls } },
@@ -151,9 +154,7 @@ export async function syncBlobToDatabase() {
   }
 
   // Update existing files
-  const existingUrls = blobs
-    .filter(b => dbFileUrlsSet.has(b.url))
-    .map(b => b.url);
+  const existingUrls = blobs.filter(b => dbFileUrlsSet.has(b.url)).map(b => b.url);
   if (existingUrls.length > 0) {
     await prisma.blobFile.updateMany({
       where: { url: { in: existingUrls } },
@@ -171,6 +172,7 @@ export async function syncBlobToDatabase() {
 ```
 
 **Returns**:
+
 ```typescript
 {
   total: 150,      // Total files in Blob
@@ -185,6 +187,7 @@ export async function syncBlobToDatabase() {
 **Purpose**: Query cached file list from PostgreSQL
 
 **Code**:
+
 ```typescript
 export async function getCachedBlobFiles(options?: {
   limit?: number;
@@ -222,6 +225,7 @@ export async function getCachedBlobFiles(options?: {
 ```
 
 **Benefits**:
+
 - Pagination support (infinite scroll)
 - Search by pathname
 - Fast DB queries (indexed)
@@ -232,6 +236,7 @@ export async function getCachedBlobFiles(options?: {
 **Purpose**: Check if sync is needed (5-minute threshold)
 
 **Code**:
+
 ```typescript
 export async function needsSync() {
   const lastSync = await getLastSyncTime();
@@ -255,6 +260,7 @@ async function getLastSyncTime() {
 **Purpose**: Real-time tracking of uploads/deletes
 
 **onBlobUpload()**:
+
 ```typescript
 export async function onBlobUpload(blob: {
   url: string;
@@ -283,6 +289,7 @@ export async function onBlobUpload(blob: {
 ```
 
 **onBlobDelete()**:
+
 ```typescript
 export async function onBlobDelete(url: string) {
   return await prisma.blobFile.update({
@@ -296,6 +303,7 @@ export async function onBlobDelete(url: string) {
 ```
 
 **Usage in API routes**:
+
 ```typescript
 // In upload-image route
 const blob = await put(pathname, file, {...});
@@ -321,12 +329,14 @@ try {
 **Purpose**: Fetch cached file list with auto-sync
 
 **Query Parameters**:
+
 - `limit` (number, default: 100): Max files to return
 - `offset` (number, default: 0): Pagination offset
 - `search` (string, optional): Search pathname
 - `autoSync` (boolean, default: true): Enable auto-sync
 
 **Auto-sync Logic**:
+
 ```typescript
 const autoSync = searchParams.get('autoSync') !== 'false';
 
@@ -345,6 +355,7 @@ return NextResponse.json(result);
 ```
 
 **Response**:
+
 ```json
 {
   "files": [
@@ -373,6 +384,7 @@ return NextResponse.json(result);
 **Authentication**: ADMIN or SUPER_ADMIN role required
 
 **Response**:
+
 ```json
 {
   "message": "Sync completed",
@@ -390,6 +402,7 @@ return NextResponse.json(result);
 ### Before CDC (Direct Blob API)
 
 Assumptions:
+
 - 10 admin users
 - Each user opens image picker 5 times/day
 - Each picker call = 1 `list()` operation
@@ -409,6 +422,7 @@ Sync interval: 5 minutes
 **Savings**: (2000 - 288) / 2000 = **85.6% reduction** (conservative estimate)
 
 With less aggressive usage:
+
 - Old: 500 calls/month
 - New: 288 calls/month
 - **Savings**: 42.4% reduction
@@ -418,6 +432,7 @@ With less aggressive usage:
 ### Step 1: Add BlobFile Model
 
 Add to `apps/blog-admin/prisma/schema.prisma`:
+
 ```prisma
 model BlobFile {
   // ... (see schema above)
@@ -446,6 +461,7 @@ node scripts/initial-blob-sync.js
 ```
 
 Or create `scripts/initial-blob-sync.js`:
+
 ```javascript
 const { PrismaClient } = require('@prisma/client');
 const { list } = require('@vercel/blob');
@@ -504,12 +520,14 @@ try {
 Replace direct Blob API calls with cached API:
 
 **Before**:
+
 ```typescript
 import { list } from '@vercel/blob';
 const { blobs } = await list();
 ```
 
 **After**:
+
 ```typescript
 const response = await fetch('/api/admin/blob-files?limit=100');
 const { files } = await response.json();
@@ -565,6 +583,7 @@ LIMIT 10;
 ### Vercel Blob Usage
 
 Check Blob dashboard for actual API call counts:
+
 - Expected: ~10 calls/day (~288/month)
 - Alert if: >50 calls/day (indicates CDC not working)
 
@@ -575,6 +594,7 @@ Check Blob dashboard for actual API call counts:
 **Symptom**: New uploads not appearing in cached list
 
 **Checks**:
+
 1. Check last sync time:
    ```sql
    SELECT MAX("lastChecked") FROM blob_files;
@@ -582,7 +602,7 @@ Check Blob dashboard for actual API call counts:
 2. Verify auto-sync is enabled:
    ```typescript
    // In API call
-   fetch('/api/admin/blob-files?autoSync=true')
+   fetch('/api/admin/blob-files?autoSync=true');
    ```
 3. Trigger manual sync:
    ```bash
@@ -590,6 +610,7 @@ Check Blob dashboard for actual API call counts:
    ```
 
 **Common Causes**:
+
 - Database connection issues
 - Blob API credentials invalid
 - No requests to API endpoint (sync only runs on GET)
@@ -599,6 +620,7 @@ Check Blob dashboard for actual API call counts:
 **Symptom**: File exists in Blob but not in DB cache
 
 **Solution**: Trigger manual sync to reconcile:
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/blob-files/sync
 ```
@@ -610,6 +632,7 @@ curl -X POST http://localhost:3001/api/admin/blob-files/sync
 **Expected Behavior**: Files show until next sync (max 5 min delay)
 
 **Force Sync**:
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/blob-files/sync
 ```
@@ -621,11 +644,12 @@ curl -X POST http://localhost:3001/api/admin/blob-files/sync
 **Cause**: BigInt fields can't be JSON-serialized directly
 
 **Fix**: Convert to Number before returning:
+
 ```typescript
 files.map(f => ({
   ...f,
   size: Number(f.size), // BigInt → Number
-}))
+}));
 ```
 
 ## Performance Optimization
@@ -633,6 +657,7 @@ files.map(f => ({
 ### Indexing
 
 Ensure these indexes exist (defined in schema):
+
 ```sql
 CREATE INDEX "blob_files_pathname_idx" ON "blob_files"("pathname");
 CREATE INDEX "blob_files_uploadedAt_idx" ON "blob_files"("uploadedAt");
@@ -642,17 +667,19 @@ CREATE INDEX "blob_files_isDeleted_idx" ON "blob_files"("isDeleted");
 ### Pagination
 
 Always use pagination for large file lists:
+
 ```typescript
 // Good
-fetch('/api/admin/blob-files?limit=100&offset=0')
+fetch('/api/admin/blob-files?limit=100&offset=0');
 
 // Bad (loads all files)
-fetch('/api/admin/blob-files?limit=10000')
+fetch('/api/admin/blob-files?limit=10000');
 ```
 
 ### Search Optimization
 
 For large datasets, consider full-text search:
+
 ```prisma
 // Add to schema.prisma
 @@index([pathname(ops: TextSearchParser)])

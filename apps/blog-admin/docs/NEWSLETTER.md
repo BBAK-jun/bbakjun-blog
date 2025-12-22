@@ -65,6 +65,7 @@ model Subscriber {
 **Endpoint**: `POST /api/newsletter/subscribe`
 
 **Request**:
+
 ```json
 {
   "email": "user@example.com",
@@ -73,6 +74,7 @@ model Subscriber {
 ```
 
 **Response** (Success):
+
 ```json
 {
   "success": true,
@@ -81,6 +83,7 @@ model Subscriber {
 ```
 
 **Response** (Already subscribed):
+
 ```json
 {
   "success": true,
@@ -89,6 +92,7 @@ model Subscriber {
 ```
 
 **Response** (Error):
+
 ```json
 {
   "success": false,
@@ -97,6 +101,7 @@ model Subscriber {
 ```
 
 **Features**:
+
 - Email validation
 - Duplicate subscription handling (reactivates if previously unsubscribed)
 - Sends welcome email via Resend
@@ -104,6 +109,7 @@ model Subscriber {
 - Source tracking
 
 **CORS Headers**:
+
 ```typescript
 {
   'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
@@ -117,6 +123,7 @@ model Subscriber {
 **Endpoint**: `POST /api/newsletter/unsubscribe`
 
 **Request**:
+
 ```json
 {
   "token": "clxxxxx_unsubscribe_token"
@@ -124,6 +131,7 @@ model Subscriber {
 ```
 
 **Response** (Success):
+
 ```json
 {
   "success": true,
@@ -132,6 +140,7 @@ model Subscriber {
 ```
 
 **Response** (Error):
+
 ```json
 {
   "success": false,
@@ -140,6 +149,7 @@ model Subscriber {
 ```
 
 **Features**:
+
 - Token-based unsubscription (secure)
 - Soft delete (marks `isActive: false` and sets `unsubscribedAt`)
 - No authentication required (uses token)
@@ -151,11 +161,13 @@ model Subscriber {
 **Authentication**: Requires Auth.js session with ADMIN or SUPER_ADMIN role
 
 **Query Parameters**:
+
 - `limit` (number, default: 100): Maximum subscribers to return
 - `offset` (number, default: 0): Pagination offset
 - `activeOnly` (boolean, default: true): Filter active subscribers only
 
 **Response**:
+
 ```json
 {
   "subscribers": [
@@ -190,11 +202,11 @@ model Subscriber {
 
 For domain `dev-bbak.site`:
 
-| Type | Name | Value | TTL |
-|------|------|-------|-----|
-| TXT | @ | `v=spf1 include:_spf.resend.com ~all` | 3600 |
-| TXT | resend._domainkey | `[DKIM value from Resend]` | 3600 |
-| TXT | _dmarc | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` | 3600 |
+| Type | Name               | Value                                              | TTL  |
+| ---- | ------------------ | -------------------------------------------------- | ---- |
+| TXT  | @                  | `v=spf1 include:_spf.resend.com ~all`              | 3600 |
+| TXT  | resend.\_domainkey | `[DKIM value from Resend]`                         | 3600 |
+| TXT  | \_dmarc            | `v=DMARC1; p=none; rua=mailto:dmarc@dev-bbak.site` | 3600 |
 
 **Note**: Wait 24-48 hours for DNS propagation.
 
@@ -204,9 +216,9 @@ For domain `dev-bbak.site`:
 
 ```typescript
 await resend.emails.send({
-  from: "DEV_BBAK 블로그 <noreply@dev-bbak.site>",
+  from: 'DEV_BBAK 블로그 <noreply@dev-bbak.site>',
   to: email,
-  subject: "DEV_BBAK 블로그 구독을 환영합니다! 🎉",
+  subject: 'DEV_BBAK 블로그 구독을 환영합니다! 🎉',
   html: `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2>구독해주셔서 감사합니다!</h2>
@@ -238,10 +250,12 @@ await resend.emails.send({
 **Location**: `apps/blog/src/components/NewsletterSubscribe.tsx`
 
 **Props**:
+
 - `source` (string, default: "footer"): Tracking source
 - `compact` (boolean, default: false): Compact layout
 
 **Features**:
+
 - Email validation
 - Loading states
 - Success/error messages
@@ -300,6 +314,7 @@ npx prisma generate
 **Cause**: Missing CORS headers or incorrect `NEXT_PUBLIC_BLOG_URL`
 
 **Fix**:
+
 1. Verify `NEXT_PUBLIC_BLOG_URL` matches blog domain
 2. Ensure API route includes CORS headers (see above)
 3. Add OPTIONS handler for preflight requests
@@ -309,12 +324,14 @@ npx prisma generate
 **Issue**: Subscription succeeds but no email arrives
 
 **Causes**:
+
 1. Domain not verified in Resend
 2. DNS records not propagated
 3. Email in spam folder
 4. Invalid RESEND_API_KEY
 
 **Fix**:
+
 1. Check Resend dashboard for domain status
 2. Wait 24-48h for DNS propagation
 3. Check spam/junk folders
@@ -325,6 +342,7 @@ npx prisma generate
 **Issue**: User tries to subscribe twice
 
 **Behavior**:
+
 - If `isActive: true`: Returns "이미 구독 중이신 이메일입니다."
 - If `isActive: false`: Reactivates subscription and sends new welcome email
 
@@ -335,6 +353,7 @@ This is handled automatically by the upsert logic in the subscribe endpoint.
 **Location**: `apps/blog-admin/src/app/admin/subscribers/page.tsx` (to be implemented)
 
 **Features to Implement**:
+
 - List all subscribers with pagination
 - Search by email
 - Filter by active/inactive status
@@ -393,6 +412,7 @@ This is handled automatically by the upsert logic in the subscribe endpoint.
 ### Local Testing
 
 1. Start both apps:
+
    ```bash
    pnpm dev        # Blog on :3000
    pnpm dev:admin  # Blog-admin on :3001
@@ -428,6 +448,7 @@ LIMIT 10;
 ## API Testing (cURL)
 
 ### Subscribe
+
 ```bash
 curl -X POST http://localhost:3001/api/newsletter/subscribe \
   -H "Content-Type: application/json" \
@@ -435,6 +456,7 @@ curl -X POST http://localhost:3001/api/newsletter/subscribe \
 ```
 
 ### Unsubscribe
+
 ```bash
 curl -X POST http://localhost:3001/api/newsletter/unsubscribe \
   -H "Content-Type: application/json" \
@@ -442,6 +464,7 @@ curl -X POST http://localhost:3001/api/newsletter/unsubscribe \
 ```
 
 ### List Subscribers (with auth session)
+
 ```bash
 curl http://localhost:3001/api/newsletter/subscribers?limit=10 \
   -H "Cookie: your-session-cookie"

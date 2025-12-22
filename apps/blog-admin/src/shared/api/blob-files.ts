@@ -33,4 +33,3 @@ export const blobFilesResponseSchema = z.object({
 export const blobFilesErrorSchema = z.object({
   error: z.string(),
 });
-

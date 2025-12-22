@@ -51,18 +51,11 @@ export const getViewsBySlugHandler = async (c: any) => {
 
     const views = await ViewCounter.get(slug);
 
-    return c.json(
-      { slug, views },
-      200,
-      {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      }
-    );
+    return c.json({ slug, views }, 200, {
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+    });
   } catch (error) {
     console.error('Error getting view count:', error);
-    return c.json(
-      { error: 'Failed to get view count' },
-      500
-    );
+    return c.json({ error: 'Failed to get view count' }, 500);
   }
 };

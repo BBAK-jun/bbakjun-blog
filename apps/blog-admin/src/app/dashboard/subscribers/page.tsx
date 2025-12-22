@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Mail, Download, Users } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Mail, Download, Users } from 'lucide-react';
 
 interface Subscriber {
   id: string;
@@ -27,36 +27,32 @@ export default function SubscribersPage() {
   const fetchSubscribers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/newsletter/subscribers");
-      if (!response.ok) throw new Error("Failed to fetch subscribers");
+      const response = await fetch('/api/newsletter/subscribers');
+      if (!response.ok) throw new Error('Failed to fetch subscribers');
       const data = await response.json();
       setSubscribers(data.subscribers);
       setStats(data.stats);
     } catch (error) {
-      console.error("Error fetching subscribers:", error);
+      console.error('Error fetching subscribers:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const exportSubscribers = () => {
-    const activeSubscribers = subscribers.filter((s) => s.isActive);
+    const activeSubscribers = subscribers.filter(s => s.isActive);
     const csv = [
-      ["Email", "Subscribed At", "Source"].join(","),
-      ...activeSubscribers.map((s) =>
-        [
-          s.email,
-          new Date(s.subscribedAt).toLocaleDateString(),
-          s.source || "unknown",
-        ].join(",")
+      ['Email', 'Subscribed At', 'Source'].join(','),
+      ...activeSubscribers.map(s =>
+        [s.email, new Date(s.subscribedAt).toLocaleDateString(), s.source || 'unknown'].join(',')
       ),
-    ].join("\n");
+    ].join('\n');
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `subscribers-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `subscribers-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -66,9 +62,7 @@ export default function SubscribersPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">
-            구독자 정보 로딩 중...
-          </p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">구독자 정보 로딩 중...</p>
         </div>
       </div>
     );
@@ -101,9 +95,7 @@ export default function SubscribersPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                전체 구독자
-              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">전체 구독자</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
                 {stats.total}
               </p>
@@ -117,9 +109,7 @@ export default function SubscribersPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                활성 구독자
-              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">활성 구독자</p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
                 {stats.active}
               </p>
@@ -133,9 +123,7 @@ export default function SubscribersPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                구독 취소
-              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">구독 취소</p>
               <p className="text-3xl font-bold text-slate-400 dark:text-slate-500 mt-2">
                 {stats.inactive}
               </p>
@@ -168,11 +156,8 @@ export default function SubscribersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {subscribers.map((subscriber) => (
-                <tr
-                  key={subscriber.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                >
+              {subscribers.map(subscriber => (
+                <tr key={subscriber.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
                       {subscriber.email}
@@ -180,14 +165,12 @@ export default function SubscribersPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-600 dark:text-slate-400">
-                      {new Date(subscriber.subscribedAt).toLocaleDateString(
-                        "ko-KR"
-                      )}
+                      {new Date(subscriber.subscribedAt).toLocaleDateString('ko-KR')}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-600 dark:text-slate-400">
-                      {subscriber.source || "unknown"}
+                      {subscriber.source || 'unknown'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -210,9 +193,7 @@ export default function SubscribersPage() {
         {subscribers.length === 0 && (
           <div className="text-center py-12">
             <Mail className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <p className="text-slate-600 dark:text-slate-400">
-              아직 구독자가 없습니다
-            </p>
+            <p className="text-slate-600 dark:text-slate-400">아직 구독자가 없습니다</p>
           </div>
         )}
       </div>

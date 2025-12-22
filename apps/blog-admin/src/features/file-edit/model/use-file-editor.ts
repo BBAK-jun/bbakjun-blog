@@ -2,27 +2,29 @@
  * File Edit Feature - File Editor Hook
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { parseFrontMatter, type EditorFormData } from '@/entities/frontmatter';
 import {
-  parseFrontMatter,
-  type EditorFormData,
-} from "@/entities/frontmatter";
-import { getFileContent, updateFile, previewMarkdown, type ApiResponse } from "@/shared/api/file-service";
-import { fileKeys } from "@/entities/file";
+  getFileContent,
+  updateFile,
+  previewMarkdown,
+  type ApiResponse,
+} from '@/shared/api/file-service';
+import { fileKeys } from '@/entities/file';
 
 export function useFileEditor(pathname: string | null) {
   const queryClient = useQueryClient();
 
   // Form state
   const [formData, setFormData] = useState<EditorFormData>({
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     tags: [],
-    author: "",
-    date: "",
+    author: '',
+    date: '',
     draft: false,
-    content: "",
+    content: '',
   });
 
   // Track initial data for change detection
@@ -34,7 +36,7 @@ export function useFileEditor(pathname: string | null) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["file", pathname],
+    queryKey: ['file', pathname],
     queryFn: async () => {
       const result = await getFileContent(pathname!);
       if (!result.success || !result.data) {
@@ -51,11 +53,11 @@ export function useFileEditor(pathname: string | null) {
       const { frontMatter, body } = parseFrontMatter(fileData.rawContent);
 
       const initialData = {
-        title: frontMatter?.title || "",
-        description: frontMatter?.description || "",
+        title: frontMatter?.title || '',
+        description: frontMatter?.description || '',
         tags: Array.isArray(frontMatter?.tags) ? frontMatter.tags : [],
-        author: frontMatter?.author || "",
-        date: frontMatter?.date || "",
+        author: frontMatter?.author || '',
+        date: frontMatter?.date || '',
         draft: frontMatter?.draft || false,
         series: frontMatter?.series,
         seriesOrder: frontMatter?.seriesOrder,
@@ -69,7 +71,7 @@ export function useFileEditor(pathname: string | null) {
 
   // Preview query with debouncing
   const { data: previewResult } = useQuery({
-    queryKey: ["preview", formData.content],
+    queryKey: ['preview', formData.content],
     queryFn: async () => {
       const result = await previewMarkdown(formData.content);
       if (!result.success) {
@@ -84,10 +86,10 @@ export function useFileEditor(pathname: string | null) {
   // Parse tags from string to array
   const parseTags = (tags: string[]): string[] => {
     // If already an array, join and re-parse to normalize
-    const tagString = Array.isArray(tags) ? tags.join(", ") : String(tags);
+    const tagString = Array.isArray(tags) ? tags.join(', ') : String(tags);
     return tagString
-      .split(",")
-      .map((t) => t.trim())
+      .split(',')
+      .map(t => t.trim())
       .filter(Boolean);
   };
 
@@ -99,7 +101,7 @@ export function useFileEditor(pathname: string | null) {
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!pathname) throw new Error("No pathname");
+      if (!pathname) throw new Error('No pathname');
 
       // Parse tags only on submission
       const parsedTags = parseTags(formData.tags);
@@ -124,7 +126,7 @@ export function useFileEditor(pathname: string | null) {
       setInitialFormData(formData);
 
       // Invalidate current file query to refetch
-      queryClient.invalidateQueries({ queryKey: ["file", pathname] });
+      queryClient.invalidateQueries({ queryKey: ['file', pathname] });
       // Invalidate all file lists to show updated metadata
       queryClient.invalidateQueries({ queryKey: fileKeys.lists() });
     },
@@ -136,7 +138,7 @@ export function useFileEditor(pathname: string | null) {
     error,
     formData,
     setFormData,
-    previewHtml: previewResult?.htmlContent || fileData?.htmlContent || "",
+    previewHtml: previewResult?.htmlContent || fileData?.htmlContent || '',
     save: saveMutation.mutate,
     isSaving: saveMutation.isPending,
     saveError: saveMutation.error,

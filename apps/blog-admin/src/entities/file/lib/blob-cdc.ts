@@ -46,9 +46,7 @@ export async function syncBlobToDatabase() {
     }
 
     // 2. 삭제된 파일 표시
-    const deletedUrls = dbFiles
-      .filter(f => !blobUrlsSet.has(f.url))
-      .map(f => f.url);
+    const deletedUrls = dbFiles.filter(f => !blobUrlsSet.has(f.url)).map(f => f.url);
 
     if (deletedUrls.length > 0) {
       console.log(`🗑️  Marking ${deletedUrls.length} files as deleted`);
@@ -59,9 +57,7 @@ export async function syncBlobToDatabase() {
     }
 
     // 3. 기존 파일의 lastChecked 업데이트
-    const existingUrls = blobs
-      .filter(b => dbFileUrlsSet.has(b.url))
-      .map(b => b.url);
+    const existingUrls = blobs.filter(b => dbFileUrlsSet.has(b.url)).map(b => b.url);
 
     if (existingUrls.length > 0) {
       await prisma.blobFile.updateMany({

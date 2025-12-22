@@ -1,12 +1,10 @@
-import { History } from "lucide-react";
+import { History } from 'lucide-react';
 
 export default function HistoryPage() {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-          업로드 이력
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">업로드 이력</h2>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           파일 업로드 및 수정 이력을 확인합니다
         </p>

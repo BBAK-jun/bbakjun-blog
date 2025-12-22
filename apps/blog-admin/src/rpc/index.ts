@@ -56,11 +56,11 @@ import { requireAdminSession, requireSession } from './middleware/session';
 const app = new OpenAPIHono<RpcEnv>()
   // Blob Files RPC
   .openapi(getBlobFilesRoute, getBlobFilesHandler)
-  .openapi(getBlobFilesAdminRoute, async (c) => {
+  .openapi(getBlobFilesAdminRoute, async c => {
     await requireSession(c, async () => {});
     return getBlobFilesAdminHandler(c);
   })
-  .openapi(syncBlobFilesRoute, async (c) => {
+  .openapi(syncBlobFilesRoute, async c => {
     await requireAdminSession(c, async () => {});
     return syncBlobFilesHandler(c);
   })
@@ -70,7 +70,7 @@ const app = new OpenAPIHono<RpcEnv>()
   // Newsletter RPC
   .openapi(subscribeNewsletterRoute, subscribeNewsletterHandler)
   .openapi(unsubscribeNewsletterRoute, unsubscribeNewsletterHandler)
-  .openapi(getNewsletterSubscribersRoute, async (c) => {
+  .openapi(getNewsletterSubscribersRoute, async c => {
     await requireAdminSession(c, async () => {});
     return getNewsletterSubscribersHandler(c);
   })
@@ -87,7 +87,7 @@ app.route('/api/v1/admin/upload-image', legacyImageUploadRoutes);
 app.route('/api/v1/newsletter', legacyNewsletterRoutes);
 
 // Global error handling
-app.notFound((c) => c.json({ error: 'Not Found' }, 404));
+app.notFound(c => c.json({ error: 'Not Found' }, 404));
 app.onError((err, c) => {
   console.error('RPC error:', err);
   return c.json({ error: 'Internal Server Error' }, 500);

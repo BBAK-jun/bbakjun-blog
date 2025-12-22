@@ -2,8 +2,8 @@
  * File Delete Feature - Delete Button Component
  */
 
-import { Trash2 } from "lucide-react";
-import type { BlobFile } from "@/entities/file";
+import { Trash2 } from 'lucide-react';
+import type { BlobFile } from '@/entities/file';
 
 interface DeleteFileButtonProps {
   file: BlobFile;

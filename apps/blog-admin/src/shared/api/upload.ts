@@ -32,4 +32,3 @@ export const uploadErrorSchema = z.object({
   success: z.boolean(),
   error: z.string(),
 });
-

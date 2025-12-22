@@ -13,8 +13,10 @@ try {
       const key = match[1].trim();
       let value = match[2].trim();
       // Remove surrounding quotes (both single and double)
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
       if (!process.env[key]) {
@@ -63,7 +65,7 @@ async function testPathnameUnique() {
     });
 
     const firstCount = await prisma.blobFile.count({
-      where: { pathname: testPathname }
+      where: { pathname: testPathname },
     });
     console.log(`   ✅ Record created. Count: ${firstCount}`);
 
@@ -79,7 +81,7 @@ async function testPathnameUnique() {
         contentType: 'text/markdown',
       },
       update: {
-        url: 'https://example.com/test2.mdx',  // Different URL
+        url: 'https://example.com/test2.mdx', // Different URL
         size: BigInt(2000),
         uploadedAt: new Date(),
         contentType: 'text/markdown',
@@ -89,7 +91,7 @@ async function testPathnameUnique() {
     });
 
     const secondCount = await prisma.blobFile.count({
-      where: { pathname: testPathname }
+      where: { pathname: testPathname },
     });
     console.log(`   ✅ Record updated. Count: ${secondCount}`);
 
@@ -99,7 +101,7 @@ async function testPathnameUnique() {
 
       // Show the record details
       const record = await prisma.blobFile.findUnique({
-        where: { pathname: testPathname }
+        where: { pathname: testPathname },
       });
 
       console.log('\n📝 Record details:');
@@ -118,7 +120,7 @@ async function testPathnameUnique() {
     // Cleanup
     console.log('\n🧹 Cleaning up test data...');
     await prisma.blobFile.delete({
-      where: { pathname: testPathname }
+      where: { pathname: testPathname },
     });
     console.log('   ✅ Test data removed');
 

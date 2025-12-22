@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { FileText, X, Filter as FilterIcon } from "lucide-react";
-import { FileListItem, type BlobFile } from "@/entities/file";
-import { SearchInput } from "@/features/file-search";
-import { CategoryFilter, SortSelect, type SortOption } from "@/features/file-filter";
+import { useRouter } from 'next/navigation';
+import { FileText, X, Filter as FilterIcon } from 'lucide-react';
+import { FileListItem, type BlobFile } from '@/entities/file';
+import { SearchInput } from '@/features/file-search';
+import { CategoryFilter, SortSelect, type SortOption } from '@/features/file-filter';
 
 interface FileListWidgetProps {
   files: BlobFile[];
@@ -41,7 +41,7 @@ export function FileListWidget({
 }: FileListWidgetProps) {
   const router = useRouter();
 
-  const hasAnyFilter = searchQuery !== "" || hasActiveFilters;
+  const hasAnyFilter = searchQuery !== '' || hasActiveFilters;
 
   return (
     <div className="space-y-6">
@@ -55,11 +55,7 @@ export function FileListWidget({
             placeholder="파일명 또는 경로로 검색..."
           />
 
-          <CategoryFilter
-            value={category}
-            categories={categories}
-            onChange={setCategory}
-          />
+          <CategoryFilter value={category} categories={categories} onChange={setCategory} />
 
           <SortSelect value={sort} onChange={setSort} />
         </div>
@@ -68,31 +64,29 @@ export function FileListWidget({
         {hasAnyFilter && (
           <div className="flex items-center gap-2 flex-wrap">
             <FilterIcon className="w-4 h-4 text-slate-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              필터 적용 중:
-            </span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">필터 적용 중:</span>
             {searchQuery && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded">
                 검색: "{searchQuery}"
               </span>
             )}
-            {category !== "all" && (
+            {category !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded">
                 카테고리: {category}
               </span>
             )}
-            {sort !== "date-desc" && (
+            {sort !== 'date-desc' && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded">
-                정렬:{" "}
-                {sort === "date-asc"
-                  ? "오래된순"
-                  : sort === "name-asc"
-                  ? "이름(A-Z)"
-                  : sort === "name-desc"
-                  ? "이름(Z-A)"
-                  : sort === "size-asc"
-                  ? "크기(작은순)"
-                  : "크기(큰순)"}
+                정렬:{' '}
+                {sort === 'date-asc'
+                  ? '오래된순'
+                  : sort === 'name-asc'
+                    ? '이름(A-Z)'
+                    : sort === 'name-desc'
+                      ? '이름(Z-A)'
+                      : sort === 'size-asc'
+                        ? '크기(작은순)'
+                        : '크기(큰순)'}
               </span>
             )}
             <button
@@ -110,9 +104,7 @@ export function FileListWidget({
       {files.length === 0 && (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 mb-2">
-            검색 결과가 없습니다
-          </p>
+          <p className="text-slate-600 dark:text-slate-400 mb-2">검색 결과가 없습니다</p>
           <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">
             다른 검색어나 필터를 시도해보세요
           </p>
@@ -150,16 +142,12 @@ export function FileListWidget({
               </tr>
             </thead>
             <tbody>
-              {files.map((file) => (
+              {files.map(file => (
                 <FileListItem
                   key={file.pathname}
                   file={file}
-                  onView={(f) =>
-                    router.push(
-                      `/dashboard/files/view?pathname=${encodeURIComponent(
-                        f.pathname
-                      )}`
-                    )
+                  onView={f =>
+                    router.push(`/dashboard/files/view?pathname=${encodeURIComponent(f.pathname)}`)
                   }
                   onDelete={onDelete}
                   formatFileSize={formatFileSize}
@@ -171,9 +159,7 @@ export function FileListWidget({
 
           {/* Files Count */}
           <div className="mt-4 text-center">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              총 {files.length}개의 파일
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">총 {files.length}개의 파일</p>
           </div>
         </div>
       )}

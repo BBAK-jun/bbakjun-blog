@@ -45,6 +45,7 @@ pnpm install
 ```
 
 **확장 프로그램**:
+
 - ESLint
 - Prettier
 - TypeScript Vue Plugin
@@ -79,6 +80,7 @@ pnpm dev:all
 ```
 
 **출력**:
+
 ```
 blog-admin:dev: ▲ Next.js 16.0.8 (Turbopack)
 blog-admin:dev: ✓ Ready in 682ms
@@ -127,6 +129,7 @@ git push origin feature/add-delete-file-api
 ### Step 6: Pull Request 생성
 
 GitHub에서 PR 생성:
+
 - 제목: 간단명료하게
 - 설명: 변경사항 상세 설명
 - 라벨: 기능/버그 등
@@ -152,19 +155,16 @@ touch apps/blog-admin/src/app/api/admin/file/\[fileId\]/route.ts
 **파일 내용** (`route.ts`):
 
 ```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { verifyApiKey } from "@/lib/auth";
-import { deleteBlob } from "@/lib/blob";
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyApiKey } from '@/lib/auth';
+import { deleteBlob } from '@/lib/blob';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { fileId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { fileId: string } }) {
   try {
     const isAuthorized = await verifyApiKey();
     if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
@@ -173,7 +173,7 @@ export async function DELETE(
 
     if (!fileId) {
       return NextResponse.json(
-        { success: false, error: "No fileId provided", code: "NO_FILE_ID" },
+        { success: false, error: 'No fileId provided', code: 'NO_FILE_ID' },
         { status: 400 }
       );
     }
@@ -186,15 +186,15 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "파일이 삭제되었습니다",
+      message: '파일이 삭제되었습니다',
     });
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error('Delete error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
-        code: "INTERNAL_ERROR",
+        error: error instanceof Error ? error.message : 'Internal server error',
+        code: 'INTERNAL_ERROR',
       },
       { status: 500 }
     );
@@ -218,7 +218,7 @@ export async function getBlobContent(path: string): Promise<string> {
     const buffer = await downloadBlob(path);
     return buffer.toString('utf-8');
   } catch (error) {
-    console.error("Get blob content error:", error);
+    console.error('Get blob content error:', error);
     throw error;
   }
 }
@@ -236,19 +236,16 @@ touch apps/blog-admin/src/app/api/admin/file/\[fileId\]/route.ts
 ```typescript
 // src/app/api/admin/file/[fileId]/route.ts
 
-import { NextRequest, NextResponse } from "next/server";
-import { verifyApiKey } from "@/lib/auth";
-import { getBlobContent, getBlobMetadata } from "@/lib/blob";
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyApiKey } from '@/lib/auth';
+import { getBlobContent, getBlobMetadata } from '@/lib/blob';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { fileId: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
   try {
     const isAuthorized = await verifyApiKey();
     if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
@@ -268,12 +265,12 @@ export async function GET(
       metadata,
     });
   } catch (error) {
-    console.error("Get file error:", error);
+    console.error('Get file error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
-        code: "INTERNAL_ERROR",
+        error: error instanceof Error ? error.message : 'Internal server error',
+        code: 'INTERNAL_ERROR',
       },
       { status: 500 }
     );
@@ -303,12 +300,12 @@ Authorization: Bearer your-secret-key
 
 \`\`\`json
 {
-  "success": true,
-  "fileId": "DEV/my-post",
-  "content": "# My Post\n\nContent here...",
-  "metadata": {
-    ...
-  }
+"success": true,
+"fileId": "DEV/my-post",
+"content": "# My Post\n\nContent here...",
+"metadata": {
+...
+}
 }
 \`\`\`
 ```
@@ -438,10 +435,7 @@ curl -v http://localhost:3001/api/admin/files \
 
 ```typescript
 // ✅ 좋은 예
-async function uploadFile(
-  file: File,
-  path: string
-): Promise<{ success: boolean; url: string }> {
+async function uploadFile(file: File, path: string): Promise<{ success: boolean; url: string }> {
   if (!file) {
     throw new Error('File is required');
   }
@@ -590,6 +584,7 @@ git push origin main --tags
 1. **환경 변수 설정**
 
    `.env.local`에 API 키 설정:
+
    ```bash
    BACKOFFICE_API_KEY=your-api-key
    ```
@@ -603,11 +598,13 @@ git push origin main --tags
 #### 업로드 실행
 
 **로컬 환경에 업로드**:
+
 ```bash
 pnpm upload-posts
 ```
 
 **프로덕션 환경에 업로드**:
+
 ```bash
 pnpm upload-posts:prod
 ```
@@ -615,11 +612,13 @@ pnpm upload-posts:prod
 #### 파일 목록 확인 (드라이런)
 
 실제 업로드 전 어떤 파일들이 업로드될지 확인:
+
 ```bash
 node scripts/list-posts.js
 ```
 
 **출력 예시**:
+
 ```
 📋 Markdown Files List
 
@@ -658,14 +657,17 @@ Successful:      68
 #### 문제 해결
 
 **"BACKOFFICE_API_KEY is not set"**:
+
 ```bash
 export BACKOFFICE_API_KEY=your-api-key
 ```
 
 **"fetch failed"**:
+
 - blog-admin 서버가 실행 중인지 확인 (`pnpm dev:admin`)
 
 **"Unauthorized"**:
+
 - API 키가 blog-admin의 키와 일치하는지 확인
 
 자세한 내용은 [`scripts/README.md`](../../../scripts/README.md) 참고

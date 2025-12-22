@@ -8,20 +8,9 @@ import { uploadImageRoute, uploadImageHandler } from './uploadImage';
  * - POST `/api/admin/upload`
  * - POST `/api/admin/upload-image`
  */
-export const legacyMarkdownUploadRoutes = new Hono<RpcEnv>().post(
-  '/',
-  uploadMarkdownHandler
-);
+export const legacyMarkdownUploadRoutes = new Hono<RpcEnv>().post('/', uploadMarkdownHandler);
 
-export const legacyImageUploadRoutes = new Hono<RpcEnv>().post(
-  '/',
-  uploadImageHandler
-);
+export const legacyImageUploadRoutes = new Hono<RpcEnv>().post('/', uploadImageHandler);
 
 // Export routes and handlers for OpenAPIHono
-export {
-  uploadMarkdownRoute,
-  uploadMarkdownHandler,
-  uploadImageRoute,
-  uploadImageHandler,
-};
+export { uploadMarkdownRoute, uploadMarkdownHandler, uploadImageRoute, uploadImageHandler };

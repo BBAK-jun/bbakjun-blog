@@ -420,7 +420,7 @@ describe('파일 삭제 통합 테스트 - CDC 동기화', () => {
 
     // 삭제 전 파일이 나타나는지 확인
     let { files } = await getCachedBlobFiles({ limit: 1000 });
-    let found = files.find((f) => f.pathname === testPathname);
+    let found = files.find(f => f.pathname === testPathname);
     expect(found).toBeDefined();
     expect(found?.isDeleted).toBe(false);
 
@@ -430,17 +430,13 @@ describe('파일 삭제 통합 테스트 - CDC 동기화', () => {
 
     // 삭제 후 파일이 나타나지 않는지 확인 (isDeleted 필터링)
     ({ files } = await getCachedBlobFiles({ limit: 1000 }));
-    found = files.find((f) => f.pathname === testPathname);
+    found = files.find(f => f.pathname === testPathname);
     expect(found).toBeUndefined();
   });
 });
 
 describe('동시 작업 처리', () => {
-  const testPathnames = [
-    'test/concurrent-1.mdx',
-    'test/concurrent-2.mdx',
-    'test/concurrent-3.mdx',
-  ];
+  const testPathnames = ['test/concurrent-1.mdx', 'test/concurrent-2.mdx', 'test/concurrent-3.mdx'];
 
   beforeEach(async () => {
     await testPrisma.blobFile.deleteMany({
@@ -503,7 +499,7 @@ describe('동시 작업 처리', () => {
     const results = await Promise.all(updatePromises);
 
     // 모든 업데이트가 성공했는지 확인
-    results.forEach((result) => {
+    results.forEach(result => {
       expect(result.success).toBe(true);
     });
 

@@ -44,33 +44,36 @@ export function useLocalStorage<T>(
 ): [T, (value: T | ((prev: T) => T)) => void] {
   const updateTimeoutRef = useRef<number | null>(null);
 
-  const subscribe = useCallback((callback: () => void) => {
-    const handleStorageChange = (e: StorageEvent) => {
-      // Only trigger for this specific key
-      if (e.key === key) {
-        callback();
-      }
-    };
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      const handleStorageChange = (e: StorageEvent) => {
+        // Only trigger for this specific key
+        if (e.key === key) {
+          callback();
+        }
+      };
 
-    const handleCustomEvent = (e: Event) => {
-      const customEvent = e as CustomEvent<{ key: string }>;
-      // Only trigger for this specific key
-      if (customEvent.detail?.key === key) {
-        callback();
-      }
-    };
+      const handleCustomEvent = (e: Event) => {
+        const customEvent = e as CustomEvent<{ key: string }>;
+        // Only trigger for this specific key
+        if (customEvent.detail?.key === key) {
+          callback();
+        }
+      };
 
-    // Listen to storage events from other tabs
-    window.addEventListener('storage', handleStorageChange);
+      // Listen to storage events from other tabs
+      window.addEventListener('storage', handleStorageChange);
 
-    // Listen to custom events for same-tab updates
-    window.addEventListener('local-storage-change', handleCustomEvent);
+      // Listen to custom events for same-tab updates
+      window.addEventListener('local-storage-change', handleCustomEvent);
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('local-storage-change', handleCustomEvent);
-    };
-  }, [key]);
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('local-storage-change', handleCustomEvent);
+      };
+    },
+    [key]
+  );
 
   const getSnapshot = useCallback(() => {
     try {
@@ -101,38 +104,41 @@ export function useLocalStorage<T>(
 
   const store = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const setValue = useCallback((value: T | ((prev: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(store) : value;
+  const setValue = useCallback(
+    (value: T | ((prev: T) => T)) => {
+      try {
+        const valueToStore = value instanceof Function ? value(store) : value;
 
-      // Check if value actually changed using deep equality
-      const currentValue = getSnapshot();
-      if (deepEqual(currentValue, valueToStore)) {
-        // Value hasn't changed, don't update
-        return;
+        // Check if value actually changed using deep equality
+        const currentValue = getSnapshot();
+        if (deepEqual(currentValue, valueToStore)) {
+          // Value hasn't changed, don't update
+          return;
+        }
+
+        // Debounce the update to prevent rapid successive updates
+        if (updateTimeoutRef.current !== null) {
+          window.clearTimeout(updateTimeoutRef.current);
+        }
+
+        updateTimeoutRef.current = window.setTimeout(() => {
+          const serialized = JSON.stringify(valueToStore);
+          window.localStorage.setItem(key, serialized);
+
+          // Update cache immediately
+          snapshotCache.set(key, { value: valueToStore, serialized });
+
+          // Notify same-tab listeners
+          window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key } }));
+
+          updateTimeoutRef.current = null;
+        }, 50); // 50ms debounce
+      } catch (error) {
+        console.warn(`Error setting localStorage key "${key}":`, error);
       }
-
-      // Debounce the update to prevent rapid successive updates
-      if (updateTimeoutRef.current !== null) {
-        window.clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = window.setTimeout(() => {
-        const serialized = JSON.stringify(valueToStore);
-        window.localStorage.setItem(key, serialized);
-
-        // Update cache immediately
-        snapshotCache.set(key, { value: valueToStore, serialized });
-
-        // Notify same-tab listeners
-        window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key } }));
-
-        updateTimeoutRef.current = null;
-      }, 50); // 50ms debounce
-    } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key, store, getSnapshot]);
+    },
+    [key, store, getSnapshot]
+  );
 
   return [store, setValue];
 }

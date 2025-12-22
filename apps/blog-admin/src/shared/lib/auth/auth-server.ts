@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
-import { env } from "@/shared/config";
+import { cookies } from 'next/headers';
+import { env } from '@/shared/config';
 
 const API_KEY = env.BACKOFFICE_API_KEY;
 
@@ -8,7 +8,7 @@ const API_KEY = env.BACKOFFICE_API_KEY;
  */
 export async function getSession() {
   const cookieStore = await cookies();
-  const sessionKey = cookieStore.get("backoffice_session")?.value;
+  const sessionKey = cookieStore.get('backoffice_session')?.value;
 
   if (!sessionKey || !API_KEY) {
     return null;

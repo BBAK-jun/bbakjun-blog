@@ -8,11 +8,11 @@
 
 **유닛 테스트 vs E2E 테스트 vs 통합 테스트**:
 
-| 방식 | 장점 | 단점 | 이 프로젝트에 적합? |
-|------|------|------|-------------------|
-| 유닛 테스트 | 빠름, 독립적 | DB 모킹 필요, 실제 동작 검증 불가 | ❌ |
-| E2E 테스트 | 전체 플로우 검증 | 느림, Vercel Blob API 비용 발생 | ❌ |
-| **통합 테스트** | 실제 DB 사용, Blob API 모킹, 빠름 | - | ✅ |
+| 방식            | 장점                              | 단점                              | 이 프로젝트에 적합? |
+| --------------- | --------------------------------- | --------------------------------- | ------------------- |
+| 유닛 테스트     | 빠름, 독립적                      | DB 모킹 필요, 실제 동작 검증 불가 | ❌                  |
+| E2E 테스트      | 전체 플로우 검증                  | 느림, Vercel Blob API 비용 발생   | ❌                  |
+| **통합 테스트** | 실제 DB 사용, Blob API 모킹, 빠름 | -                                 | ✅                  |
 
 ### 통합 테스트의 핵심
 
@@ -60,6 +60,7 @@ pnpm test:ui
 CDC 시스템의 핵심 기능을 검증:
 
 #### 1. `onBlobUpload` 테스트
+
 - ✅ 첫 업로드 시 새 레코드 생성
 - ✅ 재업로드 시 기존 레코드 업데이트 (중복 방지)
 - ✅ 삭제된 파일 재업로드 시 복구
@@ -67,11 +68,13 @@ CDC 시스템의 핵심 기능을 검증:
 - ✅ `lastChecked` 타임스탬프 업데이트
 
 #### 2. `onBlobDelete` 테스트
+
 - ✅ Soft delete (레코드 유지, `isDeleted` 플래그)
 - ✅ `lastChecked` 타임스탬프 업데이트
 - ✅ 존재하지 않는 pathname 삭제 시 에러
 
 #### 3. Pathname Unique Constraint 테스트
+
 - ✅ DB 레벨에서 unique constraint 검증
 - ✅ 다른 pathname은 정상적으로 생성 가능
 
@@ -84,14 +87,14 @@ CDC 시스템의 핵심 기능을 검증:
 beforeAll(async () => {
   // 이전 테스트의 잔여 데이터 삭제
   await testPrisma.blobFile.deleteMany({
-    where: { pathname: { startsWith: 'test/' } }
+    where: { pathname: { startsWith: 'test/' } },
   });
 });
 
 afterAll(async () => {
   // 테스트 후 데이터 정리
   await testPrisma.blobFile.deleteMany({
-    where: { pathname: { startsWith: 'test/' } }
+    where: { pathname: { startsWith: 'test/' } },
   });
 });
 ```
@@ -99,6 +102,7 @@ afterAll(async () => {
 ### 테스트 격리
 
 각 테스트는 독립적으로 실행됩니다:
+
 - `beforeEach`: 테스트 전 데이터 삭제
 - `afterEach`: 테스트 후 데이터 삭제
 
@@ -127,6 +131,7 @@ pnpm --filter=blog-admin prisma generate
 ### 새로운 CDC 기능 추가 시
 
 1. **테스트 먼저 작성 (TDD)**:
+
    ```typescript
    it('should do something', async () => {
      // Given: 초기 상태 설정
@@ -136,6 +141,7 @@ pnpm --filter=blog-admin prisma generate
    ```
 
 2. **테스트 데이터는 `test/` prefix 사용**:
+
    ```typescript
    const testPathname = 'test/my-feature.mdx';
    ```
@@ -144,7 +150,7 @@ pnpm --filter=blog-admin prisma generate
    ```typescript
    afterEach(async () => {
      await testPrisma.blobFile.deleteMany({
-       where: { pathname: testPathname }
+       where: { pathname: testPathname },
      });
    });
    ```
@@ -163,8 +169,8 @@ describe('onBlobBatchUpload', () => {
 
     const count = await testPrisma.blobFile.count({
       where: {
-        pathname: { in: files.map(f => f.pathname) }
-      }
+        pathname: { in: files.map(f => f.pathname) },
+      },
     });
 
     expect(count).toBe(2);
@@ -205,6 +211,7 @@ jobs:
 ### 테스트 실패 시
 
 1. **DB 연결 실패**:
+
    ```bash
    # .env.local 파일이 있는지 확인
    ls -la .env.local
@@ -214,6 +221,7 @@ jobs:
    ```
 
 2. **Unique constraint 에러**:
+
    ```bash
    # 테스트 데이터가 남아있을 수 있음
    # DB에서 수동으로 삭제

@@ -1,5 +1,5 @@
 // UI Components
-export { DeleteConfirmModal, ImageUploader } from "./ui";
+export { DeleteConfirmModal, ImageUploader } from './ui';
 
 // Libraries
 export {
@@ -14,4 +14,4 @@ export {
   formatFileSize,
   formatDate,
   formatDateLong,
-} from "./lib";
+} from './lib';

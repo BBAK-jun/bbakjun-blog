@@ -60,7 +60,6 @@ async function initialSync() {
     if (result.count < blobs.length) {
       console.log(`ℹ️  ${blobs.length - result.count} files were already in database (skipped)`);
     }
-
   } catch (error) {
     console.error('❌ Initial sync failed:', error);
     throw error;
@@ -75,7 +74,7 @@ initialSync()
     console.log('\n🎉 Done!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n💥 Error:', error.message);
     process.exit(1);
   });

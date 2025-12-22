@@ -1,1 +1,1 @@
-export { FileListItem } from "./file-list-item";
+export { FileListItem } from './file-list-item';

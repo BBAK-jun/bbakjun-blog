@@ -65,10 +65,7 @@ export const subscribeNewsletterHandler = async (c: any) => {
 
     if (existing) {
       if (existing.isActive) {
-        return c.json(
-          { error: '이미 구독 중인 이메일 주소입니다' },
-          400
-        );
+        return c.json({ error: '이미 구독 중인 이메일 주소입니다' }, 400);
       }
 
       await prisma.subscriber.update({
@@ -137,9 +134,6 @@ export const subscribeNewsletterHandler = async (c: any) => {
     );
   } catch (error) {
     console.error('Subscribe error:', error);
-    return c.json(
-      { error: '구독 처리 중 오류가 발생했습니다' },
-      500
-    );
+    return c.json({ error: '구독 처리 중 오류가 발생했습니다' }, 500);
   }
 };

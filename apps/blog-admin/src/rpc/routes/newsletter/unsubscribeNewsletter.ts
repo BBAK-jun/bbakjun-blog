@@ -68,17 +68,11 @@ export const unsubscribeNewsletterHandler = async (c: any) => {
     });
 
     if (!subscriber) {
-      return c.json(
-        { error: '구독 정보를 찾을 수 없습니다' },
-        404
-      );
+      return c.json({ error: '구독 정보를 찾을 수 없습니다' }, 404);
     }
 
     if (!subscriber.isActive) {
-      return c.json(
-        { error: '이미 구독 취소된 이메일입니다' },
-        400
-      );
+      return c.json({ error: '이미 구독 취소된 이메일입니다' }, 400);
     }
 
     await prisma.subscriber.update({
@@ -98,9 +92,6 @@ export const unsubscribeNewsletterHandler = async (c: any) => {
     );
   } catch (error) {
     console.error('Unsubscribe error:', error);
-    return c.json(
-      { error: '구독 취소 중 오류가 발생했습니다' },
-      500
-    );
+    return c.json({ error: '구독 취소 중 오류가 발생했습니다' }, 500);
   }
 };

@@ -73,10 +73,7 @@ export const uploadImageRoute = createRoute({
 export const uploadImageHandler = async (c: any) => {
   try {
     if (!BLOB_TOKEN) {
-      return c.json(
-        { success: false, error: 'BLOB_READ_WRITE_TOKEN is not configured' },
-        500
-      );
+      return c.json({ success: false, error: 'BLOB_READ_WRITE_TOKEN is not configured' }, 500);
     }
 
     if (!requireApiKey(c.req.header('authorization'))) {

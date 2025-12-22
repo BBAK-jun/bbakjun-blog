@@ -1,5 +1,5 @@
-import { auth, signOut } from "../../../auth";
-import { ShieldAlert } from "lucide-react";
+import { auth, signOut } from '../../../auth';
+import { ShieldAlert } from 'lucide-react';
 
 export default async function UnauthorizedPage() {
   const session = await auth();
@@ -40,8 +40,8 @@ export default async function UnauthorizedPage() {
 
         <form
           action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
+            'use server';
+            await signOut({ redirectTo: '/login' });
           }}
         >
           <button

@@ -4,4 +4,4 @@
  * Re-export all validation schemas for easy importing
  */
 
-export * from "./file.schema";
+export * from './file.schema';

@@ -4,17 +4,22 @@
  * depending on Next.js app actions, making it usable across all FSD layers.
  */
 
-import { processMarkdown } from "@repo/content";
-import matter from "gray-matter";
-import { createFileSchema, updateFileSchema, type CreateFileInput, type UpdateFileInput } from "@/shared/lib/schemas/file.schema";
+import { processMarkdown } from '@repo/content';
+import matter from 'gray-matter';
+import {
+  createFileSchema,
+  updateFileSchema,
+  type CreateFileInput,
+  type UpdateFileInput,
+} from '@/shared/lib/schemas/file.schema';
 
 // Re-export types for convenience
 export type { CreateFileInput, UpdateFileInput };
-import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
-import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from "@/shared/server/blob-cdc";
-import { env } from "@/shared/config";
-import { put, del } from "@vercel/blob";
-import type { PutBlobResult } from "@vercel/blob";
+import { revalidateBlogPost } from '@/shared/lib/revalidate-blog';
+import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from '@/shared/server/blob-cdc';
+import { env } from '@/shared/config';
+import { put, del } from '@vercel/blob';
+import type { PutBlobResult } from '@vercel/blob';
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
@@ -56,7 +61,7 @@ export async function getFileContent(pathname: string): Promise<ApiResponse<File
     // Use CDC cached file list instead of direct Blob API call
     const { files } = await getCachedBlobFiles();
 
-    const blob = files.find((f) => f.pathname === pathname);
+    const blob = files.find(f => f.pathname === pathname);
 
     if (!blob) {
       return {
@@ -105,7 +110,7 @@ export async function getFileContent(pathname: string): Promise<ApiResponse<File
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to get file content",
+      error: error instanceof Error ? error.message : 'Failed to get file content',
     };
   }
 }
@@ -113,7 +118,9 @@ export async function getFileContent(pathname: string): Promise<ApiResponse<File
 /**
  * Create a new file
  */
-export async function createFile(input: CreateFileInput): Promise<ApiResponse<{ pathname: string }>> {
+export async function createFile(
+  input: CreateFileInput
+): Promise<ApiResponse<{ pathname: string }>> {
   try {
     // Validate input
     const validatedInput = createFileSchema.parse(input);
@@ -166,7 +173,7 @@ export async function createFile(input: CreateFileInput): Promise<ApiResponse<{ 
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create file",
+      error: error instanceof Error ? error.message : 'Failed to create file',
     };
   }
 }
@@ -174,7 +181,9 @@ export async function createFile(input: CreateFileInput): Promise<ApiResponse<{ 
 /**
  * Update an existing file
  */
-export async function updateFile(input: UpdateFileInput): Promise<ApiResponse<{ pathname: string }>> {
+export async function updateFile(
+  input: UpdateFileInput
+): Promise<ApiResponse<{ pathname: string }>> {
   try {
     // Validate input
     const validatedInput = updateFileSchema.parse(input);
@@ -184,7 +193,7 @@ export async function updateFile(input: UpdateFileInput): Promise<ApiResponse<{ 
     if (!existingFileResult.success || !existingFileResult.data) {
       return {
         success: false,
-        error: existingFileResult.error || "Failed to get existing file",
+        error: existingFileResult.error || 'Failed to get existing file',
       };
     }
 
@@ -241,7 +250,7 @@ export async function updateFile(input: UpdateFileInput): Promise<ApiResponse<{ 
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update file",
+      error: error instanceof Error ? error.message : 'Failed to update file',
     };
   }
 }
@@ -253,7 +262,7 @@ export async function deleteFile(pathname: string): Promise<ApiResponse> {
   try {
     // Use CDC cached file list to get file info
     const { files } = await getCachedBlobFiles();
-    const blob = files.find((f) => f.pathname === pathname);
+    const blob = files.find(f => f.pathname === pathname);
 
     if (!blob) {
       return {
@@ -280,7 +289,7 @@ export async function deleteFile(pathname: string): Promise<ApiResponse> {
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete file",
+      error: error instanceof Error ? error.message : 'Failed to delete file',
     };
   }
 }
@@ -288,7 +297,9 @@ export async function deleteFile(pathname: string): Promise<ApiResponse> {
 /**
  * List files from CDC cache
  */
-export async function listFiles(limit?: number): Promise<ApiResponse<{ files: any[], total: number, hasMore: boolean }>> {
+export async function listFiles(
+  limit?: number
+): Promise<ApiResponse<{ files: any[]; total: number; hasMore: boolean }>> {
   try {
     const result = await getCachedBlobFiles({ limit: limit || 100 });
 
@@ -303,7 +314,7 @@ export async function listFiles(limit?: number): Promise<ApiResponse<{ files: an
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to list files",
+      error: error instanceof Error ? error.message : 'Failed to list files',
     };
   }
 }
@@ -311,12 +322,14 @@ export async function listFiles(limit?: number): Promise<ApiResponse<{ files: an
 /**
  * Preview markdown content without saving
  */
-export async function previewMarkdown(content: string): Promise<ApiResponse<{ htmlContent: string }>> {
+export async function previewMarkdown(
+  content: string
+): Promise<ApiResponse<{ htmlContent: string }>> {
   try {
     if (!content.trim()) {
       return {
         success: false,
-        error: "Content cannot be empty",
+        error: 'Content cannot be empty',
       };
     }
 
@@ -331,7 +344,7 @@ export async function previewMarkdown(content: string): Promise<ApiResponse<{ ht
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to preview markdown",
+      error: error instanceof Error ? error.message : 'Failed to preview markdown',
     };
   }
 }

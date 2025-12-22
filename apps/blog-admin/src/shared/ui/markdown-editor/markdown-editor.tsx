@@ -4,12 +4,12 @@
  * CodeMirror-based markdown editor with toolbar and dark mode support
  */
 
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { markdown } from "@codemirror/lang-markdown";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { useCallback, useEffect, useState } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { markdown } from '@codemirror/lang-markdown';
+import { oneDark } from '@codemirror/theme-one-dark';
 import {
   Bold,
   Italic,
@@ -23,7 +23,7 @@ import {
   ListOrdered,
   Quote,
   Upload,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface MarkdownEditorProps {
   value: string;
@@ -37,8 +37,8 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({
   value,
   onChange,
-  placeholder = "마크다운 내용을 입력하세요...",
-  height = "400px",
+  placeholder = '마크다운 내용을 입력하세요...',
+  height = '400px',
   onImageClick,
   onImageDrop,
 }: MarkdownEditorProps) {
@@ -47,24 +47,24 @@ export function MarkdownEditor({
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
+    const isDarkMode = document.documentElement.classList.contains('dark');
     setIsDark(isDarkMode);
 
     const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains("dark"));
+      setIsDark(document.documentElement.classList.contains('dark'));
     });
 
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["class"],
+      attributeFilter: ['class'],
     });
 
     return () => observer.disconnect();
   }, []);
 
   const insertText = useCallback(
-    (before: string, after: string = "", placeholder: string = "") => {
-      const textarea = document.querySelector(".cm-content") as HTMLElement;
+    (before: string, after: string = '', placeholder: string = '') => {
+      const textarea = document.querySelector('.cm-content') as HTMLElement;
       if (!textarea) return;
 
       const selection = window.getSelection();
@@ -73,9 +73,7 @@ export function MarkdownEditor({
       const newText = `${before}${selectedText}${after}`;
       const cursorPos = value.length;
 
-      onChange(
-        value.substring(0, cursorPos) + newText + value.substring(cursorPos)
-      );
+      onChange(value.substring(0, cursorPos) + newText + value.substring(cursorPos));
     },
     [value, onChange]
   );
@@ -83,7 +81,7 @@ export function MarkdownEditor({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const modKey = isMac ? e.metaKey : e.ctrlKey;
 
       if (!modKey) return;
@@ -92,15 +90,15 @@ export function MarkdownEditor({
       const shortcuts: Record<string, () => void> = {
         b: () => {
           e.preventDefault();
-          insertText("**", "**", "굵은 텍스트");
+          insertText('**', '**', '굵은 텍스트');
         },
         i: () => {
           e.preventDefault();
-          insertText("*", "*", "기울임 텍스트");
+          insertText('*', '*', '기울임 텍스트');
         },
         k: () => {
           e.preventDefault();
-          insertText("[", "](https://)", "링크 텍스트");
+          insertText('[', '](https://)', '링크 텍스트');
         },
       };
 
@@ -109,18 +107,18 @@ export function MarkdownEditor({
         const shiftShortcuts: Record<string, () => void> = {
           c: () => {
             e.preventDefault();
-            insertText("`", "`", "코드");
+            insertText('`', '`', '코드');
           },
           k: () => {
             e.preventDefault();
-            insertText("```\n", "\n```", "코드 블록");
+            insertText('```\n', '\n```', '코드 블록');
           },
           i: () => {
             e.preventDefault();
             if (onImageClick) {
               onImageClick();
             } else {
-              insertText("![", "](https://)", "이미지 설명");
+              insertText('![', '](https://)', '이미지 설명');
             }
           },
         };
@@ -134,8 +132,8 @@ export function MarkdownEditor({
       if (handler) handler();
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [insertText, onImageClick]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -159,9 +157,7 @@ export function MarkdownEditor({
       if (!onImageDrop) return;
 
       const files = Array.from(e.dataTransfer.files);
-      const imageFiles = files.filter((file) =>
-        file.type.startsWith("image/")
-      );
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
       if (imageFiles.length === 0) return;
 
@@ -171,11 +167,11 @@ export function MarkdownEditor({
           const url = await onImageDrop(file);
           if (url) {
             const imageMarkdown = `![${file.name}](${url})`;
-            onChange(value + "\n" + imageMarkdown + "\n");
+            onChange(value + '\n' + imageMarkdown + '\n');
           }
         }
       } catch (error) {
-        console.error("Image upload failed:", error);
+        console.error('Image upload failed:', error);
       } finally {
         setIsUploading(false);
       }
@@ -186,50 +182,50 @@ export function MarkdownEditor({
   const toolbarButtons = [
     {
       icon: Heading1,
-      label: "제목 1",
-      action: () => insertText("# ", "", "제목 1"),
+      label: '제목 1',
+      action: () => insertText('# ', '', '제목 1'),
     },
     {
       icon: Heading2,
-      label: "제목 2",
-      action: () => insertText("## ", "", "제목 2"),
+      label: '제목 2',
+      action: () => insertText('## ', '', '제목 2'),
     },
     {
       icon: Heading3,
-      label: "제목 3",
-      action: () => insertText("### ", "", "제목 3"),
+      label: '제목 3',
+      action: () => insertText('### ', '', '제목 3'),
     },
-    { icon: Bold, label: "굵게", action: () => insertText("**", "**", "텍스트") },
+    { icon: Bold, label: '굵게', action: () => insertText('**', '**', '텍스트') },
     {
       icon: Italic,
-      label: "기울임",
-      action: () => insertText("*", "*", "텍스트"),
+      label: '기울임',
+      action: () => insertText('*', '*', '텍스트'),
     },
     {
       icon: Link,
-      label: "링크",
-      action: () => insertText("[", "](https://)", "링크 텍스트"),
+      label: '링크',
+      action: () => insertText('[', '](https://)', '링크 텍스트'),
     },
     {
       icon: Image,
-      label: "이미지",
-      action: onImageClick || (() => insertText("![", "](https://)", "이미지")),
+      label: '이미지',
+      action: onImageClick || (() => insertText('![', '](https://)', '이미지')),
     },
     {
       icon: Code,
-      label: "코드블록",
-      action: () => insertText("```\n", "\n```", "코드"),
+      label: '코드블록',
+      action: () => insertText('```\n', '\n```', '코드'),
     },
-    { icon: Quote, label: "인용", action: () => insertText("> ", "", "인용문") },
+    { icon: Quote, label: '인용', action: () => insertText('> ', '', '인용문') },
     {
       icon: List,
-      label: "목록",
-      action: () => insertText("- ", "", "항목"),
+      label: '목록',
+      action: () => insertText('- ', '', '항목'),
     },
     {
       icon: ListOrdered,
-      label: "번호 목록",
-      action: () => insertText("1. ", "", "항목"),
+      label: '번호 목록',
+      action: () => insertText('1. ', '', '항목'),
     },
   ];
 
@@ -259,9 +255,19 @@ export function MarkdownEditor({
           })}
         </div>
         <div className="px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
-          💡 단축키: <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded">⌘/Ctrl+B</kbd> 굵게,
-          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">⌘/Ctrl+I</kbd> 기울임,
-          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">⌘/Ctrl+K</kbd> 링크
+          💡 단축키:{' '}
+          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded">
+            ⌘/Ctrl+B
+          </kbd>{' '}
+          굵게,
+          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">
+            ⌘/Ctrl+I
+          </kbd>{' '}
+          기울임,
+          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">
+            ⌘/Ctrl+K
+          </kbd>{' '}
+          링크
         </div>
       </div>
 
@@ -270,7 +276,7 @@ export function MarkdownEditor({
         value={value}
         height={height}
         extensions={[markdown()]}
-        theme={isDark ? oneDark : "light"}
+        theme={isDark ? oneDark : 'light'}
         onChange={onChange}
         placeholder={placeholder}
         basicSetup={{
@@ -305,9 +311,7 @@ export function MarkdownEditor({
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg">
             <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-slate-900 dark:text-white font-semibold">
-              이미지 업로드 중...
-            </p>
+            <p className="text-slate-900 dark:text-white font-semibold">이미지 업로드 중...</p>
           </div>
         </div>
       )}

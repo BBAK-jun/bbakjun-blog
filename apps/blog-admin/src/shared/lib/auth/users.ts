@@ -1,6 +1,6 @@
-import type { User } from "@/shared/types/user";
-import { hashPassword } from "./password";
-import { env } from "@/shared/config";
+import type { User } from '@/shared/types/user';
+import { hashPassword } from './password';
+import { env } from '@/shared/config';
 
 /**
  * 사용자 저장소 (실제로는 DB를 사용하지만, 현재는 메모리에 저장)
@@ -12,11 +12,7 @@ class UserRepository {
   /**
    * 사용자 생성
    */
-  async create(
-    username: string,
-    email: string,
-    password: string
-  ): Promise<User> {
+  async create(username: string, email: string, password: string): Promise<User> {
     const id = crypto.randomUUID();
     const passwordHash = await hashPassword(password);
 
@@ -76,17 +72,17 @@ class UserRepository {
 export const userRepository = new UserRepository();
 
 // 개발 환경에서 기본 관리자 계정 생성
-if (env.NODE_ENV === "development") {
-  const adminUsername = env.ADMIN_USERNAME || "admin";
-  const adminPassword = env.ADMIN_PASSWORD || "admin123";
-  const adminEmail = env.ADMIN_EMAIL || "admin@example.com";
+if (env.NODE_ENV === 'development') {
+  const adminUsername = env.ADMIN_USERNAME || 'admin';
+  const adminPassword = env.ADMIN_PASSWORD || 'admin123';
+  const adminEmail = env.ADMIN_EMAIL || 'admin@example.com';
 
   userRepository
     .create(adminUsername, adminEmail, adminPassword)
     .then(() => {
       console.log(`✅ Default admin account created: ${adminUsername}`);
     })
-    .catch((error) => {
-      console.error("Failed to create admin account:", error);
+    .catch(error => {
+      console.error('Failed to create admin account:', error);
     });
 }

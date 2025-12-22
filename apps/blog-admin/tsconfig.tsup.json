@@ -8,7 +8,13 @@
     "emitDeclarationOnly": false,
     "tsBuildInfoFile": "./node_modules/.cache/tsup/tsconfig.tsup.tsbuildinfo"
   },
-  "include": ["src/contract/**/*.ts", "src/rpc/**/*.ts", "src/lib/**/*.ts", "src/shared/**/*.ts", "auth.ts", "auth.config.ts"],
+  "include": [
+    "src/contract/**/*.ts",
+    "src/rpc/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/shared/**/*.ts",
+    "auth.ts",
+    "auth.config.ts"
+  ],
   "exclude": ["node_modules", ".next", "dist"]
 }
-

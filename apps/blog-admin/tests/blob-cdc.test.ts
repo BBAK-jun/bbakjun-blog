@@ -53,7 +53,7 @@ describe('Blob CDC - Pathname 고유 제약조건', () => {
       // 같은 pathname으로 두 번째 업로드 (다른 URL)
       await onBlobUpload({
         url: 'https://example.com/file2.mdx', // 다른 URL
-        pathname: testPathname,                // 같은 pathname
+        pathname: testPathname, // 같은 pathname
         size: 2000,
         uploadedAt: new Date('2025-01-02'),
         contentType: 'text/markdown',
@@ -222,9 +222,7 @@ describe('Blob CDC - Pathname 고유 제약조건', () => {
     });
 
     it('존재하지 않는 pathname 삭제 시 에러가 발생해야 함', async () => {
-      await expect(
-        onBlobDelete('test/nonexistent.mdx')
-      ).rejects.toThrow();
+      await expect(onBlobDelete('test/nonexistent.mdx')).rejects.toThrow();
     });
   });
 

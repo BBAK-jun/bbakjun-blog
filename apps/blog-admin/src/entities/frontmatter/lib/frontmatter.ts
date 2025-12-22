@@ -4,7 +4,7 @@
  * Parse and serialize YAML frontmatter in markdown files
  */
 
-import matter from "gray-matter";
+import matter from 'gray-matter';
 
 export interface FrontMatter {
   title: string;
@@ -35,7 +35,7 @@ export function parseFrontMatter(content: string): {
 
     return { frontMatter: data as Partial<FrontMatter>, body };
   } catch (error) {
-    console.error("Failed to parse frontmatter:", error);
+    console.error('Failed to parse frontmatter:', error);
     return { frontMatter: null, body: content };
   }
 }
@@ -43,29 +43,24 @@ export function parseFrontMatter(content: string): {
 /**
  * Serialize frontmatter to YAML string
  */
-export function serializeFrontMatter(
-  frontMatter: Partial<FrontMatter>
-): string {
+export function serializeFrontMatter(frontMatter: Partial<FrontMatter>): string {
   // Filter out undefined and null values
   const cleanedData = Object.entries(frontMatter)
     .filter(([_, value]) => value !== undefined && value !== null)
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
   // Use gray-matter's stringify for proper YAML formatting
-  const result = matter.stringify("", cleanedData);
+  const result = matter.stringify('', cleanedData);
 
   // Extract just the YAML part (between --- markers)
   const match = result.match(/^---\n([\s\S]*?)\n---/);
-  return match ? match[1] : "";
+  return match ? match[1] : '';
 }
 
 /**
  * Combine frontmatter and content into full markdown
  */
-export function combineContent(
-  frontMatter: Partial<FrontMatter>,
-  content: string
-): string {
+export function combineContent(frontMatter: Partial<FrontMatter>, content: string): string {
   // Filter out undefined and null values
   const cleanedData = Object.entries(frontMatter)
     .filter(([_, value]) => value !== undefined && value !== null)

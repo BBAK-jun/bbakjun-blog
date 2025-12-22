@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, X } from 'lucide-react';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -28,9 +28,7 @@ export default function DeleteConfirmModal({
             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              파일 삭제 확인
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">파일 삭제 확인</h2>
           </div>
           <button
             onClick={onClose}
@@ -43,13 +41,9 @@ export default function DeleteConfirmModal({
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          <p className="text-slate-600 dark:text-slate-400">
-            정말로 이 파일을 삭제하시겠습니까?
-          </p>
+          <p className="text-slate-600 dark:text-slate-400">정말로 이 파일을 삭제하시겠습니까?</p>
           <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-            <p className="text-sm font-mono text-slate-900 dark:text-white break-all">
-              {fileName}
-            </p>
+            <p className="text-sm font-mono text-slate-900 dark:text-white break-all">{fileName}</p>
           </div>
           <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -98,7 +92,7 @@ export default function DeleteConfirmModal({
                 <span>삭제 중...</span>
               </>
             ) : (
-              "삭제"
+              '삭제'
             )}
           </button>
         </div>

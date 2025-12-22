@@ -4,4 +4,4 @@
  * Complete file creation interface
  */
 
-export { FileCreatorWidget } from "./ui/file-creator-widget";
+export { FileCreatorWidget } from './ui/file-creator-widget';

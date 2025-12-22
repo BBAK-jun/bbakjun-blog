@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback } from "react";
-import { Upload, Image as ImageIcon, X, Loader2 } from "lucide-react";
-import { uploadImage as uploadImageAction } from "@/app/actions/files";
+import { useState, useRef, useCallback } from 'react';
+import { Upload, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { uploadImage as uploadImageAction } from '@/app/actions/files';
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string, filename: string) => void;
@@ -25,17 +25,17 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', file);
 
       const result = await uploadImageAction(formData);
 
       if (!result.success || !result.url) {
-        throw new Error(result.error || "Upload failed");
+        throw new Error(result.error || 'Upload failed');
       }
 
       onImageUploaded(result.url, file.name);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
     }
@@ -63,10 +63,10 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
     setIsDragging(false);
 
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file && file.type.startsWith('image/')) {
       uploadImage(file);
     } else {
-      setError("Please drop an image file");
+      setError('Please drop an image file');
     }
   }, []);
 
@@ -75,8 +75,8 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
       <div
         className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
           isDragging
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
-            : "border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+            : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -93,16 +93,10 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
         {isUploading ? (
           <div className="py-4">
             <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-600" />
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Uploading...
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Uploading...</p>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full"
-          >
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full">
             <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
               Click to upload or drag and drop

@@ -6,8 +6,7 @@ import { getBlobFilesAdminRoute, getBlobFilesAdminHandler } from './getBlobFiles
 import { syncBlobFilesRoute, syncBlobFilesHandler } from './syncBlobFiles';
 
 // Legacy routes for backward compatibility
-export const legacyPublicBlobFilesRoutes = new Hono<RpcEnv>()
-  .get('/', getBlobFilesHandler);
+export const legacyPublicBlobFilesRoutes = new Hono<RpcEnv>().get('/', getBlobFilesHandler);
 
 export const legacyAdminBlobFilesRoutes = new Hono<RpcEnv>()
   .get('/', requireSession, getBlobFilesAdminHandler)
