@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono';
-import { env } from '../env';
+import { env } from '../../env';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
