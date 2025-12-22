@@ -52,19 +52,19 @@ export default function StreamingPostCard({ post, isLoading }: StreamingPostCard
       <article className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200">
         <header>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 line-clamp-2">
-            {post.title}
+            {post.frontMatter.title}
           </h3>
         </header>
 
-        {post.description && (
+        {post.frontMatter.description && (
           <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-            {post.description}
+            {post.frontMatter.description}
           </p>
         )}
 
-        {post.tags && post.tags.length > 0 && (
+        {post.frontMatter.tags && post.frontMatter.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags.map((tag) => (
+            {post.frontMatter.tags.map((tag) => (
               <Badge
                 key={tag}
                 variant="secondary"
@@ -77,8 +77,8 @@ export default function StreamingPostCard({ post, isLoading }: StreamingPostCard
         )}
 
         <footer className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <time dateTime={post.date}>
-            {formatDate(post.date)}
+          <time dateTime={post.frontMatter.date}>
+            {formatDate(post.frontMatter.date)}
           </time>
           {post.readingTime && (
             <span>{post.readingTime}</span>

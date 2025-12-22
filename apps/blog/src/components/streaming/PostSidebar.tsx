@@ -2,7 +2,8 @@
 
 import { Suspense } from 'react'
 import TableOfContents from '@/components/TableOfContents'
-import StreamingPopularPosts from './StreamingPopularPosts'
+import StreamingPopularPostsGrid from '@/components/StreamingPopularPostsGrid'
+import PopularPostSkeleton from '@/components/skeleton/PopularPostSkeleton'
 
 export default function PostSidebar() {
   return (
@@ -19,7 +20,7 @@ export default function PostSidebar() {
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
         <h3 className="font-semibold text-foreground mb-4">🔥 인기 글</h3>
         <Suspense fallback={<PopularPostsSkeleton />}>
-          <StreamingPopularPosts limit={5} />
+          <StreamingPopularPostsGrid limit={5} />
         </Suspense>
       </div>
     </div>
