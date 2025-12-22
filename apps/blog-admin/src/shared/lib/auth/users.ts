@@ -1,6 +1,6 @@
 import type { User } from "@/shared/types/user";
 import { hashPassword } from "./password";
-import { env } from "@/env";
+import { env } from "@/shared/config";
 
 /**
  * 사용자 저장소 (실제로는 DB를 사용하지만, 현재는 메모리에 저장)

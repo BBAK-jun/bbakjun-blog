@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { env } from "@/env";
+import { env } from "@/shared/config";
 
 function getApiKey(): string {
   const key = env.BACKOFFICE_API_KEY;

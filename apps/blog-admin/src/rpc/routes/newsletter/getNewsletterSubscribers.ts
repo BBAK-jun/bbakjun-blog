@@ -3,7 +3,7 @@ import { prisma } from '../../../shared/lib/db';
 import {
   newsletterErrorSchema,
   newsletterSubscribersResponseSchema,
-} from '../../../contract/schemas/newsletter';
+} from '../../../shared/api/newsletter';
 
 /**
  * GET /api/rpc/getNewsletterSubscribers - 구독자 목록 조회

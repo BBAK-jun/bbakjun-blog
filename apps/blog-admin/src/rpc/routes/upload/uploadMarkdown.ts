@@ -1,13 +1,13 @@
 import { createRoute } from '@hono/zod-openapi';
 import { put } from '@vercel/blob';
 import { verifyApiKeySync } from '../../../shared/lib/auth';
-import { onBlobUpload } from '../../../lib/blob-cdc';
+import { onBlobUpload } from '../../../shared/server/blob-cdc';
 import {
   uploadMarkdownRequestSchema,
   uploadMarkdownResponseSchema,
   uploadErrorSchema,
-} from '../../../contract/schemas/upload';
-import { env } from '../../../env';
+} from '../../../shared/api/upload';
+import { env } from '../../../shared/config/env';
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 

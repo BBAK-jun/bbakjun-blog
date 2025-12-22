@@ -6,9 +6,8 @@ import { revalidatePath } from "next/cache";
 import matter from "gray-matter";
 import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/lib/schemas";
 import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
-import { getCachedBlobFiles } from "@/lib/blob-cdc";
-import { onBlobUpload, onBlobDelete } from "@/lib/blob-cdc";
-import { env } from "@/env";
+import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from "@/shared/server/blob-cdc";
+import { env } from "@/shared/config";
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 

@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { env } from "@/env";
+import { env } from "@/shared/config";
 
 const API_KEY = env.BACKOFFICE_API_KEY;
 

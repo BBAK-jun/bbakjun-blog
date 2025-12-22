@@ -5,7 +5,7 @@ import {
   viewsIncrementBodySchema,
   viewsIncrementResponseSchema,
   viewsErrorSchema,
-} from '../../../contract/schemas/views';
+} from '../../../shared/api/views';
 
 /**
  * POST /api/v1/views/:slug - 조회수 증가

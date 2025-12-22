@@ -4,7 +4,7 @@ import {
   viewsSlugParamSchema,
   viewsGetResponseSchema,
   viewsErrorSchema,
-} from '../../../contract/schemas/views';
+} from '../../../shared/api/views';
 
 /**
  * GET /api/v1/views/:slug - 조회수 조회

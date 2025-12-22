@@ -5,7 +5,7 @@
  * when content is updated in the admin panel.
  */
 
-import { env } from "@/env";
+import { env } from "@/shared/config";
 
 interface RevalidateResponse {
   success: boolean;

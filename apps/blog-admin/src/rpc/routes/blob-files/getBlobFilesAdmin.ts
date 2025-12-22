@@ -3,12 +3,12 @@ import {
   getCachedBlobFiles,
   needsSync,
   syncBlobToDatabase,
-} from '../../../lib/blob-cdc';
+} from '../../../shared/server/blob-cdc';
 import {
   adminBlobFilesQuerySchema,
   blobFilesErrorSchema,
   blobFilesResponseSchema,
-} from '../../../contract/schemas/blob-files';
+} from '../../../shared/api/blob-files';
 
 /**
  * GET /api/rpc/getBlobFilesAdmin - 관리자 Blob 파일 목록 조회 (자동 동기화 지원)

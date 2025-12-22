@@ -5,8 +5,8 @@ import {
   newsletterErrorSchema,
   newsletterSubscribeBodySchema,
   newsletterSubscribeResponseSchema,
-} from '../../../contract/schemas/newsletter';
-import { env } from '../../../env';
+} from '../../../shared/api/newsletter';
+import { env } from '../../../shared/config/env';
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 

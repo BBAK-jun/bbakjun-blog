@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { testPrisma } from './setup';
-import { onBlobUpload, onBlobDelete } from '../src/lib/blob-cdc';
+import { onBlobUpload, onBlobDelete } from '../src/shared/server/blob-cdc';
 
 describe('Blob CDC - Pathname 고유 제약조건', () => {
   const testPathname = 'test/cdc-test.mdx';

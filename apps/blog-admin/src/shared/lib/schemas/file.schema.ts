@@ -42,6 +42,8 @@ export const createFileSchema = z.object({
   author: z.string().min(1, "작성자는 필수입니다"),
   draft: z.boolean().optional(),
   content: z.string().min(1, "내용은 필수입니다"),
+  series: z.string().optional(),
+  seriesOrder: z.number().optional(),
 });
 
 /**
@@ -57,6 +59,8 @@ export const updateFileSchema = z.object({
   author: z.string().min(1, "작성자는 필수입니다"),
   draft: z.boolean().optional(),
   content: z.string().min(1, "내용은 필수입니다"),
+  series: z.string().optional(),
+  seriesOrder: z.number().optional(),
 });
 
 /**

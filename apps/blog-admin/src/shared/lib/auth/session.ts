@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { Session, SessionPayload } from "@/shared/types/user";
-import { env } from "@/env";
+import { env } from "@/shared/config";
 
 // JWT 시크릿 키 (환경변수에서 가져오기)
 function getJwtSecret(): Uint8Array {

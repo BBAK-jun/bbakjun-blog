@@ -4,7 +4,7 @@
  */
 
 import 'dotenv/config';
-import { syncBlobToDatabase } from '../src/lib/blob-cdc';
+import { syncBlobToDatabase } from '../src/shared/server/blob-cdc';
 
 async function main() {
   console.log('🔄 Starting initial Blob CDC sync...\n');

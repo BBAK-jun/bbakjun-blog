@@ -1,10 +1,10 @@
 import { createRoute } from '@hono/zod-openapi';
-import { getCachedBlobFiles } from '../../../lib/blob-cdc';
+import { getCachedBlobFiles } from '../../../shared/server/blob-cdc';
 import {
   blobFilesQuerySchema,
   blobFilesErrorSchema,
   blobFilesResponseSchema,
-} from '../../../contract/schemas/blob-files';
+} from '../../../shared/api/blob-files';
 
 /**
  * GET /api/rpc/getBlobFiles - 공개 Blob 파일 목록 조회 (CDC 캐시)

@@ -2,12 +2,12 @@
  * File Create Feature - File Creator Hook
  */
 
+import { fileKeys } from "@/entities/file";
+import { createFile, previewMarkdown, type CreateFileInput } from "@/shared/api/file-service";
+import { useLocalStorage } from "@/shared/hooks/use-local-storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { createFile, previewMarkdown, type CreateFileInput } from "@/app/actions/files";
-import { fileKeys } from "@/entities/file";
-import { useLocalStorage } from "@/shared/hooks/use-local-storage";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export interface EditorFormData {
@@ -148,7 +148,7 @@ export function useFileCreator() {
     mutationFn: async (content: string) => {
       const result = await previewMarkdown(content);
       if (!result.success) throw new Error(result.error);
-      return result.htmlContent;
+      return result.data?.htmlContent;
     },
     onSuccess: (html) => {
       setPreviewHtml(html || "");
@@ -213,7 +213,7 @@ export function useFileCreator() {
       const result = await createFile(input);
       if (!result.success) throw new Error(result.error);
 
-      return result;
+      return result.data;
     },
     onSuccess: (result) => {
       // Clear autosave
@@ -228,7 +228,7 @@ export function useFileCreator() {
       });
 
       // 생성된 파일로 이동
-      router.push(`/dashboard/files/view?pathname=${encodeURIComponent(result.pathname!)}`);
+      router.push(`/dashboard/files/view?pathname=${encodeURIComponent(result?.pathname || '')}`);
     },
     onError: (error) => {
       toast.error("파일 생성 실패", {

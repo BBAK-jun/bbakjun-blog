@@ -1,11 +1,11 @@
 import { createRoute } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import { getAllPosts } from '@repo/content';
-import { getCachedBlobFiles } from '../../../lib/blob-cdc';
+import { getCachedBlobFiles } from '../../../shared/server/blob-cdc';
 import {
   viewsStatsResponseSchema,
   viewsErrorSchema,
-} from '../../../contract/schemas/views';
+} from '../../../shared/api/views';
 
 /**
  * GET /api/v1/views/stats - 조회수 통계

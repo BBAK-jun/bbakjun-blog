@@ -8,7 +8,7 @@ import {
   parseFrontMatter,
   type EditorFormData,
 } from "@/entities/frontmatter";
-import { getFileContent, updateFile, previewMarkdown } from "@/app/actions/files";
+import { getFileContent, updateFile, previewMarkdown, type ApiResponse } from "@/shared/api/file-service";
 import { fileKeys } from "@/entities/file";
 
 export function useFileEditor(pathname: string | null) {
@@ -37,10 +37,10 @@ export function useFileEditor(pathname: string | null) {
     queryKey: ["file", pathname],
     queryFn: async () => {
       const result = await getFileContent(pathname!);
-      if (!result.success) {
+      if (!result.success || !result.data) {
         throw new Error(result.error);
       }
-      return result;
+      return result.data;
     },
     enabled: !!pathname,
   });
@@ -72,7 +72,10 @@ export function useFileEditor(pathname: string | null) {
     queryKey: ["preview", formData.content],
     queryFn: async () => {
       const result = await previewMarkdown(formData.content);
-      return result;
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.data;
     },
     enabled: formData.content.length > 0,
     staleTime: 500,

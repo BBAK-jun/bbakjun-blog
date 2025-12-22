@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { testPrisma } from './setup';
 import { updateFile, createFile, deleteFile } from '../src/app/actions/files';
-import { getCachedBlobFiles } from '../src/lib/blob-cdc';
+import { getCachedBlobFiles } from '../src/shared/server/blob-cdc';
 import * as blobModule from '@vercel/blob';
 
 // Mock @vercel/blob

@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listFiles, deleteFile, getFileContent } from "@/app/actions/files";
+import { listFiles, deleteFile, getFileContent } from "@/shared/api/file-service";
 import type { BlobFile, FileContent } from "../model/types";
 
 /**
@@ -25,10 +25,10 @@ export function useFilesQuery(limit?: number) {
     queryKey: fileKeys.list(limit),
     queryFn: async () => {
       const result = await listFiles(limit || 100);
-      if (!result.success) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || "파일 목록을 불러올 수 없습니다.");
       }
-      return (result.files || []) as BlobFile[];
+      return result.data.files || [];
     },
     staleTime: 0, // Always fetch fresh data (blob URLs change on update)
   });
@@ -47,11 +47,24 @@ export function useFileQuery(pathname: string | null) {
 
       const result = await getFileContent(pathname);
 
-      if (!result.success) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || "파일을 불러올 수 없습니다.");
       }
 
-      return result as FileContent;
+      // Transform the shared service response to match entity's FileContent interface
+      const transformedFileContent: FileContent = {
+        rawContent: result.data.rawContent,
+        htmlContent: result.data.htmlContent,
+        frontMatter: result.data.frontMatter,
+        metadata: {
+          pathname: result.data.metadata.pathname,
+          size: result.data.metadata.size,
+          uploadedAt: result.data.metadata.uploadedAt,
+          url: result.data.metadata.url,
+        },
+      };
+
+      return transformedFileContent;
     },
     enabled: !!pathname,
     staleTime: 0, // Always fetch fresh data (blob URLs change on update)

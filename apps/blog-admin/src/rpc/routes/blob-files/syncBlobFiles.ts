@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { syncBlobToDatabase } from '../../../lib/blob-cdc';
-import { blobFilesErrorSchema } from '../../../contract/schemas/blob-files';
+import { syncBlobToDatabase } from '../../../shared/server/blob-cdc';
+import { blobFilesErrorSchema } from '../../../shared/api/blob-files';
 
 const syncBlobFilesResponseSchema = z.object({
   message: z.string(),

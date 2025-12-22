@@ -4,7 +4,7 @@ import {
   newsletterErrorSchema,
   newsletterUnsubscribeBodySchema,
   newsletterUnsubscribeResponseSchema,
-} from '../../../contract/schemas/newsletter';
+} from '../../../shared/api/newsletter';
 
 /**
  * POST /api/rpc/unsubscribeNewsletter - 뉴스레터 구독 취소
