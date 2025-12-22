@@ -13,8 +13,10 @@ try {
       const key = match[1].trim();
       let value = match[2].trim();
       // Remove surrounding quotes (both single and double)
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
       if (!process.env[key]) {
@@ -77,7 +79,9 @@ async function cleanupDuplicates() {
       });
     }
 
-    console.log('\n⚠️  About to delete duplicate records (keeping most recent for each pathname)...');
+    console.log(
+      '\n⚠️  About to delete duplicate records (keeping most recent for each pathname)...'
+    );
     console.log('Press Ctrl+C to cancel, or waiting 3 seconds...\n');
 
     await new Promise(resolve => setTimeout(resolve, 3000));

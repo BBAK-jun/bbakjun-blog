@@ -57,35 +57,37 @@
 
 다음 API 엔드포인트가 서버 액션으로 대체되었습니다:
 
-| API 엔드포인트 | 메서드 | 대체 서버 액션 |
-|---|---|---|
-| `/api/admin/session` | GET | _(제거됨 - 자동 인증)_ |
-| `/api/admin/upload` | POST | `uploadMarkdown()` |
-| `/api/admin/files` | GET | `listFiles()` |
-| `/api/admin/file` | DELETE | `deleteFile()` |
-| `/api/admin/file/content` | GET | `getFileContent()` |
+| API 엔드포인트            | 메서드 | 대체 서버 액션         |
+| ------------------------- | ------ | ---------------------- |
+| `/api/admin/session`      | GET    | _(제거됨 - 자동 인증)_ |
+| `/api/admin/upload`       | POST   | `uploadMarkdown()`     |
+| `/api/admin/files`        | GET    | `listFiles()`          |
+| `/api/admin/file`         | DELETE | `deleteFile()`         |
+| `/api/admin/file/content` | GET    | `getFileContent()`     |
 
 ### 업데이트된 페이지
 
 #### 1. Upload Page (`src/app/dashboard/upload/page.tsx`)
 
 **Before:**
+
 ```typescript
 // 세션 확인
-const sessionResponse = await fetch("/api/admin/session");
+const sessionResponse = await fetch('/api/admin/session');
 const { apiKey } = await sessionResponse.json();
 
 // 파일 업로드
-const response = await fetch("/api/admin/upload", {
-  method: "POST",
+const response = await fetch('/api/admin/upload', {
+  method: 'POST',
   headers: { Authorization: `Bearer ${apiKey}` },
   body: formData,
 });
 ```
 
 **After:**
+
 ```typescript
-import { uploadMarkdown } from "@/app/actions/files";
+import { uploadMarkdown } from '@/app/actions/files';
 
 const result = await uploadMarkdown(formData);
 ```
@@ -93,19 +95,21 @@ const result = await uploadMarkdown(formData);
 #### 2. Files Page (`src/app/dashboard/files/page.tsx`)
 
 **Before:**
+
 ```typescript
 // 세션 확인 후 파일 목록 조회
-const sessionResponse = await fetch("/api/admin/session");
+const sessionResponse = await fetch('/api/admin/session');
 const { apiKey } = await sessionResponse.json();
 
-const response = await fetch("/api/admin/files?limit=100", {
+const response = await fetch('/api/admin/files?limit=100', {
   headers: { Authorization: `Bearer ${apiKey}` },
 });
 ```
 
 **After:**
+
 ```typescript
-import { listFiles, deleteFile } from "@/app/actions/files";
+import { listFiles, deleteFile } from '@/app/actions/files';
 
 const result = await listFiles(100);
 ```
@@ -113,19 +117,20 @@ const result = await listFiles(100);
 #### 3. File View Page (`src/app/dashboard/files/view/page.tsx`)
 
 **Before:**
+
 ```typescript
-const sessionResponse = await fetch("/api/admin/session");
+const sessionResponse = await fetch('/api/admin/session');
 const { apiKey } = await sessionResponse.json();
 
-const response = await fetch(
-  `/api/admin/file/content?pathname=${pathname}`,
-  { headers: { Authorization: `Bearer ${apiKey}` } }
-);
+const response = await fetch(`/api/admin/file/content?pathname=${pathname}`, {
+  headers: { Authorization: `Bearer ${apiKey}` },
+});
 ```
 
 **After:**
+
 ```typescript
-import { getFileContent } from "@/app/actions/files";
+import { getFileContent } from '@/app/actions/files';
 
 const result = await getFileContent(pathname);
 ```
@@ -139,6 +144,7 @@ const result = await getFileContent(pathname);
 파일 내용과 메타데이터를 Blob Storage에서 가져옵니다.
 
 **반환값:**
+
 ```typescript
 {
   success: boolean;
@@ -156,6 +162,7 @@ const result = await getFileContent(pathname);
 ```
 
 **특징:**
+
 - gray-matter로 front matter 파싱
 - @repo/content로 마크다운 HTML 변환
 - Vercel Blob에서 파일 URL 자동 조회
@@ -165,9 +172,11 @@ const result = await getFileContent(pathname);
 모든 마크다운 파일 목록을 front matter 정보와 함께 반환합니다.
 
 **매개변수:**
+
 - `limit` (optional): 반환할 최대 파일 수 (기본값: 100)
 
 **반환값:**
+
 ```typescript
 {
   success: boolean;
@@ -186,6 +195,7 @@ const result = await getFileContent(pathname);
 ```
 
 **특징:**
+
 - 모든 파일의 front matter를 병렬로 파싱 (`Promise.all`)
 - 파싱 실패 시에도 기본 정보 반환
 - 제목과 설명으로 검색 가능
@@ -195,10 +205,12 @@ const result = await getFileContent(pathname);
 마크다운 파일을 Blob Storage에 업로드합니다.
 
 **FormData 필드:**
+
 - `file`: File - 업로드할 마크다운 파일
 - `path`: string - 저장 경로 (예: "DEV/my-post")
 
 **반환값:**
+
 ```typescript
 {
   success: boolean;
@@ -210,6 +222,7 @@ const result = await getFileContent(pathname);
 ```
 
 **유효성 검사:**
+
 - 파일 확장자: `.md`, `.mdx`만 허용
 - 최대 크기: 10MB
 - 경로 새니타이제이션: 앞뒤 슬래시 제거
@@ -219,10 +232,12 @@ const result = await getFileContent(pathname);
 기존 파일의 내용을 업데이트합니다.
 
 **매개변수:**
+
 - `pathname`: 업데이트할 파일 경로
 - `content`: 새로운 파일 내용 (front matter 포함)
 
 **반환값:**
+
 ```typescript
 {
   success: boolean;
@@ -232,6 +247,7 @@ const result = await getFileContent(pathname);
 ```
 
 **부가 기능:**
+
 - 블로그 앱 캐시 자동 무효화
 - `/dashboard/files` 경로 재검증
 - 실패 시에도 파일 저장은 완료
@@ -241,6 +257,7 @@ const result = await getFileContent(pathname);
 Blob Storage에서 파일을 삭제합니다.
 
 **반환값:**
+
 ```typescript
 {
   success: boolean;
@@ -254,9 +271,11 @@ Blob Storage에서 파일을 삭제합니다.
 이미지를 Blob Storage에 업로드합니다.
 
 **FormData 필드:**
+
 - `file`: File - 이미지 파일
 
 **유효성 검사:**
+
 - 파일 형식: JPEG, PNG, GIF, WebP
 - 최대 크기: 5MB
 - 파일명 새니타이제이션
@@ -266,6 +285,7 @@ Blob Storage에서 파일을 삭제합니다.
 업로드된 이미지 목록을 반환합니다.
 
 **매개변수:**
+
 - `limit` (optional): 반환할 최대 이미지 수 (기본값: 50)
 
 ### `previewMarkdown(content: string)`
@@ -283,19 +303,19 @@ Blob Storage에서 파일을 삭제합니다.
 export async function updateFile(pathname: string, content: string) {
   // 1. Blob Storage에 저장
   await put(pathname, content, {
-    access: "public",
+    access: 'public',
     token: BLOB_TOKEN,
   });
 
   // 2. 어드민 캐시 무효화
-  revalidatePath("/dashboard/files");
+  revalidatePath('/dashboard/files');
 
   // 3. 블로그 캐시 무효화
-  const slug = pathname.replace(/\/(index\.)?(md|mdx)$/, "");
+  const slug = pathname.replace(/\/(index\.)?(md|mdx)$/, '');
   const blogUrl = process.env.NEXT_PUBLIC_BLOG_URL;
 
   await fetch(`${blogUrl}/api/revalidate?path=/blog/${slug}`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 ```
@@ -305,11 +325,13 @@ export async function updateFile(pathname: string, content: string) {
 **엔드포인트**: `apps/blog/src/app/api/revalidate/route.ts`
 
 **요청:**
+
 ```http
 POST /api/revalidate?path=/blog/DEV/my-post
 ```
 
 **응답:**
+
 ```json
 {
   "revalidated": true,
@@ -319,6 +341,7 @@ POST /api/revalidate?path=/blog/DEV/my-post
 ```
 
 **무효화되는 경로:**
+
 1. 특정 포스트 페이지: `/blog/{slug}`
 2. 홈페이지: `/` (포스트 목록 업데이트)
 
@@ -344,12 +367,12 @@ NEXT_PUBLIC_BLOG_URL=http://localhost:3000
 
 Vercel 대시보드에서 다음 환경 변수를 설정하세요:
 
-| 변수명 | 값 | 설명 |
-|---|---|---|
-| `BLOB_READ_WRITE_TOKEN` | (Vercel Blob 토큰) | Blob Storage 접근 권한 |
-| `BACKOFFICE_API_KEY` | (생성된 키) | 백오피스 인증 |
-| `BLOB_STORE_ID` | (Blob Store ID) | Blob Storage 식별자 |
-| `NEXT_PUBLIC_BLOG_URL` | `https://your-blog.com` | 프로덕션 블로그 URL |
+| 변수명                  | 값                      | 설명                   |
+| ----------------------- | ----------------------- | ---------------------- |
+| `BLOB_READ_WRITE_TOKEN` | (Vercel Blob 토큰)      | Blob Storage 접근 권한 |
+| `BACKOFFICE_API_KEY`    | (생성된 키)             | 백오피스 인증          |
+| `BLOB_STORE_ID`         | (Blob Store ID)         | Blob Storage 식별자    |
+| `NEXT_PUBLIC_BLOG_URL`  | `https://your-blog.com` | 프로덕션 블로그 URL    |
 
 ## 배포 가이드
 
@@ -398,13 +421,13 @@ vercel rollback [deployment-url]
 
 ### Before vs After
 
-| 항목 | Before (API Routes) | After (Server Actions) |
-|---|---|---|
-| 파일 목록 로딩 | 2 requests (session + files) | 1 request |
-| 파일 업로드 | 2 requests (session + upload) | 1 request |
-| 파일 삭제 | 2 requests (session + delete) | 1 request |
-| 클라이언트 코드 | ~150 LOC | ~80 LOC |
-| 타입 안전성 | 수동 타입 정의 | 자동 추론 |
+| 항목            | Before (API Routes)           | After (Server Actions) |
+| --------------- | ----------------------------- | ---------------------- |
+| 파일 목록 로딩  | 2 requests (session + files)  | 1 request              |
+| 파일 업로드     | 2 requests (session + upload) | 1 request              |
+| 파일 삭제       | 2 requests (session + delete) | 1 request              |
+| 클라이언트 코드 | ~150 LOC                      | ~80 LOC                |
+| 타입 안전성     | 수동 타입 정의                | 자동 추론              |
 
 ### 병렬 처리
 
@@ -412,7 +435,7 @@ vercel rollback [deployment-url]
 
 ```typescript
 const filesWithMetadata = await Promise.all(
-  markdownBlobs.map(async (blob) => {
+  markdownBlobs.map(async blob => {
     const response = await fetch(blob.url);
     const content = await response.text();
     const { data: frontMatter } = matter(content);
@@ -431,17 +454,19 @@ const filesWithMetadata = await Promise.all(
 
 ```typescript
 const { blobs } = await list({ token: BLOB_TOKEN });
-const blob = blobs.find((b) => b.pathname === pathname);
+const blob = blobs.find(b => b.pathname === pathname);
 ```
 
 ### 문제: 블로그 캐시가 무효화되지 않음
 
 **확인사항:**
+
 1. `NEXT_PUBLIC_BLOG_URL`이 올바르게 설정되었는지
 2. 블로그 앱에 `/api/revalidate` 엔드포인트가 배포되었는지
 3. 네트워크 에러 로그 확인
 
 **디버깅:**
+
 ```typescript
 console.log(`Revalidated blog post: /blog/${slug}`);
 ```
@@ -471,11 +496,11 @@ try {
 
 ## 변경 이력
 
-| 날짜 | 버전 | 변경 내용 |
-|---|---|---|
-| 2025-12-14 | 1.0.0 | 초기 마이그레이션 완료 |
+| 날짜       | 버전  | 변경 내용                  |
+| ---------- | ----- | -------------------------- |
+| 2025-12-14 | 1.0.0 | 초기 마이그레이션 완료     |
 | 2025-12-14 | 1.1.0 | 파일 목록에 제목/설명 추가 |
-| 2025-12-14 | 1.2.0 | 블로그 캐시 무효화 추가 |
+| 2025-12-14 | 1.2.0 | 블로그 캐시 무효화 추가    |
 
 ---
 

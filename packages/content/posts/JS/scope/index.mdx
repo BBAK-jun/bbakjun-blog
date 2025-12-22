@@ -18,16 +18,16 @@ var 키워드로 만든 변수와 let, const 키워드로 만든 변수의 스�
 **모든 식별자는 자신이 선언된 위치에 의해 다른 코드가 식별자 자신을 참조할 수 있는 유효범위가 결정된다.<br/> 이를 스코프라하고 식별자가 유효한 범위를 말한다.**
 
 ```js
-var scope = 'global'
+var scope = 'global';
 
 function foo() {
-  var x = 'local'
-  console.log(x) // 1번
+  var x = 'local';
+  console.log(x); // 1번
 }
 
-foo()
+foo();
 
-console.log(x) // 2번
+console.log(x); // 2번
 ```
 
 코드 최상위 레벨과 foo 함수 내부에 같은 이름을 갖는 `x` 변수를 선언했고, 1번과 2번에서 변수를 참조하고있다. 이때 JS Engine은 이름이 같은 두 개의 변수 중에서 어떤 변수를 참조해야하는지 결정해야한다. 이를 **식별자 결정(identifier resolution)**이라 부른다
@@ -64,31 +64,31 @@ JS Engine은 코드를 실행할때 코드의 컨텍스트를 고려한다. 코�
 이를 **스코프가 함수의 중첩에 의해 계층적 구조를 갖는다** 라고 말하며 중첩 함수의 지역 스코프는 중첩 함수를 포함하는 외부 함수 지역 스코프와 게층적 구조를 갖는다
 
 ```js
-var x = '글로벌x'
-var y = '글로벌y'
+var x = '글로벌x';
+var y = '글로벌y';
 
 function 외부함수() {
-  var z = '외부함수z'
+  var z = '외부함수z';
 
-  console.log(x) // 글로벌x - 1번
-  console.log(y) // 글로벌y - 2번
-  console.log(z) // 외부함수z - 3번
+  console.log(x); // 글로벌x - 1번
+  console.log(y); // 글로벌y - 2번
+  console.log(z); // 외부함수z - 3번
 
   function 내부함수() {
-    var x = '내부함수x'
+    var x = '내부함수x';
 
-    console.log(x) // 내부함수x - 4번
-    console.log(y) // 글로벌y - 5 번
-    console.log(z) // 외부함수z - 6번
+    console.log(x); // 내부함수x - 4번
+    console.log(y); // 글로벌y - 5 번
+    console.log(z); // 외부함수z - 6번
   }
 
-  내부함수()
+  내부함수();
 }
 
-외부함수()
+외부함수();
 
-console.log(x) // 글로벌x - 7번
-console.log(z) // ReferenceError: z is not defined - 8번
+console.log(x); // 글로벌x - 7번
+console.log(z); // ReferenceError: z is not defined - 8번
 ```
 
 위의 예제에서 외부 함수의 지역과 내부 함수의 지역이 있다. 내부 함수는 외부 함수의 중첩함수다. 이때 외부 함수가 만든 지역스코프는 내부 함수가 만든 지역 스코프의 상위 스코프다.
@@ -129,17 +129,17 @@ JS Engine은 스코프 체인을 따라 변수를 참조한느 코드의 스코�
 
 ```js
 function foo() {
-  console.log('global function foo')
+  console.log('global function foo');
 }
 
 function bar() {
   function foo() {
-    console.log('local function foo')
+    console.log('local function foo');
   }
-  foo() // 1번
+  foo(); // 1번
 }
 
-bar()
+bar();
 ```
 
 함수 선언문으로 함수를 정의하면 런타임 이전에 함수 객체가 먼저 생성된다. JS Engine은 함수 이름과 동일한 이름의 식별자를 암묵적으로 선언하고 생성된 함수 객체를 할당한다.
@@ -159,13 +159,13 @@ bar()
 하지만 var 키워드로 선언된 변수는 오로지 함수의 코드블럭만을 지역 스코프로 인정한다. 이를 **함수 레벨 스코프**라고한다
 
 ```js
-var score = 100
+var score = 100;
 
 if (true) {
-  var score = 0
+  var score = 0;
 }
 
-console.log(score) // 0
+console.log(score); // 0
 ```
 
 방금 var 키워드로 선언한 변수는 오로지 함수의 코드블럭만을 지역스코프로 인정 한다고했고, 그 결과 if 코드블럭은 지역스코프로 인정하지 않아 전역변수 score가 이미 존재하지만 또 다시 전역변수 score를 선언하게 된다. 이는 의도치않게 변수 값이 변경되는 부작용을 발생시킬 위험이 있다.
@@ -173,19 +173,19 @@ console.log(score) // 0
 ### 렉시컬 스코프
 
 ```js
-var score = 100
+var score = 100;
 
 function foo() {
-  var score = 0
-  bar()
+  var score = 0;
+  bar();
 }
 
 function bar() {
-  console.log(score)
+  console.log(score);
 }
 
-foo() // ? - 1번
-bar() // ? - 2번
+foo(); // ? - 1번
+bar(); // ? - 2번
 ```
 
 위 코드의 실행결과는 bar함수의 상위 스코프가 무엇인지에 따라 결정된다. 두가지 방법으로 예측해보자

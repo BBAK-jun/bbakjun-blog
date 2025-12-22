@@ -63,7 +63,7 @@ async function uploadFile(filePath) {
     const response = await fetch(`${API_URL}/api/admin/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
       },
       body: formData,
     });
@@ -76,14 +76,14 @@ async function uploadFile(filePath) {
       return {
         success: false,
         path: postPath,
-        error: result.error || `HTTP ${response.status}`
+        error: result.error || `HTTP ${response.status}`,
       };
     }
   } catch (error) {
     return {
       success: false,
       path: postPath,
-      error: error.message
+      error: error.message,
     };
   }
 }

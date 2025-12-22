@@ -4,4 +4,4 @@
  * Public API for session domain model
  */
 
-export type { Session } from "./model/types";
+export type { Session } from './model/types';

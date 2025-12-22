@@ -20,8 +20,7 @@ async function cleanupDuplicates() {
     });
 
     // Find duplicates
-    const duplicates = Array.from(pathnameMap.entries())
-      .filter(([_, files]) => files.length > 1);
+    const duplicates = Array.from(pathnameMap.entries()).filter(([_, files]) => files.length > 1);
 
     if (duplicates.length === 0) {
       console.log('✅ No duplicates found!');

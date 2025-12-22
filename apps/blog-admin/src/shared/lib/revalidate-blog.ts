@@ -5,7 +5,7 @@
  * when content is updated in the admin panel.
  */
 
-import { env } from "@/env";
+import { env } from '@/shared/config';
 
 interface RevalidateResponse {
   success: boolean;
@@ -24,18 +24,18 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
   const secret = env.BLOG_REVALIDATION_SECRET;
 
   if (!blogUrl) {
-    console.warn("NEXT_PUBLIC_BLOG_URL is not set. Skipping blog revalidation.");
+    console.warn('NEXT_PUBLIC_BLOG_URL is not set. Skipping blog revalidation.');
     return {
       success: false,
-      error: "Blog URL not configured",
+      error: 'Blog URL not configured',
     };
   }
 
   if (!secret) {
-    console.warn("BLOG_REVALIDATION_SECRET is not set. Skipping blog revalidation.");
+    console.warn('BLOG_REVALIDATION_SECRET is not set. Skipping blog revalidation.');
     return {
       success: false,
-      error: "Revalidation secret not configured",
+      error: 'Revalidation secret not configured',
     };
   }
 
@@ -43,9 +43,9 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
     const url = `${blogUrl}/api/revalidate?secret=${encodeURIComponent(secret)}&path=${encodeURIComponent(path)}`;
 
     const response = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -62,10 +62,10 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
       message: `Successfully revalidated ${path}`,
     };
   } catch (error) {
-    console.error("Blog revalidation error:", error);
+    console.error('Blog revalidation error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown revalidation error",
+      error: error instanceof Error ? error.message : 'Unknown revalidation error',
     };
   }
 }
@@ -79,10 +79,10 @@ export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
   const secret = env.BLOG_REVALIDATION_SECRET;
 
   if (!blogUrl || !secret) {
-    console.warn("Blog URL or secret not configured. Skipping revalidation.");
+    console.warn('Blog URL or secret not configured. Skipping revalidation.');
     return {
       success: false,
-      error: "Blog revalidation not configured",
+      error: 'Blog revalidation not configured',
     };
   }
 
@@ -90,9 +90,9 @@ export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
     const url = `${blogUrl}/api/revalidate?secret=${encodeURIComponent(secret)}&all=true`;
 
     const response = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -102,17 +102,17 @@ export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
     }
 
     const data = await response.json();
-    console.log("✅ Revalidated all blog pages", data);
+    console.log('✅ Revalidated all blog pages', data);
 
     return {
       success: true,
-      message: "Successfully revalidated all blog pages",
+      message: 'Successfully revalidated all blog pages',
     };
   } catch (error) {
-    console.error("Blog revalidation error:", error);
+    console.error('Blog revalidation error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown revalidation error",
+      error: error instanceof Error ? error.message : 'Unknown revalidation error',
     };
   }
 }
@@ -123,8 +123,8 @@ export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
  */
 export function extractSlugFromPathname(pathname: string): string {
   return pathname
-    .replace(/\/(index\.)?(md|mdx)$/, "") // Remove /index.mdx or .md/.mdx
-    .replace(/\.(md|mdx)$/, ""); // Remove standalone .md/.mdx
+    .replace(/\/(index\.)?(md|mdx)$/, '') // Remove /index.mdx or .md/.mdx
+    .replace(/\.(md|mdx)$/, ''); // Remove standalone .md/.mdx
 }
 
 /**

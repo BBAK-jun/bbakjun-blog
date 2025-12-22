@@ -1,13 +1,13 @@
 import { createRoute } from '@hono/zod-openapi';
 import { put } from '@vercel/blob';
 import { verifyApiKeySync } from '../../../shared/lib/auth';
-import { onBlobUpload } from '../../../lib/blob-cdc';
+import { onBlobUpload } from '../../../shared/server/blob-cdc';
 import {
   uploadImageRequestSchema,
   uploadImageResponseSchema,
   uploadErrorSchema,
-} from '../../../contract/schemas/upload';
-import { env } from '../../../env';
+} from '../../../shared/api/upload';
+import { env } from '../../../shared/config/env';
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
@@ -73,10 +73,7 @@ export const uploadImageRoute = createRoute({
 export const uploadImageHandler = async (c: any) => {
   try {
     if (!BLOB_TOKEN) {
-      return c.json(
-        { success: false, error: 'BLOB_READ_WRITE_TOKEN is not configured' },
-        500
-      );
+      return c.json({ success: false, error: 'BLOB_READ_WRITE_TOKEN is not configured' }, 500);
     }
 
     if (!requireApiKey(c.req.header('authorization'))) {

@@ -4,6 +4,7 @@ date: '2025-03-10T15:33:03.284Z'
 summary: '즉시 평가와 지연 평가'
 tags: ['DEV', 'JS', 'REACT']
 ---
+
 # 평가(Evaluation)
 
 자바스크립트에서 평가(Evaluation)는 코드가 실행되는 시점과 방식을 결정하는 중요한 개념입니다. 이번 글에서는 즉시 평가(Eager Evaluation)와 지연 평가(Lazy Evaluation)에 대해 다룹니다.
@@ -65,7 +66,7 @@ function createLazyEvaluator(numbers: number[], callback: (n: number) => number)
   let index = 0;
   return {
     next() {
-      if(index < number.length) {
+      if (index < number.length) {
         const value = callback(numbers[index]);
         index++;
         return { value, done: false };
@@ -80,7 +81,7 @@ function createLazyEvaluator(numbers: number[], callback: (n: number) => number)
   };
 }
 
-const lazyEvaluator = createLazyEvaluator([1, 2, 3, 4, 5], (n) => n * 2);
+const lazyEvaluator = createLazyEvaluator([1, 2, 3, 4, 5], n => n * 2);
 
 console.log(lazyEvaluator.next().value); // 2
 console.log(lazyEvaluator.next().value); // 4
@@ -105,34 +106,35 @@ function createLazyEvaluator(numbers: number[]) {
     },
 
     filter(fn: (n: number) => boolean) {
-      promise = promise.then((number) => fn(number) ? number : Promise.reject('Filter failed'));
+      promise = promise.then(number => (fn(number) ? number : Promise.reject('Filter failed')));
 
       return pipeline;
     },
 
     execute() {
-      return promise
-    }
-  }
+      return promise;
+    },
+  };
 
   return pipeline;
 }
 
 const lazyEvaluator = createLazyEvaluator([1, 2, 3, 4, 5])
-  .map((numbers) => {
-    return numbers.map((n) => n * 2);
+  .map(numbers => {
+    return numbers.map(n => n * 2);
   })
-  .filter((numbers) => {
-    return numbers.filter((n) => n % 2 === 0);
-  })
+  .filter(numbers => {
+    return numbers.filter(n => n % 2 === 0);
+  });
 
-lazyEvaluator.execute()
-  .then((result) => {
+lazyEvaluator
+  .execute()
+  .then(result => {
     console.log(result); // [2, 4, 6, 8, 10]
   })
-  .catch((error) => {
+  .catch(error => {
     console.error(error);
-  })
+  });
 ```
 
 ### 지연 평가의 특징
@@ -163,11 +165,10 @@ function TabComponent() {
         {match(selectedTab)
           .with('FIRST', () => <LazyFirstTabComponent />)
           .with('SECOND', () => <LazySecondTabComponent />)
-          .exhaustive()
-        }
+          .exhaustive()}
       </Suspense>
     </div>
-  )
+  );
 }
 ```
 
@@ -183,7 +184,7 @@ const LazyImage = ({ src, alt, placeholder }) => {
   useEffect(() => {
     // IntersectionObserver를 사용하여 이미지가 뷰포트에 들어올 때만 로드
     const observer = new IntersectionObserver(entries => {
-      entries.forEach((entry) => {
+      entries.forEach(entry => {
         if (entry.isIntersecting) {
           if (imgRef.current) {
             imgRef.current.src = src;
@@ -201,7 +202,7 @@ const LazyImage = ({ src, alt, placeholder }) => {
     return () => {
       observer.disconnect();
     };
-  }, [src])
+  }, [src]);
 
   return (
     <div className="image-container">
@@ -213,8 +214,8 @@ const LazyImage = ({ src, alt, placeholder }) => {
         data-src={src} // 실제 src는 나중에 설정
       />
     </div>
-  )
-}
+  );
+};
 ```
 
 이 컴포넌트는 이미지가 뷰포트에 들어올 때만 실제 이미지를 로드 하므로, 페이지 초기 로딩 시간을 단축하고 불필요한 네트워크 요청을 줄일 수 있습니다.
@@ -236,7 +237,7 @@ const ExpensiveComponent = () => {
       initialData.push({
         id: i,
         value: Math.random() * 100,
-        processed: someExpensiveCalculation(i)
+        processed: someExpensiveCalculation(i),
       });
     }
     return initialData;
@@ -249,7 +250,7 @@ const ExpensiveComponent = () => {
       {/* 데이터 렌더링 */}
     </div>
   );
-}
+};
 
 const someExpensiveCalculation = (input: number) => {
   // 비용이 높은 계산 시뮬레이션
@@ -258,7 +259,7 @@ const someExpensiveCalculation = (input: number) => {
     result += Math.sin(input * i);
   }
   return result;
-}
+};
 ```
 
 `useState`에 함수를 전달하면, 그 함수는 컴포넌트의 초기 렌더링 시에만 실행됩니다. 이후 렌더링시에는 이전 상태를 재사용합니다.
@@ -273,7 +274,7 @@ const someExpensiveCalculation = (input: number) => {
 const ThemeContext = React.createContext({
   theme: 'light',
   // 지연 평가를 위한 함수 제공
-  getThemeStyles: () => ({})
+  getThemeStyles: () => ({}),
 });
 
 const ThemeProvider = ({ children }) => {
@@ -300,16 +301,12 @@ const ThemeProvider = ({ children }) => {
             // ... 다른 스타일 속성
           };
         }
-      }
+      },
     };
   }, [theme]);
 
-  return (
-    <ThemeContext.Provider value={themeContextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
+  return <ThemeContext.Provider value={themeContextValue}>{children}</ThemeContext.Provider>;
+};
 
 // 컨텍스트 소비자
 const ThemedButton = () => {
@@ -319,11 +316,9 @@ const ThemedButton = () => {
   const styles = getThemeStyles();
 
   return (
-    <button style={styles}>
-      {theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
-    </button>
+    <button style={styles}>{theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}</button>
   );
-}
+};
 ```
 
 이 패턴은 컨텍스트를 통해 함수를 제공하여, 컴포넌트가 실제로 값이 필요할 때만 계산을 수행하도록 합니다.

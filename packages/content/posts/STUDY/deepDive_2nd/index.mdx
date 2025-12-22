@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 Deep Dive ] 스터디 2회'
 date: '2023-05-05T00:38:03.284Z'
 summary: '딥다이브 11~15장 정리'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 ![](/static/images/STUDY/deepDive_2nd/js.png)
@@ -34,16 +34,16 @@ tags: ['STUDY','JS']
 ### Pass by value
 
 ```js
-let score = 80
-let copy = score
+let score = 80;
+let copy = score;
 
-console.log(score) // 80
-console.log(copy) // 80
+console.log(score); // 80
+console.log(copy); // 80
 
-score = 100
+score = 100;
 
-console.log(score) // 100
-console.log(copy) // ?
+console.log(score); // 100
+console.log(copy); // ?
 ```
 
 copy라는 변수(식별자)에 score의 값 80을 할당했다. 그 후 score에 100이라는 값을 재할당하였다. 그렇다면 copy의 값은 어떻게 될까?
@@ -116,19 +116,19 @@ copy        | 0x00000001            |
 ```js
 // 함수 선언문
 function fn(x, y) {
-  return x + y
+  return x + y;
 }
 
 // 함수 표현식
 const fn = function (x, y) {
-  return x + y
-}
+  return x + y;
+};
 
 // Function 생성자함수
-const fn = new Function('x', 'y', 'return x + y')
+const fn = new Function('x', 'y', 'return x + y');
 
 // 화살표 함수
-const fn = (x, y) => x + y
+const fn = (x, y) => x + y;
 ```
 
 함수선언문은 표현식이 아닌 문이다. 그렇다면 함수선언문과 함수표현식이 무엇이 다른지 알아야한다.
@@ -136,8 +136,8 @@ const fn = (x, y) => x + y
 ```js
 function foo() {}
 
-foo()(function bar() {})
-bar()
+foo()(function bar() {});
+bar();
 ```
 
 foo는 함수선언무으로 해석되지만, bar는 그룹연산자 내부에 있어 함수선언문으로 해석되지않고 함수리터럴 표현식으로 해석된다
@@ -158,19 +158,19 @@ foo는 함수선언무으로 해석되지만, bar는 그룹연산자 내부에 �
 
 ```js
 function convertValue(primitiveValue, referenceValue) {
-  primitiveValue = 200
-  referenceValue.name = 'Park'
+  primitiveValue = 200;
+  referenceValue.name = 'Park';
 }
 
-const primitiveValue = 100
+const primitiveValue = 100;
 const referenceValue = {
   name: 'Lee',
-}
+};
 
-convertValue(primitiveValue, referenceValue)
+convertValue(primitiveValue, referenceValue);
 
-console.log(primitiveValue) // 200
-console.log(referenceValue) // { name : 'Park' }
+console.log(primitiveValue); // 200
+console.log(referenceValue); // { name : 'Park' }
 ```
 
 convertValue는 첫번째 매개변수로 `primitiveValue`를 받아 값을 200으로 재할당해주고, 두번째 매개변수로 `referenceValue`를 받아 프로퍼티 `name`에 문자리터럴 'Park'를 재할당이 아닌 직접 할당된 객체를 변경해주었다.

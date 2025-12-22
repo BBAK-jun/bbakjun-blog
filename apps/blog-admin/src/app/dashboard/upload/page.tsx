@@ -1,44 +1,54 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Upload as UploadIcon, FileText, AlertCircle, CheckCircle } from "lucide-react";
-import { uploadMarkdown } from "@/app/actions/files";
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Upload as UploadIcon, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { uploadMarkdown } from '@/app/actions/files';
 
 export default function UploadPage() {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [path, setPath] = useState("");
-  const [tags, setTags] = useState("");
-  const [status, setStatus] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED");
+  const [path, setPath] = useState('');
+  const [tags, setTags] = useState('');
+  const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED');
 
   // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, path, tags, status }: { file: File; path: string; tags: string; status: string }) => {
+    mutationFn: async ({
+      file,
+      path,
+      tags,
+      status,
+    }: {
+      file: File;
+      path: string;
+      tags: string;
+      status: string;
+    }) => {
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("path", path.trim());
-      formData.append("tags", tags.trim());
-      formData.append("status", status);
+      formData.append('file', file);
+      formData.append('path', path.trim());
+      formData.append('tags', tags.trim());
+      formData.append('status', status);
 
       const result = await uploadMarkdown(formData);
       if (!result.success) {
-        throw new Error(result.error || "업로드 중 오류가 발생했습니다.");
+        throw new Error(result.error || '업로드 중 오류가 발생했습니다.');
       }
       return result;
     },
     onSuccess: () => {
       // 파일 목록 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: ["files"] });
+      queryClient.invalidateQueries({ queryKey: ['files'] });
 
       // 성공 시 폼 초기화
       setFile(null);
-      setPath("");
-      setTags("");
+      setPath('');
+      setTags('');
 
       // input file 초기화
-      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
-      if (fileInput) fileInput.value = "";
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     },
   });
 
@@ -84,15 +94,16 @@ export default function UploadPage() {
         {uploadMutation.isError && (
           <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700 dark:text-red-300">
-              {uploadMutation.error.message}
-            </p>
+            <p className="text-sm text-red-700 dark:text-red-300">{uploadMutation.error.message}</p>
           </div>
         )}
 
         {/* Validation Error */}
         {!file && uploadMutation.isIdle && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800" style={{ display: 'none' }}>
+          <div
+            className="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
+            style={{ display: 'none' }}
+          >
             <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
               파일과 경로를 모두 입력해주세요.
@@ -120,7 +131,7 @@ export default function UploadPage() {
               <div className="text-center">
                 <UploadIcon className="w-8 h-8 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {file ? file.name : "클릭하여 파일 선택"}
+                  {file ? file.name : '클릭하여 파일 선택'}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   .md 또는 .mdx 파일만 가능 (최대 10MB)
@@ -138,7 +149,7 @@ export default function UploadPage() {
           <input
             type="text"
             value={path}
-            onChange={(e) => setPath(e.target.value)}
+            onChange={e => setPath(e.target.value)}
             placeholder="예: DEV/my-post 또는 REACT/hooks-guide"
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -155,7 +166,7 @@ export default function UploadPage() {
           <input
             type="text"
             value={tags}
-            onChange={(e) => setTags(e.target.value)}
+            onChange={e => setTags(e.target.value)}
             placeholder="예: react, typescript, nextjs"
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -171,7 +182,7 @@ export default function UploadPage() {
           </label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as "DRAFT" | "PUBLISHED")}
+            onChange={e => setStatus(e.target.value as 'DRAFT' | 'PUBLISHED')}
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="PUBLISHED">게시됨</option>
@@ -187,9 +198,25 @@ export default function UploadPage() {
         >
           {uploadMutation.isPending ? (
             <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               <span>업로드 중...</span>
             </>
@@ -208,7 +235,11 @@ export default function UploadPage() {
           💡 벌크 업로드
         </h3>
         <p className="text-sm text-blue-700 dark:text-blue-400">
-          여러 파일을 한 번에 업로드하려면 터미널에서 <code className="px-1 py-0.5 bg-blue-100 dark:bg-blue-900/40 rounded">pnpm upload-posts</code> 명령어를 사용하세요.
+          여러 파일을 한 번에 업로드하려면 터미널에서{' '}
+          <code className="px-1 py-0.5 bg-blue-100 dark:bg-blue-900/40 rounded">
+            pnpm upload-posts
+          </code>{' '}
+          명령어를 사용하세요.
         </p>
       </div>
     </div>

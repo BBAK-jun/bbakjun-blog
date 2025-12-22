@@ -55,11 +55,7 @@ function App() {
 ```jsx
 // React Query의 실제 구현 방식
 function QueryClientProvider({ client, children }) {
-  return (
-    <QueryClientContext.Provider value={client}>
-      {children}
-    </QueryClientContext.Provider>
-  );
+  return <QueryClientContext.Provider value={client}>{children}</QueryClientContext.Provider>;
 }
 
 // Context는 단순히 QueryClient 인스턴스를 주입하는 역할만 함
@@ -87,7 +83,7 @@ class PostRepository {
   async createPost(post) {
     return await fetch('/api/posts', {
       method: 'POST',
-      body: JSON.stringify(post)
+      body: JSON.stringify(post),
     });
   }
 }
@@ -99,7 +95,7 @@ class PostViewModel {
     this.state = proxy({
       posts: [],
       loading: false,
-      error: null
+      error: null,
     });
   }
 
@@ -123,9 +119,7 @@ function DependencyProvider({ children }) {
   const postViewModel = useMemo(() => new PostViewModel(postRepository), []);
 
   return (
-    <DependencyContext.Provider value={{ postViewModel }}>
-      {children}
-    </DependencyContext.Provider>
+    <DependencyContext.Provider value={{ postViewModel }}>{children}</DependencyContext.Provider>
   );
 }
 
@@ -225,6 +219,7 @@ function UserProfile({ userId }) {
 ```
 
 위 코드의 문제점:
+
 - **Presentation Layer**가 API, Analytics, Cache에 대해 직접 알고 있음
 - 테스트하려면 모든 외부 의존성을 모킹해야 함
 - 의존성 변경 시 컴포넌트도 함께 변경해야 함
@@ -299,7 +294,7 @@ test('loads products', async () => {
   const mockProductService = {
     async lookupAllProducts() {
       return [{ id: 1, title: 'Test Product' }];
-    }
+    },
   };
 
   render(
@@ -352,11 +347,7 @@ function PostManagerProvider({ children }) {
     return new PostManager(postVM, commentVM);
   }, []);
 
-  return (
-    <PostManagerContext.Provider value={manager}>
-      {children}
-    </PostManagerContext.Provider>
-  );
+  return <PostManagerContext.Provider value={manager}>{children}</PostManagerContext.Provider>;
 }
 ```
 
@@ -390,7 +381,9 @@ function SomeComponent() {
 // Context는 "안전한 범위에서만 사용하라"고 강제한다
 function App() {
   return (
-    <SomeProvider> {/* 반드시 Provider로 감싸야 함 */}
+    <SomeProvider>
+      {' '}
+      {/* 반드시 Provider로 감싸야 함 */}
       <SomeComponent />
     </SomeProvider>
   );
@@ -466,4 +459,3 @@ Context는 그런 의미에서 React 생태계에서 의존성 관리와 관심�
 - [Tommy Groshong: React Context for dependency injection not state management](https://testdouble.com/insights/react-context-for-dependency-injection-not-state-management)
 - [Clean Architecture - Robert C. Martin](https://product.kyobobook.co.kr/detail/S000001033082)
 - [Frontend의 객체지향 프로그래밍](https://www.dev-bbak.site/blog/DEV/oop_frontend)
-

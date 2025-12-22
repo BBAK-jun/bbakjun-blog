@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 4회'
 date: '2023-01-24T18:47:03.284Z'
 summary: '자바스크립트 스터디 16장 ~ 20장'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 # 16장
@@ -22,21 +22,21 @@ Map에는 다음과 같은 주요 메서드와 프로퍼티가 있다.
 - map.size – 요소의 개수를 반환합니다.
 
 ```js
-const map = new Map()
+const map = new Map();
 
-map.set('name', 'bbakjun')
-map.set(28, '28')
-map.set(true, 'boolean')
+map.set('name', 'bbakjun');
+map.set(28, '28');
+map.set(true, 'boolean');
 
-console.log(map.get('name')) // 'bbakjun'
-console.log(map.get(28)) // '28'
-console.log(map.get(true)) // 'boolean'
+console.log(map.get('name')); // 'bbakjun'
+console.log(map.get(28)); // '28'
+console.log(map.get(true)); // 'boolean'
 
-console.log(map.size) // 3
+console.log(map.size); // 3
 ```
 
 ```js
-map['job'] = 'FE' // 이방법은 올바른 방법이아니다.
+map['job'] = 'FE'; // 이방법은 올바른 방법이아니다.
 ```
 
 위의 방법은 올바른 방법이 아니다.
@@ -47,13 +47,13 @@ map을 사용할때에는 map 전용 메서드인 get set을 사용해야한다.
 map에는 객체를 키로 사용할 수 있다는 점이 map의 가장 중요한 기능중 하나다.
 
 ```js
-const bbakjun = { name: 'BBAKJUN' }
+const bbakjun = { name: 'BBAKJUN' };
 
-const map = new Map()
+const map = new Map();
 
-map.set(bbakjun, 28)
+map.set(bbakjun, 28);
 
-console.log(map.get(bbakjun)) // 28
+console.log(map.get(bbakjun)); // 28
 ```
 
 #### map이 키를 비교하는 방식
@@ -65,7 +65,7 @@ console.log(map.get(bbakjun)) // 28
 map.set은 호출할떄 마다 맵 자신이 반환된다. 이를 활요하면 map.set을 체이닝할수있다.
 
 ```js
-map.set('1', 'str').set(1, 'num1'), set(true, 'boolean')
+(map.set('1', 'str').set(1, 'num1'), set(true, 'boolean'));
 ```
 
 #### 반복작업이 가능한 맵의 요소
@@ -94,24 +94,24 @@ Set내에 동일한 값이 있다면 `set.add(value)`을 아무리 많이 호출
 위에서 순서가 필요없고 고유값을 원한다면 set이 최선의 자료구조가 된다고 했는데 지금 이 경우가 그런경우가 될 수 있다.
 
 ```js
-const guestBook = new Set()
+const guestBook = new Set();
 
-const bbakjun = { name: 'bbakjun' }
-const BBAKJUN = { name: 'BBAKJUN' }
-const ParkJunHyeong = { name: 'ParkJunHyeong' }
+const bbakjun = { name: 'bbakjun' };
+const BBAKJUN = { name: 'BBAKJUN' };
+const ParkJunHyeong = { name: 'ParkJunHyeong' };
 
-guestBook.add(bbakjun)
-guestBook.add(BBAKJUN)
-guestBook.add(ParkJunHyeong)
-guestBook.add(ParkJunHyeong)
-guestBook.add(BBAKJUN)
-guestBook.add(bbakjun)
-guestBook.add(BBAKJUN)
+guestBook.add(bbakjun);
+guestBook.add(BBAKJUN);
+guestBook.add(ParkJunHyeong);
+guestBook.add(ParkJunHyeong);
+guestBook.add(BBAKJUN);
+guestBook.add(bbakjun);
+guestBook.add(BBAKJUN);
 
-console.log(guestBook.size) // 3
+console.log(guestBook.size); // 3
 
 for (let user of guestBook) {
-  console.log(user.name) // bbakjun BBAKJUN ParkJunHyeong
+  console.log(user.name); // bbakjun BBAKJUN ParkJunHyeong
 }
 ```
 
@@ -130,11 +130,11 @@ Set에도 Map과 마찬가지로 반복 작업을 위한 메서드가 있다.
 자바스크립트 엔진은 도달 가능한 값을 메모리에 유지한다.
 
 ```js
-let user = { name: 'bbakjun' }
+let user = { name: 'bbakjun' };
 
 // 위 객체는 user라는 참조를 통해 접근이 가능하다.
 
-user = null
+user = null;
 // 그런데 참조를 null로 덮어쓰면 위 객체에 더 이상 도달이 가능하지 않게되어 객체가 메모리에서 삭제된다.
 ```
 
@@ -142,13 +142,13 @@ user = null
 객체의 프로퍼티나 배열의 요소, 맵이나 셋을 구성하는 요소들이 이에 해당한다.
 
 ```js
-let user = { name: 'bbakjun' }
+let user = { name: 'bbakjun' };
 
-const arr = [user]
+const arr = [user];
 
-user = null
+user = null;
 
-console.log(JSON.stringify(arr[0])) // '{ name: "bbakjun" }'
+console.log(JSON.stringify(arr[0])); // '{ name: "bbakjun" }'
 ```
 
 위의 예시에서 user을 나타내는 객체는 배열의 요소이기 때문에 가비지 컬렉터의 대상이 되지 않는다. 따라서 arr[0]을 이용하면 해당 객체를 얻는것이 가능하다.
@@ -156,18 +156,18 @@ console.log(JSON.stringify(arr[0])) // '{ name: "bbakjun" }'
 Map에서 객체를 키로 사용한 경우 역시 Map이 메모리에 남아있는 한 객체도 메모리에 남게된다. 가비지 컬렉터의 대상이 되지는 않는다.
 
 ```js
-let user = { name: 'bbakjun' }
+let user = { name: 'bbakjun' };
 
-const map = new Map()
-map.set(user, '...')
+const map = new Map();
+map.set(user, '...');
 
-user = null
+user = null;
 
 for (let obj of map.keys()) {
-  console.log(JSON.stringify(obj)) // '{ name: "bbakjun" }'
+  console.log(JSON.stringify(obj)); // '{ name: "bbakjun" }'
 }
 
-console.log(map.size) // 1
+console.log(map.size); // 1
 ```
 
 이런 관점에서 WeakMap과 일반 Map은 전혀 다른 양상을 보인다. WeakMap을 사용하면 키로 쓰인 객체가 가비지컬렉션의 대상이 된다.
@@ -177,12 +177,12 @@ console.log(map.size) // 1
 맵과 위크맵의 첫번째 차이는 위크맵의 키는 반드시 객체여아 한다는 점이다. 원시값은 위크맵의 키가 될 수 없다.
 
 ```js
-let user = { name: 'bbakjun' }
+let user = { name: 'bbakjun' };
 
-const weakMap = new WeakMap()
-weakMap.set(user, '...')
+const weakMap = new WeakMap();
+weakMap.set(user, '...');
 
-user = null
+user = null;
 ```
 
 user은 나타내는 객체는 오로지 위크맵의 키로만 사용되고 있으므로 참조를 덮어쓰게 되면 이 객체는 위크맵과 메모리에서 자동으로 삭제된다.
@@ -209,20 +209,20 @@ user은 나타내는 객체는 오로지 위크맵의 키로만 사용되고 있
 아래에 사용자 방문 횟수를 세어주는 코드가 있다. 관련 정보는 맵에 저장하고 있고 맵 요소의 키에는 특정 사용자를 나타내는 객체를, 값에는 해당 사용자의 방문 횟수를 저장하고 있습니다. 어떤 사용자의 정보를 저장할 필요가 없어지면(가비지 컬렉션의 대상이되면) 해당 사용자의 방문 횟수도 저장할 필요가 없어진다.
 
 ```js
-const visitsCountMap = new Map() // 사용자의 방문 횟수를 저장할 맵
+const visitsCountMap = new Map(); // 사용자의 방문 횟수를 저장할 맵
 
 // 사용자가 방문하면 방문횟수를 늘려준다.
-const countUser = (user) => {
-  const count = visitsCountMap.get(user) || 0
-  visitsCountMap.set(user, count + 1)
-}
+const countUser = user => {
+  const count = visitsCountMap.get(user) || 0;
+  visitsCountMap.set(user, count + 1);
+};
 
-let bbakjun = { name: 'bbakjun' }
+let bbakjun = { name: 'bbakjun' };
 
-countUser(bbakjun) // bbakjun의 방문 횟수를 증가시킨다
+countUser(bbakjun); // bbakjun의 방문 횟수를 증가시킨다
 
 // bbakjun의 방문 횟수를 셀 필요가 없다면 아래와 같이 bbakjun의 참조를 null로 끊어낸다
-bbakjun = null
+bbakjun = null;
 ```
 
 bbakjun을 나타내는 객체는 가비지 컬렉션의 대상이 되어야하는데 visitsCountMap의 키로 사용되고있어서 메모리에서 삭제 되지않는다.
@@ -230,12 +230,12 @@ bbakjun을 나타내는 객체는 가비지 컬렉션의 대상이 되어야하�
 특정 사용자를 나타내는 객체가 메모리에서 사라지면 해당 객체에 대한 정보도 손수 지워줘야하는 상황이다. 이렇게 하지않으면 visitsCountMap가 차지하는 메모리 공간이 한없이 커질것이다. 애플리케이션의 구조가 복잡할때에는 이렇게 쓸모없는 데이터를 수동으로 비워줘야하는게 골치가 아플수도 있다.
 
 ```js
-const visitsCountMap = new WeakMap() // 사용자의 방문 횟수를 저장할 위크맵
+const visitsCountMap = new WeakMap(); // 사용자의 방문 횟수를 저장할 위크맵
 
-const countUser = (user) => {
-  const count = visitsCountMap.get(user) || 0
-  visitsCountMap.set(user, count + 1)
-}
+const countUser = user => {
+  const count = visitsCountMap.get(user) || 0;
+  visitsCountMap.set(user, count + 1);
+};
 ```
 
 위크맵을 사용하면 visitsCountMap을 수동으로 청소해줄 필요가 없다. bbakjun을 나타내는 객체가 도달 가능하지 않은 상태가 된다면 자동으로 메모리에서 삭제되기 때문이다. 위크맵의 키에 대응되는 값도 자동으로 가비지 컬렉션의 대상이된다.
@@ -277,23 +277,23 @@ WeakMap과 WeakSet의 가장 큰 단점은 반복 작업이 불가능하다는 �
 `Map, Set, Array`의 전용 메서드와 일반 객체용 메서듸 차이를 비교하면 아래와 같다.
 
 ```js
-const map = new Map()
+const map = new Map();
 
-map.set('name', 'bbakjun')
-map.set('age', 28)
-map.set('job', 'FE')
-map.set('school', 'MJ')
+map.set('name', 'bbakjun');
+map.set('age', 28);
+map.set('job', 'FE');
+map.set('school', 'MJ');
 
-console.log(map.keys()) // MapIterator {'name', 'age', 'job', 'school'}
+console.log(map.keys()); // MapIterator {'name', 'age', 'job', 'school'}
 
 const jun = {
   name: 'bbakjun',
   age: 28,
   jog: 'FE',
   school: 'MJ',
-}
+};
 
-console.log(Object.keys(jun)) // ['name', 'age', 'jog', 'school']
+console.log(Object.keys(jun)); // ['name', 'age', 'jog', 'school']
 ```
 
 Map,set,Array의 메서드의 반환값은 이터러블 객체를 반환하고, 일반 객체의 메서드 반환값은 배열을 반환한다는것을 알 수 있다.
@@ -324,10 +324,10 @@ function앞에 async 키워드를 붙이면 해당 함수는 항상 프라미스
 
 ```js
 async function sayHello() {
-  return 'hello'
+  return 'hello';
 }
 
-sayHello().then((res) => console.log(res)) // 'hello'
+sayHello().then(res => console.log(res)); // 'hello'
 ```
 
 async가 붙은 함수는 반드시 프라미스를 반환하고, 프라미스가 아닌것도 프라미스로 래핑해 반환한다.
@@ -336,7 +336,7 @@ async가 붙은 함수는 반드시 프라미스를 반환하고, 프라미스�
 
 ```js
 // await은 async 함수 안에서만 동작한다
-const value = await promise
+const value = await promise;
 ```
 
 자바스크립트는 await 키워드를 만나면 프라미스가 처리될 때까지 기다린다. 결과는 그 이후 반환된다.
@@ -344,15 +344,15 @@ const value = await promise
 ```js
 async function f() {
   let promise = new Promise((resolve, reject) => {
-    setTimeout(() => resolve('완료!'), 1000)
-  })
+    setTimeout(() => resolve('완료!'), 1000);
+  });
 
-  console.log('함수이전')
-  let result = await promise // 프라미스가 이행될 때까지 기다림 (*)
-  console.log('함수이후', result)
+  console.log('함수이전');
+  let result = await promise; // 프라미스가 이행될 때까지 기다림 (*)
+  console.log('함수이후', result);
 }
 
-f()
+f();
 ```
 
 함수를 호출하고 함수 본문이 실행되는 도중 (\*)로 표시한 줄에서 실행이 잠시 중단되었다가 프라미스가 처리되면 실행이 재개된다.
@@ -365,16 +365,16 @@ await는 promise.then보다 좀 더 간편하게 result값을 얻을수 있도�
 
 ```js
 // 최상위 레벨 코드에선 에러 발생
-const res = await fetch('/api/v1/user.json')
-const user = res.json()
+const res = await fetch('/api/v1/user.json');
+const user = res.json();
 ```
 
 ```js
 // 익명 async 함수로 코드를 감싸면 최상위 레벨 코드에서도 사용이 가능하다.
-;(async () => {
-  const res = await fetch('/api/v1/user.json')
-  const user = res.json()
-})()
+(async () => {
+  const res = await fetch('/api/v1/user.json');
+  const user = res.json();
+})();
 ```
 
 await은 `thenable`객체를 받는다.
@@ -389,11 +389,11 @@ promise.then처럼 await에도 thenable객체를 사용할 수 있다. thenable 
 
 ```js
 async function fn() {
-  await Promise.reject(new Error('에러 발생!'))
+  await Promise.reject(new Error('에러 발생!'));
 }
 
 async function fn() {
-  throw new Error('에러 발생!')
+  throw new Error('에러 발생!');
 }
 ```
 
@@ -404,10 +404,10 @@ await이 던진 에러는 throw가 던진 에러를 잡을때처럼 try catch를
 ```js
 async function fn() {
   try {
-    const res = await fetch('/잘못된 엔드포인트/user.json')
-    const user = res.json()
+    const res = await fetch('/잘못된 엔드포인트/user.json');
+    const user = res.json();
   } catch (error) {
-    console.log(error) // 에러 발생
+    console.log(error); // 에러 발생
   }
 }
 ```
@@ -419,18 +419,18 @@ async function fn() {
 ```js
 const apple = {
   name: '사과',
-}
+};
 
 const redApple = {
   name: '사과',
   color: 'Red',
-}
+};
 
 const sweatRedApple = {
   name: '사과',
   color: 'Red',
   taste: 'Sweat',
-}
+};
 ```
 
 위의 코드로 스프레드 연산자가 언제 사용되는지 알아보겠다.
@@ -442,17 +442,17 @@ const sweatRedApple = {
 ```js
 const apple = {
   name: '사과',
-}
+};
 
 const redApple = {
   ...apple,
   color: 'Red',
-}
+};
 
 const sweatRedApple = {
   ...redApple,
   taste: 'Sweat',
-}
+};
 ```
 
 내친김에 얕은복사와 깊은복사까지 알아보도록해보겠다
@@ -472,9 +472,9 @@ const sweatRedApple = {
 
 ```js
 // 주소 : 0x000000F2, 값 : undefined
-let variable
+let variable;
 // 주소 : 0x00001234, 값 : 100
-variable = 100
+variable = 100;
 ```
 
 위의 코드처럼 원시값이 undefined나 100은 변경 불가능하므로 원시값을 재할당한다. 재할당은 새 메모리 공간을 확보하고 값을 저장한 후 변수가 참조하던 메모리 주소를 변경함으로써 이루어진다. 이래서 원시값은 불변성을 유지하고 변수는 가리키는 메모리 주소를 바꿔가며 변수 값을 변경한다.
@@ -485,14 +485,14 @@ variable = 100
 
 ```js
 // 주소 : 0x000000F2, 값 : 'origin'
-let origin = 'origin'
+let origin = 'origin';
 
 // 주소 : 0x00001234, 값 : 'origin'
-let copyFromOrigin = origin
+let copyFromOrigin = origin;
 
-origin = 'origin2'
+origin = 'origin2';
 
-console.log(copyFromOrigin) // 'origin'
+console.log(copyFromOrigin); // 'origin'
 ```
 
 원시값을 갖는 변수를 다른 변수에 할당하면 값은 그대로 복사되지만 같은 값을 가지느 별개의 메모리 공간을 가리킬뿐이다.<br/>
@@ -518,7 +518,7 @@ console.log(copyFromOrigin) // 'origin'
 */
 const origin = {
   name: 'this is originName',
-}
+};
 ```
 
 객체 값을 갖는 변수가 가리키는 메모리 공간에는 객체가 아닌 객체의 메모리 주소값이 들어가게 된다.
@@ -536,10 +536,10 @@ const user = {
       name: 'Frontend Engineer',
     },
   },
-}
-const copyUser = { ...user }
+};
+const copyUser = { ...user };
 
-console.log(user === copyUser, user.job === user.job) // false, true
+console.log(user === copyUser, user.job === user.job); // false, true
 ```
 
 객체 리터럴 사용시 항상 객체를 생성하기 때문에 객체 자체는 다른것으로 평가되나 내부에 중첩된 객체는 같은것으로 평가된다.
@@ -556,38 +556,38 @@ console.log(user === copyUser, user.job === user.job) // false, true
 let origin = {
   a: 1,
   b: { c: 2 },
-}
+};
 
 function isCopyObj(origin) {
-  let res = {}
+  let res = {};
 
   for (let key in origin) {
     if (typeof origin[key] === 'object') {
-      res[key] = isCopyObj(obj[key])
+      res[key] = isCopyObj(obj[key]);
     } else {
-      res[key] = origin[key]
+      res[key] = origin[key];
     }
   }
 
-  return res
+  return res;
 }
 
-let copy = isCopyObj(origin)
+let copy = isCopyObj(origin);
 
-copy.b.c = 3
-console.log(origin.b.c === copy.b.c) //false
-console.log(origin.b.c, copy.b.c) // 2 3
+copy.b.c = 3;
+console.log(origin.b.c === copy.b.c); //false
+console.log(origin.b.c, copy.b.c); // 2 3
 
 // JSON 객체 사용
 let origin = {
   a: 1,
   b: { c: 2 },
-}
+};
 
-let copy = JSON.parse(JSON.stringify(origin))
-copy.b.c = 3
+let copy = JSON.parse(JSON.stringify(origin));
+copy.b.c = 3;
 
-console.log(origin.b.c === copy.b.c) //false
+console.log(origin.b.c === copy.b.c); //false
 ```
 
 > JSON객체를 사용하는 방법이 완벽한 깊은복사는 할수라고 없다

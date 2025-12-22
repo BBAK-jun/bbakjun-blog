@@ -1,14 +1,10 @@
 import { createRoute } from '@hono/zod-openapi';
-import {
-  getCachedBlobFiles,
-  needsSync,
-  syncBlobToDatabase,
-} from '../../../lib/blob-cdc';
+import { getCachedBlobFiles, needsSync, syncBlobToDatabase } from '../../../shared/server/blob-cdc';
 import {
   adminBlobFilesQuerySchema,
   blobFilesErrorSchema,
   blobFilesResponseSchema,
-} from '../../../contract/schemas/blob-files';
+} from '../../../shared/api/blob-files';
 
 /**
  * GET /api/rpc/getBlobFilesAdmin - 관리자 Blob 파일 목록 조회 (자동 동기화 지원)
@@ -18,7 +14,8 @@ export const getBlobFilesAdminRoute = createRoute({
   method: 'get',
   path: '/api/rpc/getBlobFilesAdmin',
   summary: 'Get blob files list (admin)',
-  description: 'Retrieve blob files from CDC cache with auto-sync support (requires authentication)',
+  description:
+    'Retrieve blob files from CDC cache with auto-sync support (requires authentication)',
   request: {
     query: adminBlobFilesQuerySchema,
   },
@@ -72,9 +69,6 @@ export const getBlobFilesAdminHandler = async (c: any) => {
     return c.json(result, 200);
   } catch (error) {
     console.error('Blob files list error:', error);
-    return c.json(
-      { error: 'Failed to fetch blob files' },
-      500
-    );
+    return c.json({ error: 'Failed to fetch blob files' }, 500);
   }
 };

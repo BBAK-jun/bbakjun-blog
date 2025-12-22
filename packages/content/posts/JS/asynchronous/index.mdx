@@ -72,28 +72,28 @@ tags: ['JS']
 위에서 `Call Stack` 에서 무엇인가 실행되고있다면, 실행되고있는 것의 Block은 보장된다는것을 알 수 있었다.
 
 ```jsx
-const $button = document.querySelector('button')
-const $element = document.createElement('span')
+const $button = document.querySelector('button');
+const $element = document.createElement('span');
 
 /**
  * @version_1
  * Element를 append 해준 후 속성처리를한다.
  */
 $button.addEventListener('click', () => {
-  document.body.appendChild($element)
-  $element.style.color = 'red'
-  $element.innerText = '블락이 보장될까요?'
-})
+  document.body.appendChild($element);
+  $element.style.color = 'red';
+  $element.innerText = '블락이 보장될까요?';
+});
 
 /**
  * @version_2
  * 속성처리를 해준 후 Element를 append를한다.
  */
 $button.addEventListener('click', () => {
-  $element.style.color = 'red'
-  $element.innerText = '블락이 보장될까요?'
-  document.body.appendChild($element)
-})
+  $element.style.color = 'red';
+  $element.innerText = '블락이 보장될까요?';
+  document.body.appendChild($element);
+});
 ```
 
 ### **[1번 상황]의 상황에서 생각해볼 수 있는 문제점**

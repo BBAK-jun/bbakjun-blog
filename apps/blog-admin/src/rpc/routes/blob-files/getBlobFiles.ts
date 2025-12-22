@@ -1,10 +1,10 @@
 import { createRoute } from '@hono/zod-openapi';
-import { getCachedBlobFiles } from '../../../lib/blob-cdc';
+import { getCachedBlobFiles } from '../../../shared/server/blob-cdc';
 import {
   blobFilesQuerySchema,
   blobFilesErrorSchema,
   blobFilesResponseSchema,
-} from '../../../contract/schemas/blob-files';
+} from '../../../shared/api/blob-files';
 
 /**
  * GET /api/rpc/getBlobFiles - 공개 Blob 파일 목록 조회 (CDC 캐시)
@@ -53,9 +53,6 @@ export const getBlobFilesHandler = async (c: any) => {
     return c.json(result, 200);
   } catch (error) {
     console.error('Public blob files list error:', error);
-    return c.json(
-      { error: 'Failed to fetch blob files' },
-      500
-    );
+    return c.json({ error: 'Failed to fetch blob files' }, 500);
   }
 };

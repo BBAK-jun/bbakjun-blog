@@ -1,22 +1,16 @@
-import { Settings } from "lucide-react";
+import { Settings } from 'lucide-react';
 
 export default function SettingsPage() {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-          설정
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          백오피스 설정을 관리합니다
-        </p>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">설정</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">백오피스 설정을 관리합니다</p>
       </div>
 
       <div className="space-y-6">
         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-          <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-            환경 정보
-          </h3>
+          <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-1">환경 정보</h3>
           <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
             <p>• Next.js 16 (App Router)</p>
             <p>• Vercel Blob Storage</p>

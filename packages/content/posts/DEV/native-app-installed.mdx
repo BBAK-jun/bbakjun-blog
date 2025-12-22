@@ -22,41 +22,40 @@ type Options = {
   appScheme: string;
   appStoreUrl: string;
   playStoreUrl: string;
-}
+};
 
 const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUrl }: Options) => {
   const navigateToStore = () => {
     const isAndroid = /android/i.test(navigator.userAgent);
     window.location.href = isAndroid ? playStoreUrl : appStoreUrl;
-  }
-
+  };
 
   if ('getInstalledRelatedApps' in navigator) {
     try {
       const relatedApps = await navigator.getInstalledRelatedApps();
       const isAppInstalled = relatedApps.some(app => app.id === appId);
 
-      if(isAppInstalled) {
+      if (isAppInstalled) {
         window.location.href = appScheme;
         return { installed: true, method: 'getInstalledRelatedApps' };
       } else {
-        navigateToStore()
+        navigateToStore();
         return { installed: false, method: 'getInstalledRelatedApps' };
       }
-    } catch(error) {
+    } catch (error) {
       console.error('앱 설치 확인 중 오류:', error);
       return { installed: null, method: 'getInstalledRelatedApps' };
     }
   }
 
   // 브라우저 지원 여부에 따른 처리
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const isIOS = /iPad|iPhone/.test(navigator.userAgent);
     const isAndroid = /android/i.test(navigator.userAgent);
 
-    window.location.href = appScheme
-  })
-}
+    window.location.href = appScheme;
+  });
+};
 ```
 
 이런 API를 사용하기 위해서는 웹앱과 네이티브 앱 간의 관계를 명시적으로 설정해야합니다.
@@ -184,10 +183,10 @@ const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUr
       return {
         method: 'getInstalledRelatedApps',
         installed: isAppInstalled,
-        openApp: () => window.location.href = appScheme,
+        openApp: () => (window.location.href = appScheme),
         goToStore: () => {
           window.location.href = isAndroid ? playStoreUrl : appStoreUrl;
-        }
+        },
       };
     } catch (error) {
       console.error('API 오류:', error);
@@ -197,7 +196,7 @@ const checkAppInstallation = async ({ appId, appScheme, appStoreUrl, playStoreUr
 
   // API 미지원 또는 오류 시 딥링크 방식 사용
   return checkAppWithDeeplink(appScheme, appStoreUrl, playStoreUrl);
-}
+};
 
 const handleInAppBrowser = () => {
   return {
@@ -208,12 +207,13 @@ const handleInAppBrowser = () => {
       if (navigator.share) {
         navigator.share({ url: window.location.href });
       } else {
-        navigator.clipboard.writeText(window.location.href)
+        navigator.clipboard
+          .writeText(window.location.href)
           .then(() => alert('URL이 클립보드에 복사되었습니다. 외부 브라우저에 붙여넣어 주세요.'));
       }
-    }
+    },
   };
-}
+};
 ```
 
 ### 결제 완료 페이지에서 앱으로 전환 유도
@@ -232,7 +232,7 @@ const QrCodeStoreLink = () => {
   const isIOS = /iPad|iPhone/.test(navigator.userAgent);
 
   return isAndroid ? playStoreUrl : appStoreUrl;
-}
+};
 ```
 
 ### 스크롤 감지를 통해 콘텐츠 소비 중 유도
@@ -242,8 +242,8 @@ const QrCodeStoreLink = () => {
 간단하게 IntersectionObserver를 통해 스크롤 감지를 통해 콘텐츠 소비 중 유도할 수 있습니다. 특정 화면에서 사용자가 특정요소에 스크롤이 닿아있는지 확인하여 앱으로 전환을 유도할 수 있습니다.
 
 ```ts
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
     if (entry.isIntersecting) {
       // 앱으로 전환을 유도
     }

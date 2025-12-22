@@ -20,6 +20,7 @@
 **문제**: Prisma Client가 빌드 전에 생성되지 않아 오류 발생
 
 **해결**: `package.json`의 `postinstall` 및 `build` 스크립트에 `prisma generate` 추가
+
 ```json
 {
   "scripts": {
@@ -148,6 +149,7 @@ vercel env add
 ```
 
 대화형으로 환경 변수 추가:
+
 - `BLOB_READ_WRITE_TOKEN`
 - `BACKOFFICE_API_KEY`
 
@@ -182,12 +184,14 @@ Vercel Dashboard → blog-admin 프로젝트
 #### Step 3: 변수 추가
 
 **`BLOB_READ_WRITE_TOKEN`**:
+
 ```
 Value: vercel_blob_rw_...
 Environments: Production, Preview, Development
 ```
 
 **`BACKOFFICE_API_KEY`**:
+
 ```
 Value: your-strong-secret-key
 Environments: Production, Preview
@@ -221,11 +225,13 @@ vercel --prod --confirm
 ### 2. 접속 테스트
 
 배포된 URL 확인:
+
 ```
 https://blog-admin-xxx.vercel.app
 ```
 
 브라우저에서 열기:
+
 1. `/dashboard`로 접속
 2. `BACKOFFICE_API_KEY` 입력
 3. 로그인 성공 확인
@@ -248,6 +254,7 @@ curl "$API_URL/api/admin/files" \
 ### 4. 로그 확인
 
 Vercel 대시보드:
+
 ```
 프로젝트 → Deployments → 배포 선택 → Logs
 ```
@@ -273,7 +280,7 @@ Vercel 대시보드:
 ```typescript
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  pageExtensions: ["js", "jsx", "ts", "tsx"],
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   // 프로덕션 최적화
   swcMinify: true,
   compress: true,
@@ -287,6 +294,7 @@ const nextConfig: NextConfig = {
 ### 성능 모니터링
 
 **Vercel Analytics** (자동 포함):
+
 ```
 프로젝트 → Analytics
 
@@ -299,6 +307,7 @@ const nextConfig: NextConfig = {
 ### 에러 추적
 
 **Vercel Functions 로그**:
+
 ```
 프로젝트 → Deployments → Functions Logs
 
@@ -311,6 +320,7 @@ const nextConfig: NextConfig = {
 ### 스토리지 모니터링
 
 **Vercel Blob 대시보드**:
+
 ```
 프로젝트 → Storage → Blob
 
@@ -387,6 +397,7 @@ VERCEL_PROJECT_ID=...
 #### Prisma Client 빌드 오류
 
 **오류 메시지**:
+
 ```
 Error: @prisma/client did not initialize yet.
 Please run "prisma generate" and try to import it again.
@@ -397,6 +408,7 @@ Please run "prisma generate" and try to import it again.
 **해결 방법**:
 
 1. `apps/blog-admin/package.json`에 스크립트 추가 (이미 적용됨):
+
 ```json
 {
   "scripts": {
@@ -407,6 +419,7 @@ Please run "prisma generate" and try to import it again.
 ```
 
 2. `apps/blog-admin/vercel.json` 확인 (이미 생성됨):
+
 ```json
 {
   "framework": "nextjs",
@@ -418,6 +431,7 @@ Please run "prisma generate" and try to import it again.
 ```
 
 3. 로컬 테스트:
+
 ```bash
 # Prisma Client 재생성
 pnpm --filter=blog-admin exec prisma generate
@@ -429,6 +443,7 @@ pnpm --filter=blog-admin build
 #### Turborepo 환경 변수 경고
 
 **오류 메시지**:
+
 ```
 Warning - the following environment variables are set on your Vercel project,
 but missing from "turbo.json". These variables WILL NOT be available to your
@@ -436,12 +451,14 @@ application and may cause your build to fail.
 ```
 
 **원인**:
+
 - 모노레포 환경에서 Turborepo가 환경 변수를 관리
 - Vercel 환경 변수가 `turbo.json`에 선언되지 않으면 빌드 시 사용 불가
 
 **해결 방법**:
 
 1. 루트 `turbo.json`에 환경 변수 추가 (이미 적용됨):
+
 ```json
 {
   "globalEnv": [
@@ -501,6 +518,7 @@ application and may cause your build to fail.
 **원인**: 빌드 오류
 
 **해결**:
+
 ```bash
 # 로컬에서 빌드 테스트
 pnpm build:admin
@@ -517,6 +535,7 @@ vercel logs
 **원인**: 의존성 누락
 
 **해결**:
+
 ```bash
 # 의존성 재설치
 pnpm install
@@ -530,6 +549,7 @@ pnpm build:admin
 #### Prisma 데이터베이스 연결 실패 (Prisma 7)
 
 **오류 메시지**:
+
 ```
 [auth][cause] PrismaClientKnownRequestError:
 Can't reach database server at base
@@ -540,6 +560,7 @@ Can't reach database server at base
 **해결 방법**:
 
 1. **Vercel 대시보드에서 환경 변수 수정**:
+
    ```
    Settings → Environment Variables → DATABASE_URL 클릭
    ```
@@ -547,11 +568,13 @@ Can't reach database server at base
 2. **따옴표 제거**:
 
    ❌ 잘못된 설정:
+
    ```
    "postgresql://user:pass@host/db?sslmode=require"
    ```
 
    ✅ 올바른 설정:
+
    ```
    postgresql://user:pass@host/db?sslmode=require
    ```
@@ -567,11 +590,13 @@ Can't reach database server at base
    또는 Vercel 대시보드에서 "Redeploy" 클릭
 
 **주의사항**:
+
 - Vercel 환경 변수 입력 시 **따옴표 없이** 순수한 값만 입력
 - 환경 변수 변경 후 **반드시 재배포** 필요
 - Prisma 7에서는 `schema.prisma`에 `url` 설정이 없어도 되지만, 런타임에 `DATABASE_URL` 환경 변수 필수
 
 **관련 코드**:
+
 - [apps/blog-admin/src/shared/lib/db.ts](../src/shared/lib/db.ts): PrismaClient 초기화
 - [apps/blog-admin/prisma.config.ts](../prisma.config.ts): Prisma 설정 파일
 
@@ -580,6 +605,7 @@ Can't reach database server at base
 **원인**: 환경 변수 미설정
 
 **해결**:
+
 1. Vercel 대시보드 → Environment Variables
 2. `BLOB_READ_WRITE_TOKEN` 추가 확인
 3. 배포 재실행
@@ -589,6 +615,7 @@ Can't reach database server at base
 **원인**: API 키 오류
 
 **해결**:
+
 1. `.env.local`의 `BACKOFFICE_API_KEY` 확인
 2. Vercel의 환경 변수 확인
 3. 값이 정확히 일치하는지 확인
@@ -600,6 +627,7 @@ Can't reach database server at base
 **원인**: Cold Start
 
 **해결**:
+
 - Vercel Pro 구독 (항상 워밍)
 - 정기적인 접속으로 워밍 유지
 
@@ -608,6 +636,7 @@ Can't reach database server at base
 **원인**: 과도한 파일 업로드
 
 **해결**:
+
 - 파일 크기 모니터링
 - 오래된 버전 삭제
 
@@ -680,11 +709,9 @@ vercel --prod --confirm
 // API 응답 캐싱 (향후 구현)
 import { unstable_cache } from 'next/cache';
 
-export const getCachedFiles = unstable_cache(
-  async () => listBlobs(),
-  ['admin-files'],
-  { revalidate: 3600 }
-);
+export const getCachedFiles = unstable_cache(async () => listBlobs(), ['admin-files'], {
+  revalidate: 3600,
+});
 ```
 
 ### 2. Streaming 활용
@@ -700,6 +727,7 @@ export async function POST(request: NextRequest) {
 ### 3. 이미지 최적화
 
 대시보드에서 로고/아이콘 사용 시:
+
 ```typescript
 import Image from 'next/image';
 

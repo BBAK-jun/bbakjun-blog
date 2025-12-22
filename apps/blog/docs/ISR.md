@@ -11,11 +11,13 @@ ISR은 Next.js의 기능으로, 빌드 후에도 정적 페이지를 **주기적
 ### 전통적인 SSG vs ISR
 
 **SSG (Static Site Generation)**:
+
 - 빌드 시 모든 페이지 생성
 - 콘텐츠 변경 시 전체 재빌드 필요
 - 빠른 로딩 속도
 
 **ISR**:
+
 - 빌드 시 페이지 생성 + 주기적 재생성
 - 콘텐츠 변경 시 자동 반영 (시간 기반 또는 On-demand)
 - 빠른 로딩 속도 유지
@@ -27,11 +29,12 @@ ISR은 Next.js의 기능으로, 빌드 후에도 정적 페이지를 **주기적
 **Revalidation 주기**: 60초
 
 ```typescript
-export const revalidate = 60  // 60초마다 재검증
-export const dynamicParams = true  // 새 포스트도 런타임에 생성
+export const revalidate = 60; // 60초마다 재검증
+export const dynamicParams = true; // 새 포스트도 런타임에 생성
 ```
 
 **동작 방식**:
+
 1. 사용자가 포스트 방문
 2. 마지막 생성 후 60초 이상 지났다면:
    - 기존 캐시된 페이지를 먼저 제공 (빠른 응답)
@@ -43,10 +46,11 @@ export const dynamicParams = true  // 새 포스트도 런타임에 생성
 **Revalidation 주기**: 60초
 
 ```typescript
-export const revalidate = 60
+export const revalidate = 60;
 ```
 
 **동작 방식**:
+
 - 최신 포스트 목록이 60초마다 자동 업데이트
 - 새 포스트 작성 시 1분 이내 자동 반영
 
@@ -55,11 +59,12 @@ export const revalidate = 60
 **Revalidation 주기**: 300초 (5분)
 
 ```typescript
-export const revalidate = 300
-export const dynamicParams = true
+export const revalidate = 300;
+export const dynamicParams = true;
 ```
 
 **동작 방식**:
+
 - 태그별 포스트 목록이 5분마다 업데이트
 - 새 태그도 런타임에 자동 생성
 
@@ -96,8 +101,8 @@ Admin에서 포스트 수정 시 자동으로 재검증 API 호출:
 ```typescript
 // blog-admin에서 포스트 업데이트 후
 await fetch(`${BLOG_URL}/api/revalidate?secret=${REVALIDATION_SECRET}&path=/blog/${slug}`, {
-  method: 'POST'
-})
+  method: 'POST',
+});
 ```
 
 ## 환경 변수 설정
@@ -154,6 +159,7 @@ curl -X POST \
 ### 3. Vercel 배포 후 확인
 
 **Vercel Logs**:
+
 ```
 Deployments → Functions → Logs
 
@@ -161,6 +167,7 @@ Deployments → Functions → Logs
 ```
 
 **Cache Headers 확인**:
+
 ```bash
 curl -I https://your-blog.vercel.app/blog/your-post
 
@@ -201,13 +208,13 @@ curl -I https://your-blog.vercel.app/blog/your-post
 
 ```typescript
 // 자주 변경되는 페이지
-export const revalidate = 60  // 1분
+export const revalidate = 60; // 1분
 
 // 보통 변경되는 페이지
-export const revalidate = 300  // 5분
+export const revalidate = 300; // 5분
 
 // 거의 변경되지 않는 페이지
-export const revalidate = 3600  // 1시간
+export const revalidate = 3600; // 1시간
 ```
 
 ### 2. On-demand Revalidation 활용
@@ -216,15 +223,15 @@ Admin에서 포스트 CRUD 시:
 
 ```typescript
 // 생성
-await revalidateBlogPost(slug)
-await revalidateHomePage()
+await revalidateBlogPost(slug);
+await revalidateHomePage();
 
 // 수정
-await revalidateBlogPost(slug)
+await revalidateBlogPost(slug);
 
 // 삭제
-await revalidateBlogPost(slug)
-await revalidateHomePage()
+await revalidateBlogPost(slug);
+await revalidateHomePage();
 ```
 
 ### 3. 캐시 무효화 전략
@@ -232,9 +239,9 @@ await revalidateHomePage()
 ```typescript
 // revalidate API 호출 시 연관 페이지도 함께 재검증
 if (path) {
-  revalidatePath(path)        // 포스트 페이지
-  revalidatePath("/")         // 홈페이지 (최신글 목록)
-  revalidatePath("/blog")     // 블로그 목록
+  revalidatePath(path); // 포스트 페이지
+  revalidatePath('/'); // 홈페이지 (최신글 목록)
+  revalidatePath('/blog'); // 블로그 목록
 }
 ```
 
@@ -245,6 +252,7 @@ if (path) {
 **원인**: 개발 모드에서는 ISR이 작동하지 않음
 
 **해결**:
+
 ```bash
 # 개발 모드 (ISR 비활성화)
 pnpm dev
@@ -258,6 +266,7 @@ pnpm build && pnpm start
 **원인**: 브라우저 캐시 또는 CDN 캐시
 
 **해결**:
+
 ```bash
 # Hard refresh (브라우저)
 Cmd+Shift+R (Mac) 또는 Ctrl+Shift+R (Windows)
@@ -271,6 +280,7 @@ vercel purge <url>
 **원인**: Secret 토큰 불일치
 
 **해결**:
+
 ```bash
 # .env.local 확인
 echo $REVALIDATION_SECRET

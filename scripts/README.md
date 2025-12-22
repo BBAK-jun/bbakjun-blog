@@ -62,10 +62,10 @@ NEXT_PUBLIC_ADMIN_URL=https://your-blog-admin.vercel.app node scripts/upload-pos
 
 ### 파일 경로 변환 예시
 
-| 로컬 경로 | Blob Storage 경로 |
-|----------|-------------------|
-| `packages/content/posts/DEV/my-post/index.mdx` | `DEV/my-post` |
-| `packages/content/posts/REACT/hooks.mdx` | `REACT/hooks` |
+| 로컬 경로                                       | Blob Storage 경로    |
+| ----------------------------------------------- | -------------------- |
+| `packages/content/posts/DEV/my-post/index.mdx`  | `DEV/my-post`        |
+| `packages/content/posts/REACT/hooks.mdx`        | `REACT/hooks`        |
 | `packages/content/posts/career/2025-career.mdx` | `career/2025-career` |
 
 ## 출력 예시
@@ -106,16 +106,17 @@ Successful:      45
 
 ## 환경 변수
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `BACKOFFICE_API_KEY` | API 인증 키 (필수) | - |
-| `NEXT_PUBLIC_ADMIN_URL` | Blog-admin URL | `http://localhost:3001` |
+| 변수                    | 설명               | 기본값                  |
+| ----------------------- | ------------------ | ----------------------- |
+| `BACKOFFICE_API_KEY`    | API 인증 키 (필수) | -                       |
+| `NEXT_PUBLIC_ADMIN_URL` | Blog-admin URL     | `http://localhost:3001` |
 
 ## 문제 해결
 
 ### 1. "BACKOFFICE_API_KEY is not set" 오류
 
 **해결**:
+
 ```bash
 export BACKOFFICE_API_KEY=your-api-key
 ```
@@ -127,6 +128,7 @@ export BACKOFFICE_API_KEY=your-api-key
 **원인**: blog-admin 서버가 실행되지 않음
 
 **해결**:
+
 ```bash
 pnpm dev:admin
 ```
@@ -136,6 +138,7 @@ pnpm dev:admin
 **원인**: API 키가 일치하지 않음
 
 **해결**:
+
 - `.env.local`의 키 확인
 - blog-admin의 `BACKOFFICE_API_KEY`와 일치하는지 확인
 
@@ -144,6 +147,7 @@ pnpm dev:admin
 **원인**: 파일이 10MB를 초과
 
 **해결**:
+
 - 파일 크기 줄이기
 - 이미지를 별도로 저장
 - 파일 분할

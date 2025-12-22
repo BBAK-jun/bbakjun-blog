@@ -1,11 +1,8 @@
 import { createRoute } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
 import { getAllPosts } from '@repo/content';
-import { getCachedBlobFiles } from '../../../lib/blob-cdc';
-import {
-  viewsStatsResponseSchema,
-  viewsErrorSchema,
-} from '../../../contract/schemas/views';
+import { getCachedBlobFiles } from '../../../shared/server/blob-cdc';
+import { viewsStatsResponseSchema, viewsErrorSchema } from '../../../shared/api/views';
 
 /**
  * GET /api/v1/views/stats - 조회수 통계
@@ -40,24 +37,18 @@ export const getViewsStatsHandler = async (c: any) => {
     console.log('[stats] RPC API 호출 시작');
 
     // 타임아웃 함수
-    const withTimeout = <T>(
-      promise: Promise<T>,
-      timeoutMs: number
-    ): Promise<T> => {
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
       return Promise.race([
         promise,
         new Promise<T>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
-            timeoutMs
-          )
+          setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
         ),
       ]);
     };
 
     // 포스트 데이터 가져오기
     const { files } = await getCachedBlobFiles({ limit: 1000, offset: 0 });
-    const blobFiles = files.map((f) => ({
+    const blobFiles = files.map(f => ({
       url: f.url,
       pathname: f.pathname,
       contentType: f.contentType || null,
@@ -90,7 +81,7 @@ export const getViewsStatsHandler = async (c: any) => {
     // 인기글에 포스트 메타데이터 추가
     const enrichedPopularPosts = popularPosts
       .map(({ slug, views }) => {
-        const post = posts.find((p) => p.slug === slug);
+        const post = posts.find(p => p.slug === slug);
         return {
           slug,
           title: post?.frontMatter.title || slug,
@@ -101,15 +92,14 @@ export const getViewsStatsHandler = async (c: any) => {
           readingTime: post?.readingTime || undefined,
         };
       })
-      .filter((post) => post.title !== post.slug); // 포스트 메타데이터가 없는 것들 제외
+      .filter(post => post.title !== post.slug); // 포스트 메타데이터가 없는 것들 제외
 
     const stats = {
       totalViews,
       totalPosts: posts.length,
-      averageViews:
-        posts.length > 0 ? Math.round(totalViews / posts.length) : 0,
+      averageViews: posts.length > 0 ? Math.round(totalViews / posts.length) : 0,
       popularPosts: enrichedPopularPosts,
-      recentPosts: posts.slice(0, 10).map((post) => ({
+      recentPosts: posts.slice(0, 10).map(post => ({
         slug: post.slug,
         title: post.frontMatter.title,
         views: 0, // 최신글은 조회수 0으로 설정 (성능 향상)
@@ -131,7 +121,7 @@ export const getViewsStatsHandler = async (c: any) => {
     // 에러 발생시 기본값 반환
     try {
       const { files } = await getCachedBlobFiles({ limit: 1000, offset: 0 });
-      const blobFiles = files.map((f) => ({
+      const blobFiles = files.map(f => ({
         url: f.url,
         pathname: f.pathname,
         contentType: f.contentType || null,
@@ -143,7 +133,7 @@ export const getViewsStatsHandler = async (c: any) => {
         totalPosts: posts.length,
         averageViews: 0,
         popularPosts: [],
-        recentPosts: posts.slice(0, 10).map((post) => ({
+        recentPosts: posts.slice(0, 10).map(post => ({
           slug: post.slug,
           title: post.frontMatter.title,
           views: 0,
@@ -159,10 +149,7 @@ export const getViewsStatsHandler = async (c: any) => {
       });
     } catch (fallbackError) {
       console.error('[stats] Fallback도 실패:', fallbackError);
-      return c.json(
-        { error: 'Failed to get stats' },
-        500
-      );
+      return c.json({ error: 'Failed to get stats' }, 500);
     }
   }
 };

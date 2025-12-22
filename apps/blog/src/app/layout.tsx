@@ -1,35 +1,34 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import "./markdown.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { ThemeProvider } from "@/components/theme-provider";
-import { QueryProvider } from "@/components/providers/query-provider";
-import { Analytics } from "@vercel/analytics/react";
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import { env } from "@/env";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import './markdown.css';
+import { Header, Footer } from '@/features/navigation';
+import { ThemeProvider } from '@/features/theme-toggle/ui';
+import { QueryProvider } from '@/shared/providers/query-provider';
+import { Analytics } from '@vercel/analytics/react';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { env } from '@/env';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "DEV_BBAK 블로그",
-  description: "안녕하세요 프론트엔드 개발자 박준형입니다.",
-  keywords: "개발, 블로그, Next.js, React, TypeScript",
-  authors: [{ name: "bbakjun" }],
+  title: 'DEV_BBAK 블로그',
+  description: '안녕하세요 프론트엔드 개발자 박준형입니다.',
+  keywords: '개발, 블로그, Next.js, React, TypeScript',
+  authors: [{ name: 'bbakjun' }],
   openGraph: {
-    title: "DEV_BBAK 블로그",
-    description: "안녕하세요 프론트엔드 개발자 박준형입니다.",
-    type: "website",
-    locale: "ko_KR",
+    title: 'DEV_BBAK 블로그',
+    description: '안녕하세요 프론트엔드 개발자 박준형입니다.',
+    type: 'website',
+    locale: 'ko_KR',
   },
   alternates: {
     types: {
@@ -58,9 +57,7 @@ export default function RootLayout({
             >
               <div className="min-h-screen flex flex-col">
                 <Header />
-                <main className="grow container mx-auto px-4 py-8 max-w-[1536px]">
-                  {children}
-                </main>
+                <main className="grow container mx-auto px-4 py-8 max-w-[1536px]">{children}</main>
                 <Footer />
               </div>
             </ThemeProvider>

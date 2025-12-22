@@ -43,7 +43,7 @@ export class MCPClient {
       if (!response.ok) {
         throw new Error(`Failed to fetch tools: ${response.statusText}`)
       }
-      const data = await response.json()
+      const data = await response.json() as { tools?: MCPTool[] }
       return data.tools || []
     } catch (error) {
       console.error('Failed to get MCP tools:', error)
@@ -68,7 +68,7 @@ export class MCPClient {
         throw new Error(`Tool invocation failed: ${response.statusText}`)
       }
 
-      return await response.json()
+      return await response.json() as MCPInvokeResponse
     } catch (error) {
       console.error(`Failed to invoke tool ${request.tool}:`, error)
       throw error

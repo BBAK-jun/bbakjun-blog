@@ -3,7 +3,7 @@ import { prisma } from '../../../shared/lib/db';
 import {
   newsletterErrorSchema,
   newsletterSubscribersResponseSchema,
-} from '../../../contract/schemas/newsletter';
+} from '../../../shared/api/newsletter';
 
 /**
  * GET /api/rpc/getNewsletterSubscribers - 구독자 목록 조회
@@ -57,9 +57,6 @@ export const getNewsletterSubscribersHandler = async (c: any) => {
     return c.json({ subscribers, stats });
   } catch (error) {
     console.error('Subscribers list error:', error);
-    return c.json(
-      { error: '구독자 목록을 가져오는 중 오류가 발생했습니다' },
-      500
-    );
+    return c.json({ error: '구독자 목록을 가져오는 중 오류가 발생했습니다' }, 500);
   }
 };

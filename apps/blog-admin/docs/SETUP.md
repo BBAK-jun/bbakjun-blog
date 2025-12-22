@@ -71,6 +71,7 @@ pnpm install --filter=blog-admin
 ```
 
 **설치 확인**:
+
 ```bash
 pnpm list @vercel/blob
 ```
@@ -109,6 +110,7 @@ Vercel이 자동으로 생성한 환경 변수를 복사:
 ```
 
 자동 생성된 `.env.local`:
+
 ```env
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxx...
 ```
@@ -149,11 +151,13 @@ EOF
 **형식**: `vercel_blob_rw_` 접두어 포함
 
 **예시**:
+
 ```
 vercel_blob_rw_1a2b3c4d5e6f7g8h9i0j...
 ```
 
 **획득 방법**:
+
 1. Vercel 대시보드 → Storage
 2. Blob Database 생성
 3. 자동 생성된 토큰 복사
@@ -163,10 +167,12 @@ vercel_blob_rw_1a2b3c4d5e6f7g8h9i0j...
 **설명**: API 인증용 Bearer Token
 
 **권장사항**:
+
 - 최소 32자 이상
 - 특수문자, 숫자, 문자 혼합
 
 **생성 예시**:
+
 ```bash
 # openssl 사용
 openssl rand -base64 32
@@ -201,16 +207,19 @@ ls -la .env.local
 ### 2단계: 개발 서버 시작
 
 **blog-admin만 실행**:
+
 ```bash
 pnpm dev:admin
 ```
 
 **blog + blog-admin 동시 실행**:
+
 ```bash
 pnpm dev:all
 ```
 
 **출력 예시**:
+
 ```
 blog-admin:dev:    ▲ Next.js 16.0.8 (Turbopack)
 blog-admin:dev:    - Local:         http://localhost:3001
@@ -222,11 +231,13 @@ blog-admin:dev:  ✓ Ready in 682ms
 ### 3단계: 대시보드 접속
 
 브라우저에서 열기:
+
 ```
 http://localhost:3001/dashboard
 ```
 
 로그인:
+
 - API 키 입력 필드에 `BACKOFFICE_API_KEY` 값 입력
 - "로그인" 클릭
 
@@ -252,6 +263,7 @@ vercel link
 #### 2단계: 환경 변수 설정
 
 Vercel 대시보드에서:
+
 ```
 Settings → Environment Variables
 
@@ -301,6 +313,7 @@ https://vercel.com/dashboard
 **오류**: `Node version does not match`
 
 **해결**:
+
 ```bash
 # nvm으로 올바른 버전 설치
 nvm install 24
@@ -315,6 +328,7 @@ node --version
 **오류**: `BLOB_READ_WRITE_TOKEN is not set`
 
 **해결**:
+
 1. `.env.local` 파일 확인
 2. Vercel 대시보드에서 토큰 확인
 3. 토큰이 `vercel_blob_rw_`로 시작하는지 확인
@@ -332,6 +346,7 @@ node -e "require('@vercel/blob').list().then(r => console.log('OK'))"
 **오류**: `Port 3001 is already in use`
 
 **해결**:
+
 ```bash
 # 포트 확인
 lsof -i :3001
@@ -348,6 +363,7 @@ pnpm dev:admin -- -p 3002
 **오류**: `Build failed`
 
 **해결**:
+
 ```bash
 # 캐시 삭제
 pnpm store prune
@@ -366,6 +382,7 @@ pnpm build:admin
 **오류**: `Type error`
 
 **해결**:
+
 ```bash
 # 타입 확인
 pnpm type-check

@@ -1,6 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { NextRequest, NextResponse } from "next/server";
-import { env } from "@/env";
+import { revalidatePath } from 'next/cache';
+import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/env';
 
 /**
  * On-demand ISR revalidation API
@@ -13,16 +13,13 @@ import { env } from "@/env";
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const secret = searchParams.get("secret");
-    const path = searchParams.get("path");
-    const all = searchParams.get("all") === "true";
+    const secret = searchParams.get('secret');
+    const path = searchParams.get('path');
+    const all = searchParams.get('all') === 'true';
 
     // Security: Verify secret token
     if (secret !== env.REVALIDATION_SECRET) {
-      return NextResponse.json(
-        { error: "Invalid secret token" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid secret token' }, { status: 401 });
     }
 
     // Validate parameters
@@ -41,17 +38,17 @@ export async function POST(request: NextRequest) {
       revalidatedPaths.push(path);
 
       // Also revalidate the home page and blog list
-      revalidatePath("/");
-      revalidatePath("/blog");
-      revalidatedPaths.push("/", "/blog");
+      revalidatePath('/');
+      revalidatePath('/blog');
+      revalidatedPaths.push('/', '/blog');
     }
 
     // Revalidate all blog-related pages
     if (all) {
       // Revalidate with layout option to clear all nested pages
-      revalidatePath("/", "layout");
-      revalidatePath("/blog", "layout");
-      revalidatedPaths.push("/ (layout)", "/blog (layout)");
+      revalidatePath('/', 'layout');
+      revalidatePath('/blog', 'layout');
+      revalidatedPaths.push('/ (layout)', '/blog (layout)');
     }
 
     return NextResponse.json({
@@ -60,10 +57,10 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Revalidation error:", error);
+    console.error('Revalidation error:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to revalidate",
+        error: error instanceof Error ? error.message : 'Failed to revalidate',
       },
       { status: 500 }
     );

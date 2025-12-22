@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { FileText } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { FileText } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 
 export default function LoginForm() {
   const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/dashboard/upload" });
+    await signIn('google', { callbackUrl: '/dashboard/upload' });
   };
 
   return (

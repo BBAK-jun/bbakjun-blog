@@ -151,7 +151,7 @@ async function uploadImage(filePath) {
     const response = await fetch(`${API_URL}/api/admin/upload-image`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
       },
       body: formData,
     });
@@ -186,11 +186,7 @@ async function uploadImage(filePath) {
  * Save URL mapping to file
  */
 function saveMappingFile(mapping) {
-  fs.writeFileSync(
-    MAPPING_FILE,
-    JSON.stringify(mapping, null, 2),
-    'utf8'
-  );
+  fs.writeFileSync(MAPPING_FILE, JSON.stringify(mapping, null, 2), 'utf8');
   logSuccess(`Mapping saved to: ${MAPPING_FILE}`);
 }
 

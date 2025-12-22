@@ -41,13 +41,6 @@ import {
   legacyNewsletterRoutes,
 } from './routes';
 import { requireAdminSession, requireSession } from './middleware/session';
-import { env } from '../env';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
 
 /**
  * Hono RPC app with all blog-admin API routes.
@@ -69,11 +62,11 @@ const corsHeaders = {
 const app = new OpenAPIHono<RpcEnv>()
   // Blob Files RPC
   .openapi(getBlobFilesRoute, getBlobFilesHandler)
-  .openapi(getBlobFilesAdminRoute, async (c) => {
+  .openapi(getBlobFilesAdminRoute, async c => {
     await requireSession(c, async () => {});
     return getBlobFilesAdminHandler(c);
   })
-  .openapi(syncBlobFilesRoute, async (c) => {
+  .openapi(syncBlobFilesRoute, async c => {
     await requireAdminSession(c, async () => {});
     return syncBlobFilesHandler(c);
   })
@@ -83,7 +76,7 @@ const app = new OpenAPIHono<RpcEnv>()
   // Newsletter RPC
   .openapi(subscribeNewsletterRoute, subscribeNewsletterHandler)
   .openapi(unsubscribeNewsletterRoute, unsubscribeNewsletterHandler)
-  .openapi(getNewsletterSubscribersRoute, async (c) => {
+  .openapi(getNewsletterSubscribersRoute, async c => {
     await requireAdminSession(c, async () => {});
     return getNewsletterSubscribersHandler(c);
   })
@@ -110,10 +103,6 @@ const app = new OpenAPIHono<RpcEnv>()
     return ragHandlers.getRAGStats(c);
   });
 
-// CORS preflight - must be added after all .openapi() calls
-app.options('/api/rpc/subscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
-app.options('/api/rpc/unsubscribeNewsletter', () => new Response(null, { status: 200, headers: corsHeaders }));
-
 // Legacy v1 routes for backward compatibility
 app.route('/api/v1/public/blob-files', legacyPublicBlobFilesRoutes);
 app.route('/api/v1/admin/blob-files', legacyAdminBlobFilesRoutes);
@@ -122,7 +111,7 @@ app.route('/api/v1/admin/upload-image', legacyImageUploadRoutes);
 app.route('/api/v1/newsletter', legacyNewsletterRoutes);
 
 // Global error handling
-app.notFound((c) => c.json({ error: 'Not Found' }, 404));
+app.notFound(c => c.json({ error: 'Not Found' }, 404));
 app.onError((err, c) => {
   console.error('RPC error:', err);
   return c.json({ error: 'Internal Server Error' }, 500);

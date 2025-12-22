@@ -13,8 +13,8 @@ async function cleanupDuplicateContent() {
 
     // Filter only MDX files
     const mdxFiles = blobs
-      .filter((blob) => blob.pathname.endsWith('.mdx'))
-      .map((blob) => ({
+      .filter(blob => blob.pathname.endsWith('.mdx'))
+      .map(blob => ({
         url: blob.url,
         pathname: blob.pathname,
         size: blob.size,
@@ -27,7 +27,7 @@ async function cleanupDuplicateContent() {
     // e.g., "career/2025-handover.mdx" and "career/2025-handover/2025-handover.mdx" should be grouped
     const fileGroups = new Map();
 
-    mdxFiles.forEach((file) => {
+    mdxFiles.forEach(file => {
       const parts = file.pathname.split('/');
       let postKey;
 
@@ -76,7 +76,7 @@ async function cleanupDuplicateContent() {
         console.log(`\n📁 ${postKey} (${files.length} files)`);
         console.log(`   ✅ KEEP: ${keep.pathname} (${keep.uploadedAt?.toISOString()})`);
 
-        deleteFiles.forEach((file) => {
+        deleteFiles.forEach(file => {
           console.log(`   ❌ DELETE: ${file.pathname} (${file.uploadedAt?.toISOString()})`);
           toDelete.push(file);
         });
@@ -90,7 +90,9 @@ async function cleanupDuplicateContent() {
 
     console.log(`\n\n📊 Summary:`);
     console.log(`Total file groups: ${fileGroups.size}`);
-    console.log(`Duplicate groups found: ${Array.from(fileGroups.values()).filter((f) => f.length > 1).length}`);
+    console.log(
+      `Duplicate groups found: ${Array.from(fileGroups.values()).filter(f => f.length > 1).length}`
+    );
     console.log(`Files to delete: ${toDelete.length}\n`);
 
     // Ask for confirmation (in production, you might want to add a --dry-run flag)
@@ -115,7 +117,6 @@ async function cleanupDuplicateContent() {
     if (errorCount > 0) {
       console.log(`Failed to delete: ${errorCount} files`);
     }
-
   } catch (error) {
     console.error('Error during cleanup:', error);
     process.exit(1);

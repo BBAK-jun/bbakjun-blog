@@ -18,9 +18,9 @@ tags: ['DEV']
 그러면서 나는 모달의 visible 상태를 하나하나 관리했었다
 
 ```js
-const [createModalVisible, setCreateModalVisible] = useState(false)
-const [updateModalVisible, setUpdateModalVisible] = useState(false)
-const [destroyModalVisible, setDestroyModalVisible] = useState(false)
+const [createModalVisible, setCreateModalVisible] = useState(false);
+const [updateModalVisible, setUpdateModalVisible] = useState(false);
+const [destroyModalVisible, setDestroyModalVisible] = useState(false);
 ```
 
 하지만 위의 코드를 보고있자니 뭔가 불편했다. 관심사도 같고 원시값의 state들이라 아래와 같은 생각을 하게되었는데
@@ -34,7 +34,7 @@ const [modalVisible, setModalVisible] = useState({
   CREATE: false,
   UPDATE: false,
   DESTROY: false,
-})
+});
 ```
 
 `setModalVisible` 이라는 `setStateAction`은 modal의 visible의 상태를 변경해주는 메서드(함수)가 되었다.
@@ -72,39 +72,39 @@ const [modalVisible, setModalVisible] = useState({
 그래서 코드를 조금 변형시켜보았다.
 
 ```js
-const onOpenModalAction = (key) => {
+const onOpenModalAction = key => {
   switch (key) {
     case 'CREATE': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: true }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: true }));
+      break;
     }
     case 'UPDATE': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: true }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: true }));
+      break;
     }
     case 'DESTROY': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: true }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: true }));
+      break;
     }
   }
-}
+};
 
-const onCloseModalAction = (key) => {
+const onCloseModalAction = key => {
   switch (key) {
     case 'CREATE': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: false }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: false }));
+      break;
     }
     case 'UPDATE': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: false }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: false }));
+      break;
     }
     case 'DESTROY': {
-      setModalVisible((prevVisible) => ({ ...prevVisible, [key]: false }))
-      break
+      setModalVisible(prevVisible => ({ ...prevVisible, [key]: false }));
+      break;
     }
   }
-}
+};
 ```
 
 그렇게 작성해보니 아래와 같은 고민에 빠지게 되었는데...

@@ -109,15 +109,15 @@ React Query는 Query Key를 배열이나 객체로 구조화고도 매끄럽게 
 
 export function partialDeepEqual(a: any, b: any): boolean {
   if (a === b) {
-    return true
+    return true;
   }
 
   if (typeof a !== typeof b) {
-    return false
+    return false;
   }
 
   if (a && b && typeof a === 'object' && typeof b === 'object') {
-    return !Object.keys(b).some((key) => !partialDeepEqual(a[key], b[key]))
+    return !Object.keys(b).some(key => !partialDeepEqual(a[key], b[key]));
   }
 }
 ```

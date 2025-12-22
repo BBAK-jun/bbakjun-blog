@@ -7,6 +7,7 @@ Blog-Admin의 API는 Vercel Blob Storage를 통해 마크다운 파일을 관리
 **Base URL**: `http://localhost:3001/api/admin` (개발) 또는 `https://your-domain/api/admin` (프로덕션)
 
 **인증**: 모든 요청에 Bearer Token 필수
+
 ```
 Authorization: Bearer YOUR_BACKOFFICE_API_KEY
 ```
@@ -24,6 +25,7 @@ Authorization: Bearer YOUR_BACKOFFICE_API_KEY
 #### Request
 
 **Headers**:
+
 ```
 Authorization: Bearer your-secret-key
 Content-Type: multipart/form-data
@@ -75,6 +77,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 #### Response (Errors)
 
 **400 - Bad Request**:
+
 ```json
 {
   "success": false,
@@ -84,6 +87,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 ```
 
 **400 - File Too Large**:
+
 ```json
 {
   "success": false,
@@ -93,6 +97,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 ```
 
 **401 - Unauthorized**:
+
 ```json
 {
   "success": false,
@@ -102,6 +107,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 ```
 
 **500 - Server Error**:
+
 ```json
 {
   "success": false,
@@ -128,6 +134,7 @@ curl -X POST http://localhost:3001/api/admin/upload \
 #### Request
 
 **Headers**:
+
 ```
 Authorization: Bearer your-secret-key
 ```
@@ -183,6 +190,7 @@ curl "http://localhost:3001/api/admin/files?category=DEV&limit=20" \
 #### Response (Errors)
 
 **401 - Unauthorized**:
+
 ```json
 {
   "success": false,
@@ -204,6 +212,7 @@ Authorization: Bearer your-backoffice-api-key
 ```
 
 **예시**:
+
 ```bash
 curl -H "Authorization: Bearer abc123xyz789" \
   http://localhost:3001/api/admin/files
@@ -218,6 +227,7 @@ BACKOFFICE_API_KEY=your-secret-key-here
 ```
 
 > ⚠️ **보안 주의**:
+>
 > - 토큰을 절대 GitHub에 커밋하지 마세요
 > - 프로덕션 환경에서는 강력한 토큰을 사용하세요
 > - 토큰을 정기적으로 변경하세요
@@ -226,25 +236,25 @@ BACKOFFICE_API_KEY=your-secret-key-here
 
 ## 상태 코드
 
-| 코드 | 설명 |
-|------|------|
-| `200` | 요청 성공 |
-| `400` | 잘못된 요청 (파일 형식, 크기 등) |
+| 코드  | 설명                              |
+| ----- | --------------------------------- |
+| `200` | 요청 성공                         |
+| `400` | 잘못된 요청 (파일 형식, 크기 등)  |
 | `401` | 인증 실패 (토큰 없음 또는 잘못됨) |
-| `500` | 서버 오류 |
+| `500` | 서버 오류                         |
 
 ---
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| `UNAUTHORIZED` | 인증 토큰 없음 또는 잘못됨 |
-| `NO_FILE` | 파일이 제공되지 않음 |
-| `NO_PATH` | 경로가 제공되지 않음 |
-| `INVALID_FILE_TYPE` | 지원하지 않는 파일 형식 |
-| `FILE_TOO_LARGE` | 파일 크기 초과 (10MB 제한) |
-| `INTERNAL_ERROR` | 내부 서버 오류 |
+| 코드                | 설명                       |
+| ------------------- | -------------------------- |
+| `UNAUTHORIZED`      | 인증 토큰 없음 또는 잘못됨 |
+| `NO_FILE`           | 파일이 제공되지 않음       |
+| `NO_PATH`           | 경로가 제공되지 않음       |
+| `INVALID_FILE_TYPE` | 지원하지 않는 파일 형식    |
+| `FILE_TOO_LARGE`    | 파일 크기 초과 (10MB 제한) |
+| `INTERNAL_ERROR`    | 내부 서버 오류             |
 
 ---
 
@@ -276,6 +286,7 @@ BACKOFFICE_API_KEY=your-secret-key-here
 현재 레이트 리미팅이 구현되지 않았습니다.
 
 향후 업데이트에서 다음과 같이 구현될 예정입니다:
+
 - IP 기반 요청 제한
 - 사용자 기반 쿼터 설정
 
@@ -299,6 +310,7 @@ CATEGORY/filename
 ```
 
 **예시**:
+
 - `DEV/my-first-post` (DEV 카테고리)
 - `REACT/hooks-guide` (REACT 카테고리)
 - `JS/closure-explained` (JS 카테고리)
@@ -361,7 +373,7 @@ const uploadFile = async (file: File, path: string, apiKey: string) => {
   const response = await fetch('/api/admin/upload', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: formData,
   });
@@ -377,7 +389,7 @@ const getFiles = async (category?: string, apiKey?: string) => {
 
   const response = await fetch(`/api/admin/files?${params}`, {
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
   });
 
@@ -417,6 +429,7 @@ curl "http://localhost:3001/api/admin/files?category=DEV" \
 ## 지원
 
 문제가 발생하면:
+
 1. [이슈 생성](https://github.com/your-repo/issues)
 2. 에러 코드와 요청 내용 포함
 

@@ -1,65 +1,65 @@
-import { getSeriesBySlug, getAllSeries } from '@repo/content'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Metadata } from 'next'
-import { Badge } from '@/components/ui'
-import { getBlobFiles } from '@/lib/blob'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui'
-import { Button } from '@/components/ui'
-import { Separator } from '@/components/ui'
-import { Calendar, Clock, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { getSeriesBySlug, getAllSeries } from '@repo/content';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { Metadata } from 'next';
+import { Badge } from '@/shared/ui/badge';
+import { getBlobFiles } from '@/shared/lib/blob';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
+import { Button } from '@/shared/ui/button';
+import { Separator } from '@/shared/ui/separator';
+import { Calendar, Clock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 interface SeriesPageProps {
   params: Promise<{
-    slug: string
-  }>
+    slug: string;
+  }>;
 }
 
 export async function generateStaticParams() {
-  const blobFiles = await getBlobFiles()
-  const series = await getAllSeries(blobFiles)
-  return series.map((s) => ({
+  const blobFiles = await getBlobFiles();
+  const series = await getAllSeries(blobFiles);
+  return series.map(s => ({
     slug: s.slug,
-  }))
+  }));
 }
 
-export const revalidate = 300 // 5 minutes
-export const dynamicParams = true
+export const revalidate = 300; // 5 minutes
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: SeriesPageProps): Promise<Metadata> {
-  const { slug } = await params
-  const blobFiles = await getBlobFiles()
-  const series = await getSeriesBySlug(blobFiles, slug)
+  const { slug } = await params;
+  const blobFiles = await getBlobFiles();
+  const series = await getSeriesBySlug(blobFiles, slug);
 
   if (!series) {
     return {
       title: 'Series Not Found',
-    }
+    };
   }
 
   return {
     title: `${series.title} | 시리즈`,
     description: series.description,
-  }
+  };
 }
 
 export default async function SeriesDetailPage({ params }: SeriesPageProps) {
-  const { slug } = await params
-  const blobFiles = await getBlobFiles()
-  const series = await getSeriesBySlug(blobFiles, slug)
+  const { slug } = await params;
+  const blobFiles = await getBlobFiles();
+  const series = await getSeriesBySlug(blobFiles, slug);
 
   if (!series) {
-    notFound()
+    notFound();
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    })
-  }
+    });
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -74,10 +74,7 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
 
         <div className="flex items-start justify-between mb-4">
           <h1 className="text-4xl md:text-5xl font-bold">{series.title}</h1>
-          <Badge
-            variant={series.status === 'completed' ? 'default' : 'secondary'}
-            className="ml-4"
-          >
+          <Badge variant={series.status === 'completed' ? 'default' : 'secondary'} className="ml-4">
             {series.status === 'completed' ? '완료' : '진행중'}
           </Badge>
         </div>
@@ -119,9 +116,7 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-xl mb-2">
-                      {post.frontMatter.title}
-                    </CardTitle>
+                    <CardTitle className="text-xl mb-2">{post.frontMatter.title}</CardTitle>
                     <CardDescription className="line-clamp-2 mb-3">
                       {post.frontMatter.description}
                     </CardDescription>
@@ -136,7 +131,7 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
                       </div>
                       {post.frontMatter.tags && post.frontMatter.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {post.frontMatter.tags.slice(0, 3).map((tag) => (
+                          {post.frontMatter.tags.slice(0, 3).map(tag => (
                             <Badge key={tag} variant="outline" className="text-xs">
                               #{tag}
                             </Badge>
@@ -159,5 +154,5 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

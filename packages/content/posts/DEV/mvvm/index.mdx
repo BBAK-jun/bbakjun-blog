@@ -51,21 +51,21 @@ view는 viewModel의 존재를 모른다고했습니다. 존재를 모르게하�
 
 ```tsx
 const useHutomViewModel = () => {
-  const [company, setCompany] = useState({ name: '휴톰' })
+  const [company, setCompany] = useState({ name: '휴톰' });
 
   return {
     states: { company },
     actions: { setCompany },
-  }
-}
+  };
+};
 
 const HutomView = () => {
-  const viewModel = useHutomViewModel()
+  const viewModel = useHutomViewModel();
 
   return (
     <p onClick={() => viewModel.actions.setCompany('hutom')}>{viewModel.states.company.name}</p>
-  )
-}
+  );
+};
 ```
 
 **view**에서 **viewModel hook을** 호출했습니다
@@ -78,10 +78,10 @@ const HutomView = () => {
 
 ```tsx
 const HutomView = () => {
-  const [company, setCompany] = useState({ name: '휴톰' })
+  const [company, setCompany] = useState({ name: '휴톰' });
 
-  return <p onClick={() => setCompany('hutom')}>{company.name}</p>
-}
+  return <p onClick={() => setCompany('hutom')}>{company.name}</p>;
+};
 ```
 
 컴포넌트 구현부를 **viewModel**로 정의하고 리턴부(**JSX**)를 **view**로 정의했습니다.
@@ -101,19 +101,19 @@ viewModel과 view의 관계는 1:N이라고 했습니다. 1:N의 관계에서는
 
 ```tsx
 const View = () => {
-  const viewModel = useViewModel()
+  const viewModel = useViewModel();
 
   const {
     states: { A, B },
-  } = viewModel
+  } = viewModel;
 
   return (
     <Wrapper>
       <AListTable data={A} />
       <CreateAForm data={B} />
     </Wrapper>
-  )
-}
+  );
+};
 ```
 
 **view**에는 `A`를 필요로하는 자식컴포넌트가 1개, `B`를 필요로하는 자식컴포넌트가 1개로 총 두개의 컴포넌트가 존재합니다.
@@ -151,24 +151,24 @@ const View = () => {
 
 ```tsx
 const useViewModel = () => {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
 
   const user = useUserQuery({
-    onSueccess: (data) => {
-      authStore.setState((prevState) => ({ isLoggedIn: true, ...prevState }))
+    onSueccess: data => {
+      authStore.setState(prevState => ({ isLoggedIn: true, ...prevState }));
     },
-  })
+  });
 
   return {
     states: {
       isLoggedIn: authStore.state.isLoggedIn,
       user: user,
     },
-  }
-}
+  };
+};
 
 const View = () => {
-  const viewModel = useViewModel()
+  const viewModel = useViewModel();
 
   return (
     <div>
@@ -178,8 +178,8 @@ const View = () => {
         <Profile user={user} />
       )}
     </div>
-  )
-}
+  );
+};
 ```
 
 위의 코드를 보면 **useViewModel**에서 **useAuthStore**와 **useUserQuery** 훅을 호출했습니다.

@@ -1,5 +1,5 @@
-import { createEnv } from "@t3-oss/env-nextjs"
-import { z } from "zod"
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
 
 export const env = createEnv({
   /**
@@ -44,4 +44,4 @@ export const env = createEnv({
    * Set to true to skip validation on build (for Docker, etc.)
    */
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
-})
+});

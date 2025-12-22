@@ -32,16 +32,16 @@ images: ['/static/images/JS/closure/js.png']
 ```js
 function diff(x, y) {
   if (x > y) {
-    let tmp = x
-    x = y
-    y = tmp
+    let tmp = x;
+    x = y;
+    y = tmp;
   }
 
-  return y - x
+  return y - x;
 }
 
-diff(3, 7) // 4
-diff(7, 5) // 2
+diff(3, 7); // 4
+diff(7, 5); // 2
 ```
 
 위의 코드 예시에서는 tmp 변수가 if 블록 안에 있는지, 함수 스코프 안에있는지는 중요하지 않은것 같지만 전역 변수가 되어서는 안된다. tmp 변수는 가능한 범위 내에 있어야한다. 그렇지 않으면 다른 코드에서 tmp 변수를 의도치 않게 사용할 수 있다.
@@ -55,19 +55,19 @@ diff(7, 5) // 2
 블록 레벨 스코프인 let 키워드를 보았다. 하지만 let은 블록 스코프를 만들어주지만 함수 스코프를 만들어주지는 않는다. 따라서 함수 스코프를 만들어주는 방법을 알아보자.
 
 ```js
-var cache = {}
+var cache = {};
 
 function factorial(x) {
-  if (x < 2) return 1
+  if (x < 2) return 1;
   if (!(x in cache)) {
-    cache[x] = x * factorial(x - 1)
+    cache[x] = x * factorial(x - 1);
   }
-  return cache[x]
+  return cache[x];
 }
 
-factorial(6) // 720
+factorial(6); // 720
 
-cache
+cache;
 /**
  * {
  *    2: 2,
@@ -78,7 +78,7 @@ cache
  * }
  */
 
-factorial(7) // 5040
+factorial(7); // 5040
 ```
 
 위의 코드에서 cache 변수는 factorial 함수 스코프 안에 있다. 따라서 factorial 함수 스코프 안에서만 접근할 수 있다. 그러므로 factorial 함수 스코프 안에서만 cache 변수를 사용할 수 있다.

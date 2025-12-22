@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { syncBlobToDatabase } from '../../../lib/blob-cdc';
-import { blobFilesErrorSchema } from '../../../contract/schemas/blob-files';
+import { syncBlobToDatabase } from '../../../shared/server/blob-cdc';
+import { blobFilesErrorSchema } from '../../../shared/api/blob-files';
 
 const syncBlobFilesResponseSchema = z.object({
   message: z.string(),
@@ -53,15 +53,15 @@ export const syncBlobFilesHandler = async (c: any) => {
   try {
     const stats = await syncBlobToDatabase();
 
-    return c.json({
-      message: 'Sync completed',
-      stats,
-    }, 200);
+    return c.json(
+      {
+        message: 'Sync completed',
+        stats,
+      },
+      200
+    );
   } catch (error) {
     console.error('Blob sync error:', error);
-    return c.json(
-      { error: 'Failed to sync blob files' },
-      500
-    );
+    return c.json({ error: 'Failed to sync blob files' }, 500);
   }
 };

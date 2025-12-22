@@ -1,10 +1,19 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Calendar, HardDrive, Loader2, AlertCircle, Edit, Tag } from "lucide-react";
-import { useFileQuery, type FileData } from "@/entities/file";
-import { formatFileSize, formatDateLong } from "@/shared/lib/format";
-import "../../../app/markdown.css";
+import { useRouter } from 'next/navigation';
+import {
+  ArrowLeft,
+  FileText,
+  Calendar,
+  HardDrive,
+  Loader2,
+  AlertCircle,
+  Edit,
+  Tag,
+} from 'lucide-react';
+import { useFileQuery, type FileData } from '@/entities/file';
+import { formatFileSize, formatDateLong } from '@/shared/lib/format';
+import '../../../app/markdown.css';
 
 interface FileViewerWidgetProps {
   pathname: string | null;
@@ -14,11 +23,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
   const router = useRouter();
 
   // Entity hook - Fetch file content with TanStack Query
-  const {
-    data: fileData,
-    isLoading,
-    error,
-  } = useFileQuery(pathname);
+  const { data: fileData, isLoading, error } = useFileQuery(pathname);
 
   if (isLoading) {
     return (
@@ -37,7 +42,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
         <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-6">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
           <p className="text-sm text-red-600 dark:text-red-400">
-            {error instanceof Error ? error.message : "파일을 불러올 수 없습니다."}
+            {error instanceof Error ? error.message : '파일을 불러올 수 없습니다.'}
           </p>
         </div>
         <button
@@ -55,7 +60,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
     return null;
   }
 
-  const filename = fileData.metadata.pathname.split("/").pop() || "Unknown";
+  const filename = fileData.metadata.pathname.split('/').pop() || 'Unknown';
 
   return (
     <div className="space-y-6">
@@ -72,7 +77,9 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
             </button>
           </div>
           <button
-            onClick={() => router.push(`/dashboard/files/edit?pathname=${encodeURIComponent(pathname || "")}`)}
+            onClick={() =>
+              router.push(`/dashboard/files/edit?pathname=${encodeURIComponent(pathname || '')}`)
+            }
             className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
@@ -85,9 +92,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
             <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              {filename}
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{filename}</h1>
             <p className="text-sm font-mono text-slate-600 dark:text-slate-400 mb-4 break-all">
               {fileData.metadata.pathname}
             </p>
@@ -138,9 +143,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                     날짜:
                   </span>
-                  <p className="text-slate-900 dark:text-white mt-1">
-                    {fileData.frontMatter.date}
-                  </p>
+                  <p className="text-slate-900 dark:text-white mt-1">{fileData.frontMatter.date}</p>
                 </div>
               )}
               {fileData.frontMatter.author && (
@@ -154,24 +157,26 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
                 </div>
               )}
             </div>
-            {fileData.frontMatter.tags && Array.isArray(fileData.frontMatter.tags) && fileData.frontMatter.tags.length > 0 && (
-              <div>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">
-                  태그:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {fileData.frontMatter.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full"
-                    >
-                      <Tag className="w-3 h-3" />
-                      {tag}
-                    </span>
-                  ))}
+            {fileData.frontMatter.tags &&
+              Array.isArray(fileData.frontMatter.tags) &&
+              fileData.frontMatter.tags.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">
+                    태그:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {fileData.frontMatter.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full"
+                      >
+                        <Tag className="w-3 h-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             {fileData.frontMatter.draft !== undefined && (
               <div>
                 <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -181,11 +186,11 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       fileData.frontMatter.draft
-                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                        : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                     }`}
                   >
-                    {fileData.frontMatter.draft ? "초안" : "발행됨"}
+                    {fileData.frontMatter.draft ? '초안' : '발행됨'}
                   </span>
                 </p>
               </div>
@@ -197,9 +202,7 @@ export function FileViewerWidget({ pathname }: FileViewerWidgetProps) {
       {/* Markdown Preview */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            미리보기
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">미리보기</h2>
         </div>
         <article
           className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"

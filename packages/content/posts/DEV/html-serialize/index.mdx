@@ -16,11 +16,11 @@ summary: 서버사이드 렌더링과 Hydration
 주로 사용하는 NextJS는 서버에서 React 컴포넌트를 HTML 문자열로 변환한다. 이 과정을 직렬화(Serialization)라고 한다.
 
 ```js
-import { renderToString } from 'react-dom/server'
+import { renderToString } from 'react-dom/server';
 
-const html = renderToString(<App />)
+const html = renderToString(<App />);
 
-console.log(html)
+console.log(html);
 ```
 
 ## renderToString()이 블로킹 요소인 이유
@@ -133,14 +133,13 @@ while (true) {
 
 ```md
 요청 1 시작 ━━━━━━━━━━━━━━━━━ (5초) ━━━━━━━━━━━━━━━━━ 완료
-                              ↓
-                    요청 2는 대기 중... ⏰
-                    요청 3는 대기 중... ⏰
+↓
+요청 2는 대기 중... ⏰
+요청 3는 대기 중... ⏰
 ```
 
 3. 컴포넌트 트리를 평가하고 렌더링하는 동안 브라우저는 블로킹 상태가 됨
 4. 전체 HTML 문자열이 메모리에 완성될때까지 누적됨
-
 
 ## Cpu 집약적 작업인 이유
 
@@ -212,7 +211,7 @@ import { renderToString } from 'react-dom/server';
 
 const html = renderToString(<App />);
 
-const fullHtml = /* html */`
+const fullHtml = /* html */ `
   <!DOCTYPE html>
   <html>
     <body>
@@ -281,7 +280,7 @@ function handleRequest(req, res) {
     },
     onAllReady() {
       // 모든 컴포넌트가 준비됨
-    }
+    },
   });
 }
 ```
@@ -294,22 +293,23 @@ function handleRequest(req, res) {
     <div id="root">
       <header>...</header>
       <div id="content">
-        <!--$?--> <!-- Suspense 경계 -->
+        <!--$?-->
+        <!-- Suspense 경계 -->
         <template id="B:0"></template>
         <!--/$-->
       </div>
     </div>
 
-<!-- 2단계: 나중에 추가 HTML 스트리밍 -->
-<div hidden id="S:0">
-  <div>실제 콘텐츠</div>
-</div>
-<script>
-  // 템플릿을 실제 콘텐츠로 교체하는 스크립트
-  document.getElementById('B:0').replaceWith(
-    document.getElementById('S:0').content
-  );
-</script>
+    <!-- 2단계: 나중에 추가 HTML 스트리밍 -->
+    <div hidden id="S:0">
+      <div>실제 콘텐츠</div>
+    </div>
+    <script>
+      // 템플릿을 실제 콘텐츠로 교체하는 스크립트
+      document.getElementById('B:0').replaceWith(document.getElementById('S:0').content);
+    </script>
+  </body>
+</html>
 ```
 
 ### TTFB(Time to First Byte)가 개선된다.
@@ -423,7 +423,6 @@ function handleRequest(req, res) {
    │ [Comments 업데이트] ✓                │
 ```
 
-
 ### Shell 이란?
 
 shell은 앱의 기본 골격(뼈대)라고 보면된다.
@@ -431,16 +430,20 @@ shell은 앱의 기본 골격(뼈대)라고 보면된다.
 ```html
 // Shell에 포함되는 것
 <html>
-  <head>...</head>
+  <head>
+    ...
+  </head>
   <body>
-    <Header />              // ✓ Shell에 포함
+    <header />
+    // ✓ Shell에 포함
     <div id="main">
-      <Suspense>           // ✓ Fallback만 Shell에 포함
-        <Spinner />        // ✓ 즉시 렌더링
+      <Suspense>
+        // ✓ Fallback만 Shell에 포함 <Spinner /> // ✓ 즉시 렌더링
         <!-- 실제 콘텐츠는 나중에 -->
       </Suspense>
     </div>
-    <Footer />             // ✓ Shell에 포함
+    <footer />
+    // ✓ Shell에 포함
   </body>
 </html>
 ```
@@ -507,7 +510,6 @@ renderToPipeableStream()은 Shell만 렌더링하고 즉시 전송하기 때문�
 - **상호작용 우선 경계 상단 배치**: 상단 내비, 검색창, 필터 등 먼저 써야 하는 요소는 별도 경계로 분리.
 - **Fallback의 정보성**: 단순 스피너 대신 스켈레톤/요약 정보를 제공하면 지각 성능이 좋아진다.
 
-
 ## 하지만 여전히 Cpu Intensive한 작업이다.
 
 `renderToString()`과 `renderToPipeableStream()`은 여전히 CPU 집약적인 작업이다.
@@ -543,23 +545,23 @@ renderToPipeableStream()은 Shell만 렌더링하고 즉시 전송하기 때문�
 
 ```js
 // Node(SSR)에서 SSR 렌더 시간 측정
-import { performance } from 'node:perf_hooks'
-import { renderToString } from 'react-dom/server'
+import { performance } from 'node:perf_hooks';
+import { renderToString } from 'react-dom/server';
 
-const t0 = performance.now()
-const html = renderToString(<App />)
-console.log('SSR render(ms):', performance.now() - t0)
+const t0 = performance.now();
+const html = renderToString(<App />);
+console.log('SSR render(ms):', performance.now() - t0);
 ```
 
 ```js
 // 클라이언트 측 대략적인 Hydration 시간 근사치(참고용)
-import { hydrateRoot } from 'react-dom/client'
+import { hydrateRoot } from 'react-dom/client';
 
-const t0 = performance.now()
-hydrateRoot(document.getElementById('root'), <App />)
+const t0 = performance.now();
+hydrateRoot(document.getElementById('root'), <App />);
 requestIdleCallback(() => {
-  console.log('Hydration (rough, ms):', performance.now() - t0)
-})
+  console.log('Hydration (rough, ms):', performance.now() - t0);
+});
 ```
 
 정확한 체감 개선은 TTFB, TTI, INP 같은 RUM 지표와 함께, 사용자 흐름(검색/필터/스크롤) 기준으로 전후 비교하여 확인하는 것이 좋다.
@@ -590,11 +592,11 @@ export default async function BlogPost({ params }) {
 ```md
 캐싱 없음 (매 요청마다):
 요청 → [DB 조회 100ms] → [렌더링 50ms] → 응답
-       총: 150ms
+총: 150ms
 
 Full Route Cache (빌드 시 생성):
 요청 → [캐시된 HTML 읽기 1ms] → 응답
-       총: 1ms (150배 빠름!)
+총: 1ms (150배 빠름!)
 ```
 
 다르게 말하면, 정적 페이지 캐싱은 서버가 “빌드 타임에 미리 렌더링한 결과물(HTML)”을 그대로 서빙하는 방식이다. 요청 시점에는 DB 조회나 React 렌더링이 일어나지 않기 때문에 서버 CPU/메모리, 데이터베이스 부하 모두가 크게 줄어든다. 결과적으로 TTFB/TTI가 개선되고, 트래픽 급증 시에도 안정적으로 응답하기 쉽다.
@@ -626,7 +628,7 @@ const getCachedProducts = unstable_cache(
   ['products'], // 캐시 키
   {
     revalidate: 3600, // 1시간마다 갱신
-    tags: ['products'] // 수동 무효화용 태그
+    tags: ['products'], // 수동 무효화용 태그
   }
 );
 
@@ -644,6 +646,7 @@ export default async function Dashboard() {
 
 ```md
 // 첫 번째 요청
+
 1. getCachedProducts() 호출
 2. DB 쿼리 실행 (100ms)
 3. 결과를 메모리/Redis에 캐싱
@@ -651,6 +654,7 @@ export default async function Dashboard() {
 5. 총: 150ms
 
 // 두 번째 요청 (캐시 히트)
+
 1. getCachedProducts() 호출
 2. 캐시에서 즉시 반환 (1ms)
 3. 컴포넌트 렌더링 (50ms)
@@ -674,7 +678,7 @@ export default async function Dashboard() {
 import { cache } from 'react';
 
 // 동일한 요청 내에서 중복 호출 방지
-const getUser = cache(async (id) => {
+const getUser = cache(async id => {
   console.log('DB 조회:', id);
   return await db.user.findById(id);
 });
@@ -702,12 +706,12 @@ export default function Page() {
 ```md
 Without cache():
 UserProfile → getUser(1) → DB 쿼리 (100ms)
-UserPosts   → getUser(1) → DB 쿼리 (100ms)
+UserPosts → getUser(1) → DB 쿼리 (100ms)
 총: 200ms
 
 With cache():
 UserProfile → getUser(1) → DB 쿼리 (100ms) → 메모리 캐싱
-UserPosts   → getUser(1) → 메모리에서 반환 (0.1ms)
+UserPosts → getUser(1) → 메모리에서 반환 (0.1ms)
 총: 100ms
 ```
 
@@ -793,16 +797,18 @@ PM2는 Node.js 프로세스 매니저로 클러스터 모드를 제공한다. �
 ```js
 // ecosystem.config.js
 module.exports = {
-  apps: [{
-    name: 'nextjs-app',
-    script: './server.js',
-    instances: 'max', // CPU 코어 수만큼 프로세스 생성
-    exec_mode: 'cluster', // 클러스터 모드
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000
-    }
-  }]
+  apps: [
+    {
+      name: 'nextjs-app',
+      script: './server.js',
+      instances: 'max', // CPU 코어 수만큼 프로세스 생성
+      exec_mode: 'cluster', // 클러스터 모드
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+    },
+  ],
 };
 ```
 
@@ -911,7 +917,7 @@ services:
   nextjs:
     image: nextjs-app:latest
     deploy:
-      replicas: 8  # 8개 컨테이너 실행
+      replicas: 8 # 8개 컨테이너 실행
       resources:
         limits:
           cpus: '1'
@@ -922,7 +928,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
@@ -936,7 +942,7 @@ kind: Deployment
 metadata:
   name: nextjs-deployment
 spec:
-  replicas: 8  # 8개 Pod 실행
+  replicas: 8 # 8개 Pod 실행
   selector:
     matchLabels:
       app: nextjs
@@ -946,17 +952,17 @@ spec:
         app: nextjs
     spec:
       containers:
-      - name: nextjs
-        image: nextjs-app:latest
-        resources:
-          requests:
-            cpu: "1"
-            memory: "512Mi"
-          limits:
-            cpu: "1"
-            memory: "512Mi"
-        ports:
-        - containerPort: 3000
+        - name: nextjs
+          image: nextjs-app:latest
+          resources:
+            requests:
+              cpu: '1'
+              memory: '512Mi'
+            limits:
+              cpu: '1'
+              memory: '512Mi'
+          ports:
+            - containerPort: 3000
 ---
 apiVersion: v1
 kind: Service
@@ -967,8 +973,8 @@ spec:
     app: nextjs
   type: LoadBalancer
   ports:
-  - port: 80
-    targetPort: 3000
+    - port: 80
+      targetPort: 3000
 ```
 
 <hr />
@@ -985,20 +991,18 @@ Shell을 먼저 전송해 **TTFB(Time to First Byte)** 를 단축하고, 이후 
 
 ### 애플리케이션 레벨에서의 접근
 
-* **정적 페이지 캐싱(Static Rendering)** 으로 변하지 않는 페이지를 빌드 타임에 미리 생성하고,
-* **부분 렌더링 캐싱(Partial Rendering Cache)** 으로 재사용 가능한 UI 조각을 재활용하며,
-* **ISR(Incremental Static Regeneration)** 이나 **Dynamic Segment 분리**를 통해 데이터 신선도와 성능을 균형 있게 유지한다.
-* 또한 **Suspense Boundaries**를 세분화해 병렬 렌더링 단위를 최적화하고, **backpressure 제어**를 통해 렌더링 스트림의 폭주를 방지한다.
-
+- **정적 페이지 캐싱(Static Rendering)** 으로 변하지 않는 페이지를 빌드 타임에 미리 생성하고,
+- **부분 렌더링 캐싱(Partial Rendering Cache)** 으로 재사용 가능한 UI 조각을 재활용하며,
+- **ISR(Incremental Static Regeneration)** 이나 **Dynamic Segment 분리**를 통해 데이터 신선도와 성능을 균형 있게 유지한다.
+- 또한 **Suspense Boundaries**를 세분화해 병렬 렌더링 단위를 최적화하고, **backpressure 제어**를 통해 렌더링 스트림의 폭주를 방지한다.
 
 ### 인프라 레벨에서의 접근
 
-* **Edge Rendering** 또는 **Region 분산(Regional SSR)** 으로 사용자와 가까운 곳에서 HTML을 전송해 네트워크 레이턴시를 최소화한다.
-* **Node.js 워커 풀(Worker Threads / Cluster)** 을 활용해 CPU 연산을 병렬화하고, 단일 이벤트 루프에 모든 요청이 몰리지 않게 분산시킨다.
-* **렌더링 서버와 API 서버를 분리(BFF 구조)** 하여 데이터 fetching 병목이 SSR 흐름을 지연시키지 않도록 하고,
-* **CDN 캐싱**과 **Edge Cache-Control 헤더 튜닝**을 통해 재요청 시 서버 부하를 줄인다.
-* 롤링 업데이트나 graceful shutdown 시에는 **Keep-Alive 연결 관리**를 주의하여 스트리밍이 중단되지 않게 해야 한다. (특히 Safari의 `Transfer-Encoding: chunked` 전송 불안정성 고려)
-
+- **Edge Rendering** 또는 **Region 분산(Regional SSR)** 으로 사용자와 가까운 곳에서 HTML을 전송해 네트워크 레이턴시를 최소화한다.
+- **Node.js 워커 풀(Worker Threads / Cluster)** 을 활용해 CPU 연산을 병렬화하고, 단일 이벤트 루프에 모든 요청이 몰리지 않게 분산시킨다.
+- **렌더링 서버와 API 서버를 분리(BFF 구조)** 하여 데이터 fetching 병목이 SSR 흐름을 지연시키지 않도록 하고,
+- **CDN 캐싱**과 **Edge Cache-Control 헤더 튜닝**을 통해 재요청 시 서버 부하를 줄인다.
+- 롤링 업데이트나 graceful shutdown 시에는 **Keep-Alive 연결 관리**를 주의하여 스트리밍이 중단되지 않게 해야 한다. (특히 Safari의 `Transfer-Encoding: chunked` 전송 불안정성 고려)
 
 요약하자면,
 

@@ -10,11 +10,4 @@ export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, Tabl
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 export { Textarea } from './components/ui/textarea'
 
-// Utilities
-export { cn } from './utils'
-
-// Export types
-export type { ButtonProps } from './components/ui/button'
-export type { InputProps } from './components/ui/input'
-export type { BadgeProps } from './components/ui/badge'
-export type { TextareaProps } from './components/ui/textarea'
+export { cn } from './utils';

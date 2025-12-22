@@ -1,14 +1,13 @@
-"use server";
+'use server';
 
-import { put, del } from "@vercel/blob";
-import { processMarkdown } from "@repo/content";
-import { revalidatePath } from "next/cache";
-import matter from "gray-matter";
-import { createFileSchema, updateFileSchema, deleteFileSchema } from "@/shared/lib/schemas";
-import { revalidateBlogPost } from "@/shared/lib/revalidate-blog";
-import { getCachedBlobFiles } from "@/lib/blob-cdc";
-import { onBlobUpload, onBlobDelete } from "@/lib/blob-cdc";
-import { env } from "@/env";
+import { put, del } from '@vercel/blob';
+import { processMarkdown } from '@repo/content';
+import { revalidatePath } from 'next/cache';
+import matter from 'gray-matter';
+import { createFileSchema, updateFileSchema, deleteFileSchema } from '@/shared/lib/schemas';
+import { revalidateBlogPost } from '@/shared/lib/revalidate-blog';
+import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from '@/shared/server/blob-cdc';
+import { env } from '@/shared/config';
 
 const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
@@ -20,7 +19,7 @@ export async function getFileContent(pathname: string) {
     // Use CDC cached file list instead of direct Blob API call
     const { files } = await getCachedBlobFiles();
 
-    const blob = files.find((f) => f.pathname === pathname);
+    const blob = files.find(f => f.pathname === pathname);
 
     if (!blob) {
       throw new Error(`File not found in Blob Storage: ${pathname}`);
@@ -59,10 +58,10 @@ export async function getFileContent(pathname: string) {
       },
     };
   } catch (error) {
-    console.error("Get file content error:", error);
+    console.error('Get file content error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to get file",
+      error: error instanceof Error ? error.message : 'Failed to get file',
     };
   }
 }
@@ -97,7 +96,7 @@ export async function updateFile(input: UpdateFileInput) {
     const validatedData = validationResult.data;
 
     // Create frontmatter
-    const frontMatter = matter.stringify("", {
+    const frontMatter = matter.stringify('', {
       title: validatedData.title,
       date: validatedData.date,
       description: validatedData.description,
@@ -107,13 +106,13 @@ export async function updateFile(input: UpdateFileInput) {
     });
 
     // Combine frontmatter and content
-    const fullContent = frontMatter + "\n" + validatedData.content;
+    const fullContent = frontMatter + '\n' + validatedData.content;
 
     // Upload to Blob Storage (overwrite existing file)
     const blob = await put(validatedData.pathname, fullContent, {
-      access: "public",
+      access: 'public',
       token: BLOB_TOKEN,
-      contentType: "text/markdown",
+      contentType: 'text/markdown',
       addRandomSuffix: false, // Ensure file is overwritten, not duplicated
     });
 
@@ -124,27 +123,27 @@ export async function updateFile(input: UpdateFileInput) {
         pathname: blob.pathname,
         size: Buffer.byteLength(fullContent, 'utf8'),
         uploadedAt: new Date(),
-        contentType: "text/markdown",
+        contentType: 'text/markdown',
       });
     } catch (cdcError) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }
 
     // Revalidate admin file list
-    revalidatePath("/dashboard/files");
+    revalidatePath('/dashboard/files');
 
     // Revalidate blog post using utility function
     await revalidateBlogPost(validatedData.pathname);
 
     return {
       success: true,
-      message: "파일이 성공적으로 업데이트되었습니다",
+      message: '파일이 성공적으로 업데이트되었습니다',
     };
   } catch (error) {
-    console.error("Update file error:", error);
+    console.error('Update file error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "파일 업데이트에 실패했습니다",
+      error: error instanceof Error ? error.message : '파일 업데이트에 실패했습니다',
     };
   }
 }
@@ -167,7 +166,7 @@ export async function deleteFile(pathname: string) {
 
     // First get the file URL for CDC
     const { files } = await getCachedBlobFiles({ limit: 1000 });
-    const fileToDelete = files.find((f) => f.pathname === validationResult.data.pathname);
+    const fileToDelete = files.find(f => f.pathname === validationResult.data.pathname);
 
     await del(validationResult.data.pathname, { token: BLOB_TOKEN });
 
@@ -180,20 +179,20 @@ export async function deleteFile(pathname: string) {
       }
     }
 
-    revalidatePath("/dashboard/files");
+    revalidatePath('/dashboard/files');
 
     // Revalidate blog post
     await revalidateBlogPost(validationResult.data.pathname);
 
     return {
       success: true,
-      message: "파일이 성공적으로 삭제되었습니다",
+      message: '파일이 성공적으로 삭제되었습니다',
     };
   } catch (error) {
-    console.error("Delete file error:", error);
+    console.error('Delete file error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "파일 삭제에 실패했습니다",
+      error: error instanceof Error ? error.message : '파일 삭제에 실패했습니다',
     };
   }
 }
@@ -208,15 +207,15 @@ export async function listFiles(limit = 100) {
 
     const markdownBlobs = files
       .filter(
-        (blob) =>
-          (blob.pathname.endsWith(".md") || blob.pathname.endsWith(".mdx")) &&
-          !blob.pathname.includes("/.")
+        blob =>
+          (blob.pathname.endsWith('.md') || blob.pathname.endsWith('.mdx')) &&
+          !blob.pathname.includes('/.')
       )
       .slice(0, limit);
 
     // Fetch front matter for each file
     const filesWithMetadata = await Promise.all(
-      markdownBlobs.map(async (blob) => {
+      markdownBlobs.map(async blob => {
         try {
           // Fetch file content with no-cache to ensure fresh data
           const response = await fetch(blob.url, {
@@ -226,14 +225,14 @@ export async function listFiles(limit = 100) {
             },
           });
           if (!response.ok) {
-            throw new Error("Failed to fetch file");
+            throw new Error('Failed to fetch file');
           }
 
           const content = await response.text();
           const { data: frontMatter } = matter(content);
 
           return {
-            filename: blob.pathname.split("/").pop() || blob.pathname,
+            filename: blob.pathname.split('/').pop() || blob.pathname,
             pathname: blob.pathname,
             size: blob.size,
             uploadedAt: new Date(blob.uploadedAt).toISOString(),
@@ -246,7 +245,7 @@ export async function listFiles(limit = 100) {
           // If front matter parsing fails, return basic info
           console.error(`Failed to parse front matter for ${blob.pathname}:`, error);
           return {
-            filename: blob.pathname.split("/").pop() || blob.pathname,
+            filename: blob.pathname.split('/').pop() || blob.pathname,
             pathname: blob.pathname,
             size: blob.size,
             uploadedAt: new Date(blob.uploadedAt).toISOString(),
@@ -265,10 +264,10 @@ export async function listFiles(limit = 100) {
       total: filesWithMetadata.length,
     };
   } catch (error) {
-    console.error("List files error:", error);
+    console.error('List files error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to list files",
+      error: error instanceof Error ? error.message : 'Failed to list files',
       files: [],
       total: 0,
     };
@@ -280,31 +279,31 @@ export async function listFiles(limit = 100) {
  */
 export async function uploadMarkdown(formData: FormData) {
   try {
-    const file = formData.get("file") as File;
-    const path = formData.get("path") as string;
+    const file = formData.get('file') as File;
+    const path = formData.get('path') as string;
 
     if (!file) {
       return {
         success: false,
-        error: "No file provided",
+        error: 'No file provided',
       };
     }
 
     if (!path?.trim()) {
       return {
         success: false,
-        error: "Path is required",
+        error: 'Path is required',
       };
     }
 
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-    const ALLOWED_EXTENSIONS = [".md", ".mdx"];
+    const ALLOWED_EXTENSIONS = ['.md', '.mdx'];
 
-    const fileExtension = file.name.substring(file.name.lastIndexOf("."));
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.'));
     if (!ALLOWED_EXTENSIONS.includes(fileExtension.toLowerCase())) {
       return {
         success: false,
-        error: `Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
+        error: `Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`,
       };
     }
 
@@ -316,11 +315,11 @@ export async function uploadMarkdown(formData: FormData) {
     }
 
     // Sanitize path
-    const sanitizedPath = path.trim().replace(/^\/+|\/+$/g, "");
+    const sanitizedPath = path.trim().replace(/^\/+|\/+$/g, '');
     const pathname = `${sanitizedPath}${fileExtension}`;
 
     const blob = await put(pathname, file, {
-      access: "public",
+      access: 'public',
       token: BLOB_TOKEN,
     });
 
@@ -337,7 +336,7 @@ export async function uploadMarkdown(formData: FormData) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }
 
-    revalidatePath("/dashboard/files");
+    revalidatePath('/dashboard/files');
 
     return {
       success: true,
@@ -346,10 +345,10 @@ export async function uploadMarkdown(formData: FormData) {
       size: file.size,
     };
   } catch (error) {
-    console.error("Upload markdown error:", error);
+    console.error('Upload markdown error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to upload file",
+      error: error instanceof Error ? error.message : 'Failed to upload file',
     };
   }
 }
@@ -366,11 +365,11 @@ export async function previewMarkdown(content: string) {
       htmlContent,
     };
   } catch (error) {
-    console.error("Preview markdown error:", error);
+    console.error('Preview markdown error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to preview",
-      htmlContent: "",
+      error: error instanceof Error ? error.message : 'Failed to preview',
+      htmlContent: '',
     };
   }
 }
@@ -380,22 +379,22 @@ export async function previewMarkdown(content: string) {
  */
 export async function uploadImage(formData: FormData) {
   try {
-    const file = formData.get("file") as File;
+    const file = formData.get('file') as File;
 
     if (!file) {
       return {
         success: false,
-        error: "No file provided",
+        error: 'No file provided',
       };
     }
 
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       return {
         success: false,
-        error: `Invalid file type. Allowed: ${ALLOWED_TYPES.join(", ")}`,
+        error: `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`,
       };
     }
 
@@ -407,11 +406,11 @@ export async function uploadImage(formData: FormData) {
     }
 
     const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const pathname = `images/${timestamp}-${originalName}`;
 
     const blob = await put(pathname, file, {
-      access: "public",
+      access: 'public',
       token: BLOB_TOKEN,
       addRandomSuffix: false,
     });
@@ -437,10 +436,10 @@ export async function uploadImage(formData: FormData) {
       contentType: file.type,
     };
   } catch (error) {
-    console.error("Upload image error:", error);
+    console.error('Upload image error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to upload image",
+      error: error instanceof Error ? error.message : 'Failed to upload image',
     };
   }
 }
@@ -453,16 +452,16 @@ export async function listImages(limit = 50) {
     // Use CDC cached file list instead of direct Blob API call
     const { files } = await getCachedBlobFiles({
       limit: 1000,
-      searchTerm: "images/",
+      searchTerm: 'images/',
     });
 
     const images = files
-      .filter((blob) => /\.(jpg|jpeg|png|gif|webp)$/i.test(blob.pathname))
+      .filter(blob => /\.(jpg|jpeg|png|gif|webp)$/i.test(blob.pathname))
       .slice(0, limit)
-      .map((blob) => ({
+      .map(blob => ({
         url: blob.url,
         pathname: blob.pathname,
-        filename: blob.pathname.split("/").pop() || blob.pathname,
+        filename: blob.pathname.split('/').pop() || blob.pathname,
         size: blob.size,
         uploadedAt: new Date(blob.uploadedAt).toISOString(),
       }));
@@ -473,10 +472,10 @@ export async function listImages(limit = 50) {
       total: images.length,
     };
   } catch (error) {
-    console.error("List images error:", error);
+    console.error('List images error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to list images",
+      error: error instanceof Error ? error.message : 'Failed to list images',
       images: [],
       total: 0,
     };
@@ -513,12 +512,12 @@ export async function createFile(input: CreateFileInput) {
     const validatedData = validationResult.data;
 
     // Sanitize pathname
-    const sanitized = validatedData.pathname.trim().replace(/^\/+|\/+$/g, "");
+    const sanitized = validatedData.pathname.trim().replace(/^\/+|\/+$/g, '');
     const finalPathname = `${sanitized}/index.mdx`;
 
     // Check if file already exists using CDC cache
     const { files } = await getCachedBlobFiles({ limit: 1000 });
-    const existingFile = files.find((f) => f.pathname === finalPathname);
+    const existingFile = files.find(f => f.pathname === finalPathname);
 
     if (existingFile) {
       return {
@@ -528,7 +527,7 @@ export async function createFile(input: CreateFileInput) {
     }
 
     // Create frontmatter
-    const frontMatter = matter.stringify("", {
+    const frontMatter = matter.stringify('', {
       title: validatedData.title,
       date: validatedData.date,
       description: validatedData.description,
@@ -538,13 +537,13 @@ export async function createFile(input: CreateFileInput) {
     });
 
     // Combine frontmatter and content
-    const fullContent = frontMatter + "\n" + validatedData.content;
+    const fullContent = frontMatter + '\n' + validatedData.content;
 
     // Upload to Blob Storage
     const blob = await put(finalPathname, fullContent, {
-      access: "public",
+      access: 'public',
       token: BLOB_TOKEN,
-      contentType: "text/markdown",
+      contentType: 'text/markdown',
     });
 
     // CDC: DB에 파일 정보 저장
@@ -554,14 +553,14 @@ export async function createFile(input: CreateFileInput) {
         pathname: blob.pathname,
         size: Buffer.byteLength(fullContent, 'utf8'),
         uploadedAt: new Date(),
-        contentType: "text/markdown",
+        contentType: 'text/markdown',
       });
     } catch (cdcError) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }
 
     // Revalidate cache
-    revalidatePath("/dashboard/files");
+    revalidatePath('/dashboard/files');
 
     // Revalidate blog post
     await revalidateBlogPost(blob.pathname);
@@ -572,10 +571,10 @@ export async function createFile(input: CreateFileInput) {
       url: blob.url,
     };
   } catch (error) {
-    console.error("Create file error:", error);
+    console.error('Create file error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "파일 생성에 실패했습니다",
+      error: error instanceof Error ? error.message : '파일 생성에 실패했습니다',
     };
   }
 }

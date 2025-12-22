@@ -3,11 +3,13 @@
 ## 1. 개요
 
 ### 목표
+
 독립적인 **blog-admin** 애플리케이션에서 개발자가 마크다운 파일을 편집하고, 백오피스 UI를 통해 Vercel Blob Storage에 직접 업로드할 수 있는 관리 시스템 구축
 
 **현재 상태**: Phase 1-2 부분 완료 (기본 업로드 및 목록 조회 구현)
 
 ### 아키텍처 결정
+
 - **blog**: 공개 블로그 (포트 3000)
 - **blog-admin**: 관리자 대시보드 (포트 3001) - 별도 배포
 - **packages**: 두 앱에서 공유하는 라이브러리
@@ -15,6 +17,7 @@
 ### 핵심 기능
 
 **✅ 구현 완료**:
+
 - Blob Storage에 파일 업로드 (POST /api/admin/upload)
 - 파일 목록 조회 (GET /api/admin/files)
 - Bearer Token 인증
@@ -22,9 +25,11 @@
 - SHA256 해시 생성
 
 **🔄 진행 중**:
+
 - 기본 대시보드 UI (로그인, 탭 네비게이션)
 
 **⏳ 계획 중** (향후 구현):
+
 - 로컬 마크다운 파일 브라우징 및 선택
 - 실시간 마크다운 미리보기
 - Blob Storage에 일괄 업로드
@@ -37,6 +42,7 @@
 ## 2. 기술 스택
 
 ### 프론트엔드
+
 - **프레임워크**: Next.js 16 (blog-admin 전용 앱)
 - **UI 라이브러리**: React 19 + Radix UI (기존 컴포넌트 활용)
 - **마크다운 렌더링**: @repo/content (processMarkdown 재사용)
@@ -45,6 +51,7 @@
 - **포트**: 3001 (blog는 3000)
 
 ### 백엔드
+
 - **런타임**: Node.js 24
 - **프레임워크**: Next.js API Routes (기존 구조 활용)
 - **인증**: Bearer Token (간단한 API Key 방식)
@@ -52,6 +59,7 @@
 - **Blob Storage**: Vercel Blob SDK (@vercel/blob)
 
 ### 인프라
+
 - **배포**: Vercel (현재 배포 환경 재사용)
 - **환경 변수**: .env.local
 - **스토리지**: Vercel Blob Storage
@@ -109,6 +117,7 @@
 ## 4. 데이터 모델
 
 ### FileMetadata (Blob Storage 메타데이터)
+
 ```json
 {
   "id": "uuid",
@@ -126,6 +135,7 @@
 ```
 
 ### UploadHistory (데이터베이스 또는 Blob Storage에 JSON으로 저장)
+
 ```json
 {
   "fileId": "uuid",
@@ -153,6 +163,7 @@
 ## 5. 핵심 기능 상세
 
 ### 5.1 파일 브라우징 & 선택
+
 ```
 사용자 입력
   ↓
@@ -164,10 +175,12 @@
 ```
 
 **구현 방식**:
+
 - `<input type="file" multiple accept=".md,.mdx" />`
 - 또는 drag-and-drop 영역
 
 ### 5.2 마크다운 미리보기
+
 ```
 선택된 파일
   ↓
@@ -179,11 +192,13 @@ HTML 렌더링 (미리보기 패널)
 ```
 
 **기능**:
+
 - 실시간 미리보기
 - 어두운 테마 지원
 - 테이블 오브 컨텐츠 표시
 
 ### 5.3 Blob Storage 업로드
+
 ```
 파일 선택
   ↓
@@ -201,12 +216,14 @@ POST /api/admin/upload 호출
 ```
 
 **업로드 전략**:
+
 - 개별 업로드 vs 일괄 업로드 지원
 - 진행상황 표시 (progressbar)
 - 재시도 로직 (자동 3회 재시도)
 - 충돌 감지 (해시 비교)
 
 ### 5.4 버전 관리
+
 ```
 파일 업로드 시
   ↓
@@ -220,6 +237,7 @@ POST /api/admin/upload 호출
 ```
 
 **저장 구조**:
+
 ```
 blob-markdown/
 ├── DEV/post-title.mdx (최신)
@@ -231,6 +249,7 @@ blob-markdown/
 ```
 
 ### 5.5 인증 & 보안
+
 ```
 요청 헤더에 Bearer Token 포함
   ↓
@@ -240,6 +259,7 @@ blob-markdown/
 ```
 
 **보안 고려사항**:
+
 - API Key는 환경 변수에 저장
 - HTTPS 필수
 - CORS 설정 (백오피스 도메인만 허용)
@@ -251,6 +271,7 @@ blob-markdown/
 ## 6. API 명세
 
 ### 6.1 파일 업로드
+
 ```
 POST /api/admin/upload
 
@@ -280,6 +301,7 @@ Response (Error):
 ```
 
 ### 6.2 파일 목록 조회
+
 ```
 GET /api/admin/files?category=DEV&limit=50
 
@@ -301,6 +323,7 @@ Response:
 ```
 
 ### 6.3 업로드 이력 조회
+
 ```
 GET /api/admin/history?fileId=uuid
 
@@ -325,6 +348,7 @@ Response:
 ```
 
 ### 6.4 버전 복원
+
 ```
 POST /api/admin/restore
 
@@ -343,6 +367,7 @@ Response:
 ```
 
 ### 6.5 파일 삭제
+
 ```
 DELETE /api/admin/file/:fileId
 
@@ -358,6 +383,7 @@ Response:
 ## 7. UI/UX 디자인
 
 ### 7.1 페이지 레이아웃
+
 ```
 ┌─────────────────────────────────────────────────┐
 │  📝 백오피스 - 마크다운 관리                    │  [로그아웃]
@@ -385,6 +411,7 @@ Response:
 ```
 
 ### 7.2 주요 컴포넌트
+
 - `FileSelector`: 파일 선택 영역
 - `MarkdownPreview`: 미리보기 패널 (@repo/content 재사용)
 - `UploadQueue`: 업로드 대기열
@@ -396,6 +423,7 @@ Response:
 ## 8. 개발 단계
 
 ### Phase 1: 기초 구조 ✅ **완료** (2025-12-12)
+
 - [x] Next.js 백오피스 페이지 생성
 - [x] 기본 파일 선택 UI (드래그앤드롭 영역)
 - [ ] 마크다운 미리보기 통합 (미구현)
@@ -404,6 +432,7 @@ Response:
 - [x] 로그인 페이지
 
 ### Phase 2: Blob Storage 연동 🔄 **진행 중** (70% 완료)
+
 - [x] Vercel Blob SDK 설정 (@vercel/blob)
 - [x] 파일 업로드 API 구현 (POST /api/admin/upload)
 - [x] 파일 목록 API 구현 (GET /api/admin/files)
@@ -413,6 +442,7 @@ Response:
 - [ ] 진행률 표시 (미구현)
 
 ### Phase 3: 버전 관리 & 이력 ⏳ **계획 중** (0%)
+
 - [ ] 버전 관리 시스템
 - [ ] 이력 조회 API (GET /api/admin/history)
 - [ ] 버전 복원 기능 (POST /api/admin/restore)
@@ -420,6 +450,7 @@ Response:
 - [ ] 이력 UI
 
 ### Phase 4: 보안 & 최적화 🔄 **일부 완료** (60%)
+
 - [x] Bearer Token 인증 시스템
 - [x] 파일 크기 검증 (10MB 제한)
 - [x] 파일 유형 검증 (.md/.mdx)
@@ -427,6 +458,7 @@ Response:
 - [ ] 성능 최적화 (캐싱 등)
 
 ### Phase 5: 배포 & 모니터링 🔄 **일부 완료** (40%)
+
 - [x] Vercel 배포 준비 완료
 - [x] 환경 변수 설정 가이드
 - [x] 문서화 (API, 설정, 아키텍처, 배포, 개발 가이드)
@@ -452,6 +484,7 @@ ALLOWED_FILE_TYPES=md,mdx
 ### 환경 변수 획득 방법
 
 **BLOB_READ_WRITE_TOKEN**:
+
 1. Vercel 프로젝트 대시보드 접속
 2. Settings → Storage → Create Database (Blob 선택)
 3. .env.local에 자동 생성된 토큰 복사
@@ -460,13 +493,13 @@ ALLOWED_FILE_TYPES=md,mdx
 
 ## 10. 위험 요소 & 완화 방안
 
-| 위험 요소 | 심각도 | 완화 방안 |
-|----------|--------|---------|
-| 마크다운 파일 손실 | High | 자동 버전 관리, 정기 백업 |
-| 무단 접근 | High | API Key 인증, IP 화이트리스트 |
-| 파일 크기 폭증 | Medium | 업로드 크기 제한, 자동 정리 |
-| Blob Storage 비용 | Medium | 저장소 모니터링, 오래된 버전 자동 삭제 |
-| 마크다운 XSS | Medium | @repo/content 사용 (이미 처리됨) |
+| 위험 요소          | 심각도 | 완화 방안                              |
+| ------------------ | ------ | -------------------------------------- |
+| 마크다운 파일 손실 | High   | 자동 버전 관리, 정기 백업              |
+| 무단 접근          | High   | API Key 인증, IP 화이트리스트          |
+| 파일 크기 폭증     | Medium | 업로드 크기 제한, 자동 정리            |
+| Blob Storage 비용  | Medium | 저장소 모니터링, 오래된 버전 자동 삭제 |
+| 마크다운 XSS       | Medium | @repo/content 사용 (이미 처리됨)       |
 
 ---
 
@@ -507,35 +540,39 @@ ALLOWED_FILE_TYPES=md,mdx
 
 ### ✅ 완료된 기능 (MVP)
 
-| 기능 | 상태 | 구현 위치 |
-|------|------|-----------|
-| 파일 업로드 API | ✅ 완료 | `POST /api/admin/upload` |
-| 파일 목록 API | ✅ 완료 | `GET /api/admin/files` |
-| Bearer Token 인증 | ✅ 완료 | `src/lib/auth.ts` |
-| Vercel Blob 연동 | ✅ 완료 | `src/lib/blob.ts` |
-| 파일 검증 | ✅ 완료 | 형식(.md/.mdx), 크기(10MB) |
-| SHA256 해시 | ✅ 완료 | 파일 무결성 확인 |
-| 기본 대시보드 UI | ✅ 완료 | `src/app/dashboard/page.tsx` |
-| 로그인 페이지 | ✅ 완료 | API 키 입력, 서버 검증 |
-| 문서화 | ✅ 완료 | 6개 문서 (API, 설정, 아키텍처 등) |
-| **Vercel 배포** | ✅ 완료 | https://bbakjun-blog-admin.vercel.app |
-| **벌크 업로드 스크립트** | ✅ 완료 | `scripts/upload-posts.js` |
-| **서버 기반 인증** | ✅ 완료 | API 호출로 키 검증 |
+| 기능                     | 상태    | 구현 위치                             |
+| ------------------------ | ------- | ------------------------------------- |
+| 파일 업로드 API          | ✅ 완료 | `POST /api/admin/upload`              |
+| 파일 목록 API            | ✅ 완료 | `GET /api/admin/files`                |
+| Bearer Token 인증        | ✅ 완료 | `src/lib/auth.ts`                     |
+| Vercel Blob 연동         | ✅ 완료 | `src/lib/blob.ts`                     |
+| 파일 검증                | ✅ 완료 | 형식(.md/.mdx), 크기(10MB)            |
+| SHA256 해시              | ✅ 완료 | 파일 무결성 확인                      |
+| 기본 대시보드 UI         | ✅ 완료 | `src/app/dashboard/page.tsx`          |
+| 로그인 페이지            | ✅ 완료 | API 키 입력, 서버 검증                |
+| 문서화                   | ✅ 완료 | 6개 문서 (API, 설정, 아키텍처 등)     |
+| **Vercel 배포**          | ✅ 완료 | https://bbakjun-blog-admin.vercel.app |
+| **벌크 업로드 스크립트** | ✅ 완료 | `scripts/upload-posts.js`             |
+| **서버 기반 인증**       | ✅ 완료 | API 호출로 키 검증                    |
 
 ### 🆕 2025-12-13 업데이트
 
 #### 1. Vercel 프로덕션 배포 완료 ✅
+
 - **URL**: https://bbakjun-blog-admin.vercel.app
 - **환경 변수 설정**: `BACKOFFICE_API_KEY`, `BLOB_READ_WRITE_TOKEN`
 - **상태**: 정상 운영 중
 
 #### 2. 벌크 업로드 시스템 구축 ✅
+
 **파일**:
+
 - `scripts/upload-posts.js` - 메인 업로드 스크립트 (68개 파일 성공)
 - `scripts/list-posts.js` - 파일 목록 확인 스크립트
 - `scripts/README.md` - 사용 가이드
 
 **기능**:
+
 - ✅ `packages/content/posts/` 디렉토리 재귀 스캔
 - ✅ 자동 경로 변환 (DEV/my-post/index.mdx → DEV/my-post)
 - ✅ 카테고리 자동 태그 추출
@@ -544,6 +581,7 @@ ALLOWED_FILE_TYPES=md,mdx
 - ✅ 100ms 딜레이로 API 부하 관리
 
 **사용법**:
+
 ```bash
 # 로컬 환경
 pnpm upload-posts
@@ -553,12 +591,15 @@ pnpm upload-posts:prod
 ```
 
 **업로드 실적** (2025-12-13):
+
 - 총 68개 파일 업로드 성공
 - DEV: 31개, REACT: 9개, JS: 7개, STUDY: 14개, TIL: 4개, career: 3개
 - 성공률: 100%
 
 #### 3. 향상된 인증 시스템 ✅
+
 **개선 사항**:
+
 - ✅ 서버 기반 API 키 검증 (`/api/admin/files` 호출)
 - ✅ 로딩 상태 표시 (스피너 애니메이션)
 - ✅ 에러 메시지 시스템 (3가지 에러 타입)
@@ -566,31 +607,34 @@ pnpm upload-posts:prod
 - ✅ 입력 시 에러 초기화
 
 **보안 강화**:
+
 - 클라이언트만의 체크 → 실제 서버 API 검증
 - 401 응답 시 localStorage 자동 삭제
 - Enter 키 지원 (로딩 중 비활성화)
 
 **에러 메시지**:
+
 - "유효하지 않은 API 키입니다." (401)
 - "서버에 연결할 수 없습니다." (fetch 실패)
 - "인증 중 오류가 발생했습니다." (기타 오류)
 
 #### 4. 문서 업데이트 ✅
+
 - `apps/blog-admin/docs/DEVELOPMENT.md` - 벌크 업로드 섹션 추가
 - `scripts/README.md` - 완전한 스크립트 사용 가이드
 
 ### ⏳ 미구현 (향후 계획)
 
-| 기능 | 우선순위 | 비고 |
-|------|----------|------|
-| 실시간 마크다운 미리보기 | High | @repo/content 활용 |
-| 파일 삭제 API | High | DELETE /api/admin/file/:id |
-| 업로드 이력 조회 | Medium | GET /api/admin/history |
-| 버전 관리 시스템 | Medium | .versions/ 폴더 |
-| 버전 복원 | Medium | POST /api/admin/restore |
-| 대시보드 파일 업로드 UI | Medium | 드래그 앤 드롭 구현 |
-| 대시보드 파일 목록 표시 | Medium | Files 탭 연동 |
-| 진행률 표시 | Low | Progress bar |
+| 기능                     | 우선순위 | 비고                       |
+| ------------------------ | -------- | -------------------------- |
+| 실시간 마크다운 미리보기 | High     | @repo/content 활용         |
+| 파일 삭제 API            | High     | DELETE /api/admin/file/:id |
+| 업로드 이력 조회         | Medium   | GET /api/admin/history     |
+| 버전 관리 시스템         | Medium   | .versions/ 폴더            |
+| 버전 복원                | Medium   | POST /api/admin/restore    |
+| 대시보드 파일 업로드 UI  | Medium   | 드래그 앤 드롭 구현        |
+| 대시보드 파일 목록 표시  | Medium   | Files 탭 연동              |
+| 진행률 표시              | Low      | Progress bar               |
 
 ### 📊 전체 진행률
 

@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 Deep Dive ] 스터디 3회'
 date: '2023-05-22T19:38:03.284Z'
 summary: '딥다이브 20~23장 정리'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 ![](/static/images/STUDY/deepDive_4th/js.png)
@@ -20,9 +20,9 @@ strict mode는 js 언어의 문법을 좀 더 엄격히 적용하여 오류를 �
 ## 원시값과 래퍼 객체
 
 ```js
-const str = 'hello'
+const str = 'hello';
 
-console.log(str.length) // 5
+console.log(str.length); // 5
 ```
 
 이처럼 문자열 혹은 숫자, 불리언 값에 대해 객체처럼 접근하면 생성된느 임시 객체를 wrapper object라고 한다. 문자열에 접근하면 그 순간 래퍼 객체인 String 생성자 함수의 인스턴스가 생성되고 래퍼 객체의 `[[StringData]]` 내부 슬롯에 할당된다.

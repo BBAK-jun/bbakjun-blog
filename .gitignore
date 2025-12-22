@@ -22,7 +22,7 @@ node_modules/
 /dist
 */dist
 packages/*/dist
-packages/**/dist
+packages/**/**/dist
 
 # misc
 .DS_Store

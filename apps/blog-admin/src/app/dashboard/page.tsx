@@ -1,13 +1,11 @@
-import { auth } from "../../../auth";
+import { auth } from '../../../auth';
 
 export default async function DashboardPage() {
   const session = await auth();
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
-        대시보드
-      </h1>
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">대시보드</h1>
 
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
@@ -24,9 +22,7 @@ export default async function DashboardPage() {
 
           <div className="flex items-center gap-2">
             <span className="text-slate-600 dark:text-slate-400">이메일:</span>
-            <span className="text-slate-900 dark:text-white">
-              {session?.user?.email}
-            </span>
+            <span className="text-slate-900 dark:text-white">{session?.user?.email}</span>
           </div>
         </div>
       </div>

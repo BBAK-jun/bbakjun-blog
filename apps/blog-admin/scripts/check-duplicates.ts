@@ -31,7 +31,7 @@ async function checkDuplicates() {
         console.log('\n🔴 DUPLICATE:', pathname);
         console.log('Count:', fileList.length);
         fileList.forEach((f, i) => {
-          console.log(`  [${i+1}] url: ${f.url.substring(0, 60)}...`);
+          console.log(`  [${i + 1}] url: ${f.url.substring(0, 60)}...`);
           console.log(`      uploadedAt: ${f.uploadedAt}`);
           console.log(`      lastChecked: ${f.lastChecked}`);
         });
@@ -43,9 +43,8 @@ async function checkDuplicates() {
     }
 
     // Show markdown files
-    const markdownFiles = files.filter(f =>
-      (f.pathname.endsWith('.md') || f.pathname.endsWith('.mdx')) &&
-      !f.pathname.includes('/.')
+    const markdownFiles = files.filter(
+      f => (f.pathname.endsWith('.md') || f.pathname.endsWith('.mdx')) && !f.pathname.includes('/.')
     );
 
     console.log('\n=== Markdown files ===');

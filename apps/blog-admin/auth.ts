@@ -1,14 +1,14 @@
-import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { authConfig } from "./auth.config";
-import { prisma } from "@/shared/lib/db";
-import type { UserRole } from "@prisma/client";
+import NextAuth from 'next-auth';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import { authConfig } from './auth.config';
+import { prisma } from '@/shared/lib/db';
+import type { UserRole } from '@prisma/client';
 
 const nextAuth = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma) as any,
   session: {
-    strategy: "database",
+    strategy: 'database',
     maxAge: 7 * 24 * 60 * 60, // 7일
   },
   callbacks: {
@@ -28,7 +28,7 @@ const nextAuth = NextAuth({
       if (userCount === 1) {
         await prisma.user.update({
           where: { id: user.id },
-          data: { role: "SUPER_ADMIN" },
+          data: { role: 'SUPER_ADMIN' },
         });
         console.log(`✅ First user promoted to SUPER_ADMIN: ${user.email}`);
       } else {
@@ -40,5 +40,4 @@ const nextAuth = NextAuth({
 
 export const { handlers, auth } = nextAuth;
 
-export const signOut: (options?: { redirectTo?: string }) => Promise<void> =
-  nextAuth.signOut;
+export const signOut: (options?: { redirectTo?: string }) => Promise<void> = nextAuth.signOut;

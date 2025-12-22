@@ -51,7 +51,7 @@ ref.current은 null 이지만 lazy initialization이 되어 current가 ToastUIRe
 callback Ref function 이란 ref 객체를 대신해 DOM요소 ref속성에 함수를 할당해주는 기능이다.
 
 ```jsx
-<div ref={(node) => console.log(node)}>Hello</div>
+<div ref={node => console.log(node)}>Hello</div>
 ```
 
 `div` Dom 노드가 화면에 출력되었을 때, React는 Dom 노드를 매개변수로 받는 Callback Ref 함수를 호출한다.

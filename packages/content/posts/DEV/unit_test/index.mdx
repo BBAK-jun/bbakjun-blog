@@ -22,36 +22,36 @@ tags: ['DEV']
 포대의 상태와 필터링 필드에 의해서 dataColumn이 해당 상태에서 걸러지는지 안걸러지는지에 대한 **유틸함수**는 이미 만들어놨었다.
 
 ```ts
-type AType = 'A-a' | 'A-b' | 'A-c'
-type BType = 'B-a' | 'B-b' | 'B-c'
-type CType = 'C-a' | 'C-b' | 'C-c' | 'C-d'
-type DType = 'D-a' | 'D-b' | 'D-c' | 'D-d'
+type AType = 'A-a' | 'A-b' | 'A-c';
+type BType = 'B-a' | 'B-b' | 'B-c';
+type CType = 'C-a' | 'C-b' | 'C-c' | 'C-d';
+type DType = 'D-a' | 'D-b' | 'D-c' | 'D-d';
 
 type FilterField = {
-  AType: AType
-  BTypes: BType[]
-  CTypes: CType[]
-  DTypes: DType[]
-}
+  AType: AType;
+  BTypes: BType[];
+  CTypes: CType[];
+  DTypes: DType[];
+};
 
 type ContentField = {
-  isFullWidth: boolean
-}
+  isFullWidth: boolean;
+};
 
 type FormField = {
-  type: 'date' | 'text' | 'number'
-  required: boolean
-  isModalFullWidth: boolean
-}
+  type: 'date' | 'text' | 'number';
+  required: boolean;
+  isModalFullWidth: boolean;
+};
 
 type DataColumn = {
-  index: number
-  name: string
-  label: string
-  filterField: FilterField
-  contentField: ContentField
-  formField: FormField
-}
+  index: number;
+  name: string;
+  label: string;
+  filterField: FilterField;
+  contentField: ContentField;
+  formField: FormField;
+};
 ```
 
 예시정보 섹션에 아래와 같은 데이터컬럼들이 존재할수도있다고 가정해보자
@@ -99,7 +99,7 @@ const dataColumns: DataColumn[] = [
       isModalFullWidth: true,
     },
   },
-]
+];
 ```
 
 **수정하기** 버튼을 클릭시 모달에도 필터링된 폼필드들이 출력되는 조건으로 컴포넌트 설계를 했었다.

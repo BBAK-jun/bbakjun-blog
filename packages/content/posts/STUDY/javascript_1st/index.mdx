@@ -2,7 +2,7 @@
 title: '[ 모던 자바스크립트 핵심 가이드 ] 스터디 1회'
 date: '2022-12-31T10:48:03.284Z'
 summary: '자바스크립트 스터디 1장 ~ 5장'
-tags: ['STUDY','JS']
+tags: ['STUDY', 'JS']
 ---
 
 # 1장
@@ -18,19 +18,19 @@ for 루프내에서 var 키워드로 변수 선언하면 루프 밖에서도 사
 
 ```js
 for (var i = 0; i < 10; i++) {
-  var description = 'Hello var in loop'
+  var description = 'Hello var in loop';
 }
 
-console.log(description) // Hello var in loop
+console.log(description); // Hello var in loop
 
 function sayHello() {
-  var descriptionInFunction = 'Hello var in function'
-  console.log(descriptionInFunction) // Hello var in function
+  var descriptionInFunction = 'Hello var in function';
+  console.log(descriptionInFunction); // Hello var in function
 }
 
-sayHello() // Hello var in function
+sayHello(); // Hello var in function
 
-console.log(descriptionInFunction) // ReferenceError : descriptionInFunction is not defined
+console.log(descriptionInFunction); // ReferenceError : descriptionInFunction is not defined
 ```
 
 for loop 안에있는 var 의 값이 블럭 스코프를 벗어나도 loop 외부에서 접근이 가능하지만,<br/>
@@ -43,25 +43,25 @@ let 으로 선언된 변수는 블록 스코프로 종속된다.
 변수가 선언된 블록과 하위 블록 내에서만 사용이 가능하다.
 
 ```js
-let x = 'global'
+let x = 'global';
 
 if (x === 'global') {
-  let x = 'block-scoped'
+  let x = 'block-scoped';
 
-  console.log(x) // block-scoped
+  console.log(x); // block-scoped
 }
 
-console.log(x) // global
+console.log(x); // global
 
-var y = 'global'
+var y = 'global';
 
 if (y === 'global') {
-  var y = 'block-scoped'
+  var y = 'block-scoped';
 
-  console.log(y) // block-scoped
+  console.log(y); // block-scoped
 }
 
-console.log(y) // block-scoped
+console.log(y); // block-scoped
 ```
 
 블록 스코프 내에서 let으로 선언한 변수에 새 값을 할당하면 블록스코프 바깥에서는 그값이 변경되지 않는다.
@@ -76,16 +76,16 @@ let과 마찬가지로 블록 스코프에 종속된다.<br/>
 `const`로 선언된 변수가 불변이라는 의미는 아니다.
 
 ```js
-let currentYear = 2022
+let currentYear = 2022;
 const person = {
   name: '빡준',
   age: 27,
-}
+};
 
-currentYear = 2023
+currentYear = 2023;
 
-person.age = 28
-console.log(person.age) // 28
+person.age = 28;
+console.log(person.age); // 28
 ```
 
 2022의 빡준은 27세였지만, 2023년의 빡준은 28세가 된다는 문맥이다.
@@ -97,15 +97,15 @@ console.log(person.age) // 28
 const person = {
   name: '빡준',
   age: 27,
-}
+};
 
-console.log(person.age) // 27
+console.log(person.age); // 27
 
-Object.freeze(person)
+Object.freeze(person);
 
-person.age = 28
+person.age = 28;
 
-console.log(person.age) // 27
+console.log(person.age); // 27
 ```
 
 > 그렇다고 오류를 뱉지는 않는다.
@@ -113,14 +113,14 @@ console.log(person.age) // 27
 ## TDZ (Temporal dead zone)
 
 ```js
-console.log(i) // undefined
-var i = '나는 변수'
+console.log(i); // undefined
+var i = '나는 변수';
 
-console.log(j) // ReferenceError : can't access lexical declaration 'j' before initialization
-let j = '나도 변수'
+console.log(j); // ReferenceError : can't access lexical declaration 'j' before initialization
+let j = '나도 변수';
 
-console.log(k) // ReferenceError : can't access lexical declaration 'j' before initialization
-const k = '나도 변수'
+console.log(k); // ReferenceError : can't access lexical declaration 'j' before initialization
+const k = '나도 변수';
 ```
 
 var는 정의되기전에 접근할수있지만, 그 값에는 접근이 불가하다.
@@ -146,29 +146,29 @@ ECMAScript 2015에서 화살표함수가 처음으로 도입되었다.
 
 ```js
 const greeting = function (name) {
-  return 'Hello' + name
-}
+  return 'Hello' + name;
+};
 ```
 
 이를 화살표 함수로 변경하면
 
 ```js
-const greeting = (name) => {
-  return `Hello ${name}`
-}
+const greeting = name => {
+  return `Hello ${name}`;
+};
 
 // 매개변수가 하나일경우 괄호를 생략하고 작성가능
-const greeting = (name) => {
-  return `Hello ${name}`
-}
+const greeting = name => {
+  return `Hello ${name}`;
+};
 
 // 매개변수가 없을 경우 빈괄호를 사용해야함
 const greeting = () => {
-  return `Hello`
-}
+  return `Hello`;
+};
 
 // 아래와 같이 암시적반환이 가능하다
-const greeting = (name) => `Hello ${name}`
+const greeting = name => `Hello ${name}`;
 ```
 
 화살표 함수는 익명함수다.<br/>
@@ -191,15 +191,15 @@ const greeting = (name) => `Hello ${name}`
 ```
 
 ```js
-const box = document.querySelector('div.box')
+const box = document.querySelector('div.box');
 
 box.addEventListener('click', function () {
-  this.classList.toggle('opening') // 첫번째 this
+  this.classList.toggle('opening'); // 첫번째 this
 
   setTimeout(function () {
-    this.classList.toggle('opening') // 두번째 this
-  }, 500)
-})
+    this.classList.toggle('opening'); // 두번째 this
+  }, 500);
+});
 ```
 
 위 코드의 문제는 첫번째 this가 box에 할당되었지만, setTimeout 함수 내부에서의 this는 window객체로 설정되어 오류가 발생한다.
@@ -208,14 +208,14 @@ box.addEventListener('click', function () {
 화살표 함수가 부모 스코프에서 this 값을 상속한다는 것을 알고있으므로, 아래와 같이 작성하면 오류는 없다.
 
 ```js
-const box = document.querySelector('div.box')
+const box = document.querySelector('div.box');
 
 box.addEventListener('click', function () {
-  this.classList.toggle('opening')
+  this.classList.toggle('opening');
   setTimeout(() => {
-    this.classList.toggle('opening')
-  }, 500)
-})
+    this.classList.toggle('opening');
+  }, 500);
+});
 ```
 
 > 그렇다면 화살표함수를 조심해서 사용해야하는 때는 언제인가?
@@ -223,34 +223,34 @@ box.addEventListener('click', function () {
 상위스코프가 window객체이므로 window를 가리키게 된다.
 
 ```js
-const box = document.querySelector('div.box')
+const box = document.querySelector('div.box');
 
 box.addEventListener('click', () => {
-  this.classList.toggle('opening') // this는 window객체를 가리킨다.
-})
+  this.classList.toggle('opening'); // this는 window객체를 가리킨다.
+});
 ```
 
 ```js
 const BBAK_JUN = {
   age: 27,
   grow: function () {
-    this.age = this.age + 1
+    this.age = this.age + 1;
   },
-}
+};
 
-BBAK_JUN.grow()
-console.log(BBAK_JUN.age) // 28
+BBAK_JUN.grow();
+console.log(BBAK_JUN.age); // 28
 
 const _BBAK_JUN = {
   age: 27,
   grow: () => {
     // this는 상위스코프인 window객체를 가리킨다.
-    this.age = this.age + 1
+    this.age = this.age + 1;
   },
-}
+};
 
-_BBAK_JUN.grow()
-console.log(_BBAK_JUN.age) // 28
+_BBAK_JUN.grow();
+console.log(_BBAK_JUN.age); // 28
 ```
 
 <hr />
@@ -264,27 +264,27 @@ ECMAScript 2015 이전에는 함수 매개변수에 기본값을 지정하는것
 ```js
 class User {
   constructor() {
-    this.name = null
+    this.name = null;
   }
 
   static createInstance() {
-    return new User()
+    return new User();
   }
 
   // 이전 방법
   setUserName(name) {
-    if (!name) name = 'BBAK_JUN'
-    this.name = name
+    if (!name) name = 'BBAK_JUN';
+    this.name = name;
   }
 
   getUserName() {
-    return this.name
+    return this.name;
   }
 }
 
-const user = User.createInstance()
-user.setUserName()
-user.getUserName() // BBAK_JUN
+const user = User.createInstance();
+user.setUserName();
+user.getUserName(); // BBAK_JUN
 ```
 
 하지만 ECMAScript 2015 이후부터 매개변수에 기본값을 지정할수있는 방법이 도입되었다.
@@ -292,26 +292,26 @@ user.getUserName() // BBAK_JUN
 ```js
 class User {
   constructor() {
-    this.name = null
+    this.name = null;
   }
 
   static createInstance() {
-    return new User()
+    return new User();
   }
 
   // 새로운 방법
   setUserName(name = 'BBAK_JUN') {
-    this.name = name
+    this.name = name;
   }
 
   getUserName() {
-    return this.name
+    return this.name;
   }
 }
 
-const user = User.createInstance()
-user.setUserName()
-user.getUserName() // BBAK_JUN
+const user = User.createInstance();
+user.setUserName();
+user.getUserName(); // BBAK_JUN
 ```
 
 <hr />
@@ -326,32 +326,32 @@ ECMAScript 2015 이전에는 문자열 삽입하기 위해 아래 `sayUserNameBe
 ```js
 class User {
   constructor() {
-    this.name = null
+    this.name = null;
   }
 
   static createInstance() {
-    return new User()
+    return new User();
   }
 
   setUserName(name) {
-    this.name = name
+    this.name = name;
   }
 
   // ECMAScript 2015 이전
   sayUserNameBefore() {
-    return 'Hello my name is' + this.name
+    return 'Hello my name is' + this.name;
   }
 
   // ECMAScript 2015 이후
   sayUserNameAfter() {
-    return `Hello my name is ${this.name}`
+    return `Hello my name is ${this.name}`;
   }
 }
 
-const user = User.createInstance()
-user.setUserName('BBAK_JUN')
-user.sayUserNameBefore() // Hello my name is BBAK_JUN
-user.sayUserNameAfter() // Hello my name is BBAK_JUN
+const user = User.createInstance();
+user.setUserName('BBAK_JUN');
+user.sayUserNameBefore(); // Hello my name is BBAK_JUN
+user.sayUserNameAfter(); // Hello my name is BBAK_JUN
 ```
 
 ### 중첩 템플릿
@@ -360,18 +360,18 @@ user.sayUserNameAfter() // Hello my name is BBAK_JUN
 
 ```js
 const getUserList = async () => {
-  return ['BBAK_JUN', 'bbak_jun', 'Park Jun Hyeong']
-}
+  return ['BBAK_JUN', 'bbak_jun', 'Park Jun Hyeong'];
+};
 
-const userList = getUserList().then((res) => res)
+const userList = getUserList().then(res => res);
 
 const markupUserList = `
   <ul>
-    ${userList.map((user) => `<li>${user}</li>`).join(',')}
+    ${userList.map(user => `<li>${user}</li>`).join(',')}
   </ul>
-`
+`;
 
-console.log(markupUserList)
+console.log(markupUserList);
 /*
  * <ul>
  *   <li>BBAK_JUN</li>
@@ -391,14 +391,14 @@ console.log(markupUserList)
 
 ```js
 const App = () => {
-  const [userInfo, isLoggedIn] = useContext(authContext)
+  const [userInfo, isLoggedIn] = useContext(authContext);
 
   return (
     <div>
       <span>{isLoggedIn ? `${userInfo.userName}님 안녕하세요` : `로그인이 필요합니다.`}</span>
     </div>
-  )
-}
+  );
+};
 ```
 
 <hr />
@@ -412,8 +412,8 @@ const App = () => {
 문자열에서 지정된 값이 처음 나타나는 위치의 인덱스를 반환한다.
 
 ```js
-const string = 'this is a short sentence'
-console.log(string.indexOf('short')) // 10
+const string = 'this is a short sentence';
+console.log(string.indexOf('short')); // 10
 ```
 
 ### slice
@@ -421,8 +421,8 @@ console.log(string.indexOf('short')) // 10
 문자열의 지정된 부분을 새 문자열로 반환한다.
 
 ```js
-const string = 'pizza, hamburger, chicken'
-console.log(string.slice(0, 5)) // pizza
+const string = 'pizza, hamburger, chicken';
+console.log(string.slice(0, 5)); // pizza
 ```
 
 ### toUpperCase
@@ -440,8 +440,8 @@ console.log(string.slice(0, 5)) // pizza
 문자열이 매개변수로 받은 문자열로 시작하는지 확인한다.
 
 ```js
-const string = 'Hello my name is BBAK_JUN'
-console.log(string.startsWith('Hello')) // true
+const string = 'Hello my name is BBAK_JUN';
+console.log(string.startsWith('Hello')); // true
 ```
 
 ### endsWith
@@ -449,8 +449,8 @@ console.log(string.startsWith('Hello')) // true
 문자열이 매개변수로 받은 문자열로 끝나는지 확인한다.
 
 ```js
-const string = 'Hello my name is BBAK_JUN'
-console.log(string.endsWith('BBAK_JUN')) // true
+const string = 'Hello my name is BBAK_JUN';
+console.log(string.endsWith('BBAK_JUN')); // true
 ```
 
 ### includes
@@ -458,8 +458,8 @@ console.log(string.endsWith('BBAK_JUN')) // true
 문자열이 매개변수로 받은 문자열을 포함하는지 확인한다.
 
 ```js
-const string = 'Hello my name is BBAK_JUN'
-console.log(string.includes('Hello')) // true
+const string = 'Hello my name is BBAK_JUN';
+console.log(string.includes('Hello')); // true
 ```
 
 ### repeat
@@ -467,6 +467,6 @@ console.log(string.includes('Hello')) // true
 매개변수로 받은 수만큼 문자열을 반복한다.
 
 ```js
-const string = 'Hello'
-console.log(string.repeat(2)) // HelloHello
+const string = 'Hello';
+console.log(string.repeat(2)); // HelloHello
 ```

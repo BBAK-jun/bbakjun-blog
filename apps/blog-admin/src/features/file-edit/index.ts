@@ -4,4 +4,4 @@
  * Public API for file editing functionality
  */
 
-export { useFileEditor } from "./model/use-file-editor";
+export { useFileEditor } from './model/use-file-editor';

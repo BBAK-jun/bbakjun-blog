@@ -11,6 +11,7 @@
 사용자 이름과 비밀번호를 사용한 로그인 방식입니다.
 
 **특징:**
+
 - bcrypt를 사용한 안전한 비밀번호 해싱
 - JWT 토큰 기반 세션 관리
 - HttpOnly 쿠키로 토큰 저장 (XSS 방지)
@@ -18,6 +19,7 @@
 - Next.js 16 Proxy에서 자동 인증 검증
 
 **기본 관리자 계정 (개발 환경):**
+
 - 사용자명: `admin`
 - 비밀번호: `admin123`
 - 이메일: `admin@bbakjun.com`
@@ -27,6 +29,7 @@
 마이그레이션 스크립트나 외부 도구에서 사용하는 Bearer 토큰 방식입니다.
 
 **사용 예:**
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/upload \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -107,6 +110,7 @@ apps/blog-admin/
 JWT 토큰 생성, 검증, 세션 관리를 담당합니다.
 
 **주요 함수:**
+
 - `createSession(payload)`: JWT 세션 생성 및 쿠키 저장
 - `getSession()`: 현재 세션 가져오기
 - `deleteSession()`: 세션 삭제 (로그아웃)
@@ -117,12 +121,14 @@ JWT 토큰 생성, 검증, 세션 관리를 담당합니다.
 사용자 데이터 관리를 담당합니다.
 
 **주요 메서드:**
+
 - `create(username, email, password)`: 사용자 생성
 - `findByUsername(username)`: 사용자명으로 조회
 - `findByEmail(email)`: 이메일로 조회
 - `findById(id)`: ID로 조회
 
 **⚠️ 현재 메모리 기반 저장소**
+
 - 프로덕션에서는 PostgreSQL, MongoDB 등 실제 DB 사용 필요
 - 서버 재시작 시 사용자 데이터 초기화됨
 
@@ -131,10 +137,12 @@ JWT 토큰 생성, 검증, 세션 관리를 담당합니다.
 Next.js 16의 Proxy를 사용하여 모든 보호된 경로에서 JWT를 자동으로 검증합니다.
 
 **보호된 경로:**
+
 - `/dashboard/*` (로그인 페이지 `/dashboard` 제외)
 - 예: `/dashboard/upload`, `/dashboard/create`, `/dashboard/files` 등 모든 하위 경로
 
 **동작:**
+
 1. 로그인 페이지(`/dashboard`)는 인증 불필요
 2. 다른 모든 dashboard 경로는 쿠키에서 JWT 토큰 추출
 3. 토큰 검증 (서명, 만료 시간)
@@ -187,15 +195,15 @@ export default async function ProtectedPage() {
 ### 서버 액션에서 세션 정보 사용
 
 ```typescript
-"use server";
+'use server';
 
-import { getSession } from "@/shared/lib/auth";
+import { getSession } from '@/shared/lib/auth';
 
 export async function createPost(formData: FormData) {
   const session = await getSession();
 
   if (!session) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
   // session.userId, session.username 사용 가능
@@ -206,14 +214,10 @@ export async function createPost(formData: FormData) {
 ### 새 사용자 생성
 
 ```typescript
-import { userRepository } from "@/shared/lib/auth";
+import { userRepository } from '@/shared/lib/auth';
 
 // 개발 환경이나 초기 설정 스크립트에서 사용
-await userRepository.create(
-  "newadmin",
-  "admin@example.com",
-  "securePassword123"
-);
+await userRepository.create('newadmin', 'admin@example.com', 'securePassword123');
 ```
 
 ## 문제 해결
@@ -246,7 +250,7 @@ await userRepository.create(
 
 ```typescript
 // Before
-import { verifyApiKey } from "@/shared/lib/auth";
+import { verifyApiKey } from '@/shared/lib/auth';
 const isValid = await verifyApiKey();
 ```
 
@@ -254,7 +258,7 @@ const isValid = await verifyApiKey();
 
 ```typescript
 // After
-import { isAuthenticated, getSession } from "@/shared/lib/auth";
+import { isAuthenticated, getSession } from '@/shared/lib/auth';
 
 const authenticated = await isAuthenticated();
 if (!authenticated) {

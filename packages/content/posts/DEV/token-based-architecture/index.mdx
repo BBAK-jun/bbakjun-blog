@@ -9,9 +9,9 @@ summary: '일관된 디자인 설계 원칙과 단일 진실 공급원 원칙'
 
 [Design Token Based UI Architecture](https://martinfowler.com/articles/design-token-based-ui-architecture.html)
 
-> 디자인 토큰은 데이터로서의 디자인 결정이며, 디자인과 엔지니어링을 위한  SSOT 역할을 합니다.
-배포 파이프라인을 활용하여 플랫폼 간에 자동화된 코드 생성을 가능하게 하여 더 빠른 업데이트와 디자인의 일관성을 개선할 수 있습니다. 
-토큰을 계층으로 구성하면(사용 가능한 옵션에서 적용 방법을 포착하는 토큰으로 진행) 확장성과 더 나은 개발자 경험이 보장됩니다.
+> 디자인 토큰은 데이터로서의 디자인 결정이며, 디자인과 엔지니어링을 위한 SSOT 역할을 합니다.
+> 배포 파이프라인을 활용하여 플랫폼 간에 자동화된 코드 생성을 가능하게 하여 더 빠른 업데이트와 디자인의 일관성을 개선할 수 있습니다.
+> 토큰을 계층으로 구성하면(사용 가능한 옵션에서 적용 방법을 포착하는 토큰으로 진행) 확장성과 더 나은 개발자 경험이 보장됩니다.
 
 ### 일관성 보장
 
@@ -40,59 +40,59 @@ summary: '일관된 디자인 설계 원칙과 단일 진실 공급원 원칙'
 
 # 디자인 토큰의 역할이란
 
-서비스가 커지면 커질수록 UI 디자인 변경 결정으로 인해 디자이너와 개발자간의 소통 비용이 많이 발생해집니다. 
+서비스가 커지면 커질수록 UI 디자인 변경 결정으로 인해 디자이너와 개발자간의 소통 비용이 많이 발생해집니다.
 
 예를들어 버튼안에 들어가는 텍스트의 사이즈 변경이 필요하다고했을떄 타이포그라피도 함께 변경되어야한다고 생각하는 경우가 많습니다.
 
 ```ts
 // AS-IS
 const buttonStyle = {
-    fontSize: '16px'
-}
+  fontSize: '16px',
+};
 
 const typographyStyle = {
-    fontSize: '16px'
-}
+  fontSize: '16px',
+};
 
 // TO-BE
 const token = {
-    typography: {
-        size: {
-            md: '16px'
-        }
-    }
-}
+  typography: {
+    size: {
+      md: '16px',
+    },
+  },
+};
 
 const buttonStyle = {
-    fontSize: token.typography.size.md
-}
+  fontSize: token.typography.size.md,
+};
 
 const typographyStyle = {
-    fontSize: token.typography.size.md
-}
+  fontSize: token.typography.size.md,
+};
 ```
 
 이러한 문제는 디자인 토큰으로 디자인 결정을 통일하고 디자인 변경 사항을 효율적으로 관리할 수 있습니다.
 
-위의 디자인 토큰은 애플리케이션에서 사용할 수 있는 값의 집합을 나타내며, `typography.size.md`는 개발자에게 토큰을 어디에 사용할지에 대해 좋은 아이디어를 제공합니다. 동시에 디자이너와 개발자간의 소통 비용도 감소시킬 수 있습니다. 
+위의 디자인 토큰은 애플리케이션에서 사용할 수 있는 값의 집합을 나타내며, `typography.size.md`는 개발자에게 토큰을 어디에 사용할지에 대해 좋은 아이디어를 제공합니다. 동시에 디자이너와 개발자간의 소통 비용도 감소시킬 수 있습니다.
 
 이런 토큰 작업은 디자이너의 워크플로우에 통합될수도있으며, 각 플랫폼에 요구하는 형식으로 코드를 제너레이팅 하는 좋은 방법이 되기도합니다.
 
 ```css
 :root {
-    --typography-size-md: 16px;
-    /* ...그외의 토큰들 */
+  --typography-size-md: 16px;
+  /* ...그외의 토큰들 */
 }
 ```
 
 ```ts
 const token = {
-    typography: {
-        size: {
-            md: 'var(--typography-size-md)'
-        }
-    }
-}
+  typography: {
+    size: {
+      md: 'var(--typography-size-md)',
+    },
+  },
+};
 ```
 
 디자인 토큰은 디자이너, 개발자 그리고 프로덕트 팀 모두가 소통하는 언어로 사용됩니다. 디자인 결정에 대한 SSOT 역할을 하기도하며 모든 사용자가 같은 경험을 가지는것을 보장합니다.
@@ -127,33 +127,49 @@ const token = {
 - 임시환경(개발환경)에 배포하여 테스트해보는것도 좋은 방법이 될수있습니다.
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
-    <rect width="800" height="400" fill="#f8fafc" />
-    
-    <path d="M100 200 H700" stroke="#94a3b8" stroke-width="4" fill="none"/>
-    
-    <circle cx="150" cy="200" r="40" fill="#60a5fa"/>
-    <text x="150" y="205" text-anchor="middle" fill="white" font-family="Arial" font-size="12">토큰 업데이트</text>
-    
-    <rect x="250" y="160" width="100" height="80" rx="10" fill="#f472b6"/>
-    <text x="300" y="195" text-anchor="middle" fill="white" font-family="Arial" font-size="12">자동화</text>
-    <text x="300" y="210" text-anchor="middle" fill="white" font-family="Arial" font-size="12">파이프라인</text>
-    
-    <path d="M400 200 L450 150 L500 150 L500 250 L450 250 Z" fill="#a855f7"/>
-    <text x="450" y="205" text-anchor="middle" fill="white" font-family="Arial" font-size="12">검토</text>
-    
-    <rect x="550" y="120" width="100" height="60" rx="10" fill="#2dd4bf"/>
-    <text x="600" y="155" text-anchor="middle" fill="white" font-family="Arial" font-size="11">스토리북</text>
-    <text x="600" y="170" text-anchor="middle" fill="white" font-family="Arial" font-size="11">테스트</text>
-    
-    <rect x="550" y="220" width="100" height="60" rx="10" fill="#2dd4bf"/>
-    <text x="600" y="255" text-anchor="middle" fill="white" font-family="Arial" font-size="11">임시환경</text>
-    <text x="600" y="270" text-anchor="middle" fill="white" font-family="Arial" font-size="11">테스트</text>
-    
-    <path d="M500 150 H530 L550 150" stroke="#94a3b8" stroke-width="2" fill="none"/>
-    <path d="M500 250 H530 L550 250" stroke="#94a3b8" stroke-width="2" fill="none"/>
+  <rect width="800" height="400" fill="#f8fafc" />
+
+  <path d="M100 200 H700" stroke="#94a3b8" stroke-width="4" fill="none" />
+
+  <circle cx="150" cy="200" r="40" fill="#60a5fa" />
+  <text x="150" y="205" text-anchor="middle" fill="white" font-family="Arial" font-size="12">
+    토큰 업데이트
+  </text>
+
+  <rect x="250" y="160" width="100" height="80" rx="10" fill="#f472b6" />
+  <text x="300" y="195" text-anchor="middle" fill="white" font-family="Arial" font-size="12">
+    자동화
+  </text>
+  <text x="300" y="210" text-anchor="middle" fill="white" font-family="Arial" font-size="12">
+    파이프라인
+  </text>
+
+  <path d="M400 200 L450 150 L500 150 L500 250 L450 250 Z" fill="#a855f7" />
+  <text x="450" y="205" text-anchor="middle" fill="white" font-family="Arial" font-size="12">
+    검토
+  </text>
+
+  <rect x="550" y="120" width="100" height="60" rx="10" fill="#2dd4bf" />
+  <text x="600" y="155" text-anchor="middle" fill="white" font-family="Arial" font-size="11">
+    스토리북
+  </text>
+  <text x="600" y="170" text-anchor="middle" fill="white" font-family="Arial" font-size="11">
+    테스트
+  </text>
+
+  <rect x="550" y="220" width="100" height="60" rx="10" fill="#2dd4bf" />
+  <text x="600" y="255" text-anchor="middle" fill="white" font-family="Arial" font-size="11">
+    임시환경
+  </text>
+  <text x="600" y="270" text-anchor="middle" fill="white" font-family="Arial" font-size="11">
+    테스트
+  </text>
+
+  <path d="M500 150 H530 L550 150" stroke="#94a3b8" stroke-width="2" fill="none" />
+  <path d="M500 250 H530 L550 250" stroke="#94a3b8" stroke-width="2" fill="none" />
 </svg>
 
-그럼 지금까지 토큰이 어떻게 디자이너의 영역인 피그마에서 개발자의 영역인 코드에 적용되어야 하는지에 대해서 알아보았습니다. 
+그럼 지금까지 토큰이 어떻게 디자이너의 영역인 피그마에서 개발자의 영역인 코드에 적용되어야 하는지에 대해서 알아보았습니다.
 
 # 토큰 잘 구성하기
 
@@ -244,36 +260,36 @@ Decision Token은 Option Token에 대한 참조를 사용하기때문에 이러�
 
     <rect x="50" y="100" width="300" height="350" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
     <text x="200" y="130" text-anchor="middle" font-family="Arial" font-size="18" fill="#475569" font-weight="bold">Option Token</text>
-    
+
     <rect x="70" y="150" width="120" height="30" rx="5" fill="#e0f2ff"/>
     <text x="130" y="170" text-anchor="middle" font-family="Arial" font-size="12">blue100: #e0f2ff</text>
-    
+
     <rect x="70" y="190" width="120" height="30" rx="5" fill="#b5deff"/>
     <text x="130" y="210" text-anchor="middle" font-family="Arial" font-size="12">blue300: #b5deff</text>
-    
+
     <rect x="70" y="230" width="120" height="30" rx="5" fill="#0265dc"/>
     <text x="130" y="250" text-anchor="middle" font-family="Arial" font-size="12" fill="white">blue900: #0265dc</text>
-    
+
     <rect x="200" y="150" width="120" height="30" rx="5" fill="#f8f8f8"/>
     <text x="260" y="170" text-anchor="middle" font-family="Arial" font-size="12">gray100: #f8f8f8</text>
-    
+
     <rect x="200" y="190" width="120" height="30" rx="5" fill="#909090"/>
     <text x="260" y="210" text-anchor="middle" font-family="Arial" font-size="12">gray500: #909090</text>
-    
+
     <rect x="200" y="230" width="120" height="30" rx="5" fill="#000000"/>
     <text x="260" y="250" text-anchor="middle" font-family="Arial" font-size="12" fill="white">gray900: #000000</text>
 
     <rect x="450" y="100" width="300" height="350" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
     <text x="600" y="130" text-anchor="middle" font-family="Arial" font-size="18" fill="#475569" font-weight="bold">Decision Token</text>
-    
+
     <rect x="470" y="150" width="260" height="60" rx="5" fill="#f8f8f8"/>
     <text x="600" y="170" text-anchor="middle" font-family="Arial" font-size="14">surface</text>
     <text x="600" y="190" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">배경색으로 사용</text>
-    
+
     <rect x="470" y="220" width="260" height="60" rx="5" fill="#e6e6e6"/>
     <text x="600" y="240" text-anchor="middle" font-family="Arial" font-size="14">background-disabled</text>
     <text x="600" y="260" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">비활성화된 요소의 배경색</text>
-    
+
     <rect x="470" y="290" width="260" height="60" rx="5" fill="#000000"/>
     <text x="600" y="310" text-anchor="middle" font-family="Arial" font-size="14" fill="white">text-primary</text>
     <text x="600" y="330" text-anchor="middle" font-family="Arial" font-size="12" fill="white">텍스트의 기본 색상</text>
@@ -284,6 +300,7 @@ Decision Token은 Option Token에 대한 참조를 사용하기때문에 이러�
             <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
         </marker>
     </defs>
+
 </svg>
 
 ## 토큰 계층 구성
@@ -292,7 +309,6 @@ Decision Token은 Option Token에 대한 참조를 사용하기때문에 이러�
 
 - 3계층 아키텍처는 최고의 개발자의 경험을 제공하는 반면, 새로운 컴포넌트와 토큰이 도입되므로 유지보수와 관리포인트가 증가합니다.
 - 2계층 아키텍처는 주요 디자인 결정이 이미 자리 잡고 있거나 비교적 안정적인 프로젝트의 경우 좋은 선택입니다.
-
 
 디자인 토큰 기반 아키텍처는 단순히 디자인 시스템을 구축하는 것 이상의 가치를 제공합니다. 이는 디자이너와 개발자 간의 효율적인 협업을 가능하게 하고, 일관된 사용자 경험을 보장하며, 디자인 변경 사항을 효과적으로 관리할 수 있게 해줍니다.
 

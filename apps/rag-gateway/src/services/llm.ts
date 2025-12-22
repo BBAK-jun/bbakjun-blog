@@ -10,18 +10,11 @@ import type {
 
 export class LLMService {
   private glmClient: OpenAI
-  private openaiClient: OpenAI
 
   constructor() {
-    // GLM-4.6 client (primary)
     this.glmClient = new OpenAI({
       apiKey: env.GLM_API_KEY,
       baseURL: 'https://open.bigmodel.cn/api/paas/v4/',
-    })
-
-    // OpenAI client (fallback)
-    this.openaiClient = new OpenAI({
-      apiKey: env.OPENAI_API_KEY,
     })
   }
 
@@ -41,39 +34,16 @@ export class LLMService {
     // Build prompt
     const prompt = this.buildRAGPrompt(request.query, context, intent)
 
-    try {
-      // Try GLM-4.6 first
-      const response = await this.generateWithGLM(prompt, request.temperature)
-      const queryTime = Date.now() - startTime
+    const response = await this.generateWithGLM(prompt, request.temperature)
+    const queryTime = Date.now() - startTime
 
-      return {
-        answer: response.content,
-        sources: request.includeSources ? sources : [],
-        usage: response.usage,
-        intent,
-        queryTime,
-        model: 'glm-4.6',
-      }
-    } catch (error) {
-      console.warn('⚠️ GLM-4.6 failed, falling back to GPT-4o-mini:', error)
-
-      try {
-        // Fallback to GPT-4o-mini
-        const response = await this.generateWithOpenAI(prompt, request.temperature)
-        const queryTime = Date.now() - startTime
-
-        return {
-          answer: response.content,
-          sources: request.includeSources ? sources : [],
-          usage: response.usage,
-          intent,
-          queryTime,
-          model: 'gpt-4o-mini',
-        }
-      } catch (fallbackError) {
-        console.error('❌ Both LLM providers failed:', fallbackError)
-        throw new Error('Failed to generate response with all providers')
-      }
+    return {
+      answer: response.content,
+      sources: request.includeSources ? sources : [],
+      usage: response.usage,
+      intent,
+      queryTime,
+      model: 'glm-4.6',
     }
   }
 
@@ -104,37 +74,6 @@ export class LLMService {
         promptTokens: completion.usage?.prompt_tokens || 0,
         completionTokens: completion.usage?.completion_tokens || 0,
         cost: this.calculateCost('glm-4.6', completion.usage),
-      },
-    }
-  }
-
-  /**
-   * Generate with OpenAI (fallback)
-   */
-  private async generateWithOpenAI(
-    prompt: string,
-    temperature: number = 0.7
-  ): Promise<{ content: string; usage: LLMUsage }> {
-    const completion = await this.openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature,
-      max_tokens: 2000,
-    })
-
-    const choice = completion.choices[0]
-    if (!choice?.message?.content) {
-      throw new Error('No response from OpenAI')
-    }
-
-    return {
-      content: choice.message.content,
-      usage: {
-        model: 'gpt-4o-mini',
-        totalTokens: completion.usage?.total_tokens || 0,
-        promptTokens: completion.usage?.prompt_tokens || 0,
-        completionTokens: completion.usage?.completion_tokens || 0,
-        cost: this.calculateCost('gpt-4o-mini', completion.usage),
       },
     }
   }
@@ -253,15 +192,11 @@ ${context ? `\n참고 자료:\n${context}` : ''}
   ): number {
     if (!usage) return 0
 
-    // Pricing (per 1M tokens)
+    // GLM-4.6 pricing (per 1M tokens)
     const pricing = {
       'glm-4.6': {
         input: 0.005,
         output: 0.025,
-      },
-      'gpt-4o-mini': {
-        input: 0.00015,
-        output: 0.0006,
       },
     }
 

@@ -5,7 +5,7 @@ import {
   viewsIncrementBodySchema,
   viewsIncrementResponseSchema,
   viewsErrorSchema,
-} from '../../../contract/schemas/views';
+} from '../../../shared/api/views';
 
 /**
  * POST /api/v1/views/:slug - 조회수 증가
@@ -70,17 +70,15 @@ export const incrementViewsBySlugHandler = async (c: any) => {
       /pinterest/i,
     ];
 
-    const isBot = botPatterns.some((pattern) => pattern.test(userAgent));
+    const isBot = botPatterns.some(pattern => pattern.test(userAgent));
 
     if (isBot) {
       const views = await ViewCounter.get(slug);
-      return c.json(
-        {
-          slug,
-          views,
-          incremented: false,
-        }
-      );
+      return c.json({
+        slug,
+        views,
+        incremented: false,
+      });
     }
 
     // 세션 ID가 있으면 세션 기반 증가, 없으면 일반 증가
@@ -88,27 +86,17 @@ export const incrementViewsBySlugHandler = async (c: any) => {
     let incremented: boolean;
 
     if (sessionId) {
-      [views, incremented] = await ViewCounter.incrementWithSession(
-        sessionId,
-        slug
-      );
+      [views, incremented] = await ViewCounter.incrementWithSession(sessionId, slug);
     } else {
       views = await ViewCounter.increment(slug);
       incremented = true;
     }
 
-    return c.json(
-      { slug, views, incremented },
-      200,
-      {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      }
-    );
+    return c.json({ slug, views, incremented }, 200, {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    });
   } catch (error) {
     console.error('Error incrementing view count:', error);
-    return c.json(
-      { error: 'Failed to increment view count' },
-      500
-    );
+    return c.json({ error: 'Failed to increment view count' }, 500);
   }
 };

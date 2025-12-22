@@ -66,6 +66,7 @@ BACKOFFICE_API_KEY=your-secret-api-key
 ```
 
 **BLOB_READ_WRITE_TOKEN 획득**:
+
 1. Vercel 프로젝트 대시보드 접속
 2. Settings → Storage → Blob 생성
 3. 자동 생성된 토큰을 .env.local에 복사
@@ -102,6 +103,7 @@ pnpm build
 마크다운 파일을 Blob Storage에 업로드합니다.
 
 **Request:**
+
 ```
 multipart/form-data
 - file: File (마크다운 파일, .md 또는 .mdx)
@@ -111,6 +113,7 @@ multipart/form-data
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -135,10 +138,12 @@ multipart/form-data
 파일 목록을 조회합니다.
 
 **Query Parameters:**
+
 - `category`: string (선택사항, 카테고리로 필터링)
 - `limit`: number (기본값: 50)
 
 **Response:**
+
 ```json
 {
   "files": [
@@ -160,9 +165,11 @@ multipart/form-data
 파일 업로드 이력을 조회합니다.
 
 **Query Parameters:**
+
 - `fileId`: string (파일 ID)
 
 **Response:**
+
 ```json
 {
   "fileId": "uuid",
@@ -188,6 +195,7 @@ multipart/form-data
 파일을 특정 버전으로 복원합니다.
 
 **Request:**
+
 ```json
 {
   "fileId": "uuid",
@@ -196,6 +204,7 @@ multipart/form-data
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -209,6 +218,7 @@ multipart/form-data
 파일을 삭제합니다.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -228,30 +238,35 @@ blog-admin은 monorepo의 공유 패키지를 활용합니다:
 ## 개발 단계
 
 ### Phase 1: 기초 구조 (진행 중)
+
 - [x] Next.js 기본 설정
 - [x] 기본 파일 선택 UI 구조
 - [x] API Routes 스켈레톤
 - [ ] 마크다운 미리보기 통합
 
 ### Phase 2: Blob Storage 연동
+
 - [x] Azure SDK 설정
 - [x] 파일 업로드 API
 - [x] 메타데이터 저장
 - [ ] 에러 처리 & 재시도 로직
 
 ### Phase 3: 버전 관리 & 이력
+
 - [ ] 버전 관리 시스템
 - [ ] 이력 조회 API
 - [ ] 버전 복원 기능
 - [ ] 이력 UI
 
 ### Phase 4: 보안 & 최적화
+
 - [x] 인증 시스템
 - [x] 파일 크기/유형 검증
 - [ ] 접근 제어 강화
 - [ ] 성능 최적화
 
 ### Phase 5: 배포 & 모니터링
+
 - [ ] 프로덕션 환경 설정
 - [ ] 로깅 & 모니터링
 - [ ] 에러 트래킹

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { FileText, Trash2, Download } from "lucide-react";
-import type { BlobFile } from "../model/types";
+import { FileText, Trash2, Download } from 'lucide-react';
+import type { BlobFile } from '../model/types';
 
 interface FileListItemProps {
   file: BlobFile;
@@ -30,9 +30,7 @@ export function FileListItem({
             <div className="flex-1 min-w-0">
               <div className="text-sm text-slate-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400 truncate">
                 {file.title || (
-                  <span className="text-slate-400 dark:text-slate-500 italic">
-                    제목 없음
-                  </span>
+                  <span className="text-slate-400 dark:text-slate-500 italic">제목 없음</span>
                 )}
               </div>
               {file.description && (
@@ -59,9 +57,7 @@ export function FileListItem({
           {file.date ? (
             formatDate(file.date)
           ) : (
-            <span className="text-slate-400 dark:text-slate-500 italic">
-              날짜 없음
-            </span>
+            <span className="text-slate-400 dark:text-slate-500 italic">날짜 없음</span>
           )}
         </span>
       </td>

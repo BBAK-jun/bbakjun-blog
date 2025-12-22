@@ -95,6 +95,7 @@ apps/blog-admin/
 **책임**: API 요청 인증
 
 **주요 함수**:
+
 ```typescript
 // 비동기 인증 (Request 헤더 확인)
 verifyApiKey(): Promise<boolean>
@@ -104,12 +105,14 @@ verifyApiKeySync(token: string): boolean
 ```
 
 **동작**:
+
 1. 요청 헤더에서 `Authorization` 헤더 추출
 2. `Bearer ` 접두어 제거
 3. 토큰과 `BACKOFFICE_API_KEY` 환경 변수 비교
 4. 일치 여부 반환
 
 **특징**:
+
 - 런타임에만 환경 변수 접근 (빌드 타임 에러 방지)
 - 에러 핸들링으로 안전한 실패
 
@@ -122,38 +125,41 @@ verifyApiKeySync(token: string): boolean
 **주요 함수**:
 
 #### `uploadBlob(path, content, contentType)`
+
 - 파일을 Blob Storage에 업로드
 - SHA256 해시 자동 생성
 - 메타데이터 함께 저장
 
 **예시**:
+
 ```typescript
-const result = await uploadBlob(
-  'DEV/my-post.mdx',
-  fileContent,
-  'text/markdown'
-);
+const result = await uploadBlob('DEV/my-post.mdx', fileContent, 'text/markdown');
 // { url, pathname, hash }
 ```
 
 #### `listBlobs(prefix?)`
+
 - 주어진 prefix 하의 모든 파일 나열
 - 카테고리 필터링 지원
 
 **예시**:
+
 ```typescript
 const files = await listBlobs('DEV/');
 // [{ filename, pathname, size, uploadedAt, url }, ...]
 ```
 
 #### `downloadBlob(path)`
+
 - Blob에서 파일 다운로드
 - Buffer 형식으로 반환
 
 #### `deleteBlob(path)`
+
 - Blob에서 파일 삭제
 
 #### `getBlobMetadata(path)`
+
 - 파일 메타데이터 조회
 - 존재하지 않으면 null 반환
 
@@ -164,6 +170,7 @@ const files = await listBlobs('DEV/');
 #### Upload 엔드포인트 (POST /api/admin/upload)
 
 **요청 처리 흐름**:
+
 ```
 1. 인증 확인 (verifyApiKey)
    ↓
@@ -185,6 +192,7 @@ const files = await listBlobs('DEV/');
 ```
 
 **에러 처리**:
+
 - 400: 파일 형식/크기 오류
 - 401: 인증 실패
 - 500: 서버 에러
@@ -194,6 +202,7 @@ const files = await listBlobs('DEV/');
 #### Files 엔드포인트 (GET /api/admin/files)
 
 **요청 처리 흐름**:
+
 ```
 1. 인증 확인 (verifyApiKey)
    ↓
@@ -278,7 +287,9 @@ GET /api/admin/files?category=DEV
 ```typescript
 // ❌ 잘못된 방식 (빌드 타임 실패)
 const API_KEY = process.env.BACKOFFICE_API_KEY;
-export function verify() { return token === API_KEY; }
+export function verify() {
+  return token === API_KEY;
+}
 
 // ✅ 올바른 방식 (런타임 실패)
 function getApiKey() {
@@ -286,7 +297,9 @@ function getApiKey() {
   if (!key) throw new Error('API_KEY not set');
   return key;
 }
-export function verify() { return token === getApiKey(); }
+export function verify() {
+  return token === getApiKey();
+}
 ```
 
 ---
@@ -327,6 +340,7 @@ const hash = createHash('sha256').update(buffer).digest('hex');
 ### 1. Turbopack 사용
 
 Next.js 16에서 Turbopack을 기본으로 사용하여 빌드 속도 향상:
+
 ```
 기존: ~2-3초
 Turbopack: ~1초
@@ -335,6 +349,7 @@ Turbopack: ~1초
 ### 2. Streaming Response
 
 파일 업로드 시 streaming 지원:
+
 ```typescript
 const buffer = Buffer.from(await file.arrayBuffer());
 // 메모리 효율적인 처리
@@ -343,6 +358,7 @@ const buffer = Buffer.from(await file.arrayBuffer());
 ### 3. 메타데이터 캐싱
 
 향후 구현 예정:
+
 - 파일 목록 캐싱
 - 메타데이터 로컬 캐시
 
@@ -400,17 +416,17 @@ Vercel Edge Network
 
 ## 기술 스택
 
-| 계층 | 기술 | 버전 |
-|------|------|------|
-| **런타임** | Node.js | 24 |
-| **프레임워크** | Next.js | 16.0.8 |
-| **UI 라이브러리** | React | 19.2.1 |
-| **스토리지** | Vercel Blob | 0.23.4 |
-| **스타일링** | Tailwind CSS | 4 |
-| **패키지 관리** | pnpm | 10.25.0 |
-| **빌드 도구** | Turbopack | - |
-| **타입스크립트** | TypeScript | 5 |
-| **린터** | ESLint | 9 |
+| 계층              | 기술         | 버전    |
+| ----------------- | ------------ | ------- |
+| **런타임**        | Node.js      | 24      |
+| **프레임워크**    | Next.js      | 16.0.8  |
+| **UI 라이브러리** | React        | 19.2.1  |
+| **스토리지**      | Vercel Blob  | 0.23.4  |
+| **스타일링**      | Tailwind CSS | 4       |
+| **패키지 관리**   | pnpm         | 10.25.0 |
+| **빌드 도구**     | Turbopack    | -       |
+| **타입스크립트**  | TypeScript   | 5       |
+| **린터**          | ESLint       | 9       |
 
 ---
 
@@ -420,6 +436,7 @@ Vercel Edge Network
 
 **선택**: 별도 Next.js 앱
 **이유**:
+
 - 배포 독립성
 - 보안 격리
 - 개발 속도 향상
@@ -429,6 +446,7 @@ Vercel Edge Network
 
 **선택**: Vercel Blob
 **이유**:
+
 - Vercel과 기본 통합
 - 자동 토큰 관리
 - 글로벌 CDN 포함
@@ -438,6 +456,7 @@ Vercel Edge Network
 
 **선택**: Bearer Token
 **이유**:
+
 - 구현 단순성
 - 현재 요구사항 충분
 - OAuth는 향후 추가 가능

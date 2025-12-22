@@ -1,4 +1,4 @@
-export { QueryProvider } from "./react-query";
+export { QueryProvider } from './react-query';
 export {
   verifyApiKeySync,
   verifyApiKeyLegacy,
@@ -7,5 +7,5 @@ export {
   createSession,
   deleteSession,
   userRepository,
-} from "./auth";
-export { formatFileSize, formatDate, formatDateLong } from "./format";
+} from './auth';
+export { formatFileSize, formatDate, formatDateLong } from './format';

@@ -52,12 +52,12 @@ The first folder level (DEV, REACT, JS, STUDY, TIL, career) acts as a category f
 
 ```yaml
 ---
-title: "Post Title"
-date: "2024-11-15"
-description: "Post description"
-tags: ["nextjs", "react", "typescript"]
-author: "bbakjun"
-draft: false  # Set to true to exclude from builds
+title: 'Post Title'
+date: '2024-11-15'
+description: 'Post description'
+tags: ['nextjs', 'react', 'typescript']
+author: 'bbakjun'
+draft: false # Set to true to exclude from builds
 ---
 ```
 
@@ -77,33 +77,35 @@ All fields are required except `draft` (defaults to `false`).
 6. **Related Posts**: Scores posts by shared tags (×3), same category (×2), and recency (×0.5)
 
 **Usage Pattern**:
+
 ```typescript
-import { getBlobFiles } from '@/lib/blob'
-import { getAllPosts, getPostBySlug } from '@repo/content'
+import { getBlobFiles } from '@/lib/blob';
+import { getAllPosts, getPostBySlug } from '@repo/content';
 
 // Fetch blob file list from CDC cache via RPC
-const blobFiles = await getBlobFiles()
+const blobFiles = await getBlobFiles();
 
 // All post functions require blobFiles parameter
-const posts = await getAllPosts(blobFiles)
-const post = await getPostBySlug(blobFiles, 'DEV/my-post')
-const tags = await getAllTags(blobFiles)
-const relatedPosts = await getRelatedPosts(blobFiles, currentPost, 4)
+const posts = await getAllPosts(blobFiles);
+const post = await getPostBySlug(blobFiles, 'DEV/my-post');
+const tags = await getAllTags(blobFiles);
+const relatedPosts = await getRelatedPosts(blobFiles, currentPost, 4);
 ```
 
 **Helper Function** (`apps/blog/src/lib/blob.ts`):
+
 ```typescript
 export async function getBlobFiles(): Promise<BlobFileInfo[]> {
-  const response = await client.api.v1['blob-files'].$get({})
+  const response = await client.api.v1['blob-files'].$get({});
   if (!response.ok) {
-    throw new Error('Failed to fetch blob files')
+    throw new Error('Failed to fetch blob files');
   }
-  const { files } = await response.json()
+  const { files } = await response.json();
   return files.map(f => ({
     url: f.url,
     pathname: f.pathname,
-    contentType: f.contentType
-  }))
+    contentType: f.contentType,
+  }));
 }
 ```
 
@@ -130,7 +132,7 @@ Uses Redis hashes with session-based deduplication:
 
 **Location**: `packages/content/src/markdown.ts`
 
-```
+````
 Raw MDX content
   → remark-parse (markdown → AST)
   → remark-gfm (GitHub Flavored Markdown: tables, checkboxes)
@@ -141,7 +143,7 @@ Raw MDX content
   → rehype-mermaid (convert ```mermaid to renderable divs)
   → rehype-optimize-images (lazy loading, responsive images, captions)
   → rehype-stringify (HTML AST → string)
-```
+````
 
 ### Mermaid Chart Support
 
@@ -162,6 +164,7 @@ Images are optimized server-side by `packages/content/src/rehype-optimize-images
 5. Prevents layout shift with proper sizing
 
 **Features**:
+
 - Lazy loading for images below the fold
 - Automatic captions from alt text
 - Responsive design with hover effects
@@ -190,12 +193,14 @@ The blog uses **ISR** to combine static performance with dynamic content updates
 API endpoint: `POST /api/revalidate?secret=<token>&path=<path>`
 
 **Usage from blog-admin**:
+
 ```bash
 curl -X POST \
   'https://your-blog.vercel.app/api/revalidate?secret=YOUR_SECRET&path=/blog/my-post'
 ```
 
 **Environment Variables**:
+
 - `REVALIDATION_SECRET`: Secret token for on-demand revalidation (generate with `openssl rand -base64 32`)
 
 **See**: [apps/blog/docs/ISR.md](apps/blog/docs/ISR.md) for complete guide
@@ -222,6 +227,7 @@ curl -X POST \
 ### MDX Components (`mdx-components.tsx`)
 
 Custom renderers for MDX elements with Tailwind styling:
+
 - Headings (h1-h3): Bold, dark mode support
 - Links: External links open in new tab
 - Images: Wrapped in Next.js `Image` component (800×400)
@@ -230,6 +236,7 @@ Custom renderers for MDX elements with Tailwind styling:
 ## Redis Integration
 
 **Environment Variables**:
+
 - `REDIS_URL`: Connection string for Redis instance
 
 **Fallback Behavior**: If Redis is unavailable, view counts return 0 (app continues to work).
@@ -261,6 +268,7 @@ Admin UI & Blog App
 ### Key Components
 
 1. **BlobFile Model** (`apps/blog-admin/prisma/schema.prisma`):
+
    ```prisma
    model BlobFile {
      id          String   @id @default(cuid())
@@ -305,11 +313,13 @@ Admin UI & Blog App
 **Location**: `apps/blog-admin/src/rpc/routes/blob-files.ts`
 
 **Public Endpoints** (accessible from blog app):
+
 - `GET /api/rpc/blob-files` - List cached blob files
   - Query params: `limit` (default: 1000), `offset` (default: 0), `search`
   - Returns: `{ files: BlobFile[], total: number, hasMore: boolean }`
 
 **Admin Endpoints** (requires authentication):
+
 - `GET /api/rpc/blob-files/admin` - List cached files with auto-sync
   - Query params: `limit` (default: 100), `offset`, `search`, `autoSync` (default: true)
   - Auto-syncs if sync interval elapsed (configurable via `BLOB_SYNC_INTERVAL_MINUTES`)
@@ -319,38 +329,41 @@ Admin UI & Blog App
 ### Usage Pattern
 
 **❌ Old (Direct Blob API)**:
+
 ```typescript
-import { list } from '@vercel/blob'
-const { blobs } = await list() // API call every page load
+import { list } from '@vercel/blob';
+const { blobs } = await list(); // API call every page load
 ```
 
 **✅ New (Hono RPC with Type Safety)**:
 
 **Blog App** (`apps/blog/src/lib/rpc.ts`):
+
 ```typescript
-import { client } from '@/lib/rpc'
+import { client } from '@/lib/rpc';
 
 // Type-safe API call with automatic validation
 const response = await client.api.v1['blob-files'].$get({
-  query: { limit: 100, search: 'posts/' }
-})
+  query: { limit: 100, search: 'posts/' },
+});
 
 if (!response.ok) {
-  throw new Error('Failed to fetch blob files')
+  throw new Error('Failed to fetch blob files');
 }
 
-const { files, total, hasMore } = await response.json()
+const { files, total, hasMore } = await response.json();
 ```
 
 **Blog-Admin App** (server actions):
+
 ```typescript
-import { getCachedBlobFiles } from '@/lib/blob-cdc'
+import { getCachedBlobFiles } from '@/lib/blob-cdc';
 
 // Direct database access
 const { files, total, hasMore } = await getCachedBlobFiles({
   limit: 100,
-  searchTerm: 'posts/'
-})
+  searchTerm: 'posts/',
+});
 ```
 
 ### Cost Reduction
@@ -388,6 +401,7 @@ const { files, total, hasMore } = await getCachedBlobFiles({
 ### When to Use CDC
 
 Use this pattern when:
+
 - External API has strict rate limits
 - Data doesn't need real-time accuracy (eventual consistency OK)
 - Read-heavy workload (many list/fetch operations)
@@ -423,31 +437,34 @@ PostgreSQL (CDC cache)
    - Auto-generates OpenAPI types via `@hono/zod-openapi`
 
 3. **RPC Client** (`apps/blog/src/lib/rpc.ts`):
-   ```typescript
-   import { AppType } from 'blog-admin/rpc'
-   import { hc } from 'hono/client'
 
-   export const client = hc<AppType>(process.env.NEXT_PUBLIC_ADMIN_URL!)
+   ```typescript
+   import { AppType } from 'blog-admin/rpc';
+   import { hc } from 'hono/client';
+
+   export const client = hc<AppType>(process.env.NEXT_PUBLIC_ADMIN_URL!);
    ```
 
 4. **Type Export** (`apps/blog-admin/src/rpc/index.ts`):
    ```typescript
-   export type AppType = typeof app
+   export type AppType = typeof app;
    ```
 
 ### Build Configuration
 
 **`apps/blog-admin/tsup.config.ts`**:
+
 ```typescript
 export default defineConfig({
   entry: ['src/rpc/index.ts', 'src/contract/index.ts'],
   format: ['esm'],
-  dts: true,  // Generate .d.ts files for blog app
+  dts: true, // Generate .d.ts files for blog app
   clean: true,
-})
+});
 ```
 
 **`apps/blog-admin/package.json`**:
+
 ```json
 {
   "main": "./dist/rpc/index.js",
@@ -472,11 +489,13 @@ export default defineConfig({
 ### Environment Variables
 
 **Blog App**:
+
 ```
 NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 ```
 
 **Turbo Configuration** (`turbo.json`):
+
 ```json
 {
   "globalEnv": ["NEXT_PUBLIC_ADMIN_URL"]
@@ -498,10 +517,12 @@ NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 **Full-Screen Layout**: The blog-admin app uses a full-screen layout without max-width constraints to maximize screen space for file management and content editing.
 
 **Key Files**:
+
 - `apps/blog-admin/src/app/dashboard/layout.tsx` - Main dashboard layout wrapper
 - `apps/blog-admin/src/app/dashboard/dashboard-nav.tsx` - Navigation header and tabs
 
 **Layout Structure**:
+
 ```tsx
 // Dashboard Layout (apps/blog-admin/src/app/dashboard/layout.tsx)
 <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -528,12 +549,14 @@ NEXT_PUBLIC_ADMIN_URL=http://localhost:3001  # or production URL
 ```
 
 **Design Decisions**:
+
 - ❌ **No max-width constraints** - Removed `max-w-7xl mx-auto` for full-screen utilization
 - ✅ **Responsive padding** - Uses `px-4 sm:px-6 lg:px-8` for appropriate edge spacing
 - ✅ **Consistent spacing** - Same padding across header, nav, and main content
 - ✅ **Dark mode support** - All layout components support dark theme
 
 **Benefits**:
+
 - More horizontal space for file tables and content editors
 - Better use of wide monitors (especially for MDX editing)
 - Consistent with modern admin dashboards (Vercel, Netlify, etc.)
@@ -580,9 +603,10 @@ Application Code (with autocomplete!)
 ### Configuration Files
 
 **Blog App** (`apps/blog/src/env.ts`):
+
 ```typescript
-import { createEnv } from "@t3-oss/env-nextjs"
-import { z } from "zod"
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
 
 export const env = createEnv({
   server: {
@@ -602,13 +626,14 @@ export const env = createEnv({
     // ... map all variables
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
-})
+});
 ```
 
 **Blog-Admin App** (`apps/blog-admin/src/env.ts`):
+
 ```typescript
-import { createEnv } from "@t3-oss/env-nextjs"
-import { z } from "zod"
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
 
 export const env = createEnv({
   server: {
@@ -627,22 +652,24 @@ export const env = createEnv({
     // ... map all variables
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
-})
+});
 ```
 
 ### Usage Pattern
 
 **❌ Old (Unsafe)**:
+
 ```typescript
-const url = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const url = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 // No autocomplete, no validation, typos at runtime
 ```
 
 **✅ New (Type-safe)**:
-```typescript
-import { env } from '@/env'
 
-const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+```typescript
+import { env } from '@/env';
+
+const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 // ✅ Autocomplete works
 // ✅ Type checking prevents typos
 // ✅ Runtime validation catches missing vars
@@ -666,6 +693,7 @@ const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 ### Adding New Environment Variables
 
 1. **Add to env.ts schema**:
+
    ```typescript
    server: {
      NEW_API_KEY: z.string().min(1),
@@ -673,6 +701,7 @@ const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
    ```
 
 2. **Add to runtimeEnv**:
+
    ```typescript
    runtimeEnv: {
      NEW_API_KEY: process.env.NEW_API_KEY,
@@ -680,6 +709,7 @@ const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
    ```
 
 3. **Add to turbo.json** (if needed for builds):
+
    ```json
    {
      "globalEnv": ["NEW_API_KEY"]
@@ -687,14 +717,15 @@ const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
    ```
 
 4. **Add to .env.local**:
+
    ```
    NEW_API_KEY=your-key-here
    ```
 
 5. **Use in code**:
    ```typescript
-   import { env } from '@/env'
-   const apiKey = env.NEW_API_KEY
+   import { env } from '@/env';
+   const apiKey = env.NEW_API_KEY;
    ```
 
 ### Important Notes
@@ -708,6 +739,7 @@ const url = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 ## Next.js Configuration
 
 **`next.config.ts`**:
+
 - Enables MDX support via `@next/mdx`
 - Experimental `mdxRs: true` for Rust-based MDX compiler
 - Page extensions: `['js', 'jsx', 'md', 'mdx', 'ts', 'tsx']`
@@ -753,6 +785,7 @@ pnpm type-check
 ### Workspace Dependencies
 
 Packages use `workspace:*` protocol for local dependencies:
+
 ```json
 {
   "dependencies": {
@@ -796,6 +829,7 @@ The `scripts/` directory contains utilities for managing the blog:
 **Framework**: Vitest (integration tests)
 
 **Test Commands**:
+
 ```bash
 # Run tests in watch mode
 pnpm --filter=blog-admin test
@@ -810,6 +844,7 @@ pnpm --filter=blog-admin test:ui
 ### Test Strategy
 
 Uses **Integration Testing** approach:
+
 - Real PostgreSQL database (via `DATABASE_URL` from `.env.local`)
 - No Vercel Blob API mocking needed (CDC functions only handle metadata)
 - Fast execution (~6 seconds for 10 tests)
@@ -818,18 +853,21 @@ Uses **Integration Testing** approach:
 ### CDC Tests (`tests/blob-cdc.test.ts`)
 
 **Coverage**:
+
 - ✅ `onBlobUpload()` - Create, update, prevent duplicates, restore soft-deleted files
 - ✅ `onBlobDelete()` - Soft delete, timestamp updates, error handling
 - ✅ Pathname unique constraint - Database-level validation
 - ✅ Multiple files with different pathnames
 
 **Key Test Cases**:
+
 1. **Duplicate Prevention**: Same pathname uploaded 5 times → only 1 record
 2. **Upsert Behavior**: Re-upload updates URL, size, and metadata
 3. **Soft Delete Recovery**: Deleted file re-uploaded → `isDeleted: false`
 4. **Unique Constraint**: Database rejects duplicate pathname inserts
 
 **Test Setup** (`tests/setup.ts`):
+
 - Automatic cleanup before/after all tests
 - Shared Prisma Client for all tests
 - Loads `.env.local` for database connection
@@ -855,6 +893,7 @@ pnpm --filter=blog-admin type-check
 ```
 
 **Note**: If VSCode shows type errors but `tsc` passes, restart TypeScript server:
+
 - `Cmd+Shift+P` → "TypeScript: Restart TS Server"
 
 ### Build Verification
@@ -869,6 +908,7 @@ pnpm --filter=blog-admin build
 **IMPORTANT**: All tests must be written in Korean (한글).
 
 **Test Naming Convention**:
+
 - `describe()` blocks: Use Korean descriptive names
   - ✅ Good: `describe('파일 업데이트 통합 테스트 - CDC 동기화', () => { ... })`
   - ❌ Bad: `describe('File Update Integration - CDC Sync', () => { ... })`
@@ -878,6 +918,7 @@ pnpm --filter=blog-admin build
   - ❌ Bad: `it('should update blob URL in database when file is updated', async () => { ... })`
 
 **Comment Convention**:
+
 - Test comments: Use Korean for clarity
   - ✅ Good: `// 1. DB에 초기 레코드 생성 (첫 업로드 시뮬레이션)`
   - ❌ Bad: `// 1. Create initial record in DB (simulate first upload)`
@@ -909,6 +950,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
 ```
 
 **Why Korean?**:
+
 - Better readability for Korean-speaking team members
 - Clearer intent and expectations in native language
 - Consistent with project documentation (CLAUDE.md is in Korean)
@@ -921,6 +963,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
 **Platform**: Vercel (optimized for Next.js)
 
 **Required Environment Variables**:
+
 ```
 REDIS_URL=redis://...
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
@@ -930,12 +973,14 @@ NEXT_PUBLIC_ADMIN_URL=https://... (blog-admin URL for newsletter API)
 ```
 
 **Build Process**:
+
 1. Static generation for all posts via `generateStaticParams()` with ISR
 2. API routes deployed as serverless functions
 3. Redis connection pooled via Vercel KV
 4. ISR revalidation: 60s for posts/home, 300s for tags
 
 **ISR Configuration**:
+
 - Blog posts and home page automatically refresh every 60 seconds
 - Tag pages refresh every 5 minutes
 - On-demand revalidation available via `/api/revalidate` endpoint
@@ -946,6 +991,7 @@ NEXT_PUBLIC_ADMIN_URL=https://... (blog-admin URL for newsletter API)
 **Platform**: Vercel
 
 **Required Environment Variables**:
+
 ```
 DATABASE_URL=postgresql://...           # Neon PostgreSQL
 DIRECT_URL=postgresql://...             # Direct connection (non-pooled)
@@ -982,6 +1028,7 @@ node scripts/initial-blob-sync.js
 4. Verify files appear in admin dashboard
 
 **Critical Setup**:
+
 1. **Prisma Client Generation**: `postinstall` script runs `prisma generate`
 2. **Environment Variables**: All env vars must be declared in `turbo.json`
 3. **Build Configuration**: Uses `vercel.json` with custom build commands
@@ -991,11 +1038,13 @@ node scripts/initial-blob-sync.js
 ⚠️ **NEVER wrap environment variable values in quotes on Vercel**:
 
 ❌ Wrong:
+
 ```
 DATABASE_URL = "postgresql://user:pass@host/db?sslmode=require"
 ```
 
 ✅ Correct:
+
 ```
 DATABASE_URL = postgresql://user:pass@host/db?sslmode=require
 ```
@@ -1005,6 +1054,7 @@ DATABASE_URL = postgresql://user:pass@host/db?sslmode=require
 **Deployment Issues & Solutions**:
 
 See [apps/blog-admin/docs/DEPLOYMENT.md](apps/blog-admin/docs/DEPLOYMENT.md) for:
+
 - Prisma Client build errors
 - Turborepo environment variable warnings
 - Prisma 7 database connection issues
@@ -1100,6 +1150,7 @@ Problem/Feature → Solution → Documentation Update
 ```
 
 **Example Flow**:
+
 1. Fix Prisma build issue
 2. Update `package.json` with `postinstall` script
 3. **Document in**:
@@ -1108,16 +1159,16 @@ Problem/Feature → Solution → Documentation Update
 
 ### Files to Update Based on Change Type
 
-| Change Type | Update These Files |
-|-------------|-------------------|
-| Deployment issue | `apps/blog-admin/docs/DEPLOYMENT.md`, `CLAUDE.md` |
-| New API endpoint | `apps/blog-admin/docs/API.md` |
+| Change Type            | Update These Files                                     |
+| ---------------------- | ------------------------------------------------------ |
+| Deployment issue       | `apps/blog-admin/docs/DEPLOYMENT.md`, `CLAUDE.md`      |
+| New API endpoint       | `apps/blog-admin/docs/API.md`                          |
 | Database schema change | `CLAUDE.md` (Vercel Blob CDC section), migration files |
-| New tests | `tests/README.md`, `CLAUDE.md` (Testing section) |
-| Architecture change | `apps/blog-admin/docs/ARCHITECTURE.md`, `CLAUDE.md` |
-| Environment variable | `turbo.json`, `CLAUDE.md`, `DEPLOYMENT.md` |
-| New pattern/convention | `CLAUDE.md`, relevant `/docs/` files |
-| Bug fix (significant) | `DEPLOYMENT.md` or `DEVELOPMENT.md` |
+| New tests              | `tests/README.md`, `CLAUDE.md` (Testing section)       |
+| Architecture change    | `apps/blog-admin/docs/ARCHITECTURE.md`, `CLAUDE.md`    |
+| Environment variable   | `turbo.json`, `CLAUDE.md`, `DEPLOYMENT.md`             |
+| New pattern/convention | `CLAUDE.md`, relevant `/docs/` files                   |
+| Bug fix (significant)  | `DEPLOYMENT.md` or `DEVELOPMENT.md`                    |
 
 ### Documentation Template for Issues
 
@@ -1150,6 +1201,7 @@ When documenting a resolved issue in DEPLOYMENT.md:
 ### Documentation Priority
 
 **HIGH (Must document immediately)**:
+
 - Deployment configuration changes
 - Build process changes
 - Critical bug fixes
@@ -1157,6 +1209,7 @@ When documenting a resolved issue in DEPLOYMENT.md:
 - Breaking changes
 
 **MEDIUM (Document when convenient)**:
+
 - New features
 - API changes
 - Architecture refactoring
@@ -1165,6 +1218,7 @@ When documenting a resolved issue in DEPLOYMENT.md:
 - New tests
 
 **LOW (Optional)**:
+
 - Internal helper functions
 - Minor optimizations
 - Code cleanup
@@ -1172,6 +1226,7 @@ When documenting a resolved issue in DEPLOYMENT.md:
 ### Self-Check Before Completing Task
 
 Before marking a task complete, ask:
+
 1. ✅ Did I update CLAUDE.md if this is a pattern to remember?
 2. ✅ Did I update DEPLOYMENT.md if this affects deployment?
 3. ✅ Did I update API.md if I added/changed endpoints?

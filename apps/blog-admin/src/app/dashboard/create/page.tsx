@@ -4,9 +4,9 @@
  * Renders the complete file creation interface
  */
 
-"use client";
+'use client';
 
-import { FileCreatorWidget } from "@/widgets/file-creator";
+import { FileCreatorWidget } from '@/widgets/file-creator';
 
 export default function CreatePage() {
   return <FileCreatorWidget />;

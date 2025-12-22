@@ -109,39 +109,42 @@ function convertSpreadSheetToJson() {
 ```ts
 // i18n/request.ts
 export default getRequestConfig(async () => {
-  const cookieStore = await cookies()
-  let locale = cookieStore.get('NEXT_LOCALE')?.value ?? defaultLocale
+  const cookieStore = await cookies();
+  let locale = cookieStore.get('NEXT_LOCALE')?.value ?? defaultLocale;
 
   if (!isLocale(locale)) {
-    locale = defaultLocale
+    locale = defaultLocale;
   }
 
   try {
-    const { data: messages } = await 최신_언어팩_페칭_함수_with_cache(locale)
+    const { data: messages } = await 최신_언어팩_페칭_함수_with_cache(locale);
 
-    return { locale, messages }
+    return { locale, messages };
   } catch (error) {
-    console.error('Failed to fetch language pack:', error)
-    notFound()
+    console.error('Failed to fetch language pack:', error);
+    notFound();
   }
-})
+});
 
 const 최신_언어팩_페칭_함수_with_cache = async (locale: Locale) => {
   try {
-    const 언어팩 = S3_버킷으로부터_언어팩을_가져오는_함수()
+    const 언어팩 = S3_버킷으로부터_언어팩을_가져오는_함수();
 
     if (!언어팩) {
-      throw new Error(`언어팩 파일을 찾을 수 없습니다`)
+      throw new Error(`언어팩 파일을 찾을 수 없습니다`);
     }
 
     return {
       data: JSON.parse(언어팩 || '{}'),
-    }
+    };
   } catch (error) {
-    console.error(`❌ [${new Date().toISOString()}] Error loading language pack for ${locale}:`, error)
-    throw error
+    console.error(
+      `❌ [${new Date().toISOString()}] Error loading language pack for ${locale}:`,
+      error
+    );
+    throw error;
   }
-}
+};
 ```
 
 번역 데이터는 번역팀에서 수동으로 업데이트도하며, 수동으로 업데이트 하지않았더라도 매주 월요일 오전 6-7시에 자동으로 업데이트 됩니다.
@@ -165,6 +168,7 @@ const 최신_언어팩_페칭_함수_with_cache = async (locale: Locale) => {
 가장 쉬운 방법은 **타임스탬프**를 사용하는 방법이겠구나 싶어 적용했습니다.
 
 번역데이터의 메타데이터는 다음과 같습니다.
+
 ```json
 {
   "lastUpdated": 마지막으로_업데이트된_타임스탬프(number),
@@ -187,7 +191,6 @@ const 최신_언어팩_페칭_함수_with_cache = async (locale: Locale) => {
   }
 }
 ```
-
 
 ```ts
 // i18n/request.ts
@@ -221,6 +224,7 @@ const 최신_언어팩_페칭_함수_with_cache = async (pathname: string, local
 ## 캐시 구현과 무효화 전략
 
 번역 데이터의 특성을 고려해보면:
+
 - 번역팀에서 Google Spread Sheet에서 번역데이터를 업데이트를 하기도합니다. 하지만 번역팀에서 번역데이터를 업데이트 하는 경우는 많지 않습니다.
 - 번역데이터는 매주 월요일 오전 6-7시에 배칭시스템에 의해 업데이트 됩니다.
 
@@ -260,12 +264,12 @@ Time-based-revalidation는 일정 시간 이후 캐시를 무효화하는 방법
 
 ```ts
 // 1번째 방법
-const res = fetch('/intl/ko.json', { next : { revalidate: 60 * 60 * 24 }})
+const res = fetch('/intl/ko.json', { next: { revalidate: 60 * 60 * 24 } });
 
 // 2번째 방법
-export const revalidate = 60 * 60 * 24
+export const revalidate = 60 * 60 * 24;
 
-const res = fetch('/intl/ko.json')
+const res = fetch('/intl/ko.json');
 ```
 
 ### On-demand-revalidation
@@ -282,13 +286,13 @@ NextJS 애플리케이션 내부에서 캐시를 무효화하는것이 아닌 �
 export async function POST(request: NextRequest) {
   try {
     for (const locale of locales) {
-      revalidateTag(`languagePack-${locale}`)
+      revalidateTag(`languagePack-${locale}`);
     }
 
-    return NextResponse.json({ revalidated: true, now: Date.now() }, { status: 200 })
+    return NextResponse.json({ revalidated: true, now: Date.now() }, { status: 200 });
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 })
+    console.error(error);
+    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
   }
 }
 ```
@@ -302,6 +306,7 @@ export async function POST(request: NextRequest) {
 ![slack_monitoring](/static/images/DEV/intl-automation/slack_monitoring.png)
 
 이 로깅 시스템은 다음과 같은 정보를 제공합니다:
+
 - 언어팩 업데이트 시간
 - 각 언어별 업로드된 파일 경로와 크기
 - 환경별(DEV/STAGING/PROD) 캐시 무효화 상태

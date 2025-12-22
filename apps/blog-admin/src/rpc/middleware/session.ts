@@ -14,14 +14,10 @@ export const requireSession: MiddlewareHandler<RpcEnv> = async (c, next) => {
 
 export const requireAdminSession: MiddlewareHandler<RpcEnv> = async (c, next) => {
   const session = await auth();
-  if (
-    !session ||
-    (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')
-  ) {
+  if (!session || (session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN')) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
   c.set('session', session);
   return next();
 };
-

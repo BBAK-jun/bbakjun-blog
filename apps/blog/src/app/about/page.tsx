@@ -1,51 +1,38 @@
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
-import { getPopularPostsStats } from '@/lib/stats'
-import { getBlobFiles } from '@/lib/blob'
-import { getAllPosts } from '@repo/content'
-import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react'
-import Link from 'next/link'
-import type { Metadata } from 'next'
-import ExperienceTimeline, { calculateTotalExperience, formatExperience } from '@/components/ExperienceTimeline'
-import { getExperiences, type Experience as DBExperience } from '@/lib/experience'
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { getPopularPostsStats } from '@/shared/lib/stats';
+import { getBlobFiles } from '@/shared/lib/blob';
+import { getAllPosts } from '@repo/content';
+import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react';
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import ExperienceTimeline from '@/features/navigation/ui/experience-timeline';
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
-  description: `프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.`,
+  description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
   openGraph: {
     title: '소개 - DEV_BBAK 블로그',
     description: `프론트엔드 엔지니어 박준형입니다.`,
   },
-}
+};
 
 // ISR: 5분마다 재검증
-export const revalidate = 300
+export const revalidate = 300;
 
 export default async function AboutPage() {
   // 블로그 통계 가져오기
-  const stats = await getPopularPostsStats()
-  const blobFiles = await getBlobFiles()
-  const posts = await getAllPosts(blobFiles)
-
-  // DB에서 경력 데이터 가져오기
-  let experiences: DBExperience[] = []
-  let experienceText = "정보 없음"
-  const currentYear = new Date().getFullYear()
-
-  try {
-    experiences = await getExperiences()
-    const totalExperienceMonths = calculateTotalExperience(experiences)
-    experienceText = formatExperience(totalExperienceMonths)
-  } catch (error) {
-    console.error('Failed to load experiences:', error)
-    // 실패 시 fallback 처리
-  }
+  const stats = await getPopularPostsStats();
+  const blobFiles = await getBlobFiles();
+  const posts = await getAllPosts(blobFiles);
 
   // 기술 스택
   const techStack = {
     frontend: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Zustand', 'TanStack Query'],
     backend: ['Node.js', 'Hono', 'Prisma', 'PostgreSQL', 'Redis'],
     tools: ['Git', 'Vercel', 'Turbo', 'pnpm', 'VSCode'],
-  }
+  };
 
   // 연락처
   const contacts = [
@@ -73,7 +60,7 @@ export default async function AboutPage() {
       href: 'https://bbakjun.notion.site/25c42b6fc4ab807b8b24d8e40d935819',
       username: 'Notion Resume',
     },
-  ]
+  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-12">
@@ -84,11 +71,9 @@ export default async function AboutPage() {
         </div>
         <h1 className="text-4xl md:text-5xl font-bold">박준형</h1>
         <p className="text-xl text-muted-foreground">Frontend Engineer</p>
-        <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary">
-          {currentYear}년 {experienceText} 차
-        </div>
         <p className="text-lg max-w-2xl mx-auto leading-relaxed text-muted-foreground">
-          사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.
+          사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이
+          있습니다.
           <br />
           React와 TypeScript로 확장 가능하고 유지보수하기 쉬운 웹 애플리케이션을 만듭니다.
         </p>
@@ -138,7 +123,7 @@ export default async function AboutPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {techStack.frontend.map((tech) => (
+              {techStack.frontend.map(tech => (
                 <Badge key={tech} variant="secondary" className="text-sm px-3 py-1">
                   {tech}
                 </Badge>
@@ -154,7 +139,7 @@ export default async function AboutPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {techStack.backend.map((tech) => (
+              {techStack.backend.map(tech => (
                 <Badge key={tech} variant="secondary" className="text-sm px-3 py-1">
                   {tech}
                 </Badge>
@@ -170,7 +155,7 @@ export default async function AboutPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {techStack.tools.map((tech) => (
+              {techStack.tools.map(tech => (
                 <Badge key={tech} variant="secondary" className="text-sm px-3 py-1">
                   {tech}
                 </Badge>
@@ -206,8 +191,8 @@ export default async function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Next.js 15, TypeScript, MDX 기반의 모던 블로그 플랫폼입니다.
-              Vercel Blob Storage와 CDC 패턴을 활용한 효율적인 콘텐츠 관리 시스템을 구현했습니다.
+              Next.js 15, TypeScript, MDX 기반의 모던 블로그 플랫폼입니다. Vercel Blob Storage와 CDC
+              패턴을 활용한 효율적인 콘텐츠 관리 시스템을 구현했습니다.
             </p>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">Next.js 15</Badge>
@@ -228,7 +213,7 @@ export default async function AboutPage() {
         <h2 className="text-3xl font-bold">연락처</h2>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {contacts.map((contact) => (
+          {contacts.map(contact => (
             <Card key={contact.label}>
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -237,7 +222,9 @@ export default async function AboutPage() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{contact.label}</CardTitle>
-                    <CardDescription className="text-xs truncate">{contact.username}</CardDescription>
+                    <CardDescription className="text-xs truncate">
+                      {contact.username}
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -257,9 +244,7 @@ export default async function AboutPage() {
       {/* CTA Section */}
       <section className="text-center space-y-4 py-8 border-t">
         <h2 className="text-2xl font-bold">블로그 둘러보기</h2>
-        <p className="text-muted-foreground">
-          개발 과정에서 배운 내용과 경험을 공유합니다.
-        </p>
+        <p className="text-muted-foreground">개발 과정에서 배운 내용과 경험을 공유합니다.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg">
             <Link href="/blog">모든 포스트 보기</Link>
@@ -270,5 +255,5 @@ export default async function AboutPage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

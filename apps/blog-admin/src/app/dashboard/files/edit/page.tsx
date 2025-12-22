@@ -1,24 +1,23 @@
-"use client";
+'use client';
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState, useRef, useEffect } from "react";
-import { ArrowLeft, Save, ImageIcon } from "lucide-react";
-import dynamic from "next/dynamic";
-import { markdown } from "@codemirror/lang-markdown";
-import { useFileEditor } from "@/features/file-edit";
-import { ImageUploader, TagInput } from "@/shared/ui";
-import { toast } from "sonner";
-import "../../../markdown.css";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Save, ImageIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { markdown } from '@codemirror/lang-markdown';
+import { useFileEditor } from '@/features/file-edit';
+import { ImageUploader, TagInput } from '@/shared/ui';
+import { toast } from 'sonner';
+import '../../../markdown.css';
 
-const CodeMirror = dynamic(
-  () => import("@uiw/react-codemirror").then((mod) => mod.default),
-  { ssr: false }
-);
+const CodeMirror = dynamic(() => import('@uiw/react-codemirror').then(mod => mod.default), {
+  ssr: false,
+});
 
 function EditPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = searchParams?.get("pathname") || null;
+  const pathname = searchParams?.get('pathname') || null;
   const [showImageUploader, setShowImageUploader] = useState(false);
 
   // Scroll sync refs
@@ -43,12 +42,12 @@ function EditPageContent() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = "";
+        e.returnValue = '';
       }
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
   const handleImageUploaded = (url: string, filename: string) => {
@@ -56,7 +55,7 @@ function EditPageContent() {
     const imageMarkdown = `![${filename}](${url})`;
     setFormData({
       ...formData,
-      content: formData.content + "\n" + imageMarkdown + "\n",
+      content: formData.content + '\n' + imageMarkdown + '\n',
     });
     setShowImageUploader(false);
   };
@@ -64,16 +63,14 @@ function EditPageContent() {
   const handleSave = () => {
     save(undefined, {
       onSuccess: () => {
-        toast.success("저장 완료", {
-          description: "파일이 성공적으로 저장되었습니다",
+        toast.success('저장 완료', {
+          description: '파일이 성공적으로 저장되었습니다',
         });
-        router.push(
-          `/dashboard/files/view?pathname=${encodeURIComponent(pathname || "")}`
-        );
+        router.push(`/dashboard/files/view?pathname=${encodeURIComponent(pathname || '')}`);
       },
-      onError: (err) => {
-        toast.error("저장 실패", {
-          description: err instanceof Error ? err.message : "파일 저장에 실패했습니다",
+      onError: err => {
+        toast.error('저장 실패', {
+          description: err instanceof Error ? err.message : '파일 저장에 실패했습니다',
         });
       },
     });
@@ -93,8 +90,10 @@ function EditPageContent() {
       }
 
       isScrollingSyncRef.current = true;
-      const scrollPercentage = editorContainer.scrollTop / (editorContainer.scrollHeight - editorContainer.clientHeight);
-      previewContainer.scrollTop = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
+      const scrollPercentage =
+        editorContainer.scrollTop / (editorContainer.scrollHeight - editorContainer.clientHeight);
+      previewContainer.scrollTop =
+        scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
     };
 
     const handlePreviewScroll = () => {
@@ -104,16 +103,19 @@ function EditPageContent() {
       }
 
       isScrollingSyncRef.current = true;
-      const scrollPercentage = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight);
-      editorContainer.scrollTop = scrollPercentage * (editorContainer.scrollHeight - editorContainer.clientHeight);
+      const scrollPercentage =
+        previewContainer.scrollTop /
+        (previewContainer.scrollHeight - previewContainer.clientHeight);
+      editorContainer.scrollTop =
+        scrollPercentage * (editorContainer.scrollHeight - editorContainer.clientHeight);
     };
 
-    editorContainer.addEventListener("scroll", handleEditorScroll);
-    previewContainer.addEventListener("scroll", handlePreviewScroll);
+    editorContainer.addEventListener('scroll', handleEditorScroll);
+    previewContainer.addEventListener('scroll', handlePreviewScroll);
 
     return () => {
-      editorContainer.removeEventListener("scroll", handleEditorScroll);
-      previewContainer.removeEventListener("scroll", handlePreviewScroll);
+      editorContainer.removeEventListener('scroll', handleEditorScroll);
+      previewContainer.removeEventListener('scroll', handlePreviewScroll);
     };
   }, []);
 
@@ -122,9 +124,7 @@ function EditPageContent() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">
-            파일 로딩 중...
-          </p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">파일 로딩 중...</p>
         </div>
       </div>
     );
@@ -135,10 +135,10 @@ function EditPageContent() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400">
-            {error instanceof Error ? error.message : "파일을 찾을 수 없습니다"}
+            {error instanceof Error ? error.message : '파일을 찾을 수 없습니다'}
           </p>
           <button
-            onClick={() => router.push("/dashboard/files")}
+            onClick={() => router.push('/dashboard/files')}
             className="mt-4 text-blue-600 hover:underline"
           >
             파일 목록으로 돌아가기
@@ -160,11 +160,9 @@ function EditPageContent() {
             <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              파일 편집
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">파일 편집</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {fileData.metadata?.pathname || ""}
+              {fileData.metadata?.pathname || ''}
             </p>
           </div>
         </div>
@@ -188,16 +186,14 @@ function EditPageContent() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? "저장 중..." : "저장"}</span>
+            <span>{isSaving ? '저장 중...' : '저장'}</span>
           </button>
         </div>
       </div>
 
       {/* Front Matter Form */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          메타데이터
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">메타데이터</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -206,9 +202,7 @@ function EditPageContent() {
             <input
               type="text"
               value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -219,9 +213,7 @@ function EditPageContent() {
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
@@ -234,9 +226,7 @@ function EditPageContent() {
             <input
               type="date"
               value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, date: e.target.value })}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -248,9 +238,7 @@ function EditPageContent() {
             <input
               type="text"
               value={formData.author}
-              onChange={(e) =>
-                setFormData({ ...formData, author: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, author: e.target.value })}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -261,7 +249,7 @@ function EditPageContent() {
             </label>
             <TagInput
               value={formData.tags}
-              onChange={(tags) => setFormData({ ...formData, tags })}
+              onChange={tags => setFormData({ ...formData, tags })}
               placeholder="태그를 입력하고 Enter를 누르세요 (예: nextjs, react, typescript)"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -274,10 +262,8 @@ function EditPageContent() {
             </label>
             <input
               type="text"
-              value={formData.series || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, series: e.target.value || undefined })
-              }
+              value={formData.series || ''}
+              onChange={e => setFormData({ ...formData, series: e.target.value || undefined })}
               placeholder="예: react-deep-dive"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             />
@@ -292,8 +278,8 @@ function EditPageContent() {
             <input
               type="number"
               min="1"
-              value={formData.seriesOrder || ""}
-              onChange={(e) =>
+              value={formData.seriesOrder || ''}
+              onChange={e =>
                 setFormData({
                   ...formData,
                   seriesOrder: e.target.value ? parseInt(e.target.value) : undefined,
@@ -311,9 +297,7 @@ function EditPageContent() {
               <input
                 type="checkbox"
                 checked={formData.draft || false}
-                onChange={(e) =>
-                  setFormData({ ...formData, draft: e.target.checked })
-                }
+                onChange={e => setFormData({ ...formData, draft: e.target.checked })}
                 className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -328,9 +312,7 @@ function EditPageContent() {
       {showImageUploader && (
         <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              이미지 업로드
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">이미지 업로드</h2>
             <button
               onClick={() => setShowImageUploader(false)}
               className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -347,16 +329,16 @@ function EditPageContent() {
         {/* Editor Section */}
         <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              마크다운 편집
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">마크다운 편집</h2>
           </div>
-          <div ref={editorScrollRef} className="p-0 overflow-auto" style={{ height: "calc(100vh - 400px)", minHeight: "600px" }}>
+          <div
+            ref={editorScrollRef}
+            className="p-0 overflow-auto"
+            style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}
+          >
             <CodeMirror
               value={formData.content}
-              onChange={(value) =>
-                setFormData({ ...formData, content: value })
-              }
+              onChange={value => setFormData({ ...formData, content: value })}
               height="100%"
               theme="dark"
               extensions={[markdown()]}
@@ -390,11 +372,13 @@ function EditPageContent() {
         {/* Preview Section */}
         <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              미리보기
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">미리보기</h2>
           </div>
-          <div ref={previewScrollRef} className="overflow-auto" style={{ height: "calc(100vh - 400px)", minHeight: "600px" }}>
+          <div
+            ref={previewScrollRef}
+            className="overflow-auto"
+            style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}
+          >
             <article
               className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
               dangerouslySetInnerHTML={{ __html: previewHtml }}

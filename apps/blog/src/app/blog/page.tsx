@@ -1,76 +1,70 @@
-import BlogPostsList from '@/components/BlogPostsList'
-import SearchBarClient from '@/components/SearchBarClient'
-import { getBlobFiles } from '@/lib/blob'
-import { searchParamsCache } from '@/lib/searchParams'
-import { getAllPosts, getAllTags } from '@repo/content'
-import { Post } from '@repo/content'
-import { Metadata } from 'next'
-import Link from 'next/link'
+import BlogPostsList from '@/features/posts/ui/blog-posts-list';
+import SearchBarClient from '@/features/post-search/ui/search-bar-client';
+import { getBlobFiles } from '@/shared/lib/blob';
+import { searchParamsCache } from '@/shared/lib/searchParams';
+import { getAllPosts, getAllTags } from '@repo/content';
+import { Post } from '@repo/content';
+import { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: '모든 포스트 | DEV_BBAK 블로그',
   description: 'DEV_BBAK 블로그의 모든 포스트를 확인해보세요.',
-}
+};
 
 type PageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 // 서버에서 검색 필터링 수행
 function filterPosts(posts: Post[], query: string): Post[] {
   if (!query.trim()) {
-    return posts
+    return posts;
   }
 
-  const lowerQuery = query.toLowerCase()
-  return posts.filter((post) => {
+  const lowerQuery = query.toLowerCase();
+  return posts.filter(post => {
     // 제목 검색
     if (post.frontMatter.title?.toLowerCase().includes(lowerQuery)) {
-      return true
+      return true;
     }
     // 설명 검색
     if (post.frontMatter.description?.toLowerCase().includes(lowerQuery)) {
-      return true
+      return true;
     }
     // 태그 검색
     if (post.frontMatter.tags?.some(tag => tag?.toLowerCase().includes(lowerQuery))) {
-      return true
+      return true;
     }
     // 콘텐츠 검색 (첫 1000자)
     if (post.content?.slice(0, 1000).toLowerCase().includes(lowerQuery)) {
-      return true
+      return true;
     }
-    return false
-  })
+    return false;
+  });
 }
 
 export default async function PostsPage({ searchParams }: PageProps) {
   // nuqs로 타입세이프한 searchParams 파싱
-  const { q: searchQuery } = await searchParamsCache.parse(searchParams)
+  const { q: searchQuery } = await searchParamsCache.parse(searchParams);
 
   // getBlobFiles는 React.cache로 중복 호출 방지
-  const blobFiles = await getBlobFiles()
+  const blobFiles = await getBlobFiles();
 
   // 병렬 데이터 페칭
-  const [allPosts, tags] = await Promise.all([
-    getAllPosts(blobFiles),
-    getAllTags(blobFiles)
-  ])
+  const [allPosts, tags] = await Promise.all([getAllPosts(blobFiles), getAllTags(blobFiles)]);
 
-  const filteredPosts = filterPosts(allPosts, searchQuery)
+  const filteredPosts = filterPosts(allPosts, searchQuery);
 
   return (
     <div className="space-y-8">
       {/* 페이지 헤더 */}
       <header className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-          모든 포스트
-        </h1>
+        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">모든 포스트</h1>
         <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
           {searchQuery
             ? `"${searchQuery}" 검색결과 ${filteredPosts.length}개 / 전체 ${allPosts.length}개`
-            : `총 ${allPosts.length}개의 포스트가 있습니다.`
-          }
+            : `총 ${allPosts.length}개의 포스트가 있습니다.`}
         </p>
       </header>
 
@@ -92,7 +86,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
             >
               전체
             </Link>
-            {tags.map((tag) => (
+            {tags.map(tag => (
               <Link
                 key={tag}
                 href={`/tags/${tag}`}
@@ -106,11 +100,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
       )}
 
       {/* 포스트 목록 */}
-      <BlogPostsList
-        posts={filteredPosts}
-        searchQuery={searchQuery}
-        totalPosts={allPosts.length}
-      />
+      <BlogPostsList posts={filteredPosts} searchQuery={searchQuery} />
 
       {/* 페이지네이션 */}
       {filteredPosts.length > 12 && (
@@ -121,5 +111,5 @@ export default async function PostsPage({ searchParams }: PageProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
