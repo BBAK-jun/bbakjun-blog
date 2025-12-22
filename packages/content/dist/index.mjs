@@ -74,11 +74,12 @@ async function getSeriesBySlug(blobFiles, slug) {
 function getSeriesNavigation(series, currentSlug) {
   const currentIndex = series.posts.findIndex((p) => p.slug === currentSlug);
   if (currentIndex === -1) {
-    return { prev: null, next: null };
+    return { prev: null, next: null, currentIndex: -1 };
   }
   return {
     prev: currentIndex > 0 ? series.posts[currentIndex - 1] : null,
-    next: currentIndex < series.posts.length - 1 ? series.posts[currentIndex + 1] : null
+    next: currentIndex < series.posts.length - 1 ? series.posts[currentIndex + 1] : null,
+    currentIndex
   };
 }
 async function getPostSeries(blobFiles, postSlug) {

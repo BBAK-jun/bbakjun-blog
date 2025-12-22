@@ -76,5 +76,13 @@ interface SeriesSummary {
     startedAt?: string;
     updatedAt?: string;
 }
+/**
+ * Series navigation information
+ */
+interface SeriesNavigation {
+    prev: Post | null;
+    next: Post | null;
+    currentIndex: number;
+}
 
-export type { PopularPost, Post, PostMatter, PostUpdate, Series, SeriesSummary, ViewData };
+export type { PopularPost, Post, PostMatter, PostUpdate, Series, SeriesNavigation, SeriesSummary, ViewData };

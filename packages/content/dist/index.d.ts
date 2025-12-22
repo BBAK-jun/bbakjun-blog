@@ -1,4 +1,4 @@
-import { Series, SeriesSummary, Post } from '@repo/types';
+import { Series, SeriesSummary, SeriesNavigation } from '@repo/types';
 export { Post, PostMatter, Series, SeriesSummary } from '@repo/types';
 import { B as BlobFileInfo } from './posts-jmE_jCSv.js';
 export { a as getAllPosts, b as getAllPostsIncludingDrafts, d as getAllTags, g as getPostBySlug, c as getPostsByTag, e as getRelatedPosts } from './posts-jmE_jCSv.js';
@@ -21,10 +21,7 @@ declare function getSeriesBySlug(blobFiles: BlobFileInfo[], slug: string): Promi
 /**
  * Get next and previous posts in a series
  */
-declare function getSeriesNavigation(series: Series, currentSlug: string): {
-    prev: Post | null;
-    next: Post | null;
-};
+declare function getSeriesNavigation(series: Series, currentSlug: string): SeriesNavigation;
 /**
  * Check if a post belongs to a series
  */
