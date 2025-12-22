@@ -1,33 +1,31 @@
-import { getAllTags, getPostsByTag } from '@repo/content'
-import Link from 'next/link'
-import { Metadata } from 'next'
-import { getBlobFiles } from '@/lib/blob'
+import { getAllTags, getPostsByTag } from '@repo/content';
+import Link from 'next/link';
+import { Metadata } from 'next';
+import { getBlobFiles } from '@/lib/blob';
 
 export const metadata: Metadata = {
   title: '모든 태그 | DEV_BBAK 블로그',
   description: 'DEV_BBAK 블로그의 모든 태그를 확인해보세요.',
-}
+};
 
 export default async function TagsPage() {
-  const blobFiles = await getBlobFiles()
-  const tags = await getAllTags(blobFiles)
+  const blobFiles = await getBlobFiles();
+  const tags = await getAllTags(blobFiles);
 
   // 각 태그별 포스트 수 계산
   const tagsWithCount = await Promise.all(
     tags.map(async tag => ({
       name: tag,
-      count: (await getPostsByTag(blobFiles, tag)).length
+      count: (await getPostsByTag(blobFiles, tag)).length,
     }))
-  )
-  tagsWithCount.sort((a, b) => b.count - a.count) // 포스트 수가 많은 순으로 정렬
+  );
+  tagsWithCount.sort((a, b) => b.count - a.count); // 포스트 수가 많은 순으로 정렬
 
   return (
     <div className="space-y-8">
       {/* 페이지 헤더 */}
       <header className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-          모든 태그
-        </h1>
+        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">모든 태그</h1>
         <p className="text-xl text-gray-600 dark:text-gray-400">
           총 {tags.length}개의 태그가 있습니다.
         </p>
@@ -45,10 +43,10 @@ export default async function TagsPage() {
               <div className="flex flex-wrap justify-center gap-3">
                 {tagsWithCount.map(({ name, count }) => {
                   // 포스트 수에 따라 태그 크기 조정
-                  const maxCount = Math.max(...tagsWithCount.map(t => t.count))
-                  const minSize = 0.8
-                  const maxSize = 2
-                  const scale = minSize + (count / maxCount) * (maxSize - minSize)
+                  const maxCount = Math.max(...tagsWithCount.map(t => t.count));
+                  const minSize = 0.8;
+                  const maxSize = 2;
+                  const scale = minSize + (count / maxCount) * (maxSize - minSize);
 
                   return (
                     <Link
@@ -57,12 +55,12 @@ export default async function TagsPage() {
                       className="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-all duration-200 hover:scale-110"
                       style={{
                         fontSize: `${scale}rem`,
-                        fontWeight: count > maxCount / 2 ? 'bold' : 'normal'
+                        fontWeight: count > maxCount / 2 ? 'bold' : 'normal',
                       }}
                     >
                       #{name} ({count})
                     </Link>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -98,9 +96,7 @@ export default async function TagsPage() {
             <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
               태그가 없습니다
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              포스트에 태그를 추가해보세요!
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">포스트에 태그를 추가해보세요!</p>
             <Link
               href="/blog"
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -111,5 +107,5 @@ export default async function TagsPage() {
         )}
       </section>
     </div>
-  )
+  );
 }

@@ -1,11 +1,18 @@
-import type { NextConfig } from "next";
-import createMDX from "@next/mdx";
+import type { NextConfig } from 'next';
+import createMDX from '@next/mdx';
 
-import './src/env'
+import './src/env';
 
 const nextConfig: NextConfig = {
-  pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
-  transpilePackages: ["@repo/content", "@repo/analytics", "@repo/types", "@repo/ui", "@t3-oss/env-nextjs", "@t3-oss/env-core"],
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+  transpilePackages: [
+    '@repo/content',
+    '@repo/analytics',
+    '@repo/types',
+    '@repo/ui',
+    '@t3-oss/env-nextjs',
+    '@t3-oss/env-core',
+  ],
   images: {
     remotePatterns: [
       {

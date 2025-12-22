@@ -1,56 +1,23 @@
-'use client'
+'use client';
 
-import { useSearchParams } from 'next/navigation'
-import { useState, useEffect, Suspense } from 'react'
-import { CheckCircle, AlertCircle, Mail } from 'lucide-react'
-import Link from 'next/link'
-import { env } from '@/env'
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useUnsubscribeMutation } from '@/features/newsletter/lib/use-newsletter';
 
 function UnsubscribeContent() {
-  const searchParams = useSearchParams()
-  const token = searchParams?.get('token')
+  const searchParams = useSearchParams();
+  const token = searchParams?.get('token');
 
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
-  const [email, setEmail] = useState('')
+  const { data, mutate: unsubscribe, isPending, isError, error } = useUnsubscribeMutation();
 
+  // Auto-unsubscribe on mount if token exists
   useEffect(() => {
-    if (token && status === 'idle') {
-      handleUnsubscribe()
+    if (token && !data && !isError && !isPending) {
+      unsubscribe(token);
     }
-  }, [token, status])
-
-  const handleUnsubscribe = async () => {
-    if (!token) {
-      setStatus('error')
-      setMessage('유효하지 않은 구독 취소 링크입니다')
-      return
-    }
-
-    setStatus('loading')
-
-    try {
-      const adminUrl = env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'
-      const response = await fetch(`${adminUrl}/api/newsletter/unsubscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || '구독 취소 중 오류가 발생했습니다')
-      }
-
-      setStatus('success')
-      setMessage(data.message)
-      setEmail(data.email)
-    } catch (error) {
-      setStatus('error')
-      setMessage(error instanceof Error ? error.message : '구독 취소 중 오류가 발생했습니다')
-    }
-  }
+  }, [token, data, isError, isPending, unsubscribe]);
 
   if (!token) {
     return (
@@ -62,9 +29,7 @@ function UnsubscribeContent() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">유효하지 않은 링크</h1>
-          <p className="text-muted-foreground mb-6">
-            구독 취소 링크가 유효하지 않습니다.
-          </p>
+          <p className="text-muted-foreground mb-6">구독 취소 링크가 유효하지 않습니다.</p>
           <Link
             href="/"
             className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
@@ -73,13 +38,13 @@ function UnsubscribeContent() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        {status === 'loading' && (
+        {isPending && (
           <>
             <div className="flex justify-center mb-4">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
@@ -89,7 +54,7 @@ function UnsubscribeContent() {
           </>
         )}
 
-        {status === 'success' && (
+        {data && (
           <>
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
@@ -97,10 +62,10 @@ function UnsubscribeContent() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">구독이 취소되었습니다</h1>
-            <p className="text-muted-foreground mb-2">{message}</p>
-            {email && (
+            <p className="text-muted-foreground mb-2">{data.message}</p>
+            {data.email && (
               <p className="text-sm text-muted-foreground mb-6">
-                이메일: <span className="font-medium">{email}</span>
+                이메일: <span className="font-medium">{data.email}</span>
               </p>
             )}
             <p className="text-sm text-muted-foreground mb-6">
@@ -115,7 +80,7 @@ function UnsubscribeContent() {
           </>
         )}
 
-        {status === 'error' && (
+        {isError && (
           <>
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
@@ -123,10 +88,12 @@ function UnsubscribeContent() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">오류가 발생했습니다</h1>
-            <p className="text-muted-foreground mb-6">{message}</p>
+            <p className="text-muted-foreground mb-6">
+              {error instanceof Error ? error.message : '구독 취소 중 오류가 발생했습니다'}
+            </p>
             <div className="space-y-3">
               <button
-                onClick={handleUnsubscribe}
+                onClick={() => token && unsubscribe(token)}
                 className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 다시 시도
@@ -142,7 +109,7 @@ function UnsubscribeContent() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export default function UnsubscribePage() {
@@ -156,5 +123,5 @@ export default function UnsubscribePage() {
     >
       <UnsubscribeContent />
     </Suspense>
-  )
+  );
 }

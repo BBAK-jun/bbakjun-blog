@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ES2020"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -22,21 +18,11 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@repo/content": [
-        "../../packages/content/src"
-      ],
-      "@repo/analytics": [
-        "../../packages/analytics/src"
-      ],
-      "@repo/types": [
-        "../../packages/types/src"
-      ],
-      "@repo/ui": [
-        "../../packages/ui/src"
-      ]
+      "@/*": ["./src/*"],
+      "@repo/content": ["../../packages/content/src"],
+      "@repo/analytics": ["../../packages/analytics/src"],
+      "@repo/types": ["../../packages/types/src"],
+      "@repo/ui": ["../../packages/ui/src"]
     },
     "isolatedModules": true
   },
@@ -47,7 +33,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules", "src.backup*", "*.backup*"]
 }
