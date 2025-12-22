@@ -5,13 +5,6 @@ import {
   newsletterUnsubscribeBodySchema,
   newsletterUnsubscribeResponseSchema,
 } from '../../../contract/schemas/newsletter';
-import { env } from '../../../env';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
 
 /**
  * POST /api/rpc/unsubscribeNewsletter - 뉴스레터 구독 취소
@@ -77,16 +70,14 @@ export const unsubscribeNewsletterHandler = async (c: any) => {
     if (!subscriber) {
       return c.json(
         { error: '구독 정보를 찾을 수 없습니다' },
-        404,
-        corsHeaders
+        404
       );
     }
 
     if (!subscriber.isActive) {
       return c.json(
         { error: '이미 구독 취소된 이메일입니다' },
-        400,
-        corsHeaders
+        400
       );
     }
 
@@ -103,15 +94,13 @@ export const unsubscribeNewsletterHandler = async (c: any) => {
         message: '구독이 취소되었습니다',
         email: subscriber.email,
       },
-      200,
-      corsHeaders
+      200
     );
   } catch (error) {
     console.error('Unsubscribe error:', error);
     return c.json(
       { error: '구독 취소 중 오류가 발생했습니다' },
-      500,
-      corsHeaders
+      500
     );
   }
 };

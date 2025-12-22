@@ -10,12 +10,6 @@ import { env } from '../../../env';
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BLOG_URL || 'http://localhost:3000',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
-
 /**
  * POST /api/rpc/subscribeNewsletter - 뉴스레터 구독
  */
@@ -73,8 +67,7 @@ export const subscribeNewsletterHandler = async (c: any) => {
       if (existing.isActive) {
         return c.json(
           { error: '이미 구독 중인 이메일 주소입니다' },
-          400,
-          corsHeaders
+          400
         );
       }
 
@@ -93,8 +86,7 @@ export const subscribeNewsletterHandler = async (c: any) => {
           message: '구독이 재활성화되었습니다',
           reactivated: true,
         },
-        200,
-        corsHeaders
+        200
       );
     }
 
@@ -141,15 +133,13 @@ export const subscribeNewsletterHandler = async (c: any) => {
           subscribedAt: subscriber.subscribedAt,
         },
       },
-      200,
-      corsHeaders
+      200
     );
   } catch (error) {
     console.error('Subscribe error:', error);
     return c.json(
       { error: '구독 처리 중 오류가 발생했습니다' },
-      500,
-      corsHeaders
+      500
     );
   }
 };
