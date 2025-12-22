@@ -9,8 +9,7 @@ import {
   getFileContent,
   updateFile,
   previewMarkdown,
-  type ApiResponse,
-} from '@/shared/api/file-service';
+} from '@/app/actions/files';
 import { fileKeys } from '@/entities/file';
 
 export function useFileEditor(pathname: string | null) {
@@ -39,10 +38,19 @@ export function useFileEditor(pathname: string | null) {
     queryKey: ['file', pathname],
     queryFn: async () => {
       const result = await getFileContent(pathname!);
-      if (!result.success || !result.data) {
-        throw new Error(result.error);
+      if (!result.success) {
+        throw new Error(result.error || '파일을 불러올 수 없습니다.');
       }
-      return result.data;
+      // Type guard: check if result has rawContent (success case)
+      if (!('rawContent' in result)) {
+        throw new Error('파일을 불러올 수 없습니다.');
+      }
+      return {
+        rawContent: result.rawContent,
+        htmlContent: result.htmlContent,
+        frontMatter: result.frontMatter,
+        metadata: result.metadata,
+      };
     },
     enabled: !!pathname,
   });
@@ -77,7 +85,7 @@ export function useFileEditor(pathname: string | null) {
       if (!result.success) {
         throw new Error(result.error);
       }
-      return result.data;
+      return { htmlContent: result.htmlContent };
     },
     enabled: formData.content.length > 0,
     staleTime: 500,

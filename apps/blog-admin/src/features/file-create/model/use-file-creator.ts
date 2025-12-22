@@ -3,7 +3,8 @@
  */
 
 import { fileKeys } from '@/entities/file';
-import { createFile, previewMarkdown, type CreateFileInput } from '@/shared/api/file-service';
+import { createFile as createFileAction, previewMarkdown } from '@/app/actions/files';
+import type { CreateFileInput } from '@/shared/api/file-service';
 import { useLocalStorage } from '@/shared/hooks/use-local-storage';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -145,7 +146,7 @@ export function useFileCreator() {
     mutationFn: async (content: string) => {
       const result = await previewMarkdown(content);
       if (!result.success) throw new Error(result.error);
-      return result.data?.htmlContent;
+      return result.htmlContent;
     },
     onSuccess: html => {
       setPreviewHtml(html || '');
@@ -207,10 +208,10 @@ export function useFileCreator() {
         content: formData.content,
       };
 
-      const result = await createFile(input);
+      const result = await createFileAction(input);
       if (!result.success) throw new Error(result.error);
 
-      return result.data;
+      return result;
     },
     onSuccess: result => {
       // Clear autosave

@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listFiles, deleteFile, getFileContent } from '@/shared/api/file-service';
+import { listFiles, deleteFile, getFileContent } from '@/app/actions/files';
 import type { BlobFile, FileContent } from '../model/types';
 
 /**
@@ -25,10 +25,10 @@ export function useFilesQuery(limit?: number) {
     queryKey: fileKeys.list(limit),
     queryFn: async () => {
       const result = await listFiles(limit || 100);
-      if (!result.success || !result.data) {
+      if (!result.success) {
         throw new Error(result.error || '파일 목록을 불러올 수 없습니다.');
       }
-      return result.data.files || [];
+      return result.files || [];
     },
     staleTime: 0, // Always fetch fresh data (blob URLs change on update)
   });
@@ -47,20 +47,25 @@ export function useFileQuery(pathname: string | null) {
 
       const result = await getFileContent(pathname);
 
-      if (!result.success || !result.data) {
+      if (!result.success) {
         throw new Error(result.error || '파일을 불러올 수 없습니다.');
       }
 
-      // Transform the shared service response to match entity's FileContent interface
+      // Type guard: check if result has rawContent (success case)
+      if (!('rawContent' in result) || !result.rawContent) {
+        throw new Error('파일을 불러올 수 없습니다.');
+      }
+
+      // Transform the server action response to match entity's FileContent interface
       const transformedFileContent: FileContent = {
-        rawContent: result.data.rawContent,
-        htmlContent: result.data.htmlContent,
-        frontMatter: result.data.frontMatter,
+        rawContent: result.rawContent,
+        htmlContent: result.htmlContent || '',
+        frontMatter: result.frontMatter || null,
         metadata: {
-          pathname: result.data.metadata.pathname,
-          size: result.data.metadata.size,
-          uploadedAt: result.data.metadata.uploadedAt,
-          url: result.data.metadata.url,
+          pathname: result.metadata.pathname,
+          size: result.metadata.size,
+          uploadedAt: result.metadata.uploadedAt,
+          url: result.metadata.url,
         },
       };
 
