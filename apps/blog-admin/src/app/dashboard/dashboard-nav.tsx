@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Upload, FileText, History, Settings, LogOut, Moon, Sun, PenSquare, Briefcase } from "lucide-react";
+import { Upload, FileText, History, Settings, LogOut, Moon, Sun, PenSquare, Briefcase, Search } from "lucide-react";
 import { logout } from "./actions";
 import { useEffect, useState } from "react";
 
@@ -15,6 +15,7 @@ export default function DashboardNav() {
     { id: "files", name: "파일 관리", icon: FileText, href: "/dashboard/files" },
     { id: "upload", name: "파일 업로드", icon: Upload, href: "/dashboard/upload" },
     { id: "experience", name: "경력 관리", icon: Briefcase, href: "/dashboard/experience" },
+    { id: "rag", name: "RAG 관리", icon: Search, href: "/dashboard/rag" },
     { id: "history", name: "업로드 이력", icon: History, href: "/dashboard/history" },
     { id: "settings", name: "설정", icon: Settings, href: "/dashboard/settings" },
   ];

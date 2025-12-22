@@ -1,132 +1,175 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import { getQdrantService } from '../../services/qdrant'
+import { getEmbeddingService } from '../../services/embedding'
+import { getLLMService } from '../../services/llm'
+import { QueryProcessor } from '@repo/rag-core'
+import { IngestionPipeline } from '@repo/rag-ingestion'
+import { RAGQueryRequestSchema, SearchRequestSchema } from '@repo/rag-types'
 
 const ragRoutes = new Hono()
 
-// Query schema
-const querySchema = z.object({
-  query: z.string().min(1),
-  context: z.string().optional(),
-  limit: z.number().min(1).max(20).default(5),
-  filters: z.object({
-    category: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    dateRange: z.object({
-      start: z.string().datetime().optional(),
-      end: z.string().datetime().optional(),
-    }).optional(),
-  }).optional(),
-})
-
-// Search schema (without LLM generation)
-const searchSchema = z.object({
-  query: z.string().min(1),
-  limit: z.number().min(1).max(50).default(10),
-  threshold: z.number().min(0).max(1).default(0.7),
-  filters: z.object({
-    category: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-  }).optional(),
-})
-
 // POST /api/rag/query - RAG query with LLM generation
-ragRoutes.post('/query', zValidator('json', querySchema), async (c) => {
-  const { query, context, limit, filters } = c.req.valid('json')
+ragRoutes.post('/query', zValidator('json', RAGQueryRequestSchema), async (c) => {
+  const request = c.req.valid('json')
 
-  // TODO: Implement RAG query processing
-  // 1. Embed query
-  // 2. Search Qdrant
-  // 3. Re-rank results
-  // 4. Generate response with GLM-4.6
+  try {
+    // Initialize services
+    const qdrantService = getQdrantService()
+    const embeddingService = getEmbeddingService()
+    const llmService = getLLMService()
 
-  return c.json({
-    answer: `This is a placeholder answer for query: "${query}"`,
-    sources: [
-      {
-        id: 'doc_123',
-        title: 'Sample Document',
-        slug: '/blog/sample-post',
-        content: 'Sample content snippet...',
-        score: 0.95,
-        metadata: {
-          category: 'DEV',
-          tags: ['typescript', 'rag'],
-          lastModified: '2024-12-22T00:00:00Z'
-        }
-      }
-    ],
-    usage: {
-      totalTokens: 150,
-      promptTokens: 100,
-      completionTokens: 50,
-    }
-  })
+    // Create query processor
+    const queryProcessor = new QueryProcessor(
+      qdrantService,
+      embeddingService,
+      llmService
+    )
+
+    // Process query
+    const response = await queryProcessor.processRAGQuery(request)
+
+    return c.json(response)
+
+  } catch (error) {
+    console.error('❌ RAG query failed:', error)
+    return c.json({
+      error: 'Query processing failed',
+      message: error.message,
+    }, 500)
+  }
 })
 
 // POST /api/rag/search - Semantic search only
-ragRoutes.post('/search', zValidator('json', searchSchema), async (c) => {
-  const { query, limit, threshold, filters } = c.req.valid('json')
+ragRoutes.post('/search', zValidator('json', SearchRequestSchema), async (c) => {
+  const request = c.req.valid('json')
 
-  // TODO: Implement semantic search
-  // 1. Embed query
-  // 2. Search Qdrant with filters
-  // 3. Return ranked results
+  try {
+    // Initialize services
+    const qdrantService = getQdrantService()
+    const embeddingService = getEmbeddingService()
 
-  return c.json({
-    results: [
-      {
-        id: 'doc_123',
-        title: 'Sample Document',
-        slug: '/blog/sample-post',
-        content: 'Sample content snippet...',
-        score: 0.92,
-        metadata: {
-          category: 'DEV',
-          tags: ['typescript', 'rag'],
-          wordCount: 1500,
-          lastModified: '2024-12-22T00:00:00Z'
-        }
-      }
-    ],
-    total: 1,
-    queryTime: 45, // ms
-  })
+    // Create query processor
+    const queryProcessor = new QueryProcessor(
+      qdrantService,
+      embeddingService,
+      null // No LLM needed for search only
+    )
+
+    // Search documents
+    const response = await queryProcessor.searchDocuments(request)
+
+    return c.json(response)
+
+  } catch (error) {
+    console.error('❌ Search failed:', error)
+    return c.json({
+      error: 'Search failed',
+      message: error.message,
+    }, 500)
+  }
 })
 
 // POST /api/rag/ingest - Trigger document ingestion
 ragRoutes.post('/ingest', async (c) => {
-  // TODO: Implement ingestion trigger
-  // 1. Start background ingestion process
-  // 2. Return job ID for status tracking
+  const body = await c.req.json()
+  const { force = false, batchSize = 10 } = body
 
-  return c.json({
-    jobId: 'ingest_' + Date.now(),
-    status: 'started',
-    message: 'Document ingestion started'
-  })
+  try {
+    // Initialize services
+    const qdrantService = getQdrantService()
+    const embeddingService = getEmbeddingService()
+
+    // Create ingestion pipeline
+    const pipeline = new IngestionPipeline(
+      qdrantService,
+      embeddingService
+    )
+
+    // Start ingestion
+    const jobId = await pipeline.startIngestion({
+      force,
+      batchSize,
+    })
+
+    return c.json({
+      jobId,
+      status: 'started',
+      message: 'Document ingestion started',
+    })
+
+  } catch (error) {
+    console.error('❌ Failed to start ingestion:', error)
+    return c.json({
+      error: 'Ingestion failed to start',
+      message: error.message,
+    }, 500)
+  }
 })
 
 // GET /api/rag/ingest/status - Check ingestion status
 ragRoutes.get('/ingest/status', async (c) => {
   const jobId = c.req.query('jobId')
 
-  // TODO: Check ingestion status
-  // 1. Query job status from Redis/database
-  // 2. Return progress information
+  if (!jobId) {
+    return c.json({
+      error: 'Missing jobId parameter',
+    }, 400)
+  }
 
-  return c.json({
-    jobId,
-    status: 'completed',
-    progress: {
-      total: 100,
-      processed: 100,
-      failed: 0,
-      percentage: 100
-    },
-    startedAt: '2024-12-22T00:00:00Z',
-    completedAt: '2024-12-22T00:05:00Z',
-  })
+  try {
+    // Get job status from pipeline (would need to store pipeline instance)
+    // For now, return a mock response
+    return c.json({
+      jobId,
+      status: 'completed',
+      progress: {
+        total: 100,
+        processed: 100,
+        failed: 0,
+        percentage: 100
+      },
+      startedAt: '2024-12-22T00:00:00Z',
+      completedAt: '2024-12-22T00:05:00Z',
+    })
+
+  } catch (error) {
+    console.error('❌ Failed to get ingestion status:', error)
+    return c.json({
+      error: 'Failed to get status',
+      message: error.message,
+    }, 500)
+  }
+})
+
+// GET /api/rag/health - Health check
+ragRoutes.get('/health', async (c) => {
+  try {
+    const qdrantService = getQdrantService()
+    const isHealthy = await qdrantService.healthCheck()
+
+    const collectionInfo = await qdrantService.getCollectionInfo()
+
+    return c.json({
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      services: {
+        qdrant: {
+          status: isHealthy ? 'connected' : 'disconnected',
+          ...collectionInfo,
+        }
+      },
+      timestamp: new Date().toISOString(),
+    })
+
+  } catch (error) {
+    console.error('❌ Health check failed:', error)
+    return c.json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    }, 503)
+  }
 })
 
 export { ragRoutes }
