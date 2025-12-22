@@ -5,13 +5,11 @@ import Link from 'next/link'
 import StreamingRecentPosts from '@/components/StreamingRecentPosts'
 import StreamingPopularPostsGrid from '@/components/StreamingPopularPostsGrid'
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton'
-import ErrorBoundary from '@/components/ErrorBoundary'
 
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
 export const revalidate = 60
 
-export default function Home() {
-
+export default async function StreamingHomePage() {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
@@ -36,7 +34,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Tabbed Posts Section */}
+      {/* Tabbed Posts Section with Streaming */}
       <section className="grid md:grid-cols-4 gap-8">
         <div className="md:col-span-4">
           <Tabs defaultValue="recent" className="w-full">
@@ -62,19 +60,18 @@ export default function Home() {
                   </Button>
                 </div>
 
-                <ErrorBoundary>
-                  <Suspense
-                    fallback={
-                      <div className="grid gap-6 lg:grid-cols-2">
-                        {Array.from({ length: 6 }).map((_, index) => (
-                          <PostCardSkeleton key={index} />
-                        ))}
-                      </div>
-                    }
-                  >
-                    <StreamingRecentPosts initialLimit={6} showMoreLimit={12} />
-                  </Suspense>
-                </ErrorBoundary>
+                {/* Streaming Recent Posts with Suspense */}
+                <Suspense
+                  fallback={
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <PostCardSkeleton key={index} />
+                      ))}
+                    </div>
+                  }
+                >
+                  <StreamingRecentPosts initialLimit={6} showMoreLimit={12} />
+                </Suspense>
               </div>
             </TabsContent>
 
@@ -91,30 +88,22 @@ export default function Home() {
                   </Button>
                 </div>
 
-                <ErrorBoundary>
-                  <Suspense
-                    fallback={
-                      <div className="grid gap-6 lg:grid-cols-2">
-                        {Array.from({ length: 6 }).map((_, index) => (
-                          <PostCardSkeleton key={`popular-${index}`} />
-                        ))}
-                      </div>
-                    }
-                  >
-                    <StreamingPopularPostsGrid limit={12} />
-                  </Suspense>
-                </ErrorBoundary>
+                {/* Streaming Popular Posts with Suspense */}
+                <Suspense
+                  fallback={
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <PostCardSkeleton key={`popular-${index}`} />
+                      ))}
+                    </div>
+                  }
+                >
+                  <StreamingPopularPostsGrid limit={12} />
+                </Suspense>
               </div>
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Sidebar */}
-        {/* <div className="space-y-8">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-            <PopularPosts limit={5} />
-          </div>
-        </div> */}
       </section>
     </div>
   )
