@@ -4,10 +4,10 @@ export interface Experience {
   id: string
   company: string
   position: string
-  team?: string
+  team: string | null
   period: string
   isCurrent: boolean
-  description?: string
+  description: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -18,7 +18,7 @@ export interface Achievement {
   id: string
   title: string
   description: string
-  tags?: string
+  tags: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -29,13 +29,13 @@ export interface Achievement {
  */
 export async function getExperiences(): Promise<Experience[]> {
   try {
-    const response = await client.api.experiences.$get()
+    const response = await client.api.rpc.experiences.$get()
 
     if (!response.ok) {
       throw new Error('Failed to fetch experiences')
     }
 
-    const result = await response.json()
+    const result = await response.json() as { success: boolean; data?: Experience[]; error?: string }
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch experiences')

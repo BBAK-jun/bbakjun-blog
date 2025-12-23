@@ -28,7 +28,7 @@ const experienceSchema = z.object({
 // 경력 목록 조회 엔드포인트
 const getExperiencesRoute = createRoute({
   method: "get",
-  path: "/experiences",
+  path: "/api/rpc/experiences",
   tags: ["experience"],
   summary: "경력 목록 조회",
   description: "소개 페이지에 표시될 경력 목록을 조회합니다",

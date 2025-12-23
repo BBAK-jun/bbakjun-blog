@@ -15,7 +15,7 @@ export async function queryBlogContent(params: {
     tags?: string[]
   }
 }) {
-  const response = await client.api.v1.rpc.queryBlogContent.$post({
+  const response = await client.api.rpc.queryBlogContent.$post({
     json: {
       query: params.query,
       context: params.context,
@@ -41,7 +41,7 @@ export async function searchBlogPosts(params: {
     tags?: string[]
   }
 }) {
-  const response = await client.api.v1.rpc.searchBlogPosts.$post({
+  const response = await client.api.rpc.searchBlogPosts.$post({
     json: {
       query: params.query,
       limit: params.limit || 10,

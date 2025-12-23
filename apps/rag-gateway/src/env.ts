@@ -24,7 +24,19 @@ export const env = createEnv({
     // Embedding Configuration
     SILICONFLOW_API_KEY: z.string().optional(),
     EMBEDDING_PROVIDER: z.enum(['openai', 'siliconflow']).default('openai'),
-    EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+    EMBEDDING_MODEL: z
+      .enum([
+        'text-embedding-3-small',
+        'text-embedding-3-large',
+        'text-embedding-ada-002',
+        'embedding-2',
+        'embedding-3',
+        'BAAI/bge-m3',
+        'BAAI/bge-large-zh-v1.5',
+        'zephyr-embedding',
+        'zephyr-embedding-large',
+      ])
+      .default('text-embedding-3-small'),
 
     // Optional Redis for caching
     REDIS_URL: z.string().url().optional(),
