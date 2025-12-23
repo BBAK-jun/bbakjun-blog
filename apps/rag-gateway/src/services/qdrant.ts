@@ -1,6 +1,52 @@
-import { QdrantClient } from 'qdrant';
+import { QdrantClient } from '@qdrant/js-client-rest';
+import { z } from 'zod';
 import { env } from '../env';
 import type { QdrantPoint, DocumentFilter, SearchParams, SimilarityResult } from '@repo/rag-types';
+
+// Zod schemas for Qdrant API responses
+const CollectionInfoSchema = z.object({
+  points_count: z.number().nullable().default(0),
+  segments_count: z.number().nullable().default(0),
+  disk_data_size: z.number().nullable().default(0),
+  ram_data_size: z.number().nullable().default(0),
+  config: z.record(z.unknown()).nullable().default({}),
+});
+
+const ScrollResultSchema = z.object({
+  points: z.array(
+    z.object({
+      id: z.union([z.string(), z.number()]),
+      payload: z.record(z.unknown()).optional(),
+    })
+  ),
+  next_page_offset: z.object({ point_id: z.union([z.string(), z.number()]) }).optional(),
+});
+
+const CountResultSchema = z.object({
+  count: z.number().nullable().default(0),
+});
+
+const QdrantFilterSchema = z.object({
+  must: z.array(z.record(z.unknown())).optional(),
+  should: z.array(z.record(z.unknown())).optional(),
+  minimum_should: z.number().optional(),
+});
+
+// Return type for collection info
+interface CollectionInfo {
+  name: string;
+  vectorsCount: number;
+  segmentsCount: number;
+  diskDataSize: number;
+  ramDataSize: number;
+  config: Record<string, unknown>;
+}
+
+// Return type for scroll points
+interface ScrollPointsResult {
+  points: Array<{ id: string; [key: string]: unknown }>;
+  nextPageOffset?: string;
+}
 
 export class QdrantService {
   private client: QdrantClient;
@@ -74,20 +120,36 @@ export class QdrantService {
     const { limit = 10, threshold = 0.7, filter, includeMetadata = true } = params;
 
     try {
-      const searchResult = await this.client.search(this.COLLECTION_NAME, {
+      const builtFilter = this.buildFilter(filter);
+      const searchParams: {
+        vector: number[];
+        limit: number;
+        score_threshold?: number;
+        with_payload: boolean;
+        with_vector: false;
+        filter?: z.infer<typeof QdrantFilterSchema>;
+      } = {
         vector: queryVector,
         limit,
-        score_threshold: threshold,
-        filter: this.buildFilter(filter),
         with_payload: includeMetadata,
         with_vector: false,
-      });
+      };
+
+      if (threshold !== undefined) {
+        searchParams.score_threshold = threshold;
+      }
+
+      if (builtFilter) {
+        searchParams.filter = builtFilter;
+      }
+
+      const searchResult = await this.client.search(this.COLLECTION_NAME, searchParams);
 
       return searchResult.map(point => ({
         id: point.id as string,
         score: point.score,
-        text: point.payload?.content || '',
-        metadata: includeMetadata ? point.payload : undefined,
+        text: (point.payload?.content as string) || '',
+        metadata: includeMetadata ? (point.payload as Record<string, unknown>) : undefined,
       }));
     } catch (error) {
       console.error('❌ Failed to search:', error);
@@ -100,11 +162,16 @@ export class QdrantService {
    */
   async deletePoints(filter: DocumentFilter): Promise<void> {
     try {
-      // Use the filter-based deletion
+      const builtFilter = this.buildFilter(filter);
+
+      if (!builtFilter) {
+        throw new Error('Filter is required for deletePoints operation');
+      }
+
       await this.client.delete(this.COLLECTION_NAME, {
         wait: true,
-        filter: this.buildFilter(filter),
-      } as any);
+        filter: builtFilter,
+      });
       console.log(`✅ Deleted points matching filter`);
     } catch (error) {
       console.error('❌ Failed to delete points:', error);
@@ -131,17 +198,17 @@ export class QdrantService {
   /**
    * Get collection info
    */
-  async getCollectionInfo(): Promise<any> {
+  async getCollectionInfo(): Promise<CollectionInfo> {
     try {
       const info = await this.client.getCollection(this.COLLECTION_NAME);
-      const result: any = info.result || info;
+      const parsed = CollectionInfoSchema.parse(info);
       return {
         name: this.COLLECTION_NAME,
-        vectorsCount: result.points_count || 0,
-        segmentsCount: result.segments_count || 0,
-        diskDataSize: result.disk_data_size || 0,
-        ramDataSize: result.ram_data_size || 0,
-        config: result.config || {},
+        vectorsCount: parsed.points_count ?? 0,
+        segmentsCount: parsed.segments_count ?? 0,
+        diskDataSize: parsed.disk_data_size ?? 0,
+        ramDataSize: parsed.ram_data_size ?? 0,
+        config: parsed.config ?? {},
       };
     } catch (error) {
       console.error('❌ Failed to get collection info:', error);
@@ -156,24 +223,41 @@ export class QdrantService {
     filter?: DocumentFilter,
     limit: number = 100,
     offset?: { point_id: string }
-  ): Promise<{ points: any[]; nextPageOffset?: string }> {
+  ): Promise<ScrollPointsResult> {
     try {
-      const result = await this.client.scroll(this.COLLECTION_NAME, {
-        filter: this.buildFilter(filter),
+      const builtFilter = this.buildFilter(filter);
+      const scrollParams: {
+        limit: number;
+        offset?: { point_id: string };
+        with_payload: true;
+        with_vector: false;
+        filter?: z.infer<typeof QdrantFilterSchema>;
+      } = {
         limit,
-        offset,
         with_payload: true,
         with_vector: false,
-      });
-      const data: any = result.result || result;
+      };
+
+      if (offset) {
+        scrollParams.offset = offset;
+      }
+
+      if (builtFilter) {
+        scrollParams.filter = builtFilter;
+      }
+
+      const result = await this.client.scroll(this.COLLECTION_NAME, scrollParams);
+      const parsed = ScrollResultSchema.parse(result);
 
       return {
         points:
-          data.points?.map((point: any) => ({
-            id: point.id as string,
+          parsed.points?.map(point => ({
+            id: String(point.id),
             ...point.payload,
           })) || [],
-        nextPageOffset: data.next_page_offset?.point_id,
+        nextPageOffset: parsed.next_page_offset?.point_id
+          ? String(parsed.next_page_offset.point_id)
+          : undefined,
       };
     } catch (error) {
       console.error('❌ Failed to scroll points:', error);
@@ -186,11 +270,18 @@ export class QdrantService {
    */
   async countPoints(filter?: DocumentFilter): Promise<number> {
     try {
-      const result = await this.client.count(this.COLLECTION_NAME, {
-        filter: this.buildFilter(filter),
-      });
-      const data: any = result.result || result;
-      return data.count || 0;
+      const builtFilter = this.buildFilter(filter);
+      const countParams: {
+        filter?: z.infer<typeof QdrantFilterSchema>;
+      } = {};
+
+      if (builtFilter) {
+        countParams.filter = builtFilter;
+      }
+
+      const result = await this.client.count(this.COLLECTION_NAME, countParams);
+      const parsed = CountResultSchema.parse(result);
+      return parsed.count ?? 0;
     } catch (error) {
       console.error('❌ Failed to count points:', error);
       throw error;
@@ -200,11 +291,11 @@ export class QdrantService {
   /**
    * Build Qdrant filter from DocumentFilter
    */
-  private buildFilter(filter?: DocumentFilter): any {
+  private buildFilter(filter?: DocumentFilter): z.infer<typeof QdrantFilterSchema> | undefined {
     if (!filter) return undefined;
 
-    const must: any[] = [];
-    const should: any[] = [];
+    const must: Array<Record<string, unknown>> = [];
+    const should: Array<Record<string, unknown>> = [];
 
     if (filter.category) {
       must.push({
@@ -237,7 +328,7 @@ export class QdrantService {
     }
 
     if (filter.dateRange) {
-      const dateFilter: any = {};
+      const dateFilter: Record<string, string> = {};
       if (filter.dateRange.start) {
         dateFilter.gte = filter.dateRange.start;
       }
@@ -254,14 +345,18 @@ export class QdrantService {
 
     // Combine filters
     if (should.length > 0) {
-      return {
+      return QdrantFilterSchema.parse({
         must: must.length > 0 ? must : undefined,
         should,
         minimum_should: 1,
-      };
+      });
     }
 
-    return must.length > 0 ? { must } : undefined;
+    if (must.length > 0) {
+      return QdrantFilterSchema.parse({ must });
+    }
+
+    return undefined;
   }
 
   /**

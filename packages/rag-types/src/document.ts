@@ -1,8 +1,8 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 // Document source types
-export const DocumentSourceSchema = z.enum(['blob', 'upload', 'api', 'scraper'])
-export type DocumentSource = z.infer<typeof DocumentSourceSchema>
+export const DocumentSourceSchema = z.enum(['blob', 'upload', 'api', 'scraper']);
+export type DocumentSource = z.infer<typeof DocumentSourceSchema>;
 
 // Document metadata schema
 export const DocumentMetadataSchema = z.object({
@@ -18,9 +18,9 @@ export const DocumentMetadataSchema = z.object({
   sourceUrl: z.string().url().optional(),
   uploadedAt: z.string().datetime(),
   lastModified: z.string().datetime(),
-})
+});
 
-export type DocumentMetadata = z.infer<typeof DocumentMetadataSchema>
+export type DocumentMetadata = z.infer<typeof DocumentMetadataSchema>;
 
 // Document schema
 export const DocumentSchema = z.object({
@@ -29,9 +29,9 @@ export const DocumentSchema = z.object({
   metadata: DocumentMetadataSchema,
   chunks: z.array(z.string()).optional(), // chunk IDs
   indexedAt: z.string().datetime().optional(),
-})
+});
 
-export type Document = z.infer<typeof DocumentSchema>
+export type Document = z.infer<typeof DocumentSchema>;
 
 // Qdrant point structure
 export const QdrantPointSchema = z.object({
@@ -42,38 +42,40 @@ export const QdrantPointSchema = z.object({
     chunkIndex: z.number(),
     content: z.string(),
     metadata: DocumentMetadataSchema,
-    position: z.object({
-      start: z.number(),
-      end: z.number(),
-    }).optional(),
+    position: z
+      .object({
+        start: z.number(),
+        end: z.number(),
+      })
+      .optional(),
   }),
-})
+});
 
-export type QdrantPoint = z.infer<typeof QdrantPointSchema>
+export type QdrantPoint = z.infer<typeof QdrantPointSchema>;
 
 // Document filter schema
 export const DocumentFilterSchema = z.object({
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
   author: z.string().optional(),
-  dateRange: z.object({
-    start: z.string().datetime().optional(),
-    end: z.string().datetime().optional(),
-  }).optional(),
+  dateRange: z
+    .object({
+      start: z.string().datetime().optional(),
+      end: z.string().datetime().optional(),
+    })
+    .optional(),
   source: DocumentSourceSchema.optional(),
-})
+});
 
-export type DocumentFilter = z.infer<typeof DocumentFilterSchema>
+export type DocumentFilter = z.infer<typeof DocumentFilterSchema>;
 
 // Deterministic ID generation
 export function generateDocumentId(source: string, path: string): string {
-  const crypto = require('crypto')
-  const hash = crypto.createHash('sha256')
-    .update(`${source}:${path}`)
-    .digest('hex')
-  return `doc_${hash.substring(0, 16)}`
+  const crypto = require('crypto');
+  const hash = crypto.createHash('sha256').update(`${source}:${path}`).digest('hex');
+  return `doc_${hash.substring(0, 16)}`;
 }
 
 export function generateChunkId(docId: string, position: number): string {
-  return `${docId}_chunk_${position.toString().padStart(4, '0')}`
+  return `${docId}_chunk_${position.toString().padStart(4, '0')}`;
 }

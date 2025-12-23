@@ -1,5 +1,5 @@
-import { z } from 'zod'
-import { DocumentFilterSchema } from './document'
+import { z } from 'zod';
+import { DocumentFilterSchema } from './document';
 
 // Query intent types
 export const QueryIntentSchema = z.enum([
@@ -10,8 +10,8 @@ export const QueryIntentSchema = z.enum([
   'how_to',
   'troubleshoot',
   'best_practices',
-])
-export type QueryIntent = z.infer<typeof QueryIntentSchema>
+]);
+export type QueryIntent = z.infer<typeof QueryIntentSchema>;
 
 // RAG query request
 export const RAGQueryRequestSchema = z.object({
@@ -23,9 +23,9 @@ export const RAGQueryRequestSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
   includeSources: z.boolean().default(true),
   stream: z.boolean().default(false),
-})
+});
 
-export type RAGQueryRequest = z.infer<typeof RAGQueryRequestSchema>
+export type RAGQueryRequest = z.infer<typeof RAGQueryRequestSchema>;
 
 // Source reference
 export const SourceReferenceSchema = z.object({
@@ -35,9 +35,9 @@ export const SourceReferenceSchema = z.object({
   content: z.string(),
   score: z.number(),
   metadata: z.record(z.any()).optional(),
-})
+});
 
-export type SourceReference = z.infer<typeof SourceReferenceSchema>
+export type SourceReference = z.infer<typeof SourceReferenceSchema>;
 
 // LLM usage information
 export const LLMUsageSchema = z.object({
@@ -46,9 +46,9 @@ export const LLMUsageSchema = z.object({
   promptTokens: z.number(),
   completionTokens: z.number(),
   cost: z.number().optional(),
-})
+});
 
-export type LLMUsage = z.infer<typeof LLMUsageSchema>
+export type LLMUsage = z.infer<typeof LLMUsageSchema>;
 
 // RAG query response
 export const RAGQueryResponseSchema = z.object({
@@ -58,9 +58,9 @@ export const RAGQueryResponseSchema = z.object({
   intent: QueryIntentSchema.optional(),
   queryTime: z.number().optional(), // ms
   model: z.string().optional(),
-})
+});
 
-export type RAGQueryResponse = z.infer<typeof RAGQueryResponseSchema>
+export type RAGQueryResponse = z.infer<typeof RAGQueryResponseSchema>;
 
 // Search only request (no LLM generation)
 export const SearchRequestSchema = z.object({
@@ -69,9 +69,9 @@ export const SearchRequestSchema = z.object({
   limit: z.number().min(1).max(50).default(10),
   threshold: z.number().min(0).max(1).default(0.7),
   rerank: z.boolean().default(true),
-})
+});
 
-export type SearchRequest = z.infer<typeof SearchRequestSchema>
+export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 
 // Search response
 export const SearchResponseSchema = z.object({
@@ -79,6 +79,6 @@ export const SearchResponseSchema = z.object({
   total: z.number(),
   queryTime: z.number(), // ms
   hasMore: z.boolean().optional(),
-})
+});
 
-export type SearchResponse = z.infer<typeof SearchResponseSchema>
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;

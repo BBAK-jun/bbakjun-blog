@@ -1,108 +1,92 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { client } from '@/lib/rpc'
-import type { AppType } from 'blog-admin/rpc'
-import { Button } from '@repo/ui'
-import { Search, Database, BarChart3, Clock } from 'lucide-react'
+import { client } from '@/lib/rpc';
+import { Button } from '@repo/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BarChart3, Clock, Database, Search, type LucideIcon } from 'lucide-react';
 
-interface RAGStats {
-  documents: {
-    total: number
-    indexed: number
-    categories: Record<string, number>
-  }
-  usage: {
-    totalQueries: number
-    avgQueryTime: number
-  }
-  system: {
-    status: string
-    uptime: string
-  }
-}
+// RPC를 통한 API 함수들
+const ragApi = {
+  // RAG 통계 조회
+  getStats: async () => {
+    const response = await client.api.rpc.getRAGStats.$get({});
+    if (!response.ok) {
+      throw new Error('RAG 통계 조회 실패');
+    }
+    return response.json();
+  },
 
-interface IngestionJob {
-  jobId: string
-  status: 'running' | 'completed' | 'failed'
-  progress: {
-    total: number
-    processed: number
-    failed: number
-    percentage: number
-  }
-  startedAt: string
-  completedAt?: string
-  error?: string
-}
+  // 인제스션 시작
+  startIngestion: async (force: boolean = false, batchSize: number = 20) => {
+    const response = await client.api.rpc.ingestDocuments.$post({
+      json: { force, batchSize },
+    });
+    if (!response.ok) {
+      throw new Error('인제스션 시작 실패');
+    }
+    return response.json();
+  },
+
+  // 인제스션 상태 확인
+  getIngestionStatus: async (jobId: string) => {
+    const response = await client.api.rpc.getIngestionStatus.$get({
+      query: { jobId },
+    });
+    if (!response.ok) {
+      throw new Error('상태 확인 실패');
+    }
+    return response.json();
+  },
+};
 
 export default function RAGManagement() {
-  const [stats, setStats] = useState<RAGStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [ingesting, setIngesting] = useState(false)
-  const [currentJob, setCurrentJob] = useState<IngestionJob | null>(null)
+  const queryClient = useQueryClient();
 
-  // Load initial stats
-  useEffect(() => {
-    loadStats()
-  }, [])
+  // RAG 통계 쿼리
+  const {
+    data: stats,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ['rag', 'stats'],
+    queryFn: ragApi.getStats,
+    refetchInterval: 30000, // 30초마다 자동 갱신
+    retry: 1,
+  });
 
-  const loadStats = async () => {
-    try {
-      const response = await client.api.v1.rpc.getRAGStats.$get()
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (error) {
-      console.error('Failed to load RAG stats:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // 인제스션 시작 뮤테이션
+  const ingestionMutation = useMutation({
+    mutationFn: ({ force, batchSize }: { force: boolean; batchSize: number }) =>
+      ragApi.startIngestion(force, batchSize),
+    onSuccess: data => {
+      // 상태 폴링 시작
+      pollJobStatus(data.jobId);
+    },
+    onError: err => {
+      console.error('인제스션 시작 실패:', err);
+      alert('인제스션을 시작하는데 실패했습니다');
+    },
+  });
 
-  const startIngestion = async (force: boolean = false) => {
-    setIngesting(true)
-    try {
-      const response = await client.api.v1.rpc.ingestDocuments.$post({
-        json: { force, batchSize: 20 }
-      })
-      if (response.ok) {
-        const job = await response.json()
-        setCurrentJob(job)
-        pollJobStatus(job.jobId)
-      }
-    } catch (error) {
-      console.error('Failed to start ingestion:', error)
-      alert('인제스션을 시작하는데 실패했습니다')
-    } finally {
-      setIngesting(false)
-    }
-  }
-
-  const pollJobStatus = async (jobId: string) => {
+  // 현재 작업 상태 폴링
+  const pollJobStatus = (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await client.api.v1.rpc.getIngestionStatus.$get({
-          query: { jobId }
-        })
-        if (response.ok) {
-          const job = await response.json()
-          setCurrentJob(job)
+        const job = await ragApi.getIngestionStatus(jobId);
 
-          if (job.status === 'completed' || job.status === 'failed') {
-            clearInterval(interval)
-            loadStats() // Reload stats when done
-          }
+        if (job.status === 'completed' || job.status === 'failed') {
+          clearInterval(interval);
+          // 통계 갱신
+          queryClient.invalidateQueries({ queryKey: ['rag', 'stats'] });
         }
       } catch (error) {
-        console.error('Failed to check job status:', error)
+        console.error('상태 확인 실패:', error);
       }
-    }, 2000)
+    }, 2000);
 
-    // Cleanup after 5 minutes
-    setTimeout(() => clearInterval(interval), 300000)
-  }
+    // 5분 후 정리
+    setTimeout(() => clearInterval(interval), 300000);
+  };
 
   return (
     <div className="space-y-8">
@@ -114,13 +98,34 @@ export default function RAGManagement() {
         </p>
       </div>
 
+      {/* 로딩 상태 */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">
+              RAG 시스템 정보를 불러오는 중...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 에러 상태 */}
+      {error && !isLoading && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-400">
+            RAG 시스템에 연결할 수 없습니다. 서비스 상태를 확인해주세요.
+          </p>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           icon={Database}
           title="총 문서"
-          value={stats?.documents.indexed || 0}
-          subtitle={`${stats?.documents.total || 0}개 중`}
+          value={stats?.documents.total || 0}
+          subtitle={`인덱싱된 문서: ${stats?.documents.indexed || 0}`}
         />
         <StatCard
           icon={Search}
@@ -150,44 +155,19 @@ export default function RAGManagement() {
         </p>
         <div className="flex gap-3">
           <Button
-            onClick={() => startIngestion(false)}
-            disabled={ingesting}
+            onClick={() => ingestionMutation.mutate({ force: false, batchSize: 20 })}
+            disabled={ingestionMutation.isPending}
           >
-            {ingesting ? '인덱싱 중...' : '변경된 문서만 인덱싱'}
+            {ingestionMutation.isPending ? '인덱싱 중...' : '변경된 문서만 인덱싱'}
           </Button>
           <Button
             variant="outline"
-            onClick={() => startIngestion(true)}
-            disabled={ingesting}
+            onClick={() => ingestionMutation.mutate({ force: true, batchSize: 20 })}
+            disabled={ingestionMutation.isPending}
           >
             전체 재인덱싱
           </Button>
         </div>
-
-        {/* Job Progress */}
-        {currentJob && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">
-                인덱싱 진행률 ({currentJob.progress.percentage}%)
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {currentJob.progress.processed} / {currentJob.progress.total}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${currentJob.progress.percentage}%` }}
-              ></div>
-            </div>
-            {currentJob.error && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                오류: {currentJob.error}
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Category Distribution */}
@@ -205,19 +185,19 @@ export default function RAGManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function StatCard({
   icon: Icon,
   title,
   value,
-  subtitle
+  subtitle,
 }: {
-  icon: any
-  title: string
-  value: string | number
-  subtitle?: string
+  icon: LucideIcon;
+  title: string;
+  value: string | number;
+  subtitle?: string;
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border">
@@ -225,12 +205,10 @@ function StatCard({
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
           <p className="text-2xl font-bold mt-1">{value}</p>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
         <Icon className="h-8 w-8 text-muted-foreground" />
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,4 @@
 import { createRoute, z } from '@hono/zod-openapi'
-import type { RpcEnv } from '@/rpc/types'
 
 const getRelatedPostsRoute = createRoute({
   method: 'post',
@@ -18,6 +17,7 @@ const getRelatedPostsRoute = createRoute({
   },
   responses: {
     200: {
+      description: 'Related posts',
       content: {
         'application/json': {
           schema: z.object({

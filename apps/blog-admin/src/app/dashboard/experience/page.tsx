@@ -469,7 +469,7 @@ export default function ExperiencePage() {
                     <Input
                       id="company"
                       value={experienceForm.company}
-                      onChange={(e) => setExperienceForm(prev => ({ ...prev, company: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExperienceForm(prev => ({ ...prev, company: e.target.value }))}
                       placeholder="예: 비바리퍼블리카"
                     />
                   </div>
@@ -478,7 +478,7 @@ export default function ExperiencePage() {
                     <Input
                       id="position"
                       value={experienceForm.position}
-                      onChange={(e) => setExperienceForm(prev => ({ ...prev, position: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExperienceForm(prev => ({ ...prev, position: e.target.value }))}
                       placeholder="예: Frontend Developer"
                     />
                   </div>
@@ -489,7 +489,7 @@ export default function ExperiencePage() {
                   <Input
                     id="team"
                     value={experienceForm.team}
-                    onChange={(e) => setExperienceForm(prev => ({ ...prev, team: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExperienceForm(prev => ({ ...prev, team: e.target.value }))}
                     placeholder="예: 토스 플레이스"
                   />
                 </div>
@@ -499,7 +499,7 @@ export default function ExperiencePage() {
                   <Input
                     id="period"
                     value={experienceForm.period}
-                    onChange={(e) => setExperienceForm(prev => ({ ...prev, period: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExperienceForm(prev => ({ ...prev, period: e.target.value }))}
                     placeholder="예: 2023.01 ~ 재직중 또는 2022.01 ~ 2023.12"
                   />
                 </div>
@@ -508,7 +508,7 @@ export default function ExperiencePage() {
                   <Switch
                     id="isCurrent"
                     checked={experienceForm.isCurrent}
-                    onCheckedChange={(checked) => setExperienceForm(prev => ({ ...prev, isCurrent: checked }))}
+                    onCheckedChange={(checked: boolean) => setExperienceForm(prev => ({ ...prev, isCurrent: checked }))}
                   />
                   <Label htmlFor="isCurrent">재직중</Label>
                 </div>
@@ -518,7 +518,7 @@ export default function ExperiencePage() {
                   <Textarea
                     id="description"
                     value={experienceForm.description}
-                    onChange={(e) => setExperienceForm(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExperienceForm(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="회사나 직무에 대한 간단한 설명"
                     rows={3}
                   />
@@ -530,7 +530,7 @@ export default function ExperiencePage() {
                     id="sortOrder"
                     type="number"
                     value={experienceForm.sortOrder}
-                    onChange={(e) => setExperienceForm(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExperienceForm(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
                     placeholder="클수록 위에 표시됩니다"
                   />
                 </div>

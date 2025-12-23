@@ -1,16 +1,16 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 // Embedding model types
 export const EmbeddingModelSchema = z.enum([
   'text-embedding-3-small',
   'text-embedding-3-large',
   'text-embedding-ada-002',
-])
-export type EmbeddingModel = z.infer<typeof EmbeddingModelSchema>
+]);
+export type EmbeddingModel = z.infer<typeof EmbeddingModelSchema>;
 
 // Embedding provider
-export const EmbeddingProviderSchema = z.enum(['openai', 'glm'])
-export type EmbeddingProvider = z.infer<typeof EmbeddingProviderSchema>
+export const EmbeddingProviderSchema = z.enum(['openai', 'glm']);
+export type EmbeddingProvider = z.infer<typeof EmbeddingProviderSchema>;
 
 // Embedding configuration
 export const EmbeddingConfigSchema = z.object({
@@ -19,9 +19,9 @@ export const EmbeddingConfigSchema = z.object({
   dimensions: z.number().default(1536),
   batchSize: z.number().default(100),
   maxTokens: z.number().default(8191),
-})
+});
 
-export type EmbeddingConfig = z.infer<typeof EmbeddingConfigSchema>
+export type EmbeddingConfig = z.infer<typeof EmbeddingConfigSchema>;
 
 // Embedding record
 export const EmbeddingSchema = z.object({
@@ -34,9 +34,9 @@ export const EmbeddingSchema = z.object({
   tokenCount: z.number(),
   createdAt: z.string().datetime(),
   hash: z.string(), // For caching
-})
+});
 
-export type Embedding = z.infer<typeof EmbeddingSchema>
+export type Embedding = z.infer<typeof EmbeddingSchema>;
 
 // Similarity result
 export const SimilarityResultSchema = z.object({
@@ -44,9 +44,9 @@ export const SimilarityResultSchema = z.object({
   score: z.number(),
   text: z.string(),
   metadata: z.record(z.any()).optional(),
-})
+});
 
-export type SimilarityResult = z.infer<typeof SimilarityResultSchema>
+export type SimilarityResult = z.infer<typeof SimilarityResultSchema>;
 
 // Search parameters
 export const SearchParamsSchema = z.object({
@@ -55,12 +55,12 @@ export const SearchParamsSchema = z.object({
   threshold: z.number().min(0).max(1).default(0.7),
   includeMetadata: z.boolean().default(true),
   filter: z.record(z.any()).optional(),
-})
+});
 
-export type SearchParams = z.infer<typeof SearchParamsSchema>
+export type SearchParams = z.infer<typeof SearchParamsSchema>;
 
 // Generate hash for caching
 export function generateTextHash(text: string): string {
-  const crypto = require('crypto')
-  return crypto.createHash('md5').update(text).digest('hex')
+  const crypto = require('crypto');
+  return crypto.createHash('md5').update(text).digest('hex');
 }
