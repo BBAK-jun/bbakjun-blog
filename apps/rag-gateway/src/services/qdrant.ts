@@ -297,6 +297,13 @@ export class QdrantService {
     const must: Array<Record<string, unknown>> = [];
     const should: Array<Record<string, unknown>> = [];
 
+    if (filter.documentId) {
+      must.push({
+        key: 'documentId',
+        match: { value: filter.documentId },
+      });
+    }
+
     if (filter.category) {
       must.push({
         key: 'metadata.category',

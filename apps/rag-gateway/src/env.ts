@@ -22,6 +22,9 @@ export const env = createEnv({
     // Optional Redis for caching
     REDIS_URL: z.string().url().optional(),
 
+    // Blog-Admin URL for fetching blob files
+    BLOG_ADMIN_URL: z.string().url().default('http://localhost:3001'),
+
     // CORS Configuration
     ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
   },
@@ -35,6 +38,7 @@ export const env = createEnv({
     QDRANT_API_KEY: process.env.QDRANT_API_KEY,
     GLM_API_KEY: process.env.GLM_API_KEY,
     REDIS_URL: process.env.REDIS_URL,
+    BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     NEXT_PUBLIC_RAG_URL: process.env.NEXT_PUBLIC_RAG_URL,
   },

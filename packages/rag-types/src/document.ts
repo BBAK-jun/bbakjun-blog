@@ -55,6 +55,7 @@ export type QdrantPoint = z.infer<typeof QdrantPointSchema>;
 
 // Document filter schema
 export const DocumentFilterSchema = z.object({
+  documentId: z.string().optional(),
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
   author: z.string().optional(),

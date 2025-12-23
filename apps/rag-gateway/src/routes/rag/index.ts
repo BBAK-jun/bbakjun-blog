@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { getQdrantService } from '../../services/qdrant';
 import { getEmbeddingService } from '../../services/embedding';
 import { getLLMService } from '../../services/llm';
 import { QueryProcessor } from '@repo/rag-core';
 import { IngestionPipeline } from '@repo/rag-ingestion';
 import { RAGQueryRequestSchema, SearchRequestSchema } from '@repo/rag-types';
+import { env } from '../../env';
 
 const ragRoutes = new Hono();
 
@@ -70,29 +72,62 @@ ragRoutes.post('/search', zValidator('json', SearchRequestSchema), async c => {
   }
 });
 
+// Ingestion request schema
+const ingestRequestSchema = z.object({
+  force: z.boolean().default(false),
+  batchSize: z.number().min(1).max(100).default(10),
+  collections: z.array(z.string()).optional(),
+});
+
 // POST /api/rag/ingest - Trigger document ingestion
-ragRoutes.post('/ingest', async c => {
-  const body = await c.req.json();
-  const { force = false, batchSize = 10 } = body;
+ragRoutes.post('/ingest', zValidator('json', ingestRequestSchema), async c => {
+  const { force, batchSize, collections } = c.req.valid('json');
 
   try {
     // Initialize services
     const qdrantService = getQdrantService();
     const embeddingService = getEmbeddingService();
 
+    // Fetch blob files from blog-admin
+    const blobFilesResponse = await fetch(`${env.BLOG_ADMIN_URL}/api/rpc/blob-files`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!blobFilesResponse.ok) {
+      throw new Error(`Failed to fetch blob files: ${blobFilesResponse.statusText}`);
+    }
+
+    const blobFilesData = (await blobFilesResponse.json()) as {
+      files: Array<{ pathname: string; url: string; contentType: string | null }>;
+    };
+    const blobFiles = blobFilesData.files || [];
+
+    // Filter for markdown files only
+    const markdownFiles = blobFiles.filter((f: { pathname: string }) =>
+      f.pathname.match(/\.(md|mdx)$/)
+    );
+
+    console.log(`📁 Found ${markdownFiles.length} markdown files for ingestion`);
+
     // Create ingestion pipeline
     const pipeline = new IngestionPipeline(qdrantService, embeddingService);
 
-    // Start ingestion
+    // Start ingestion with blob files
     const jobId = await pipeline.startIngestion({
       force,
       batchSize,
+      collections,
+      blobFiles: markdownFiles,
     });
 
     return c.json({
       jobId,
       status: 'started',
       message: 'Document ingestion started',
+      filesCount: markdownFiles.length,
     });
   } catch (error) {
     console.error('❌ Failed to start ingestion:', error);
@@ -124,15 +159,15 @@ ragRoutes.get('/ingest/status', async c => {
     // For now, return a mock response
     return c.json({
       jobId,
-      status: 'completed',
+      status: 'running',
       progress: {
         total: 100,
-        processed: 100,
+        processed: 50,
         failed: 0,
-        percentage: 100,
+        percentage: 50,
+        current: 'Processing batch 1/2...',
       },
-      startedAt: '2024-12-22T00:00:00Z',
-      completedAt: '2024-12-22T00:05:00Z',
+      startedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error('❌ Failed to get ingestion status:', error);
