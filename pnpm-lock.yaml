@@ -337,9 +337,15 @@ importers:
 
   apps/rag-gateway:
     dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.7
+        version: 1.19.7(hono@4.11.1)
       '@hono/zod-openapi':
         specifier: ^0.16.4
         version: 0.16.4(hono@4.11.1)(zod@3.25.76)
+      '@hono/zod-validator':
+        specifier: ^0.7.6
+        version: 0.7.6(hono@4.11.1)(zod@3.25.76)
       '@repo/content':
         specifier: workspace:*
         version: link:../../packages/content
@@ -5830,6 +5836,11 @@ snapshots:
       zod: 4.1.13
 
   '@hono/zod-validator@0.3.0(hono@4.11.1)(zod@3.25.76)':
+    dependencies:
+      hono: 4.11.1
+      zod: 3.25.76
+
+  '@hono/zod-validator@0.7.6(hono@4.11.1)(zod@3.25.76)':
     dependencies:
       hono: 4.11.1
       zod: 3.25.76

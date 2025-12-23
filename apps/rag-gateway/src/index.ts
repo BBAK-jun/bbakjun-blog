@@ -1,8 +1,7 @@
-console.log('야호');
-
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { serve } from '@hono/node-server';
 import { env } from './env';
 import { ragRoutes } from './routes/rag';
 import { documentRoutes } from './routes/documents';
@@ -61,10 +60,9 @@ app.onError((err, c) => {
   );
 });
 
-const port = env.PORT;
-console.log(`🚀 RAG Gateway server running on port ${port}`);
+console.log(`🚀 RAG Gateway server running on port ${env.PORT}`);
 
-export default {
-  port,
-  fetch: app.fetch,
-};
+// Start the server
+serve({ fetch: app.fetch, port: env.PORT });
+
+export default app;

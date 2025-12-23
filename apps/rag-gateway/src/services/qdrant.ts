@@ -112,12 +112,11 @@ export class QdrantService {
    */
   async deletePoints(filter: DocumentFilter): Promise<void> {
     try {
+      // Use the filter-based deletion
       await this.client.delete(this.COLLECTION_NAME, {
         wait: true,
-        points: {
-          filter: this.buildFilter(filter),
-        },
-      })
+        filter: this.buildFilter(filter),
+      } as any)
       console.log(`✅ Deleted points matching filter`)
     } catch (error) {
       console.error('❌ Failed to delete points:', error)
@@ -147,13 +146,14 @@ export class QdrantService {
   async getCollectionInfo(): Promise<any> {
     try {
       const info = await this.client.getCollection(this.COLLECTION_NAME)
+      const result: any = info.result || info
       return {
         name: this.COLLECTION_NAME,
-        vectorsCount: info.result.points_count,
-        segmentsCount: info.result.segments_count,
-        diskDataSize: info.result.disk_data_size,
-        ramDataSize: info.result.ram_data_size,
-        config: info.result.config,
+        vectorsCount: result.points_count || 0,
+        segmentsCount: result.segments_count || 0,
+        diskDataSize: result.disk_data_size || 0,
+        ramDataSize: result.ram_data_size || 0,
+        config: result.config || {},
       }
     } catch (error) {
       console.error('❌ Failed to get collection info:', error)
@@ -177,13 +177,14 @@ export class QdrantService {
         with_payload: true,
         with_vector: false,
       })
+      const data: any = result.result || result
 
       return {
-        points: result.result.points.map(point => ({
+        points: data.points?.map((point: any) => ({
           id: point.id as string,
           ...point.payload,
-        })),
-        nextPageOffset: result.result.next_page_offset?.point_id,
+        })) || [],
+        nextPageOffset: data.next_page_offset?.point_id,
       }
     } catch (error) {
       console.error('❌ Failed to scroll points:', error)
@@ -199,7 +200,8 @@ export class QdrantService {
       const result = await this.client.count(this.COLLECTION_NAME, {
         filter: this.buildFilter(filter),
       })
-      return result.result.count
+      const data: any = result.result || result
+      return data.count || 0
     } catch (error) {
       console.error('❌ Failed to count points:', error)
       throw error
