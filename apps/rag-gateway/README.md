@@ -1,6 +1,6 @@
 # RAG Gateway
 
-RAG(Retrieval-Augmented Generation) 기반 블로그 검색 및 질의응답 API 서비스입니다. GLM-4.6 LLM과 Qdrant 벡터 데이터베이스를 활용하여 의미론적 검색과 컨텍스트 인식형 응답을 제공합니다.
+RAG(Retrieval-Augmented Generation) 기반 블로그 검색 및 질의응답 API 서비스입니다. Qdrant 벡터 데이터베이스와 다양한 LLM을 활용하여 의미론적 검색과 컨텍스트 인식형 응답을 제공합니다.
 
 ## 프로젝트 개요 (Project Overview)
 
@@ -8,663 +8,402 @@ RAG Gateway는 DEV_BBAK 블로그의 콘텐츠를 지능적으로 검색하고 �
 
 **핵심 특징:**
 
-- GLM-4.6 기반 RAG 질의응답 시스템
+- 다중 LLM 지원 (OpenAI GPT-4o-mini, GLM-4.6)
 - Qdrant 벡터 데이터베이스를 활용한 의미론적 검색
-- MCP (Model Context Protocol) 도구 통합
-- 메모리 캐싱 최적화된 임베딩 서비스
+- 다중 임베딩 모델 지원 (OpenAI, SiliconFlow 한국어)
+- Query Expansion을 통한 검색 품질 개선
+- Semantic Chunking을 통한 문맥 보존
 - 타입 안전한 API 설계 (Zod + @hono/zod-validator)
-- 외부 blob 파일 지원 (수집 파이프라인)
+- 전략 패턴 기반 LLM 서비스 아키텍처
 
 **기술 스택:**
 
-- **Web Framework**: Hono 4.6.5 + @hono/node-server 1.19.7
-- **Validation**: Zod 3.23.8 + @hono/zod-validator 0.7.6
-- **LLM**: GLM-4.6 (OpenAI SDK 4.28.4)
-- **Vector DB**: Qdrant 1.3.1
-- **Ingestion**: @repo/rag-ingestion (Vercel Blob + gray-matter)
+- **Web Framework**: Hono 4.11.1 + @hono/node-server 1.19.7
+- **Validation**: Zod 3.25.76 + @hono/zod-validator 0.7.6
+- **LLM**: OpenAI GPT-4o-mini, GLM-4.6
+- **Embedding**: OpenAI text-embedding-3-small, SiliconFlow BAAI/bge-m3
+- **Vector DB**: Qdrant 1.13.0 (@qdrant/js-client-rest)
 - **Environment**: @t3-oss/env-nextjs (타입 안전한 환경 변수)
-- **Language**: TypeScript
+- **Language**: TypeScript 5.7.2
 
 ## 주요 기능 (Key Features)
 
-### 1. RAG 질의응답 (`/api/rag/query`)
+### 1. RAG 질의응답 (`POST /api/rag/query`)
 
-사용자 질문과 관련된 블로그 콘텐츠를 검색하고 GLM-4.6을 활용하여 컨텍스트 인식형 답변을 생성합니다.
+사용자 질문과 관련된 블로그 콘텐츠를 검색하고 LLM을 활용하여 컨텍스트 인식형 답변을 생성합니다.
 
 **특징:**
 
 - 의미론적 벡터 검색 (상위 K개 문서)
+- Query Expansion (질문 확장을 통한 검색 범위 개선)
+- Document Grouping (청크를 문서 단위로 그룹화)
 - LLM 기반 자연어 응답 생성
-- 쿼리 캐싱 (Redis)으로 성능 최적화
+- 쿼리 의도 자동 분류 (search, explain, how_to, troubleshoot 등)
 
-### 2. 의미론적 검색 (`/api/rag/search`)
+### 2. 문서 검색 (`POST /api/rag/search`)
 
 LLM 응답 없이 순수 의미론적 검색만 수행합니다.
 
 **특징:**
 
 - 벡터 유사도 기반 검색
+- Re-ranking 지원
+- 필터링 (category, tags, author, source)
 - 관련성 점수 반환
-- 빠른 응답 속도
 
-### 3. 문서 수집 (`/api/rag/ingest`)
+### 3. 문서 관리 (`/api/documents`)
 
-블로그 콘텐츠를 벡터화하여 Qdrant에 저장합니다.
-
-**특징:**
-
-- 자동 임베딩 생성
-- 배치 처리 지원
-- 수집 상태 추적
-
-### 4. MCP 도구 통합 (`/mcp`)
-
-MCP 프로토콜을 통해 다양한 도구를 제공합니다.
-
-**제공 도구:**
-
-| 도구 | 설명 | 파라미터 |
-|------|------|----------|
-| `search_blog` | 블로그 게시물 의미론적 검색 | `query`, `category`, `limit` |
-| `explain_code` | 코드 설명 (RAG 컨텍스트 활용) | `code`, `context` |
-| `find_examples` | 기술별 코드 예제 찾기 | `technology`, `use_case` |
-| `get_related_posts` | 토픽 기반 관련 게시물 찾기 | `topic`, `limit` |
-
-### 5. 관리자 기능 (`/api/admin`)
-
-시스템 모니터링 및 관리 기능을 제공합니다.
+블로그 콘텐츠의 CRUD 및 인덱싱를 제공합니다.
 
 **기능:**
 
-- 사용 통계 (TODO)
-- 시스템 로그 (TODO)
-- 재인덱싱 (TODO)
-- 캐시 관리 (TODO)
+- 문서 목록 조회 (페이지네이션, 검색, 필터링)
+- 문서 추가 (자동 청킹 + 임베딩)
+- 문서 재인덱싱 (내용 변경 시)
+- 문서 삭제
+- 청크 단위 조회
 
 ## 아키텍처 (Architecture)
 
 ```
-┌─────────────────┐
-│   Client App    │
-│  (Blog/Admin)   │
-└────────┬────────┘
-         │ HTTP/REST
-         ↓
-┌─────────────────────────────────────────────────┐
-│              RAG Gateway (Hono)                 │
-├─────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
-│  │ RAG Routes  │  │ MCP Routes  │  │  Admin  │ │
-│  └──────┬──────┘  └──────┬──────┘  └────┬────┘ │
-│         │                │              │       │
-│  ┌──────▼────────────────▼──────────────▼──────┐│
-│  │              Service Layer                  ││
-│  ├──────────┬──────────┬──────────┬───────────┤│
-│  │   LLM    │ Qdrant   │ Embedding│  Cache    ││
-│  │ Service  │ Service  │ Service  │  (Redis)  ││
-│  └────┬─────┴────┬─────┴────┬─────┴─────┬─────┘│
-└───────┼──────────┼──────────┼────────────┼──────┘
-        │          │          │            │
-        ↓          ↓          ↓            ↓
-   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-   │ GLM-4.6 │ │ Qdrant  │ │ GLM API │ │ Redis   │
-   │  API    │ │ Vector  │ │Embed API│ │ Cache   │
-   └─────────┘ │   DB    │ └─────────┘ └─────────┘
-               └─────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         RAG Gateway                             │
+│                      (Hono + Node.js)                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │   RAG API   │    │  Documents  │    │    Health   │          │
+│  │   /rag/*    │    │    /docs    │    │    /health   │          │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘          │
+│         │                  │                  │                  │
+│         └──────────────────┴──────────────────┘                  │
+│                            │                                     │
+│         ┌──────────────────▼──────────────────┐                  │
+│         │         QueryProcessor              │                  │
+│         │      (@repo/rag-core)               │                  │
+│         │  - Query Expansion                  │                  │
+│         │  - Document Retrieval               │                  │
+│         │  - Re-ranking                       │                  │
+│         └──────────────────┬──────────────────┘                  │
+│                            │                                     │
+│  ┌─────────────────────────┼─────────────────────────┐        │
+│  │                         │                         │        │
+│  ▼                         ▼                         ▼        │
+│ ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
+│ │ Qdrant      │    │ Embedding   │    │ LLM         │    │
+│ │ Service     │    │ Service     │    │ Service     │    │
+│ │             │    │             │    │             │    │
+│ │ - Search    │    │ - OpenAI    │    │ - OpenAI     │    │
+│ │ - Store     │    │ - SiliconFlow│    │ - GLM        │    │
+│ │ - Delete    │    │ (한국어)     │    │             │    │
+│ └─────────────┘    └─────────────┘    └─────────────┘    │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+                        ┌──────────────────────┐
+                        │   Qdrant Cloud        │
+                        │   - Vector DB         │
+                        │   - 1536 dims         │
+                        │   - Cosine Similarity │
+                        └──────────────────────┘
 ```
 
-### 서비스 구성
+## 디렉토리 구조
 
-**LLMService** ([`src/services/llm.ts`](src/services/llm.ts))
+```
+apps/rag-gateway/
+├── docs/                     # 문서
+│   ├── RAG_ARCHITECTURE.md   # 아키텍처 설명
+│   └── API.md                # API 문서
+├── scripts/
+│   └── ingest-claude-docs.ts # 문서 인덱싱 스크립트
+├── src/
+│   ├── env.ts                # 환경 변수 (t3-oss/env-nextjs)
+│   ├── index.ts              # 서버 진입점
+│   ├── routes/
+│   │   ├── rag/
+│   │   │   └── index.ts      # RAG API
+│   │   └── documents/
+│   │       └── index.ts      # 문서 관리 API
+│   └── services/
+│       ├── qdrant.ts         # Qdrant 클라이언트
+│       ├── embedding.ts      # 임베딩 서비스
+│       └── llm/              # LLM 서비스 (Strategy Pattern)
+│           ├── factory.ts
+│           ├── index.ts
+│           ├── openai.strategy.ts
+│           ├── glm.strategy.ts
+│           └── prompt.ts
+└── package.json
+```
 
-- GLM-4.6 기반 응답 생성
-- RAG 파이프라인 연계
-- 쿼리 의도 자동 감지 (search, explain, find_examples, compare, how_to, troubleshoot, best_practices)
-- Max Tokens: 2000
-- Base URL: `https://open.bigmodel.cn/api/paas/v4/`
+## 환경 변수 설정
 
-**QdrantService** ([`src/services/qdrant.ts`](src/services/qdrant.ts))
+### 필수 환경 변수
 
-- 벡터 데이터베이스 연산
-- Collection: `blog_documents`
-- Dimension: 1536
-- Distance Metric: Cosine
-- 필터 기반 검색 (category, tags, author, source, dateRange)
-- Pagination 지원 (scroll, count)
+```bash
+# 서버
+PORT=3002
 
-**EmbeddingService** ([`src/services/embedding.ts`](src/services/embedding.ts))
+# Qdrant
+QDRANT_URL=https://your-cluster.qdrant.io
+QDRANT_API_KEY=your-api-key
 
-- 텍스트 임베딩 생성 (GLM text-embedding-3-small)
-- Dimension: 1024
-- 메모리 캐싱 (Map 기반, hash 키)
-- 배치 처리 지원
-- 코사인 유사도 계산
-- 임베딩 평균화 기능
+# LLM (하나 이상 필수)
+OPENAI_API_KEY=sk-...
+GLM_API_KEY=your-glm-key
+LLM_PROVIDER=openai|glm
+```
 
-**QueryProcessor** (@repo/rag-core)
+### 선택 환경 변수
 
-- RAG 쿼리 처리
-- 의미론적 검색
-- LLM 응답 생성
+```bash
+# Embedding (기본값: OpenAI)
+EMBEDDING_PROVIDER=openai|siliconflow
+EMBEDDING_MODEL=text-embedding-3-small|BAAI/bge-m3
+SILICONFLOW_API_KEY=sk-...
+
+# 캐싱 (선택사항)
+REDIS_URL=redis://localhost:6379
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Blog-Admin 연동
+BLOG_ADMIN_URL=http://localhost:3001
+
+# 클라이언트
+NEXT_PUBLIC_RAG_URL=http://localhost:3002
+```
+
+### 한국어 임베딩 사용 설정
+
+SiliconFlow의 BAAI/bge-m3 모델을 사용하여 한국어 검색 품질을 개선할 수 있습니다:
+
+```bash
+EMBEDDING_PROVIDER=siliconflow
+EMBEDDING_MODEL=BAAI/bge-m3
+SILICONFLOW_API_KEY=your-siliconflow-key
+```
+
+**주의**: 임베딩 모델에 따라 벡터 차원이 다릅니다. 모델 변경 시 Qdrant 컬렉션을 삭제하고 재생성해야 합니다.
 
 ## 시작하기 (Getting Started)
 
-### 사전 요구사항
+### 1. 사전 요구사항
 
 - Node.js 20+
 - pnpm 8+
 - Qdrant 인스턴스 (로컬 또는 클라우드)
-- GLM API Key (https://open.bigmodel.cn/)
 
-### 설치
+### 2. 설치
 
 ```bash
 # 의존성 설치
 pnpm install
 
-# 워크스페이스 의존성 빌드 (@repo/rag-core, @repo/rag-ingestion, @repo/rag-types)
+# 워크스페이스 빌드
 pnpm build
 ```
 
-### 환경 변수 설정
-
-`.env.local` 파일을 생성하고 다음 환경 변수를 설정하세요:
+### 3. 실행
 
 ```bash
-# 서버 설정
-NODE_ENV=development
-PORT=3002
-
-# GLM API (필수)
-GLM_API_KEY=your_glm_api_key_here
-
-# Qdrant (필수)
-QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your_qdrant_api_key  # 선택사항 (로컬 개발 시 불필요)
-
-# Redis (선택사항 - 캐싱용)
-REDIS_URL=redis://localhost:6379
-
-# CORS 설정
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-```
-
-### 실행
-
-```bash
-# 개발 모드 (핫 리로드 + 워크스페이스 빌드)
+# 개발 모드
 pnpm dev
 
 # 프로덕션 빌드
 pnpm build
 
 # 프로덕션 실행
-pnpm start
+NODE_ENV=production pnpm start
 ```
 
-서비스가 기동되면 http://localhost:3002 에서 접근할 수 있습니다.
+서비스가 http://localhost:3002에서 시작됩니다.
 
-### 헬스 체크
+## API 사용 예시
+
+### RAG 질의응답
 
 ```bash
-curl http://localhost:3002/health
-# {"status":"ok","timestamp":"2025-12-23T..."}
+curl -X POST http://localhost:3002/api/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Vercel Blob CDC는 어떻게 작동하나요?",
+    "limit": 5
+  }'
 ```
 
-## API 엔드포인트 (API Endpoints)
-
-### 루트 엔드포인트
-
-#### `GET /health`
-
-서비스 상태 확인
-
-**Response:**
+**응답 예시:**
 
 ```json
 {
-  "status": "ok",
-  "timestamp": "2025-12-23T10:00:00Z"
-}
-```
-
----
-
-### RAG 엔드포인트 (`/api/rag`)
-
-#### `POST /api/rag/query`
-
-RAG 기반 질의응답 수행
-
-**Request:**
-
-```json
-{
-  "query": "Next.js의 ISR 기능은 어떻게 작동하나요?",
-  "topK": 5,
-  "minScore": 0.7
-}
-```
-
-**Response:**
-
-```json
-{
-  "answer": "Next.js의 ISR(Incremental Static Regeneration)은...",
+  "answer": "Vercel Blob CDC는 Vercel Blob Storage에 저장된 파일을...",
   "sources": [
     {
       "id": "doc_123",
-      "title": "Next.js ISR 가이드",
-      "url": "/blog/nextjs-isr",
-      "score": 0.92,
-      "snippet": "ISR은 정적 생성의 성능과..."
-    }
-  ],
-  "query": "Next.js의 ISR 기능은 어떻게 작동하나요?",
-  "timestamp": "2025-12-23T10:00:00Z"
-}
-```
-
-#### `POST /api/rag/search`
-
-의미론적 검색만 수행 (LLM 응답 없음)
-
-**Request:**
-
-```json
-{
-  "query": "TypeScript 타입 추론",
-  "topK": 10,
-  "minScore": 0.6
-}
-```
-
-**Response:**
-
-```json
-{
-  "results": [
-    {
-      "id": "doc_456",
-      "title": "TypeScript 타입 시스템",
-      "url": "/blog/typescript-types",
-      "score": 0.88
-    }
-  ],
-  "query": "TypeScript 타입 추론",
-  "total": 1
-}
-```
-
-#### `POST /api/rag/ingest`
-
-문서 수집 트리거
-
-**Request:**
-
-```json
-{
-  "force": false
-}
-```
-
-**Response:**
-
-```json
-{
-  "jobId": "ingest_20251223_100000",
-  "status": "started",
-  "message": "문서 수집이 시작되었습니다."
-}
-```
-
-#### `GET /api/rag/ingest/status`
-
-수집 상태 확인
-
-**Query Parameters:**
-
-- `jobId` (optional): 특정 작업 ID
-
-**Response:**
-
-```json
-{
-  "status": "completed",
-  "progress": 100,
-  "processed": 150,
-  "failed": 0,
-  "startedAt": "2025-12-23T10:00:00Z",
-  "completedAt": "2025-12-23T10:05:00Z"
-}
-```
-
-#### `GET /api/rag/health`
-
-RAG 서비스 상태 확인
-
-**Response:**
-
-```json
-{
-  "status": "healthy",
-  "services": {
-    "qdrant": "connected",
-    "glm": "connected",
-    "redis": "connected"
-  }
-}
-```
-
----
-
-### 문서 엔드포인트 (`/api/documents`)
-
-> 현재 TODO 상태입니다.
-
-- `GET /api/documents` - 문서 목록 조회
-- `GET /api/documents/:id` - 문서 상세 조회
-- `POST /api/documents` - 문서 추가
-- `PUT /api/documents/:id` - 문서 수정
-- `DELETE /api/documents/:id` - 문서 삭제
-
----
-
-### MCP 엔드포인트 (`/mcp`)
-
-#### `GET /mcp/tools`
-
-사용 가능한 MCP 도구 목록
-
-**Response:**
-
-```json
-{
-  "tools": [
-    {
-      "name": "search_blog",
-      "description": "블로그 게시물 검색",
-      "parameters": {
-        "query": "string",
-        "topK": "number"
-      }
-    },
-    {
-      "name": "explain_code",
-      "description": "코드 설명",
-      "parameters": {
-        "code": "string",
-        "language": "string"
+      "title": "env",
+      "slug": "/blog/env",
+      "content": "- **Purpose**: Vercel Blob CDC 동기화 간격...",
+      "score": 0.76,
+      "metadata": {
+        "title": "env",
+        "category": "facts/apps/blog-admin",
+        "tags": [],
+        "author": "claude-code"
       }
     }
-  ]
-}
-```
-
-#### `POST /mcp/invoke`
-
-MCP 도구 실행
-
-**Request:**
-
-```json
-{
-  "tool": "search_blog",
-  "parameters": {
-    "query": "React Hooks 사용법",
-    "topK": 5
-  }
-}
-```
-
-**Response:**
-
-```json
-{
-  "result": [
-    {
-      "title": "React Hooks 완전 정복",
-      "url": "/blog/react-hooks",
-      "snippet": "React Hooks는..."
-    }
   ],
-  "tool": "search_blog"
+  "usage": {
+    "model": "glm-4.6",
+    "totalTokens": 2528,
+    "cost": 0.00005264
+  },
+  "queryTime": 43906
 }
 ```
 
-#### `POST /mcp/explain`
-
-코드 설명 또는 질의 (TODO)
-
----
-
-### 관리자 엔드포인트 (`/api/admin`)
-
-> 현재 TODO 상태입니다.
-
-- `GET /api/admin/stats` - 사용 통계
-- `GET /api/admin/logs` - 시스템 로그
-- `POST /api/admin/reindex` - 전체 재인덱싱
-- `GET /api/admin/reindex/:jobId` - 재인덱싱 상태
-- `DELETE /api/admin/cache` - 캐시 삭제
-- `GET /api/admin/health` - 상세 상태 확인
-
-## 환경 변수 (Environment Variables)
-
-### Server Variables
-
-| 변수 | 타입 | 필수 | 기본값 | 설명 |
-|------|------|------|--------|------|
-| `NODE_ENV` | enum | No | `development` | 실행 모드 (`development\|production\|test`) |
-| `PORT` | number | No | `3002` | 서비스 포트 |
-| `GLM_API_KEY` | string | **Yes** | - | GLM API 키 |
-| `QDRANT_URL` | string | **Yes** | - | Qdrant URL |
-| `QDRANT_API_KEY` | string | No | - | Qdrant API 키 (클라우드 시 필요) |
-| `REDIS_URL` | string | No | - | Redis URL (캐싱용, 선택사항) |
-| `ALLOWED_ORIGINS` | string | No | `http://localhost:3000,http://localhost:3001` | CORS 허용 오리진 (콤마 구분) |
-
-### Client Variables
-
-| 변수 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `NEXT_PUBLIC_RAG_URL` | string | **Yes** | RAG Gateway 공개 URL |
-
-**참고**: 모든 환경 변수는 [`src/env.ts`](src/env.ts)에서 `@t3-oss/env-nextjs`와 Zod를 통해 타입 안전하게 관리됩니다.
-
-## 개발 명령어 (Development Commands)
+### 문서 검색
 
 ```bash
-# 개발 서버 실행 (워크스페이스 빌드 + tsx watch)
+curl -X POST http://localhost:3002/api/rag/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "TypeScript 타입 추론",
+    "limit": 10
+  }'
+```
+
+### 문서 인덱싱
+
+```bash
+curl -X POST http://localhost:3002/api/documents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "# 제목\n\n내용...",
+    "metadata": {
+      "title": "문서 제목",
+      "slug": "/blog/post-slug",
+      "category": "facts/tech",
+      "tags": ["typescript", "types"],
+      "author": "bbakjun"
+    }
+  }'
+```
+
+### 문서 목록 조회
+
+```bash
+curl "http://localhost:3002/api/documents?limit=20&category=facts"
+```
+
+## LLM 서비스 전략 패턴
+
+LLMService는 전략 패턴(Strategy Pattern)으로 구현되어 여러 LLM 제공자를 쉽게 전환할 수 있습니다.
+
+**지원 LLM:**
+
+| 제공자 | 모델                | 용도                 |
+| ------ | ------------------- | -------------------- |
+| OpenAI | GPT-4o-mini         | 일반적인 영어/다국어 |
+| GLM    | GLM-4.6, GL-4-flash | 한국어 특화          |
+
+**전환 방법:**
+
+```bash
+# .env에서 설정
+LLM_PROVIDER=openai|glm
+```
+
+## 임베딩 서비스
+
+다중 임베딩 제공자를 지원하여 한국어 검색 품질을 최적화할 수 있습니다.
+
+**지원 모델:**
+
+| 제공자      | 모델                   | 차원 | 특징          |
+| ----------- | ---------------------- | ---- | ------------- |
+| OpenAI      | text-embedding-3-small | 1536 | 균형 임베딩   |
+| OpenAI      | text-embedding-3-large | 3072 | 고성능        |
+| SiliconFlow | BAAI/bge-m3            | 1024 | 다국어/한국어 |
+
+**전환 방법:**
+
+```bash
+# .env에서 설정
+EMBEDDING_PROVIDER=openai|siliconflow
+EMBEDDING_MODEL=text-embedding-3-small|BAAI/bge-m3
+```
+
+## 청킹 전략
+
+Semantic Chunker가 의미론적 경계를 유지하며 문서를 분할합니다.
+
+**파라미터:**
+
+- `maxSize`: 1200 (최대 청크 크기)
+- `minSize`: 100 (최소 청크 크기)
+- `overlap`: 200 (청크 간 오버랩)
+
+**특징:**
+
+- 헤딩, 코드 블록, 리스트 구조 유지
+- 문장/문단 경계에서 분할
+- 오버랩으로 문맥 연결성 보존
+
+## 검색 품질 최적화
+
+### 구현된 기법
+
+1. **청킹 최적화**: 더 큰 청크와 높은 오버랩으로 문맥 보존
+2. **Query Expansion**: 질문 확장으로 검색 범위 개선
+3. **Document Grouping**: 청크를 문서 단위로 그룹화하여 정렬
+
+### 점수 기준
+
+- **Cosine Similarity**: 0.7 이상 권장
+- **Re-ranking**: 점수 기반 재정렬
+- **Threshold**: 0.5 (확장된 쿼리), 0.7 (일반 검색)
+
+## 개발 명령어
+
+```bash
+# 개발 서버
 pnpm dev
 
-# 프로덕션 빌드 (tsup)
+# 빌드
 pnpm build
-
-# 프로덕션 실행
-pnpm start
 
 # 타입 체크
 pnpm type-check
 
 # 린트
 pnpm lint
+
+# 클린
+pnpm clean
 ```
 
-## 패키지 구조 (Package Structure)
+## 배포
 
+### Vercel 배포
+
+1. 환경 변수 설정
+2. `pnpm build` 실행
+3. Vercel에 배포
+
+### Docker 배포 (예정)
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN pnpm install
+RUN pnpm build
+EXPOSE 3002
+CMD ["pnpm", "start"]
 ```
-apps/rag-gateway/
-├── src/
-│   ├── index.ts              # 엔트리 포인트 (Hono 앱 + @hono/node-server)
-│   ├── env.ts                # 환경 변수 설정 (@t3-oss/env-nextjs)
-│   ├── types/
-│   │   └── qdrant.d.ts       # Qdrant 타입 정의
-│   ├── routes/               # API 라우트
-│   │   ├── rag/              # RAG 엔드포인트
-│   │   │   └── index.ts
-│   │   ├── documents/        # 문서 관리 (TODO)
-│   │   │   └── index.ts
-│   │   ├── mcp/              # MCP 도구
-│   │   │   └── index.ts
-│   │   └── admin/            # 관리자 기능 (TODO)
-│   │       └── index.ts
-│   └── services/             # 비즈니스 로직 (Singleton 패턴)
-│       ├── llm.ts            # GLM-4.6 LLM 서비스
-│       ├── qdrant.ts         # Qdrant 벡터 DB 서비스
-│       └── embedding.ts      # 임베딩 생성 서비스 (메모리 캐싱)
-├── package.json
-├── tsconfig.json
-├── tsup.config.ts            # 빌드 설정 (tsup)
-└── README.md                 # 이 파일
-```
-
-**워크스페이스 의존성:**
-
-- `@repo/rag-types` - 공유 타입 정의 (Zod 스키마)
-- `@repo/rag-core` - QueryProcessor 등 RAG 코어 로직
-- `@repo/rag-ingestion` - 문서 수집 파이프라인
-- `@repo/content` - 블로그 콘텐츠 처리 (Blob + gray-matter)
-
-## GLM-4.6 설정
-
-**Base URL:** `https://open.bigmodel.cn/api/paas/v4/`
-
-**Model:** `glm-4.6`
-
-**Configuration:**
-
-```typescript
-{
-  model: "glm-4.6",
-  maxTokens: 2000,
-  temperature: 0.7
-}
-```
-
-**비용 (per 1M tokens):**
-- Input: $0.005
-- Output: $0.025
-
-## Qdrant 설정
-
-**Collection:** `blog_documents`
-
-**Configuration:**
-
-```typescript
-{
-  vectors: {
-    size: 1536,           // 임베딩 차원
-    distance: "Cosine"    // 유사도 메트릭
-  },
-  optimizers_config: {
-    default_segment_number: 2,
-    max_segment_size: 200000,
-    memmap_threshold: 50000
-  },
-  on_disk_payload: true
-}
-```
-
-## 임베딩 설정
-
-**Provider:** GLM
-
-**Model:** `text-embedding-3-small`
-
-**Configuration:**
-
-```typescript
-{
-  dimensions: 1024,
-  batchSize: 100,
-  maxTokens: 8191
-}
-```
-
-**캐싱:** 메모리 Map 기반 해시 캐싱 (프로세스 수명 주기 동안 유지)
-
-## CORS 설정
-
-[`src/index.ts`](src/index.ts)에서 설정된 기본 허용 오리진:
-
-- `http://localhost:3000` (Blog App)
-- `http://localhost:3001` (Admin App)
-
-허용 메서드: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
-
-`ALLOWED_ORIGINS` 환경 변수로 콤마 구분된 오리진 목록을 커스터마이즈할 수 있습니다.
-
-## 에러 처리
-
-[`src/index.ts`](src/index.ts)의 글로벌 에러 핸들러가 모든 에러를 처리합니다:
-
-**에러 응답 형식:**
-
-```json
-{
-  "error": "Internal Server Error",
-  "message": "Something went wrong"
-}
-```
-
-**개발 모드:** 상세 에러 메시지 포함
-**프로덕션 모드:** 일반적인 에러 메시지만 반환
-
-**공통 HTTP 상태 코드:**
-
-| 상태 코드 | 설명 |
-|-----------|------|
-| `400` | 잘못된 요청 파라미터 (Zod 검증 실패) |
-| `404` | 리소스/도구를 찾을 수 없음 |
-| `500` | 내부 서버 에러 |
-| `503` | 외부 서비스 연결 실패 (Qdrant, GLM) |
-
-## 로드맵 (Roadmap)
-
-### Phase 1: 플레이그라운드 UI (계획 중)
-
-RAG 질의응답을 쉽게 테스트할 수 있는 웹 기반 채팅 인터페이스
-
-**계획된 기능:**
-
-- 채팅 형태의 질의응답 UI
-- 마크다운 렌더링 (marked.js)
-- 소스 문서 미리보기 (관련성 점수 포함)
-- 다크 모드 지원
-- 채팅 기록 저장 (localStorage)
-- 로딩 상태 및 에러 처리
-
-**기술 스택:**
-- 순수 HTML + JavaScript
-- Tailwind CSS (CDN)
-- Marked.js (마크다운 렌더링)
-- Hono `c.html()` 메서드로 제공
-
-**접속 경로:**
-- `GET /` - 루트 경로
-- `GET /playground` - 플레이그라운드 전용 경로
-
-### Phase 2: 관리자 기능 (TODO)
-
-- `GET /api/admin/stats` - 사용 통계 대시보드
-- `GET /api/admin/logs` - 시스템 로그 조회
-- `DELETE /api/admin/cache` - 캐시 삭제
-- `GET /api/admin/health` - 상세 상태 확인
-
-### Phase 3: 문서 관리 (TODO)
-
-- `GET /api/documents` - 문서 목록 조회 (페이지네이션, 필터링)
-- `GET /api/documents/:id` - 문서 상세 조회
-- `POST /api/documents` - 개별 문서 추가
-- `PUT /api/documents/:id` - 문서 수정
-- `DELETE /api/documents/:id` - 문서 삭제
-
-### Phase 4: 재인덱싱 시스템 (TODO)
-
-- `POST /api/admin/reindex` - 전체/증분 재인덱싱
-- 비동기 작업 큐 및 진행률 추적
-- 실패 문서 재시도 메커니즘
 
 ## 라이선스
 
