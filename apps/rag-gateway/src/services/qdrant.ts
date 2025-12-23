@@ -19,7 +19,10 @@ const ScrollResultSchema = z.object({
       payload: z.record(z.unknown()).optional(),
     })
   ),
-  next_page_offset: z.object({ point_id: z.union([z.string(), z.number()]) }).optional(),
+  next_page_offset: z
+    .object({ point_id: z.union([z.string(), z.number()]) })
+    .nullable()
+    .optional(),
 });
 
 const CountResultSchema = z.object({
@@ -85,7 +88,10 @@ export class QdrantService {
         console.log(`✅ Created collection: ${this.COLLECTION_NAME}`);
       }
     } catch (error) {
-      console.error('❌ Failed to initialize collection:', error);
+      console.error(
+        '❌ Failed to initialize collection:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -105,7 +111,10 @@ export class QdrantService {
       });
       console.log(`✅ Upserted ${points.length} points`);
     } catch (error) {
-      console.error('❌ Failed to upsert points:', error);
+      console.error(
+        '❌ Failed to upsert points:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -152,7 +161,7 @@ export class QdrantService {
         metadata: includeMetadata ? (point.payload as Record<string, unknown>) : undefined,
       }));
     } catch (error) {
-      console.error('❌ Failed to search:', error);
+      console.error('❌ Failed to search:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -174,7 +183,10 @@ export class QdrantService {
       });
       console.log(`✅ Deleted points matching filter`);
     } catch (error) {
-      console.error('❌ Failed to delete points:', error);
+      console.error(
+        '❌ Failed to delete points:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -190,7 +202,10 @@ export class QdrantService {
       });
       console.log(`✅ Deleted point: ${pointId}`);
     } catch (error) {
-      console.error('❌ Failed to delete point:', error);
+      console.error(
+        '❌ Failed to delete point:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -211,7 +226,10 @@ export class QdrantService {
         config: parsed.config ?? {},
       };
     } catch (error) {
-      console.error('❌ Failed to get collection info:', error);
+      console.error(
+        '❌ Failed to get collection info:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -260,7 +278,10 @@ export class QdrantService {
           : undefined,
       };
     } catch (error) {
-      console.error('❌ Failed to scroll points:', error);
+      console.error(
+        '❌ Failed to scroll points:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -283,7 +304,10 @@ export class QdrantService {
       const parsed = CountResultSchema.parse(result);
       return parsed.count ?? 0;
     } catch (error) {
-      console.error('❌ Failed to count points:', error);
+      console.error(
+        '❌ Failed to count points:',
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
@@ -374,7 +398,10 @@ export class QdrantService {
       await this.client.getCollections();
       return true;
     } catch (error) {
-      console.error('❌ Qdrant health check failed:', error);
+      console.error(
+        '❌ Qdrant health check failed:',
+        error instanceof Error ? error.message : String(error)
+      );
       return false;
     }
   }

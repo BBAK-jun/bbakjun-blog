@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serve } from '@hono/node-server';
 import { env } from './env';
+import { getQdrantService } from './services/qdrant';
 import { ragRoutes } from './routes/rag';
 import { documentRoutes } from './routes/documents';
 import { mcpRoutes } from './routes/mcp';
@@ -60,9 +61,21 @@ app.onError((err, c) => {
   );
 });
 
-console.log(`🚀 RAG Gateway server running on port ${env.PORT}`);
+// Initialize Qdrant collection before starting server
+async function startServer() {
+  try {
+    const qdrantService = getQdrantService();
+    await qdrantService.initializeCollection();
+    console.log(`✅ Qdrant collection initialized`);
+  } catch (error) {
+    console.error('❌ Failed to initialize Qdrant collection:', error);
+    // Continue anyway - collection might already exist
+  }
 
-// Start the server
-serve({ fetch: app.fetch, port: env.PORT });
+  console.log(`🚀 RAG Gateway server running on port ${env.PORT}`);
+  serve({ fetch: app.fetch, port: env.PORT });
+}
+
+startServer();
 
 export default app;

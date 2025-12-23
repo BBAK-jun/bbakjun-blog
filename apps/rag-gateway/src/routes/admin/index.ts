@@ -243,8 +243,6 @@ adminRoutes.delete('/cache', async c => {
     // Clear embedding cache
     embeddingService.clearCache();
 
-    const afterStats = embeddingService.getCacheStats();
-
     return c.json({
       message: 'Cache cleared',
       type: cacheType,
