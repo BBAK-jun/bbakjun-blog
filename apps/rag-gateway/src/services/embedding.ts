@@ -1,7 +1,23 @@
-import type { Embedding, EmbeddingConfig } from '@repo/rag-types';
+import type { Embedding, EmbeddingConfig, EmbeddingModel } from '@repo/rag-types';
 import { generateTextHash, type IEmbeddingService } from '@repo/rag-types';
 import OpenAI from 'openai';
 import { env } from '../env';
+
+// Model configurations
+const EMBEDDING_MODELS: Record<EmbeddingModel, { dimensions: number; maxTokens: number }> = {
+  // OpenAI models
+  'text-embedding-3-small': { dimensions: 1536, maxTokens: 8191 },
+  'text-embedding-3-large': { dimensions: 3072, maxTokens: 8191 },
+  'text-embedding-ada-002': { dimensions: 1536, maxTokens: 8191 },
+  // GLM models
+  'embedding-2': { dimensions: 1024, maxTokens: 8192 },
+  'embedding-3': { dimensions: 1024, maxTokens: 8192 },
+  // SiliconFlow models (Korean/multilingual)
+  'BAAI/bge-m3': { dimensions: 1024, maxTokens: 8192 },
+  'BAAI/bge-large-zh-v1.5': { dimensions: 1024, maxTokens: 8192 },
+  'zephyr-embedding': { dimensions: 1024, maxTokens: 8192 },
+  'zephyr-embedding-large': { dimensions: 1024, maxTokens: 8192 },
+};
 
 // Retry configuration for rate limiting
 const MAX_RETRIES = 5;
@@ -50,24 +66,52 @@ async function retryWithBackoff<T>(
 }
 
 export class EmbeddingService implements IEmbeddingService {
-  private client: OpenAI;
+  private openaiClient: OpenAI;
+  private siliconflowClient: OpenAI;
   private cache: Map<string, number[]> = new Map();
   private config: EmbeddingConfig;
 
   constructor(config?: Partial<EmbeddingConfig>) {
-    this.config = {
-      provider: 'openai',
-      model: 'text-embedding-3-small',
+    const provider = config?.provider || env.EMBEDDING_PROVIDER;
+    const model = config?.model || env.EMBEDDING_MODEL;
+
+    // Get model configuration
+    const modelConfig = EMBEDDING_MODELS[model as keyof typeof EMBEDDING_MODELS] || {
       dimensions: 1536,
-      batchSize: 50, // Reduced to avoid rate limits
       maxTokens: 8191,
+    };
+
+    this.config = {
+      provider,
+      model,
+      dimensions: modelConfig.dimensions,
+      batchSize: 50,
+      maxTokens: modelConfig.maxTokens,
       ...config,
     };
 
-    this.client = new OpenAI({
+    // Initialize OpenAI client
+    this.openaiClient = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
       maxRetries: 0, // We handle retries manually
     });
+
+    // Initialize SiliconFlow client (uses OpenAI-compatible API)
+    this.siliconflowClient = new OpenAI({
+      apiKey: env.SILICONFLOW_API_KEY || '',
+      baseURL: 'https://api.siliconflow.cn/v1',
+      maxRetries: 0,
+    });
+  }
+
+  /**
+   * Get the appropriate client based on provider
+   */
+  private getClient(): OpenAI {
+    if (this.config.provider === 'siliconflow') {
+      return this.siliconflowClient;
+    }
+    return this.openaiClient;
   }
 
   /**
@@ -82,12 +126,20 @@ export class EmbeddingService implements IEmbeddingService {
     }
 
     return retryWithBackoff(async () => {
-      const response = await this.client.embeddings.create({
+      const client = this.getClient();
+      const response = await client.embeddings.create({
         model: this.config.model,
         input: text,
       });
 
       const embedding = response.data[0].embedding;
+
+      // Validate dimensions
+      if (embedding.length !== this.config.dimensions) {
+        console.warn(
+          `Embedding dimension mismatch: expected ${this.config.dimensions}, got ${embedding.length}`
+        );
+      }
 
       // Cache the result
       this.cache.set(hash, embedding);
@@ -122,8 +174,9 @@ export class EmbeddingService implements IEmbeddingService {
 
       // Generate embeddings for uncached texts
       if (uncachedTexts.length > 0) {
+        const client = this.getClient();
         const response = await retryWithBackoff(async () => {
-          return await this.client.embeddings.create({
+          return await client.embeddings.create({
             model: this.config.model,
             input: uncachedTexts,
           });
@@ -246,8 +299,9 @@ export class EmbeddingService implements IEmbeddingService {
    */
   getCacheStats(): { size: number; memoryEstimate: number } {
     const size = this.cache.size;
-    // Rough memory estimation: each vector is 1536 floats * 4 bytes + overhead
-    const memoryEstimate = size * (1536 * 4 + 100);
+    const dimensions = this.config.dimensions;
+    // Rough memory estimation: each vector is dimensions * 4 bytes + overhead
+    const memoryEstimate = size * (dimensions * 4 + 100);
 
     return { size, memoryEstimate };
   }

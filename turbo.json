@@ -27,6 +27,9 @@
     "GLM_API_KEY",
     "OPENAI_API_KEY",
     "LLM_PROVIDER",
+    "SILICONFLOW_API_KEY",
+    "EMBEDDING_PROVIDER",
+    "EMBEDDING_MODEL",
     "NEXT_PUBLIC_RAG_URL"
   ],
   "tasks": {
@@ -54,7 +57,10 @@
         "QDRANT_API_KEY",
         "GLM_API_KEY",
         "OPENAI_API_KEY",
-        "LLM_PROVIDER"
+        "LLM_PROVIDER",
+        "SILICONFLOW_API_KEY",
+        "EMBEDDING_PROVIDER",
+        "EMBEDDING_MODEL"
       ]
     },
     "build:rpc": {

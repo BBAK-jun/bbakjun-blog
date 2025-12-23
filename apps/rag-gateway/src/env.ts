@@ -21,6 +21,11 @@ export const env = createEnv({
     GLM_API_KEY: z.string().optional(), // Optional z.ai key
     LLM_PROVIDER: z.enum(['openai', 'glm']).default('openai'), // Choose which LLM to use
 
+    // Embedding Configuration
+    SILICONFLOW_API_KEY: z.string().optional(),
+    EMBEDDING_PROVIDER: z.enum(['openai', 'siliconflow']).default('openai'),
+    EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+
     // Optional Redis for caching
     REDIS_URL: z.string().url().optional(),
 
@@ -41,6 +46,9 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GLM_API_KEY: process.env.GLM_API_KEY,
     LLM_PROVIDER: process.env.LLM_PROVIDER,
+    SILICONFLOW_API_KEY: process.env.SILICONFLOW_API_KEY,
+    EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
+    EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
     REDIS_URL: process.env.REDIS_URL,
     BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
