@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
+import { z as z } from 'zod';
 import { getQdrantService } from '../../services/qdrant';
 import { getEmbeddingService } from '../../services/embedding';
 import { getLLMService } from '../../services/llm';
@@ -74,7 +74,7 @@ mcpRoutes.get('/tools', c => {
 
 // POST /mcp/invoke - Invoke an MCP tool
 mcpRoutes.post('/invoke', zValidator('json', invokeSchema), async c => {
-  const { tool, arguments: args, context } = c.req.valid('json');
+  const { tool, arguments: args, context: _context } = c.req.valid('json');
 
   // Verify tool exists
   const toolDef = MCP_TOOLS.find(t => t.name === tool);
@@ -139,7 +139,7 @@ mcpRoutes.post('/invoke', zValidator('json', invokeSchema), async c => {
 
 // POST /mcp/explain - Explain code or query
 mcpRoutes.post('/explain', zValidator('json', explainSchema), async c => {
-  const { query, code, context } = c.req.valid('json');
+  const { query, code } = c.req.valid('json');
 
   // TODO: Implement explanation using RAG
   // 1. Search for relevant content

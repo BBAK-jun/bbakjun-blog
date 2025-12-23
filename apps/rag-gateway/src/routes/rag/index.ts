@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
 import { getQdrantService } from '../../services/qdrant';
 import { getEmbeddingService } from '../../services/embedding';
 import { getLLMService } from '../../services/llm';

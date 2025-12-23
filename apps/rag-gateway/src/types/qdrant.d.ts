@@ -104,7 +104,13 @@ declare module 'qdrant' {
     create_collection(name: string, body: any): Promise<any>;
     get_collection(name: string): Promise<any>;
     upload_points(name: string, points: any[]): Promise<any>;
-    search_collection(name: string, vector: number[], k?: number, ef?: number, filter?: any): Promise<any>;
+    search_collection(
+      name: string,
+      vector: number[],
+      k?: number,
+      ef?: number,
+      filter?: any
+    ): Promise<any>;
     query_collection(name: string, query: any): Promise<any>;
     retrieve_points(name: string, query: any): Promise<any>;
   };
