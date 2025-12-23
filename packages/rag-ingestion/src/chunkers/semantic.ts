@@ -9,9 +9,9 @@ export class SemanticChunker implements ChunkingStrategy {
 
   async chunk(content: string, options?: ChunkingOptions): Promise<Chunk[]> {
     const opts = {
-      maxSize: 500,
-      minSize: 50,
-      overlap: 50,
+      maxSize: 1200,
+      minSize: 100,
+      overlap: 200,
       type: 'semantic' as ChunkType,
       separators: ['\n\n', '\n', '. '],
       ...options,

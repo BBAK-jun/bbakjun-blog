@@ -1,12 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { z } from 'zod';
 import { env } from '../env';
-import type {
-  QdrantPoint,
-  DocumentFilter,
-  SearchParams,
-  SimilarityResult,
-} from '@repo/rag-types';
+import type { QdrantPoint, DocumentFilter, SearchParams, SimilarityResult } from '@repo/rag-types';
 import type { IQdrantService } from '@repo/rag-types';
 
 // Zod schemas for Qdrant API responses
@@ -26,7 +21,7 @@ const ScrollResultSchema = z.object({
     })
   ),
   next_page_offset: z
-    .object({ point_id: z.union([z.string(), z.number()]) })
+    .union([z.object({ point_id: z.union([z.string(), z.number()]) }), z.string(), z.number()])
     .nullable()
     .optional(),
 });
@@ -385,15 +380,23 @@ export class QdrantService implements IQdrantService {
       const result = await this.client.scroll(this.COLLECTION_NAME, scrollParams);
       const parsed = ScrollResultSchema.parse(result);
 
+      // Handle next_page_offset which can be object, string, or number
+      let nextPageOffset: string | undefined;
+      if (parsed.next_page_offset) {
+        if (typeof parsed.next_page_offset === 'object') {
+          nextPageOffset = String(parsed.next_page_offset.point_id);
+        } else {
+          nextPageOffset = String(parsed.next_page_offset);
+        }
+      }
+
       return {
         points:
           parsed.points?.map(point => ({
             id: String(point.id),
             ...point.payload,
           })) || [],
-        nextPageOffset: parsed.next_page_offset?.point_id
-          ? String(parsed.next_page_offset.point_id)
-          : undefined,
+        nextPageOffset,
       };
     } catch (error) {
       console.error(
