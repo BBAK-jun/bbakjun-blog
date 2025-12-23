@@ -47,3 +47,15 @@ export {
   getViewsStatsRoute,
   getViewsStatsHandler,
 } from './views';
+
+// Experience RPC
+export {
+  experienceRoutes,
+  experienceHandlers,
+} from './experience';
+
+// RAG RPC
+export {
+  ragRoutes,
+  ragHandlers,
+} from './rag';

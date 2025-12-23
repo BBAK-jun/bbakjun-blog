@@ -1,8 +1,7 @@
-import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { authConfig } from './auth.config';
 import { prisma } from '@/shared/lib/db';
-import type { UserRole } from '@prisma/client';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 
 const nextAuth = NextAuth({
   ...authConfig,
@@ -15,7 +14,7 @@ const nextAuth = NextAuth({
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        session.user.role = (user as any).role as UserRole;
+        session.user.role = user.role;
       }
       return session;
     },

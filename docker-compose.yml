@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    container_name: bbakun-qdrant
+    ports:
+      - "6333:6333"  # HTTP API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - ./docker/qdrant:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=32
+      - QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS=4
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: bbakun-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+
+  # RAG Gateway (for local development)
+  rag-gateway:
+    build:
+      context: ./apps/rag-gateway
+      dockerfile: Dockerfile
+    container_name: bbakun-rag-gateway
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
+      - NEXT_PUBLIC_RAG_URL=http://localhost:3002
+      # Add your API keys here or use .env file
+      # - GLM_API_KEY=your_glm_api_key
+      # - OPENAI_API_KEY=your_openai_api_key
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./apps/rag-gateway:/app
+      - /app/node_modules
+    command: pnpm dev
+    restart: unless-stopped
+
+volumes:
+  redis_data:

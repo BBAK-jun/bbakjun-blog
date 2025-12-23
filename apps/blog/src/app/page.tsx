@@ -26,7 +26,7 @@ export default function Home() {
         <p className="text-3xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
           프론트엔드 개발자 박준형입니다.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
           <Button asChild size="lg" className="font-medium">
             <Link href="/blog">모든 포스트 보기</Link>
           </Button>
@@ -34,7 +34,8 @@ export default function Home() {
             <Link href="/about">소개</Link>
           </Button>
         </div>
-      </section>
+
+        </section>
 
       {/* Tabbed Posts Section */}
       <section className="grid md:grid-cols-4 gap-8">

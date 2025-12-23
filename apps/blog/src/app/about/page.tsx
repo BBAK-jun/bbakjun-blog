@@ -1,8 +1,8 @@
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { getPopularPostsStats } from '@/lib/stats';
-import { getBlobFiles } from '@/lib/blob';
+import { getPopularPostsStats } from '@/shared/lib/stats';
+import { getBlobFiles } from '@/shared/lib/blob';
 import { getAllPosts } from '@repo/content';
 import { Github, Linkedin, Mail, ExternalLink, FileText } from 'lucide-react';
 import Link from 'next/link';
@@ -11,11 +11,10 @@ import ExperienceTimeline from '@/features/navigation/ui/experience-timeline';
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
-  description:
-    '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
+  description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
   openGraph: {
     title: '소개 - DEV_BBAK 블로그',
-    description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다.',
+    description: `프론트엔드 엔지니어 박준형입니다.`,
   },
 };
 
@@ -72,9 +71,6 @@ export default async function AboutPage() {
         </div>
         <h1 className="text-4xl md:text-5xl font-bold">박준형</h1>
         <p className="text-xl text-muted-foreground">Frontend Engineer</p>
-        <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary">
-          2026년 5년차
-        </div>
         <p className="text-lg max-w-2xl mx-auto leading-relaxed text-muted-foreground">
           사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이
           있습니다.

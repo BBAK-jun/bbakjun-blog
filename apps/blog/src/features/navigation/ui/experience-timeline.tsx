@@ -127,7 +127,7 @@ export default function ExperienceTimeline() {
   return (
     <div className="space-y-8">
       {experiences.map((exp, index) => (
-        <div key={index} className="relative">
+        <div key={exp.company + exp.period} className="relative">
           {/* Timeline connector */}
           {index !== experiences.length - 1 && (
             <div className="absolute left-6 top-20 bottom-0 w-px bg-border hidden md:block" />

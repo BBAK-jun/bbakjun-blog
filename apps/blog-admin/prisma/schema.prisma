@@ -111,6 +111,55 @@ model Subscriber {
 }
 
 // ==========================================
+// Professional Experience Management
+// ==========================================
+
+model Experience {
+  id            String   @id @default(cuid())
+  company       String               // 회사명
+  position      String               // 직책
+  team          String?              // 팀명 (선택사항)
+  period        String               // 근무 기간 (e.g., "2023.01 ~ 2024.12", "2024.01 ~ 재직중")
+  isCurrent     Boolean  @default(false)  // 재직중 여부
+  description   String?              // 회사/직무 설명 (선택사항)
+  sortOrder     Int      @default(0)     // 정렬 순서 (높을수록 최신)
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  achievements  Achievement[]        // 성과 목록
+
+  @@index([isCurrent])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("experiences")
+}
+
+model Achievement {
+  id            String   @id @default(cuid())
+  title         String               // 성과 제목
+  description   String   @db.Text    // 성과 상세 설명
+  tags          String?              // 기술 태그 (JSON 배열 형식으로 저장)
+  sortOrder     Int      @default(0) // 정렬 순서
+
+  // Foreign Key
+  experienceId  String
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  experience    Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@index([experienceId])
+  @@index([sortOrder])
+  @@map("achievements")
+}
+
+// ==========================================
 // Blob Storage CDC (Change Data Capture)
 // ==========================================
 
