@@ -65,48 +65,49 @@ LLM 응답 없이 순수 의미론적 검색만 수행합니다.
 
 ## 아키텍처 (Architecture)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         RAG Gateway                             │
-│                      (Hono + Node.js)                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
-│  │   RAG API   │    │  Documents  │    │    Health   │          │
-│  │   /rag/*    │    │    /docs    │    │    /health   │          │
-│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘          │
-│         │                  │                  │                  │
-│         └──────────────────┴──────────────────┘                  │
-│                            │                                     │
-│         ┌──────────────────▼──────────────────┐                  │
-│         │         QueryProcessor              │                  │
-│         │      (@repo/rag-core)               │                  │
-│         │  - Query Expansion                  │                  │
-│         │  - Document Retrieval               │                  │
-│         │  - Re-ranking                       │                  │
-│         └──────────────────┬──────────────────┘                  │
-│                            │                                     │
-│  ┌─────────────────────────┼─────────────────────────┐        │
-│  │                         │                         │        │
-│  ▼                         ▼                         ▼        │
-│ ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
-│ │ Qdrant      │    │ Embedding   │    │ LLM         │    │
-│ │ Service     │    │ Service     │    │ Service     │    │
-│ │             │    │             │    │             │    │
-│ │ - Search    │    │ - OpenAI    │    │ - OpenAI     │    │
-│ │ - Store     │    │ - SiliconFlow│    │ - GLM        │    │
-│ │ - Delete    │    │ (한국어)     │    │             │    │
-│ └─────────────┘    └─────────────┘    └─────────────┘    │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-                        ┌──────────────────────┐
-                        │   Qdrant Cloud        │
-                        │   - Vector DB         │
-                        │   - 1536 dims         │
-                        │   - Cosine Similarity │
-                        └──────────────────────┘
+```mermaid
+flowchart TB
+  %% =========================
+  %% RAG Gateway (Hono + Node.js)
+  %% =========================
+  subgraph GW["RAG Gateway<br/>(Hono + Node.js)"]
+    direction TB
+
+    subgraph EP["Routes"]
+      direction LR
+      RAG["RAG API<br/>/rag/*"]
+      DOCS["Documents<br/>/docs"]
+      HEALTH["Health<br/>/health"]
+    end
+
+    QP["QueryProcessor<br/>(@repo/rag-core)<br/>- Query Expansion<br/>- Document Retrieval<br/>- Re-ranking"]
+  end
+
+  %% Routes -> QueryProcessor
+  RAG --> QP
+  DOCS --> QP
+  HEALTH --> QP
+
+  %% =========================
+  %% Downstream services
+  %% =========================
+  subgraph SVC["Downstream Services"]
+    direction LR
+    QSRV["Qdrant Service<br/>- Search<br/>- Store<br/>- Delete"]
+    EMB["Embedding Service<br/>- OpenAI<br/>- SiliconFlow (한국어)"]
+    LLM["LLM Service<br/>- OpenAI<br/>- GLM"]
+  end
+
+  QP --> QSRV
+  QP --> EMB
+  QP --> LLM
+
+  %% =========================
+  %% Qdrant Cloud
+  %% =========================
+  QC["Qdrant Cloud<br/>- Vector DB<br/>- 1536 dims<br/>- Cosine Similarity"]
+
+  QSRV --> QC
 ```
 
 ## 디렉토리 구조
