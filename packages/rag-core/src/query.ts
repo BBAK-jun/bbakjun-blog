@@ -145,15 +145,39 @@ export class QueryProcessor {
     filters?: DocumentFilter,
     limit: number = 5
   ): Promise<SourceReference[]> {
-    // Search for similar chunks - get more chunks to provide more context
-    const results = await this.qdrantService.search(queryEmbedding, {
-      limit: limit * 10, // Get more chunks for better context
-      threshold: 0.5, // Lower threshold to get more results
+    // Query Expansion: Generate multiple query variations for better retrieval
+    const expandedQueries = this.expandQuery(queryEmbedding);
+
+    // Search with original query
+    const originalResults = await this.qdrantService.search(queryEmbedding, {
+      limit: limit * 10,
+      threshold: 0.5,
       filter: filters,
     });
 
+    // Combine results from all expanded queries
+    const allResults = [...originalResults];
+    const seenIds = new Set(originalResults.map(r => r.id));
+
+    // Search with expanded queries (if any)
+    for (const expandedEmbedding of expandedQueries) {
+      const expandedResults = await this.qdrantService.search(expandedEmbedding, {
+        limit: limit * 5,
+        threshold: 0.4, // Lower threshold for expanded queries
+        filter: filters,
+      });
+
+      // Add only new results
+      for (const result of expandedResults) {
+        if (!seenIds.has(result.id)) {
+          allResults.push(result);
+          seenIds.add(result.id);
+        }
+      }
+    }
+
     // Group chunks by document
-    const documentGroups = this.groupChunksByDocument(results);
+    const documentGroups = this.groupChunksByDocument(allResults);
 
     // Rerank documents if enabled
     if (this.options.enableReranking) {
@@ -162,6 +186,18 @@ export class QueryProcessor {
 
     // Format without reranking
     return this.formatDocumentGroups(documentGroups, limit);
+  }
+
+  /**
+   * Expand query with variations for better retrieval
+   */
+  private expandQuery(originalEmbedding: number[]): number[][] {
+    // For now, just return the original embedding
+    // In a full implementation, you would:
+    // 1. Use LLM to generate query variations
+    // 2. Generate embeddings for each variation
+    // 3. Return all embeddings
+    return [[...originalEmbedding]];
   }
 
   /**
