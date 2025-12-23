@@ -1,16 +1,11 @@
-import type {
-  Chunk,
-  ChunkingStrategy,
-  ChunkingOptions,
-  ChunkType
-} from '@repo/rag-types'
+import type { Chunk, ChunkingStrategy, ChunkingOptions, ChunkType } from '@repo/rag-types';
 
 /**
  * Semantic chunking strategy that tries to maintain semantic coherence
  * by splitting at natural boundaries like headings and paragraph breaks
  */
 export class SemanticChunker implements ChunkingStrategy {
-  name = 'semantic'
+  name = 'semantic';
 
   async chunk(content: string, options?: ChunkingOptions): Promise<Chunk[]> {
     const opts = {
@@ -19,50 +14,52 @@ export class SemanticChunker implements ChunkingStrategy {
       overlap: 50,
       type: 'semantic' as ChunkType,
       separators: ['\n\n', '\n', '. '],
-      ...options
-    }
+      ...options,
+    };
 
     // First, split by major separators to preserve structure
-    const sections = this.splitByStructure(content)
+    const sections = this.splitByStructure(content);
 
     // Then, further split sections that are too large
-    const chunks: Chunk[] = []
-    let chunkIndex = 0
+    const chunks: Chunk[] = [];
+    let chunkIndex = 0;
 
     for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-      const section = sections[sectionIndex]
+      const section = sections[sectionIndex];
 
       if (section.text.length <= opts.maxSize) {
         // Section is small enough to be a single chunk
-        chunks.push(this.createChunk(
-          chunkIndex++,
-          section.text,
-          section.start,
-          section.end,
-          section.context,
-          opts
-        ))
+        chunks.push(
+          this.createChunk(
+            chunkIndex++,
+            section.text,
+            section.start,
+            section.end,
+            section.context,
+            opts
+          )
+        );
       } else {
         // Section is too large, need to split further
-        const subChunks = this.chunkSection(section, opts, chunkIndex)
-        chunks.push(...subChunks)
-        chunkIndex += subChunks.length
+        const subChunks = this.chunkSection(section, opts, chunkIndex);
+        chunks.push(...subChunks);
+        chunkIndex += subChunks.length;
       }
     }
 
-    return chunks
+    return chunks;
   }
 
   /**
    * Split content by structural elements (headings, lists, code blocks)
    */
   private splitByStructure(content: string): Array<{
-    text: string
-    start: number
-    end: number
-    context: any
+    text: string;
+    start: number;
+    end: number;
+    context: any;
   }> {
-    const sections: Array<{ text: string; start: number; end: number; context: any }> = []
+    const sections: Array<{ text: string; start: number; end: number; context: any }> = [];
 
     // Regular expressions for different markdown elements
     const patterns = [
@@ -70,47 +67,47 @@ export class SemanticChunker implements ChunkingStrategy {
       { regex: /^```[\s\S]*?```$/gm, type: 'code' },
       { regex: /^\s*[-*+]\s.+$/gm, type: 'list' },
       { regex: /^\s*\d+\.\s.+$/gm, type: 'numbered_list' },
-    ]
+    ];
 
     // Find all structural elements and their positions
     const elements: Array<{
-      start: number
-      end: number
-      text: string
-      type: string
-    }> = []
+      start: number;
+      end: number;
+      text: string;
+      type: string;
+    }> = [];
 
     for (const pattern of patterns) {
-      let match
+      let match;
       while ((match = pattern.regex.exec(content)) !== null) {
         elements.push({
           start: match.index,
           end: match.index + match[0].length,
           text: match[0],
           type: pattern.type,
-        })
+        });
       }
     }
 
     // Sort by position
-    elements.sort((a, b) => a.start - b.start)
+    elements.sort((a, b) => a.start - b.start);
 
     // Create sections based on elements
-    let currentPos = 0
+    let currentPos = 0;
 
     for (let i = 0; i < elements.length; i++) {
-      const element = elements[i]
+      const element = elements[i];
 
       // Add text before this element if it exists
       if (element.start > currentPos) {
-        const text = content.slice(currentPos, element.start).trim()
+        const text = content.slice(currentPos, element.start).trim();
         if (text) {
           sections.push({
             text,
             start: currentPos,
             end: element.start,
             context: { type: 'paragraph' },
-          })
+          });
         }
       }
 
@@ -120,25 +117,25 @@ export class SemanticChunker implements ChunkingStrategy {
         start: element.start,
         end: element.end,
         context: { type: element.type },
-      })
+      });
 
-      currentPos = element.end
+      currentPos = element.end;
     }
 
     // Add remaining text
     if (currentPos < content.length) {
-      const text = content.slice(currentPos).trim()
+      const text = content.slice(currentPos).trim();
       if (text) {
         sections.push({
           text,
           start: currentPos,
           end: content.length,
           context: { type: 'paragraph' },
-        })
+        });
       }
     }
 
-    return sections
+    return sections;
   }
 
   /**
@@ -149,53 +146,52 @@ export class SemanticChunker implements ChunkingStrategy {
     opts: ChunkingOptions,
     startChunkIndex: number
   ): Chunk[] {
-    const chunks: Chunk[] = []
-    const text = section.text
-    let currentPos = 0
-    let chunkIndex = startChunkIndex
+    const chunks: Chunk[] = [];
+    const text = section.text;
+    let currentPos = 0;
+    let chunkIndex = startChunkIndex;
 
     while (currentPos < text.length) {
       // Calculate end position for this chunk
-      let endPos = Math.min(currentPos + opts.maxSize, text.length)
+      let endPos = Math.min(currentPos + opts.maxSize, text.length);
 
       // If we're not at the end, try to find a good split point
       if (endPos < text.length) {
         // Look for sentence endings
-        const sentenceEnd = text.lastIndexOf('. ', endPos)
+        const sentenceEnd = text.lastIndexOf('. ', endPos);
         if (sentenceEnd > currentPos + opts.minSize) {
-          endPos = sentenceEnd + 2 // Include the period and space
+          endPos = sentenceEnd + 2; // Include the period and space
         } else {
           // Look for paragraph breaks
-          const paragraphEnd = text.lastIndexOf('\n\n', endPos)
+          const paragraphEnd = text.lastIndexOf('\n\n', endPos);
           if (paragraphEnd > currentPos + opts.minSize) {
-            endPos = paragraphEnd + 2
+            endPos = paragraphEnd + 2;
           }
         }
       }
 
       // Extract chunk text
-      const chunkText = text.slice(currentPos, endPos).trim()
+      const chunkText = text.slice(currentPos, endPos).trim();
 
       if (chunkText) {
-        chunks.push(this.createChunk(
-          chunkIndex,
-          chunkText,
-          section.start + currentPos,
-          section.start + endPos,
-          section.context,
-          opts
-        ))
-        chunkIndex++
+        chunks.push(
+          this.createChunk(
+            chunkIndex,
+            chunkText,
+            section.start + currentPos,
+            section.start + endPos,
+            section.context,
+            opts
+          )
+        );
+        chunkIndex++;
       }
 
       // Move to next position with overlap
-      currentPos = Math.max(
-        currentPos + 1,
-        endPos - opts.overlap
-      )
+      currentPos = Math.max(currentPos + 1, endPos - opts.overlap);
     }
 
-    return chunks
+    return chunks;
   }
 
   /**
@@ -210,7 +206,7 @@ export class SemanticChunker implements ChunkingStrategy {
     options: ChunkingOptions
   ): Chunk {
     // Estimate token count (rough approximation)
-    const tokenCount = Math.ceil(content.length / 4)
+    const tokenCount = Math.ceil(content.length / 4);
 
     return {
       id: `chunk_${index.toString().padStart(4, '0')}`,
@@ -227,6 +223,6 @@ export class SemanticChunker implements ChunkingStrategy {
         context,
         tokenCount,
       },
-    }
+    };
   }
 }

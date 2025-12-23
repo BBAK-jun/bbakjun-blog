@@ -1,7 +1,13 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { z } from 'zod';
 import { env } from '../env';
-import type { QdrantPoint, DocumentFilter, SearchParams, SimilarityResult } from '@repo/rag-types';
+import type {
+  QdrantPoint,
+  DocumentFilter,
+  SearchParams,
+  SimilarityResult,
+} from '@repo/rag-types';
+import type { IQdrantService } from '@repo/rag-types';
 
 // Zod schemas for Qdrant API responses
 const CollectionInfoSchema = z.object({
@@ -51,7 +57,7 @@ interface ScrollPointsResult {
   nextPageOffset?: string;
 }
 
-export class QdrantService {
+export class QdrantService implements IQdrantService {
   private client: QdrantClient;
   private readonly COLLECTION_NAME = 'blog_documents';
 
@@ -86,6 +92,11 @@ export class QdrantService {
           on_disk_payload: true,
         });
         console.log(`✅ Created collection: ${this.COLLECTION_NAME}`);
+        // Create indexes after collection creation
+        await this.createIndexes();
+      } else {
+        // Check and create indexes if they don't exist
+        await this.ensureIndexes();
       }
     } catch (error) {
       console.error(
@@ -93,6 +104,89 @@ export class QdrantService {
         error instanceof Error ? error.message : String(error)
       );
       throw error;
+    }
+  }
+
+  /**
+   * Create indexes for filtered fields
+   */
+  async createIndexes(): Promise<void> {
+    try {
+      const indexes = [
+        { field_name: 'documentId', field_schema: 'keyword' },
+        { field_name: 'metadata.category', field_schema: 'keyword' },
+        { field_name: 'metadata.tags', field_schema: 'keyword' },
+        { field_name: 'metadata.author', field_schema: 'keyword' },
+        { field_name: 'metadata.source', field_schema: 'keyword' },
+        { field_name: 'metadata.publishedAt', field_schema: 'datetime' },
+      ];
+
+      for (const index of indexes) {
+        try {
+          await this.client.createPayloadIndex(this.COLLECTION_NAME, {
+            field_name: index.field_name,
+            field_schema: index.field_schema as 'keyword' | 'datetime',
+          });
+          console.log(`✅ Created index for: ${index.field_name}`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes('already exists')) {
+            console.log(`ℹ️  Index already exists for: ${index.field_name}`);
+          } else {
+            console.warn(`⚠️  Failed to create index for ${index.field_name}:`, errorMessage);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(
+        '❌ Failed to create indexes:',
+        error instanceof Error ? error.message : String(error)
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Ensure indexes exist (create if missing)
+   */
+  async ensureIndexes(): Promise<void> {
+    try {
+      const collectionInfo = await this.client.getCollection(this.COLLECTION_NAME);
+      const existingIndexes = collectionInfo.payload_schema
+        ? Object.keys(collectionInfo.payload_schema)
+        : [];
+
+      const requiredIndexes = [
+        'documentId',
+        'metadata.category',
+        'metadata.tags',
+        'metadata.author',
+        'metadata.source',
+        'metadata.publishedAt',
+      ];
+
+      for (const field of requiredIndexes) {
+        if (!existingIndexes.includes(field)) {
+          console.log(`Creating missing index for: ${field}`);
+          try {
+            await this.client.createPayloadIndex(this.COLLECTION_NAME, {
+              field_name: field,
+              field_schema: (field.includes('publishedAt') ? 'datetime' : 'keyword') as
+                | 'keyword'
+                | 'datetime',
+            });
+            console.log(`✅ Created index for: ${field}`);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.warn(`⚠️  Failed to create index for ${field}:`, errorMessage);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(
+        '❌ Failed to ensure indexes:',
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 
@@ -154,12 +248,36 @@ export class QdrantService {
 
       const searchResult = await this.client.search(this.COLLECTION_NAME, searchParams);
 
-      return searchResult.map(point => ({
-        id: point.id as string,
-        score: point.score,
-        text: (point.payload?.content as string) || '',
-        metadata: includeMetadata ? (point.payload as Record<string, unknown>) : undefined,
-      }));
+      return searchResult.map(point => {
+        const payload = point.payload as Record<string, unknown> | undefined;
+        const rawPosition = payload?.position as { start: number; end: number } | undefined;
+        return {
+          id: point.id as string,
+          score: point.score,
+          text: (payload?.content as string) || '',
+          documentId: payload?.documentId as string | undefined,
+          metadata: includeMetadata
+            ? (payload?.metadata as {
+                title?: string;
+                slug?: string;
+                author?: string;
+                category?: string;
+                tags?: string[];
+                publishedAt?: string;
+                wordCount?: number;
+                language?: string;
+                source?: string;
+              })
+            : undefined,
+          position: rawPosition
+            ? {
+                start: rawPosition.start,
+                end: rawPosition.end,
+                charCount: rawPosition.end - rawPosition.start,
+              }
+            : undefined,
+        };
+      });
     } catch (error) {
       console.error('❌ Failed to search:', error instanceof Error ? error.message : String(error));
       throw error;

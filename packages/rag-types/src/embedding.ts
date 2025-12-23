@@ -5,11 +5,17 @@ export const EmbeddingModelSchema = z.enum([
   'text-embedding-3-small',
   'text-embedding-3-large',
   'text-embedding-ada-002',
+  'embedding-2', // GLM embedding model v2
+  'embedding-3', // GLM embedding model v3
+  'BAAI/bge-m3', // SiliconFlow/Z.ai multilingual embedding model
+  'BAAI/bge-large-zh-v1.5', // SiliconFlow/Z.ai Chinese embedding model
+  'zephyr-embedding', // Z.ai embedding model
+  'zephyr-embedding-large', // Z.ai large embedding model
 ]);
 export type EmbeddingModel = z.infer<typeof EmbeddingModelSchema>;
 
 // Embedding provider
-export const EmbeddingProviderSchema = z.enum(['openai', 'glm']);
+export const EmbeddingProviderSchema = z.enum(['openai', 'glm', 'siliconflow']);
 export type EmbeddingProvider = z.infer<typeof EmbeddingProviderSchema>;
 
 // Embedding configuration
@@ -43,7 +49,27 @@ export const SimilarityResultSchema = z.object({
   id: z.string(),
   score: z.number(),
   text: z.string(),
-  metadata: z.record(z.any()).optional(),
+  documentId: z.string().optional(),
+  metadata: z
+    .object({
+      title: z.string().optional(),
+      slug: z.string().optional(),
+      author: z.string().optional(),
+      category: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      publishedAt: z.string().optional(),
+      wordCount: z.number().optional(),
+      language: z.string().optional(),
+      source: z.string().optional(),
+    })
+    .optional(),
+  position: z
+    .object({
+      start: z.number(),
+      end: z.number(),
+      charCount: z.number(),
+    })
+    .optional(),
 });
 
 export type SimilarityResult = z.infer<typeof SimilarityResultSchema>;

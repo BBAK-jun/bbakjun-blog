@@ -5,7 +5,9 @@ import type {
   SearchResponse,
   SourceReference,
   DocumentFilter,
-  DocumentMetadata,
+  IQdrantService,
+  IEmbeddingService,
+  ILLMService,
 } from '@repo/rag-types';
 
 export interface QueryProcessorOptions {
@@ -19,7 +21,12 @@ interface SearchResultPoint {
   score: number;
   text: string;
   vector?: number[];
-  metadata?: DocumentMetadata & { documentId?: string; title?: string; slug?: string };
+  metadata?: {
+    documentId?: string;
+    title?: string;
+    slug?: string;
+    [key: string]: unknown;
+  };
   position?: {
     start: number;
     end: number;
@@ -28,15 +35,15 @@ interface SearchResultPoint {
 }
 
 export class QueryProcessor {
-  private qdrantService: any;
-  private embeddingService: any;
-  private llmService: any;
+  private qdrantService: IQdrantService;
+  private embeddingService: IEmbeddingService;
+  private llmService: ILLMService | null;
   private options: QueryProcessorOptions;
 
   constructor(
-    qdrantService: any,
-    embeddingService: any,
-    llmService: any,
+    qdrantService: IQdrantService,
+    embeddingService: IEmbeddingService,
+    llmService: ILLMService | null,
     options: QueryProcessorOptions = {}
   ) {
     this.qdrantService = qdrantService;
@@ -55,6 +62,10 @@ export class QueryProcessor {
    */
   async processRAGQuery(request: RAGQueryRequest): Promise<RAGQueryResponse> {
     const startTime = Date.now();
+
+    if (!this.llmService) {
+      throw new Error('LLM service is required for RAG queries');
+    }
 
     try {
       // 1. Generate query embedding
@@ -134,10 +145,10 @@ export class QueryProcessor {
     filters?: DocumentFilter,
     limit: number = 5
   ): Promise<SourceReference[]> {
-    // Search for similar chunks
+    // Search for similar chunks - get more chunks to provide more context
     const results = await this.qdrantService.search(queryEmbedding, {
-      limit: limit * 2, // Get more to potentially merge chunks
-      threshold: this.options.similarityThreshold,
+      limit: limit * 10, // Get more chunks for better context
+      threshold: 0.5, // Lower threshold to get more results
       filter: filters,
     });
 
@@ -160,7 +171,7 @@ export class QueryProcessor {
     const groups = new Map<string, any[]>();
 
     for (const result of results) {
-      const documentId = result.metadata?.documentId;
+      const documentId = result.documentId;
       if (documentId) {
         if (!groups.has(documentId)) {
           groups.set(documentId, []);
@@ -268,20 +279,20 @@ export class QueryProcessor {
       if (Math.abs(scoreDiff) > 0.1) {
         return scoreDiff;
       }
-      // Then by position (ascending)
+      // Then by position (ascending) to maintain document order
       return (a.position?.start || 0) - (b.position?.start || 0);
     });
 
-    // Take top chunks and create a coherent excerpt
-    const topChunks = sortedChunks.slice(0, 3);
+    // Take more chunks for better context
+    const topChunks = sortedChunks.slice(0, 10);
     const contentParts = topChunks.map(c => c.text);
 
     // Combine with ellipsis if needed
-    let combined = contentParts.join(' ... ');
+    let combined = contentParts.join('\n\n');
 
-    // Limit length
-    if (combined.length > 500) {
-      combined = combined.substring(0, 497) + '...';
+    // Limit length - allow more content
+    if (combined.length > 2000) {
+      combined = combined.substring(0, 1997) + '...';
     }
 
     return combined;
@@ -340,42 +351,12 @@ export class QueryProcessor {
   /**
    * Get related documents for a given document
    */
-  async getRelatedDocuments(documentId: string, limit: number = 3): Promise<SourceReference[]> {
-    try {
-      // Get document content to find similar
-      const documentPoints = await this.qdrantService.scrollPoints(undefined, 1, undefined, {
-        documentId,
-      });
-
-      if (documentPoints.points.length === 0) {
-        return [];
-      }
-
-      const document = documentPoints.points[0];
-
-      // Use document content as query to find similar documents
-      const results = await this.qdrantService.search(
-        document.vector || [0], // Would need to store vector
-        {
-          limit: limit + 1,
-          threshold: 0.5,
-        }
-      );
-
-      // Filter out the original document
-      const filteredResults = results.filter((r: SearchResultPoint) => r.metadata?.documentId !== documentId);
-
-      return filteredResults.slice(0, limit).map((result: SearchResultPoint) => ({
-        id: result.metadata?.documentId || result.id,
-        title: result.metadata?.title || 'Untitled',
-        slug: result.metadata?.slug || '/',
-        content: this.extractSnippet(result.text, 200),
-        score: result.score,
-        metadata: result.metadata,
-      }));
-    } catch (error) {
-      console.error('❌ Failed to get related documents:', error);
-      return [];
-    }
+  async getRelatedDocuments(_documentId: string, _limit: number = 3): Promise<SourceReference[]> {
+    // TODO: Implement related documents functionality
+    // This would require:
+    // 1. Storing vectors with document points
+    // 2. Using the stored vector to find similar documents
+    // 3. Filtering out the original document
+    return [];
   }
 }

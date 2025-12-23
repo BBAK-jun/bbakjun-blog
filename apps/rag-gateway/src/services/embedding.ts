@@ -1,27 +1,72 @@
 import type { Embedding, EmbeddingConfig } from '@repo/rag-types';
-import { generateTextHash } from '@repo/rag-types';
+import { generateTextHash, type IEmbeddingService } from '@repo/rag-types';
 import OpenAI from 'openai';
 import { env } from '../env';
 
-export class EmbeddingService {
-  private glmClient: OpenAI;
+// Retry configuration for rate limiting
+const MAX_RETRIES = 5;
+const INITIAL_DELAY_MS = 1000;
+const MAX_DELAY_MS = 60000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (error && typeof error === 'object') {
+    if ('status' in error && error.status === 429) return true;
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message.includes('429') || error.message.includes('rate limit');
+    }
+  }
+  return false;
+}
+
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = MAX_RETRIES
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+
+      if (!isRateLimitError(error) || attempt === maxRetries) {
+        throw error;
+      }
+
+      const delay = Math.min(INITIAL_DELAY_MS * Math.pow(2, attempt), MAX_DELAY_MS);
+      console.warn(
+        `Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`
+      );
+      await sleep(delay);
+    }
+  }
+
+  throw lastError || new Error('Retry failed');
+}
+
+export class EmbeddingService implements IEmbeddingService {
+  private client: OpenAI;
   private cache: Map<string, number[]> = new Map();
   private config: EmbeddingConfig;
 
   constructor(config?: Partial<EmbeddingConfig>) {
     this.config = {
-      provider: 'glm',
+      provider: 'openai',
       model: 'text-embedding-3-small',
-      dimensions: 1024,
-      batchSize: 100,
+      dimensions: 1536,
+      batchSize: 50, // Reduced to avoid rate limits
       maxTokens: 8191,
       ...config,
     };
 
-    // Initialize GLM client for embeddings
-    this.glmClient = new OpenAI({
-      apiKey: env.GLM_API_KEY,
-      baseURL: 'https://open.bigmodel.cn/api/paas/v4/',
+    this.client = new OpenAI({
+      apiKey: env.OPENAI_API_KEY,
+      maxRetries: 0, // We handle retries manually
     });
   }
 
@@ -36,11 +81,10 @@ export class EmbeddingService {
       return this.cache.get(hash)!;
     }
 
-    try {
-      const response = await this.glmClient.embeddings.create({
+    return retryWithBackoff(async () => {
+      const response = await this.client.embeddings.create({
         model: this.config.model,
         input: text,
-        dimensions: this.config.dimensions,
       });
 
       const embedding = response.data[0].embedding;
@@ -49,10 +93,7 @@ export class EmbeddingService {
       this.cache.set(hash, embedding);
 
       return embedding;
-    } catch (error) {
-      console.error('❌ Failed to generate embedding:', error);
-      throw new Error(`Embedding generation failed: ${error}`);
-    }
+    });
   }
 
   /**
@@ -81,27 +122,23 @@ export class EmbeddingService {
 
       // Generate embeddings for uncached texts
       if (uncachedTexts.length > 0) {
-        try {
-          const response = await this.glmClient.embeddings.create({
+        const response = await retryWithBackoff(async () => {
+          return await this.client.embeddings.create({
             model: this.config.model,
             input: uncachedTexts,
-            dimensions: this.config.dimensions,
           });
+        });
 
-          response.data.forEach((embedding, idx) => {
-            const originalIdx = i + uncachedIndices[idx];
-            const vector = embedding.embedding;
+        response.data.forEach((embedding, idx) => {
+          const originalIdx = i + uncachedIndices[idx];
+          const vector = embedding.embedding;
 
-            embeddings[originalIdx] = vector;
+          embeddings[originalIdx] = vector;
 
-            // Cache the result
-            const hash = generateTextHash(uncachedTexts[idx]);
-            this.cache.set(hash, vector);
-          });
-        } catch (error) {
-          console.error('❌ Failed to generate batch embeddings:', error);
-          throw new Error(`Batch embedding generation failed: ${error}`);
-        }
+          // Cache the result
+          const hash = generateTextHash(uncachedTexts[idx]);
+          this.cache.set(hash, vector);
+        });
       }
     }
 

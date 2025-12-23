@@ -17,7 +17,9 @@ export const env = createEnv({
     QDRANT_API_KEY: z.string().optional(),
 
     // LLM Configuration
-    GLM_API_KEY: z.string().min(1),
+    OPENAI_API_KEY: z.string().min(1),
+    GLM_API_KEY: z.string().optional(), // Optional z.ai key
+    LLM_PROVIDER: z.enum(['openai', 'glm']).default('openai'), // Choose which LLM to use
 
     // Optional Redis for caching
     REDIS_URL: z.string().url().optional(),
@@ -36,7 +38,9 @@ export const env = createEnv({
     PORT: process.env.PORT,
     QDRANT_URL: process.env.QDRANT_URL,
     QDRANT_API_KEY: process.env.QDRANT_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GLM_API_KEY: process.env.GLM_API_KEY,
+    LLM_PROVIDER: process.env.LLM_PROVIDER,
     REDIS_URL: process.env.REDIS_URL,
     BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,

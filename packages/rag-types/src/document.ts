@@ -74,9 +74,15 @@ export type DocumentFilter = z.infer<typeof DocumentFilterSchema>;
 export function generateDocumentId(source: string, path: string): string {
   const crypto = require('crypto');
   const hash = crypto.createHash('sha256').update(`${source}:${path}`).digest('hex');
-  return `doc_${hash.substring(0, 16)}`;
+  // Return UUID format (first 32 chars of hash, formatted as UUID)
+  const hashPart = hash.substring(0, 32);
+  return `${hashPart.substring(0, 8)}-${hashPart.substring(8, 12)}-${hashPart.substring(12, 16)}-${hashPart.substring(16, 20)}-${hashPart.substring(20, 32)}`;
 }
 
 export function generateChunkId(docId: string, position: number): string {
-  return `${docId}_chunk_${position.toString().padStart(4, '0')}`;
+  const crypto = require('crypto');
+  // Use docId + position to generate a deterministic UUID
+  const hash = crypto.createHash('sha256').update(`${docId}:${position}`).digest('hex');
+  const hashPart = hash.substring(0, 32);
+  return `${hashPart.substring(0, 8)}-${hashPart.substring(8, 12)}-${hashPart.substring(12, 16)}-${hashPart.substring(16, 20)}-${hashPart.substring(20, 32)}`;
 }
