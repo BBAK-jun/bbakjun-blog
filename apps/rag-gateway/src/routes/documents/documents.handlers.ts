@@ -1,48 +1,16 @@
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
-import { getQdrantService } from '../../services/qdrant';
-import { getEmbeddingService } from '../../services/embedding';
+import { AppRouteHandler } from '@/libs';
+import { getQdrantService } from '@/services/qdrant';
+import { getEmbeddingService } from '@/services/embedding';
 import { SemanticChunker } from '@repo/rag-ingestion';
 import {
   generateDocumentId,
   generateChunkId,
-  DocumentSourceSchema,
   type DocumentFilter,
   type DocumentMetadata,
 } from '@repo/rag-types';
 import matter from 'gray-matter';
-
-const documentRoutes = new Hono();
-
-// Document schemas
-const createDocumentSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().min(1),
-  slug: z.string().optional(),
-  metadata: z
-    .object({
-      category: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-      author: z.string().optional(),
-      publishedAt: z.string().datetime().optional(),
-      source: DocumentSourceSchema.optional(),
-    })
-    .optional(),
-});
-
-const updateDocumentSchema = z.object({
-  title: z.string().min(1).optional(),
-  content: z.string().min(1).optional(),
-  metadata: z
-    .object({
-      category: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-      author: z.string().optional(),
-      publishedAt: z.string().datetime().optional(),
-    })
-    .optional(),
-});
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+import * as routes from './documents.routes';
 
 // Helper function to extract category from slug
 function extractCategoryFromSlug(slug: string): string {
@@ -51,13 +19,12 @@ function extractCategoryFromSlug(slug: string): string {
   return parts[0]?.toUpperCase() || 'BLOG';
 }
 
-// GET /api/documents - List documents
-documentRoutes.get('/', async c => {
-  const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100);
-  const offset = parseInt(c.req.query('offset') || '0');
-  const category = c.req.query('category');
-  const tags = c.req.query('tags')?.split(',');
-  const author = c.req.query('author');
+export const listDocuments: AppRouteHandler<typeof routes.listDocuments> = async c => {
+  const limit = Math.min(parseInt(c.req.valid('query').limit || '20'), 100);
+  const offset = parseInt(c.req.valid('query').offset || '0');
+  const category = c.req.valid('query').category;
+  const tags = c.req.valid('query').tags?.split(',');
+  const author = c.req.valid('query').author;
 
   try {
     const qdrantService = getQdrantService();
@@ -132,24 +99,32 @@ documentRoutes.get('/', async c => {
       Object.keys(filter).length > 0 ? filter : undefined
     );
 
-    return c.json({
-      documents,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasMore: result.nextPageOffset !== undefined,
+    return c.json(
+      {
+        documents,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: result.nextPageOffset !== undefined,
+        },
       },
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to list documents:', error);
-    return c.json({ error: 'Failed to list documents', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to list documents',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// GET /api/documents/:id - Get document details
-documentRoutes.get('/:id', async c => {
-  const id = c.req.param('id');
+export const getDocument: AppRouteHandler<typeof routes.getDocument> = async c => {
+  const { id } = c.req.valid('param');
 
   try {
     const qdrantService = getQdrantService();
@@ -161,7 +136,13 @@ documentRoutes.get('/:id', async c => {
     const result = await qdrantService.scrollPoints(filter, 100);
 
     if (result.points.length === 0) {
-      return c.json({ error: 'Document not found' }, 404);
+      return c.json(
+        {
+          error: 'Document not found',
+          message: '',
+        },
+        HttpStatusCodes.NOT_FOUND
+      );
     }
 
     // Sort chunks by position
@@ -182,25 +163,33 @@ documentRoutes.get('/:id', async c => {
       position: (chunk.position as { start: number })?.start ?? index,
     }));
 
-    return c.json({
-      id,
-      title: (metadata.title as string) || '',
-      slug: (metadata.slug as string) || '',
-      chunks,
-      metadata: {
-        ...metadata,
-        chunkCount: chunks.length,
-        lastIndexed: metadata.lastModified,
+    return c.json(
+      {
+        id,
+        title: (metadata.title as string) || '',
+        slug: (metadata.slug as string) || '',
+        chunks,
+        metadata: {
+          ...metadata,
+          chunkCount: chunks.length,
+          lastIndexed: metadata.lastModified,
+        },
       },
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to get document:', error);
-    return c.json({ error: 'Failed to get document', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to get document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// POST /api/documents - Add document
-documentRoutes.post('/', zValidator('json', createDocumentSchema), async c => {
+export const createDocument: AppRouteHandler<typeof routes.createDocument> = async c => {
   const { title, content, slug, metadata: inputMetadata } = c.req.valid('json');
 
   try {
@@ -290,24 +279,29 @@ documentRoutes.post('/', zValidator('json', createDocumentSchema), async c => {
         id: docId,
         title: metadata.title,
         slug: metadata.slug,
-        status: 'indexed',
+        status: 'indexed' as const,
         chunksCreated: chunks.length,
         metadata: {
           ...metadata,
           indexedAt: new Date().toISOString(),
         },
       },
-      201
+      HttpStatusCodes.CREATED
     );
   } catch (error) {
     console.error('❌ Failed to create document:', error);
-    return c.json({ error: 'Failed to create document', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to create document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// PUT /api/documents/:id - Update document
-documentRoutes.put('/:id', zValidator('json', updateDocumentSchema), async c => {
-  const id = c.req.param('id');
+export const updateDocument: AppRouteHandler<typeof routes.updateDocument> = async c => {
+  const { id } = c.req.valid('param');
   const { title, content, metadata: inputMetadata } = c.req.valid('json');
 
   try {
@@ -321,7 +315,13 @@ documentRoutes.put('/:id', zValidator('json', updateDocumentSchema), async c => 
     const result = await qdrantService.scrollPoints(filter, 100);
 
     if (result.points.length === 0) {
-      return c.json({ error: 'Document not found' }, 404);
+      return c.json(
+        {
+          error: 'Document not found',
+          message: '',
+        },
+        HttpStatusCodes.NOT_FOUND
+      );
     }
 
     // Get existing metadata from first chunk
@@ -386,21 +386,29 @@ documentRoutes.put('/:id', zValidator('json', updateDocumentSchema), async c => 
 
     await qdrantService.upsertPoints(points);
 
-    return c.json({
-      id,
-      status: 'updated',
-      chunksReindexed: chunksToIndex.length,
-      updatedAt: new Date().toISOString(),
-    });
+    return c.json(
+      {
+        id,
+        status: 'updated' as const,
+        chunksReindexed: chunksToIndex.length,
+        updatedAt: new Date().toISOString(),
+      },
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to update document:', error);
-    return c.json({ error: 'Failed to update document', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to update document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// DELETE /api/documents/:id - Delete document
-documentRoutes.delete('/:id', async c => {
-  const id = c.req.param('id');
+export const deleteDocument: AppRouteHandler<typeof routes.deleteDocument> = async c => {
+  const { id } = c.req.valid('param');
 
   try {
     const qdrantService = getQdrantService();
@@ -412,22 +420,35 @@ documentRoutes.delete('/:id', async c => {
     const count = await qdrantService.countPoints(filter);
 
     if (count === 0) {
-      return c.json({ error: 'Document not found' }, 404);
+      return c.json(
+        {
+          error: 'Document not found',
+          message: '',
+        },
+        HttpStatusCodes.NOT_FOUND
+      );
     }
 
     // Delete all chunks
     await qdrantService.deletePoints(filter);
 
-    return c.json({
-      id,
-      status: 'deleted',
-      chunksDeleted: count,
-      deletedAt: new Date().toISOString(),
-    });
+    return c.json(
+      {
+        id,
+        status: 'deleted' as const,
+        chunksDeleted: count,
+        deletedAt: new Date().toISOString(),
+      },
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to delete document:', error);
-    return c.json({ error: 'Failed to delete document', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to delete document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
-
-export { documentRoutes };
+};

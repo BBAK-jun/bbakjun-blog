@@ -1,20 +1,11 @@
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
-import { getQdrantService } from '../../services/qdrant';
-import { getEmbeddingService } from '../../services/embedding';
-import { getLLMService } from '../../services/llm';
+import { AppRouteHandler } from '@/libs';
+import { getQdrantService } from '@/services/qdrant';
+import { getEmbeddingService } from '@/services/embedding';
+import { getLLMService } from '@/services/llm';
 import { IngestionPipeline } from '@repo/rag-ingestion';
-import { env } from '../../env';
-
-const adminRoutes = new Hono();
-
-// Reindex schema
-const reindexSchema = z.object({
-  force: z.boolean().default(false),
-  batchSize: z.number().min(1).max(100).default(10),
-  collections: z.array(z.string()).optional(),
-});
+import { env } from '@/env';
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+import * as routes from './admin.routes';
 
 // Store for tracking reindex jobs
 const reindexJobs = new Map<
@@ -28,8 +19,7 @@ const reindexJobs = new Map<
   }
 >();
 
-// GET /api/admin/stats - Get usage statistics
-adminRoutes.get('/stats', async c => {
+export const getStats: AppRouteHandler<typeof routes.getStats> = async c => {
   try {
     const qdrantService = getQdrantService();
     const collectionInfo = await qdrantService.getCollectionInfo();
@@ -61,63 +51,73 @@ adminRoutes.get('/stats', async c => {
     const embeddingService = getEmbeddingService();
     const cacheStats = embeddingService.getCacheStats();
 
-    return c.json({
-      documents: {
-        total: processedDocIds.size,
-        indexed: collectionInfo.vectorsCount,
-        failed: 0, // Would need to track this separately
-        categories,
-      },
-      usage: {
-        totalQueries: 0, // Would need to track this separately
-        avgQueryTime: 0,
-        topQueries: [],
-      },
-      performance: {
-        qdrant: {
-          avgSearchTime: 0, // Would need to track this
-          totalCollections: 1,
-          totalVectors: collectionInfo.vectorsCount,
+    return c.json(
+      {
+        documents: {
+          total: processedDocIds.size,
+          indexed: collectionInfo.vectorsCount,
+          failed: 0,
+          categories,
         },
-        llm: {
-          avgGenerationTime: 0, // Would need to track this
-          totalTokens: 0,
-          avgTokensPerQuery: 0,
+        usage: {
+          totalQueries: 0,
+          avgQueryTime: 0,
+          topQueries: [],
+        },
+        performance: {
+          qdrant: {
+            avgSearchTime: 0,
+            totalCollections: 1,
+            totalVectors: collectionInfo.vectorsCount,
+          },
+          llm: {
+            avgGenerationTime: 0,
+            totalTokens: 0,
+            avgTokensPerQuery: 0,
+          },
+        },
+        system: {
+          uptime: '0h 0m',
+          version: '0.1.0',
+          lastIngestion: null,
+          cacheHitRate: cacheStats.size > 0 ? 0.5 : 0,
         },
       },
-      system: {
-        uptime: '0h 0m', // Would need process start time
-        version: '0.1.0',
-        lastIngestion: null, // Would need to track this
-        cacheHitRate: cacheStats.size > 0 ? 0.5 : 0, // Rough estimate
-      },
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to get stats:', error);
-    return c.json({ error: 'Failed to get stats', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to get stats',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// GET /api/admin/logs - Get system logs
-adminRoutes.get('/logs', async c => {
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 1000);
-  const _level = c.req.query('level') || 'info';
-  const _since = c.req.query('since');
+export const getLogs: AppRouteHandler<typeof routes.getLogs> = async c => {
+  const limit = Math.min(parseInt(c.req.valid('query').limit || '50'), 1000);
+  // const level = c.req.valid('query').level || 'info';
+  // const since = c.req.valid('query').since;
 
   // TODO: Implement log retrieval from file or database
   // For now, return empty logs
-  return c.json({
-    logs: [],
-    pagination: {
-      total: 0,
-      limit,
-      hasMore: false,
+  return c.json(
+    {
+      logs: [],
+      pagination: {
+        total: 0,
+        limit,
+        hasMore: false,
+      },
     },
-  });
-});
+    HttpStatusCodes.OK
+  );
+};
 
-// POST /api/admin/reindex - Reindex all documents
-adminRoutes.post('/reindex', zValidator('json', reindexSchema), async c => {
+export const createReindex: AppRouteHandler<typeof routes.createReindex> = async c => {
   const { force, batchSize, collections } = c.req.valid('json');
 
   try {
@@ -195,46 +195,62 @@ adminRoutes.post('/reindex', zValidator('json', reindexSchema), async c => {
       });
 
     // Estimate time based on file count
-    const estimatedMinutes = Math.ceil(markdownFiles.length / 10); // Rough estimate
+    const estimatedMinutes = Math.ceil(markdownFiles.length / 10);
 
-    return c.json({
-      jobId,
-      status: 'started',
-      config: {
-        force,
-        batchSize,
-        collections: collections || ['all'],
+    return c.json(
+      {
+        jobId,
+        status: 'started' as const,
+        config: {
+          force,
+          batchSize,
+          collections: collections || ['all'],
+        },
+        estimatedTime: `~${estimatedMinutes} minutes`,
       },
-      estimatedTime: `~${estimatedMinutes} minutes`,
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to start reindex:', error);
-    return c.json({ error: 'Reindex failed to start', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Reindex failed to start',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// GET /api/admin/reindex/:jobId - Get reindex status
-adminRoutes.get('/reindex/:jobId', async c => {
-  const jobId = c.req.param('jobId');
+export const getReindexStatus: AppRouteHandler<typeof routes.getReindexStatus> = async c => {
+  const { jobId } = c.req.valid('param');
   const job = reindexJobs.get(jobId);
 
   if (!job) {
-    return c.json({ error: 'Job not found' }, 404);
+    return c.json(
+      {
+        error: 'Job not found',
+        message: '',
+      },
+      HttpStatusCodes.NOT_FOUND
+    );
   }
 
-  return c.json({
-    jobId,
-    status: job.status,
-    progress: job.progress,
-    startedAt: job.startedAt,
-    completedAt: job.completedAt,
-    errors: job.errors,
-  });
-});
+  return c.json(
+    {
+      jobId,
+      status: job.status,
+      progress: job.progress,
+      startedAt: job.startedAt,
+      completedAt: job.completedAt,
+      errors: job.errors,
+    },
+    HttpStatusCodes.OK
+  );
+};
 
-// DELETE /api/admin/cache - Clear caches
-adminRoutes.delete('/cache', async c => {
-  const cacheType = c.req.query('type') || 'all';
+export const clearCache: AppRouteHandler<typeof routes.clearCache> = async c => {
+  const cacheType = c.req.valid('query').type || 'all';
 
   try {
     const embeddingService = getEmbeddingService();
@@ -243,22 +259,30 @@ adminRoutes.delete('/cache', async c => {
     // Clear embedding cache
     embeddingService.clearCache();
 
-    return c.json({
-      message: 'Cache cleared',
-      type: cacheType,
-      clearedAt: new Date().toISOString(),
-      sizes: {
-        embedding: `${(beforeStats.memoryEstimate / 1024 / 1024).toFixed(2)}MB`,
+    return c.json(
+      {
+        message: 'Cache cleared',
+        type: cacheType,
+        clearedAt: new Date().toISOString(),
+        sizes: {
+          embedding: `${(beforeStats.memoryEstimate / 1024 / 1024).toFixed(2)}MB`,
+        },
       },
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Failed to clear cache:', error);
-    return c.json({ error: 'Failed to clear cache', details: String(error) }, 500);
+    return c.json(
+      {
+        error: 'Failed to clear cache',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-});
+};
 
-// GET /api/admin/health - Detailed health check
-adminRoutes.get('/health', async c => {
+export const getHealth: AppRouteHandler<typeof routes.getHealth> = async c => {
   try {
     const qdrantService = getQdrantService();
     const qdrantHealthy = await qdrantService.healthCheck();
@@ -288,46 +312,47 @@ adminRoutes.get('/health', async c => {
       llmHealthy = false;
     }
 
-    return c.json({
-      status: qdrantHealthy && llmHealthy ? 'healthy' : 'unhealthy',
-      components: {
-        qdrant: {
-          status: qdrantHealthy ? 'healthy' : 'unhealthy',
-          responseTime: 0, // Would need to measure
-          collections: 1,
-          vectorsCount: collectionInfo.vectorsCount,
+    return c.json(
+      {
+        status: qdrantHealthy && llmHealthy ? ('healthy' as const) : ('unhealthy' as const),
+        components: {
+          qdrant: {
+            status: qdrantHealthy ? ('healthy' as const) : ('unhealthy' as const),
+            responseTime: 0,
+            collections: 1,
+            vectorsCount: collectionInfo.vectorsCount,
+          },
+          llm: {
+            status: llmHealthy ? ('healthy' as const) : ('unhealthy' as const),
+            provider: 'GLM-4.6',
+            responseTime: llmResponseTime,
+          },
+          redis: {
+            status: 'unknown' as const,
+            connected: false,
+            memory: 'N/A',
+          },
+          storage: {
+            status: 'healthy' as const,
+            free: 'N/A',
+            usage: collectionInfo.diskDataSize
+              ? `${(collectionInfo.diskDataSize / 1024 / 1024).toFixed(2)}MB`
+              : 'N/A',
+          },
         },
-        llm: {
-          status: llmHealthy ? 'healthy' : 'unhealthy',
-          provider: 'GLM-4.6',
-          responseTime: llmResponseTime,
-        },
-        redis: {
-          status: 'unknown', // Redis is optional
-          connected: false,
-          memory: 'N/A',
-        },
-        storage: {
-          status: 'healthy', // Would need to check disk space
-          free: 'N/A',
-          usage: collectionInfo.diskDataSize
-            ? `${(collectionInfo.diskDataSize / 1024 / 1024).toFixed(2)}MB`
-            : 'N/A',
-        },
+        uptime: '0h 0m',
+        version: '0.1.0',
       },
-      uptime: '0h 0m', // Would need process start time
-      version: '0.1.0',
-    });
+      HttpStatusCodes.OK
+    );
   } catch (error) {
     console.error('❌ Health check failed:', error);
     return c.json(
       {
-        status: 'unhealthy',
+        status: 'unhealthy' as const,
         error: error instanceof Error ? error.message : 'Unknown error',
       },
-      503
+      HttpStatusCodes.SERVICE_UNAVAILABLE
     );
   }
-});
-
-export { adminRoutes };
+};

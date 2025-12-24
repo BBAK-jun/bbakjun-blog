@@ -1,30 +1,10 @@
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z as z } from 'zod';
-import { getQdrantService } from '../../services/qdrant';
-import { getEmbeddingService } from '../../services/embedding';
-import { getLLMService } from '../../services/llm';
+import { AppRouteHandler } from '@/libs';
+import { getQdrantService } from '@/services/qdrant';
+import { getEmbeddingService } from '@/services/embedding';
+import { getLLMService } from '@/services/llm';
 import { QueryProcessor } from '@repo/rag-core';
-
-const mcpRoutes = new Hono();
-
-// MCP Tool schemas
-const invokeSchema = z.object({
-  tool: z.string().min(1),
-  arguments: z.record(z.any()),
-  context: z
-    .object({
-      conversationId: z.string().optional(),
-      userId: z.string().optional(),
-    })
-    .optional(),
-});
-
-const explainSchema = z.object({
-  query: z.string().min(1),
-  code: z.string().optional(),
-  context: z.string().optional(),
-});
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+import * as routes from './mcp.routes';
 
 // Available MCP tools
 const MCP_TOOLS = [
@@ -63,38 +43,34 @@ const MCP_TOOLS = [
   },
 ];
 
-// GET /mcp/tools - List available MCP tools
-mcpRoutes.get('/tools', c => {
-  return c.json({
-    tools: MCP_TOOLS,
-    protocol: 'mcp',
-    version: '1.0.0',
-  });
-});
+export const listTools: AppRouteHandler<typeof routes.listTools> = async c => {
+  return c.json(
+    {
+      tools: MCP_TOOLS,
+      protocol: 'mcp',
+      version: '1.0.0',
+    },
+    HttpStatusCodes.OK
+  );
+};
 
-// POST /mcp/invoke - Invoke an MCP tool
-mcpRoutes.post('/invoke', zValidator('json', invokeSchema), async c => {
-  const { tool, arguments: args, context: _context } = c.req.valid('json');
+export const invokeTool: AppRouteHandler<typeof routes.invokeTool> = async c => {
+  const { tool, arguments: args } = c.req.valid('json');
 
   // Verify tool exists
   const toolDef = MCP_TOOLS.find(t => t.name === tool);
   if (!toolDef) {
     return c.json(
       {
-        content: [
-          {
-            type: 'text',
-            text: `Tool not found: ${tool}. Available tools: ${MCP_TOOLS.map(t => t.name).join(', ')}`,
-          },
-        ],
-        isError: true,
+        error: `Tool not found: ${tool}`,
+        message: `Available tools: ${MCP_TOOLS.map(t => t.name).join(', ')}`,
       },
-      404
+      HttpStatusCodes.NOT_FOUND
     );
   }
 
   try {
-    let result: any = {};
+    let result: unknown = {};
 
     switch (tool) {
       case 'search_blog':
@@ -113,32 +89,29 @@ mcpRoutes.post('/invoke', zValidator('json', invokeSchema), async c => {
         result = { content: 'Tool not implemented' };
     }
 
-    return c.json({
-      content: [
-        {
-          type: 'text',
-          text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-        },
-      ],
-    });
-  } catch (error) {
     return c.json(
       {
         content: [
           {
             type: 'text',
-            text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
           },
         ],
-        isError: true,
       },
-      500
+      HttpStatusCodes.OK
+    );
+  } catch (error) {
+    return c.json(
+      {
+        error: 'Tool invocation failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     );
   }
-});
+};
 
-// POST /mcp/explain - Explain code or query
-mcpRoutes.post('/explain', zValidator('json', explainSchema), async c => {
+export const explain: AppRouteHandler<typeof routes.explain> = async c => {
   const { query, code } = c.req.valid('json');
 
   // TODO: Implement explanation using RAG
@@ -146,33 +119,37 @@ mcpRoutes.post('/explain', zValidator('json', explainSchema), async c => {
   // 2. Generate explanation with GLM-4.6
   // 3. Include sources
 
-  return c.json({
-    query,
-    explanation: code
-      ? `This code demonstrates ${code ? 'a specific pattern' : 'a concept'}...`
-      : `Based on the blog content, ${query} refers to...`,
-    sources: [
-      {
-        title: 'Related Post',
-        slug: '/blog/related-post',
-        excerpt: 'Relevant excerpt...',
-      },
-    ],
-    relatedCode: code
-      ? [
-          {
-            language: 'typescript',
-            code: 'Related code example...',
-            explanation: 'This shows how to implement...',
-          },
-        ]
-      : undefined,
-  });
-});
+  return c.json(
+    {
+      query,
+      explanation: code
+        ? `This code demonstrates ${code ? 'a specific pattern' : 'a concept'}...`
+        : `Based on the blog content, ${query} refers to...`,
+      sources: [
+        {
+          title: 'Related Post',
+          slug: '/blog/related-post',
+          excerpt: 'Relevant excerpt...',
+        },
+      ],
+      relatedCode: code
+        ? [
+            {
+              language: 'typescript',
+              code: 'Related code example...',
+              explanation: 'This shows how to implement...',
+            },
+          ]
+        : undefined,
+    },
+    HttpStatusCodes.OK
+  );
+};
 
 // Tool implementation helpers
-async function invokeSearchBlog(args: any) {
+async function invokeSearchBlog(args: unknown) {
   try {
+    const argsTyped = args as { query: string; limit?: number; category?: string };
     const queryProcessor = new QueryProcessor(
       getQdrantService(),
       getEmbeddingService(),
@@ -180,15 +157,15 @@ async function invokeSearchBlog(args: any) {
     );
 
     const response = await queryProcessor.searchDocuments({
-      query: args.query,
-      limit: args.limit || 5,
+      query: argsTyped.query,
+      limit: argsTyped.limit || 5,
       threshold: 0.7,
       rerank: true,
-      filters: args.category ? { category: args.category } : undefined,
+      filters: argsTyped.category ? { category: argsTyped.category } : undefined,
     });
 
     return {
-      results: response.results.map((result: any) => ({
+      results: response.results.map(result => ({
         title: result.title,
         slug: result.slug,
         excerpt: result.content,
@@ -208,8 +185,9 @@ async function invokeSearchBlog(args: any) {
   }
 }
 
-async function invokeExplainCode(args: any) {
+async function invokeExplainCode(args: unknown) {
   try {
+    const argsTyped = args as { code: string; context?: string };
     const llmService = getLLMService();
     const queryProcessor = new QueryProcessor(
       getQdrantService(),
@@ -219,7 +197,7 @@ async function invokeExplainCode(args: any) {
 
     // Search for relevant content first
     const searchResponse = await queryProcessor.searchDocuments({
-      query: `${args.code} ${args.context || ''}`,
+      query: `${argsTyped.code} ${argsTyped.context || ''}`,
       limit: 3,
       threshold: 0.5,
       rerank: true,
@@ -227,7 +205,7 @@ async function invokeExplainCode(args: any) {
 
     // Generate explanation with context
     const context = searchResponse.results
-      .map((r: any) => `From ${r.title}: ${r.content}`)
+      .map(result => `From ${result.title}: ${result.content}`)
       .join('\n\n');
 
     const explanation = await llmService.chat(
@@ -235,7 +213,7 @@ async function invokeExplainCode(args: any) {
 
 코드:
 \`\`\`
-${args.code}
+${argsTyped.code}
 \`\`\`
 
 ${context ? `관련 정보:\n${context}` : ''}
@@ -246,10 +224,10 @@ ${context ? `관련 정보:\n${context}` : ''}
     return {
       explanation,
       concepts: extractConceptsFromExplanation(explanation),
-      relatedPosts: searchResponse.results.map((r: any) => ({
-        title: r.title,
-        slug: r.slug,
-        relevance: r.score,
+      relatedPosts: searchResponse.results.map(result => ({
+        title: result.title,
+        slug: result.slug,
+        relevance: result.score,
       })),
     };
   } catch (error) {
@@ -261,11 +239,12 @@ ${context ? `관련 정보:\n${context}` : ''}
   }
 }
 
-async function invokeFindExamples(args: any) {
+async function invokeFindExamples(args: unknown) {
   try {
+    const argsTyped = args as { technology: string; use_case?: string };
     const queryProcessor = new QueryProcessor(getQdrantService(), getEmbeddingService(), null);
 
-    const searchQuery = `${args.technology} ${args.use_case || ''} example code`;
+    const searchQuery = `${argsTyped.technology} ${argsTyped.use_case || ''} example code`;
     const response = await queryProcessor.searchDocuments({
       query: searchQuery,
       limit: 5,
@@ -275,12 +254,12 @@ async function invokeFindExamples(args: any) {
 
     // Extract code blocks from the content
     const examples = response.results
-      .map((result: any) => {
+      .map(result => {
         const codeBlocks = extractCodeBlocks(result.content);
         return {
           title: result.title,
           slug: result.slug,
-          language: detectLanguage(args.technology),
+          language: detectLanguage(argsTyped.technology),
           code: codeBlocks[0] || 'Code example not found',
           explanation: `Example from: ${result.title}`,
         };
@@ -300,19 +279,20 @@ async function invokeFindExamples(args: any) {
   }
 }
 
-async function invokeGetRelatedPosts(args: any) {
+async function invokeGetRelatedPosts(args: unknown) {
   try {
+    const argsTyped = args as { topic: string; limit?: number };
     const queryProcessor = new QueryProcessor(getQdrantService(), getEmbeddingService(), null);
 
     const response = await queryProcessor.searchDocuments({
-      query: args.topic,
-      limit: args.limit || 3,
+      query: argsTyped.topic,
+      limit: argsTyped.limit || 3,
       threshold: 0.4,
       rerank: true,
     });
 
     return {
-      posts: response.results.map((result: any) => ({
+      posts: response.results.map(result => ({
         title: result.title,
         slug: result.slug,
         similarity: result.score,
@@ -343,8 +323,8 @@ function extractConceptsFromExplanation(explanation: string): string[] {
 
 function extractCodeBlocks(content: string): string[] {
   const regex = /```[\w]*\n?([\s\S]*?)```/g;
-  const matches = [];
-  let match;
+  const matches: string[] = [];
+  let match: RegExpExecArray | null;
 
   while ((match = regex.exec(content)) !== null) {
     matches.push(match[1].trim());
@@ -371,5 +351,3 @@ function detectLanguage(technology: string): string {
 
   return 'typescript'; // Default
 }
-
-export { mcpRoutes };

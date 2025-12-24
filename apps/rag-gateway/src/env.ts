@@ -11,6 +11,7 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.coerce.number().default(3002),
+    LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
     // Qdrant Configuration
     QDRANT_URL: z.string().url(),
@@ -53,6 +54,7 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
+    LOG_LEVEL: process.env.LOG_LEVEL,
     QDRANT_URL: process.env.QDRANT_URL,
     QDRANT_API_KEY: process.env.QDRANT_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
