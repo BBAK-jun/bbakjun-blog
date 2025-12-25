@@ -7,10 +7,7 @@
  */
 
 import { processMarkdown } from '@repo/content';
-import {
-  type CreateFileInput,
-  type UpdateFileInput,
-} from '@/shared/lib/schemas/file.schema';
+import { type CreateFileInput, type UpdateFileInput } from '@/shared/lib/schemas/file.schema';
 
 // Re-export types for convenience
 export type { CreateFileInput, UpdateFileInput };

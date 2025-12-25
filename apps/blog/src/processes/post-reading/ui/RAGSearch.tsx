@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Search } from 'lucide-react'
-import { queryBlogContent, searchBlogPosts } from '@/lib/rag'
-import type { RAGQueryResponse, SearchResponse } from '@/lib/rag'
-import { Button } from '@repo/ui'
-import Link from 'next/link'
+import { useState } from 'react';
+import { Search } from 'lucide-react';
+import { queryBlogContent, searchBlogPosts } from '@/lib/rag';
+import type { RAGQueryResponse, SearchResponse } from '@/lib/rag';
+import { Button } from '@repo/ui';
+import Link from 'next/link';
 
 interface RAGSearchProps {
-  mode?: 'query' | 'search'
-  placeholder?: string
-  showSources?: boolean
+  mode?: 'query' | 'search';
+  placeholder?: string;
+  showSources?: boolean;
 }
 
 export function RAGSearch({
@@ -18,41 +18,39 @@ export function RAGSearch({
   placeholder = '궁금한 것을 검색해보세요...',
   showSources = true,
 }: RAGSearchProps) {
-  const [query, setQuery] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<RAGQueryResponse | SearchResponse | null>(
-    null
-  )
-  const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<RAGQueryResponse | SearchResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
-    if (!query.trim()) return
+    if (!query.trim()) return;
 
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     try {
       if (mode === 'query') {
-        const response = await queryBlogContent({ query })
-        setResult(response)
+        const response = await queryBlogContent({ query });
+        setResult(response);
       } else {
-        const response = await searchBlogPosts({ query })
-        setResult(response)
+        const response = await searchBlogPosts({ query });
+        setResult(response);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '검색에 실패했습니다')
+      setError(err instanceof Error ? err.message : '검색에 실패했습니다');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSearch()
+      e.preventDefault();
+      handleSearch();
     }
-  }
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -61,7 +59,7 @@ export function RAGSearch({
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={e => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           className="w-full px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
@@ -104,26 +102,16 @@ export function RAGSearch({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-function QueryResult({
-  result,
-  showSources,
-}: {
-  result: RAGQueryResponse
-  showSources: boolean
-}) {
+function QueryResult({ result, showSources }: { result: RAGQueryResponse; showSources: boolean }) {
   return (
     <>
       {/* Answer */}
       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          답변
-        </h3>
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-          {result.answer}
-        </p>
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">답변</h3>
+        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{result.answer}</p>
         {result.usage && (
           <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
             {result.usage.model} • {result.usage.totalTokens} tokens
@@ -135,15 +123,10 @@ function QueryResult({
       {/* Sources */}
       {showSources && result.sources.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            관련 문서
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">관련 문서</h3>
           <div className="space-y-3">
             {result.sources.map((source, index) => (
-              <div
-                key={source.id}
-                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-              >
+              <div key={source.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <Link
@@ -181,7 +164,7 @@ function QueryResult({
         </div>
       )}
     </>
-  )
+  );
 }
 
 function SearchResult({ result }: { result: SearchResponse }) {
@@ -191,7 +174,7 @@ function SearchResult({ result }: { result: SearchResponse }) {
         검색 결과 ({result.total}개, {result.queryTime}ms)
       </h3>
       <div className="space-y-3">
-        {result.results.map((item) => (
+        {result.results.map(item => (
           <div
             key={item.id}
             className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
@@ -230,5 +213,5 @@ function SearchResult({ result }: { result: SearchResponse }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

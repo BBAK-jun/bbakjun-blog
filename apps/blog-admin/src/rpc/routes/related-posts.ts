@@ -1,4 +1,4 @@
-import { createRoute, z } from '@hono/zod-openapi'
+import { createRoute, z } from '@hono/zod-openapi';
 
 const getRelatedPostsRoute = createRoute({
   method: 'post',
@@ -10,10 +10,10 @@ const getRelatedPostsRoute = createRoute({
           schema: z.object({
             slug: z.string(),
             limit: z.number().default(5),
-          })
-        }
-      }
-    }
+          }),
+        },
+      },
+    },
   },
   responses: {
     200: {
@@ -21,29 +21,31 @@ const getRelatedPostsRoute = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            posts: z.array(z.object({
-              slug: z.string(),
-              title: z.string(),
-              score: z.number(),
-              excerpt: z.string(),
-              category: z.string(),
-              tags: z.array(z.string()).optional(),
-            }))
-          })
-        }
-      }
-    }
-  }
-})
+            posts: z.array(
+              z.object({
+                slug: z.string(),
+                title: z.string(),
+                score: z.number(),
+                excerpt: z.string(),
+                category: z.string(),
+                tags: z.array(z.string()).optional(),
+              })
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
 
-export { getRelatedPostsRoute }
+export { getRelatedPostsRoute };
 
 export const getRelatedPostsHandler = async (c: any) => {
-  const { slug, limit } = c.req.valid('json')
+  const { slug, limit } = c.req.valid('json');
 
   try {
     // Get the current post content
-    const ragUrl = process.env.NEXT_PUBLIC_RAG_URL || 'http://localhost:3002'
+    const ragUrl = process.env.NEXT_PUBLIC_RAG_URL || 'http://localhost:3002';
 
     // First, search for the current post to get its content
     const searchResponse = await fetch(`${ragUrl}/api/rag/search`, {
@@ -56,19 +58,19 @@ export const getRelatedPostsHandler = async (c: any) => {
         limit: 1,
         filters: { slug },
       }),
-    })
+    });
 
     if (!searchResponse.ok) {
-      throw new Error('Failed to find current post')
+      throw new Error('Failed to find current post');
     }
 
-    const searchResult = await searchResponse.json()
+    const searchResult = await searchResponse.json();
 
     if (searchResult.results.length === 0) {
-      return c.json({ posts: [] })
+      return c.json({ posts: [] });
     }
 
-    const currentPost = searchResult.results[0]
+    const currentPost = searchResult.results[0];
 
     // Use the content to find related posts
     const relatedResponse = await fetch(`${ragUrl}/api/rag/search`, {
@@ -82,13 +84,13 @@ export const getRelatedPostsHandler = async (c: any) => {
         threshold: 0.3,
         rerank: true,
       }),
-    })
+    });
 
     if (!relatedResponse.ok) {
-      throw new Error('Failed to find related posts')
+      throw new Error('Failed to find related posts');
     }
 
-    const relatedResult = await relatedResponse.json()
+    const relatedResult = await relatedResponse.json();
 
     // Filter out the current post and format results
     const relatedPosts = relatedResult.results
@@ -101,21 +103,20 @@ export const getRelatedPostsHandler = async (c: any) => {
         excerpt: post.content,
         category: post.metadata?.category || 'BLOG',
         tags: post.metadata?.tags || [],
-      }))
+      }));
 
-    return c.json({ posts: relatedPosts })
-
+    return c.json({ posts: relatedPosts });
   } catch (error) {
-    console.error('Failed to get related posts:', error)
+    console.error('Failed to get related posts:', error);
 
     // Fallback to basic tag-based recommendation
     try {
       // This would be the existing logic from getRelatedPosts
       // For now, return empty array
-      return c.json({ posts: [] })
+      return c.json({ posts: [] });
     } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError)
-      return c.json({ posts: [] })
+      console.error('Fallback also failed:', fallbackError);
+      return c.json({ posts: [] });
     }
   }
-}
+};

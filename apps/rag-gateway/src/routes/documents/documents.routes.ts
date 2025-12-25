@@ -125,7 +125,10 @@ export const getDocument = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(DocumentDetailResponseSchema, 'Document retrieved successfully'),
+    [HttpStatusCodes.OK]: jsonContent(
+      DocumentDetailResponseSchema,
+      'Document retrieved successfully'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Document not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
@@ -142,7 +145,10 @@ export const createDocument = createRoute({
     body: jsonContentRequired(CreateDocumentRequestSchema, 'Document data'),
   },
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(CreateDocumentResponseSchema, 'Document created successfully'),
+    [HttpStatusCodes.CREATED]: jsonContent(
+      CreateDocumentResponseSchema,
+      'Document created successfully'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Failed to create document'
@@ -161,7 +167,10 @@ export const updateDocument = createRoute({
     body: jsonContentRequired(UpdateDocumentRequestSchema, 'Document updates'),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(UpdateDocumentResponseSchema, 'Document updated successfully'),
+    [HttpStatusCodes.OK]: jsonContent(
+      UpdateDocumentResponseSchema,
+      'Document updated successfully'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Document not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
@@ -180,7 +189,10 @@ export const deleteDocument = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(DeleteDocumentResponseSchema, 'Document deleted successfully'),
+    [HttpStatusCodes.OK]: jsonContent(
+      DeleteDocumentResponseSchema,
+      'Document deleted successfully'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Document not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,

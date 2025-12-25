@@ -90,15 +90,15 @@ const app = new OpenAPIHono<RpcEnv>()
   .openapi(ragRoutes.queryBlogContent, ragHandlers.queryBlogContent)
   .openapi(ragRoutes.searchBlogPosts, ragHandlers.searchBlogPosts)
   // RAG RPC (admin endpoints)
-  .openapi(ragRoutes.ingestDocuments, async (c) => {
+  .openapi(ragRoutes.ingestDocuments, async c => {
     await requireAdminSession(c, async () => {});
     return ragHandlers.ingestDocuments(c);
   })
-  .openapi(ragRoutes.getIngestionStatus, async (c) => {
+  .openapi(ragRoutes.getIngestionStatus, async c => {
     await requireAdminSession(c, async () => {});
     return ragHandlers.getIngestionStatus(c);
   })
-  .openapi(ragRoutes.getRAGStats, async (c) => {
+  .openapi(ragRoutes.getRAGStats, async c => {
     await requireAdminSession(c, async () => {});
     return ragHandlers.getRAGStats(c);
   });

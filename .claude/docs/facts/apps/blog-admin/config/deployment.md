@@ -182,7 +182,7 @@ pnpm prisma migrate deploy
 - **Purpose**: 모든 빌드에 전달되는 환경 변수
 - **Key Variables**:
   - NODE_ENV, VERCEL 관련 변수
-  - 모든 DATABASE*\*, AUTH*_, BLOB\__ 변수
+  - 모든 DATABASE*\*, AUTH*\_, BLOB\_\_ 변수
 
 #### 빌드 태스크 환경 변수
 

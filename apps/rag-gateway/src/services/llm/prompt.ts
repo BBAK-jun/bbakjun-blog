@@ -7,10 +7,7 @@ import type { SourceReference, QueryIntent } from '@repo/rag-types';
 /**
  * Build context from sources
  */
-export function buildContext(
-  sources: SourceReference[],
-  additionalContext?: string
-): string {
+export function buildContext(sources: SourceReference[], additionalContext?: string): string {
   if (sources.length === 0 && !additionalContext) {
     return '';
   }
@@ -40,11 +37,7 @@ export function buildContext(
 /**
  * Build RAG prompt based on intent
  */
-export function buildRAGPrompt(
-  query: string,
-  context: string,
-  intent: QueryIntent
-): string {
+export function buildRAGPrompt(query: string, context: string, intent: QueryIntent): string {
   const basePrompt = `당신은 DEV_BBAK 기술 블로그의 AI 어시스턴트입니다.
 주어진 문서 컨텍스트를 바탕으로 사용자의 질문에 답변해주세요.
 

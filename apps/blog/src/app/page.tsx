@@ -34,8 +34,7 @@ export default function Home() {
             <Link href="/about">소개</Link>
           </Button>
         </div>
-
-        </section>
+      </section>
 
       {/* Tabbed Posts Section */}
       <section className="grid md:grid-cols-4 gap-8">

@@ -1,7 +1,18 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Upload, FileText, History, Settings, LogOut, Moon, Sun, PenSquare, Briefcase, Search } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  History,
+  Settings,
+  LogOut,
+  Moon,
+  Sun,
+  PenSquare,
+  Briefcase,
+  Search,
+} from 'lucide-react';
 import { logout } from './actions';
 import { useEffect, useState } from 'react';
 

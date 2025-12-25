@@ -235,6 +235,7 @@ useSyncExternalStore는 React의 동시성 렌더링 모델과 함께 사용할 
 ### NonTeaingExample.tsx
 
 - 이전 예제의 getNetworkStatus 함수 직접 호출 대신 useSyncExternalStore를 사용합니다.
+
   ```ts
   const network = useSyncExternalStore(() => {
     return () => {};
@@ -243,6 +244,7 @@ useSyncExternalStore는 React의 동시성 렌더링 모델과 함께 사용할 
 
   - 첫번째 인자로 빈 구독함수를 전달합니다. (상기 예제에서는 구독이 필요없기 때문에 빈함수를 전달합니다.)
   - 두번째 인자로 getNetworkStatus 함수를 전달합니다.
+
 - 모든 NetworkStatusDisplay 컴포넌트는 처음에 **'**disconnected**'** 상태로 렌더링을 시작합니다.
 - 100ms 이후 networkStatus가 **connected**로 변경됩니다.
 - 렌더링 도중 networkStatus가 변경되어도, 모든 컴포넌트는 렌더링 시작 시점의 동일한 상태값을 사용합니다.

@@ -49,13 +49,7 @@ export {
 } from './views';
 
 // Experience RPC
-export {
-  experienceRoutes,
-  experienceHandlers,
-} from './experience';
+export { experienceRoutes, experienceHandlers } from './experience';
 
 // RAG RPC
-export {
-  ragRoutes,
-  ragHandlers,
-} from './rag';
+export { ragRoutes, ragHandlers } from './rag';

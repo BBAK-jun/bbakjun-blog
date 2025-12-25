@@ -12,9 +12,11 @@ MCP integration allows AI assistants (like Claude Code) to interact with the blo
 ## MCP Tools Available
 
 ### 1. `search_blog`
+
 Search blog content using semantic similarity
 
 **Input**:
+
 ```json
 {
   "query": "string",
@@ -25,6 +27,7 @@ Search blog content using semantic similarity
 ```
 
 **Output**:
+
 ```json
 {
   "tool": "search_blog",
@@ -50,9 +53,11 @@ Search blog content using semantic similarity
 ```
 
 ### 2. `explain_code`
+
 Get AI-powered code explanations with blog context
 
 **Input**:
+
 ```json
 {
   "code": "string",
@@ -61,6 +66,7 @@ Get AI-powered code explanations with blog context
 ```
 
 **Output**:
+
 ```json
 {
   "tool": "explain_code",
@@ -75,9 +81,11 @@ Get AI-powered code explanations with blog context
 ```
 
 ### 3. `find_examples`
+
 Discover code examples from blog posts
 
 **Input**:
+
 ```json
 {
   "technology": "string",
@@ -86,6 +94,7 @@ Discover code examples from blog posts
 ```
 
 **Output**:
+
 ```json
 {
   "tool": "find_examples",
@@ -105,9 +114,11 @@ Discover code examples from blog posts
 ```
 
 ### 4. `get_related_posts`
+
 Find blog posts related to a topic
 
 **Input**:
+
 ```json
 {
   "topic": "string",
@@ -116,6 +127,7 @@ Find blog posts related to a topic
 ```
 
 **Output**:
+
 ```json
 {
   "tool": "get_related_posts",
@@ -211,22 +223,26 @@ node scripts/mcp-demo-mock.mjs
 ### Full Demo (Requires Docker + API Keys)
 
 1. **Start Docker services**:
+
 ```bash
 docker-compose up -d
 ```
 
 2. **Configure environment variables** (`.env.local`):
+
 ```env
 GLM_API_KEY=your_glm_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
 3. **Start RAG Gateway**:
+
 ```bash
 pnpm dev:rag
 ```
 
 4. **Run the demo**:
+
 ```bash
 node scripts/mcp-demo.mjs
 ```
@@ -236,6 +252,7 @@ node scripts/mcp-demo.mjs
 ### MCP Client (`packages/rag-core/src/mcp.ts`)
 
 The MCP client provides:
+
 - Type-safe API calls to RAG Gateway
 - Built-in error handling and retries
 - Context tracking for analytics
@@ -244,6 +261,7 @@ The MCP client provides:
 ### RAG Gateway Routes (`apps/rag-gateway/src/routes/rag/mcp.ts`)
 
 MCP endpoints handle:
+
 - Tool discovery (`/mcp/tools`)
 - Tool invocation (`/mcp/invoke`)
 - Specialized endpoints for each tool type

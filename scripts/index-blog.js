@@ -12,7 +12,9 @@ const path = require('path');
 // Parse command line arguments
 const args = process.argv.slice(2);
 const force = args.includes('--force');
-const batchSize = parseInt(args.find(arg => arg.startsWith('--batch-size='))?.split('=')[1] || '10');
+const batchSize = parseInt(
+  args.find(arg => arg.startsWith('--batch-size='))?.split('=')[1] || '10'
+);
 
 console.log('🚀 Starting blog indexing for RAG system...');
 console.log(`Options: force=${force}, batch-size=${batchSize}`);
@@ -97,9 +99,11 @@ try {
           console.log(`   - Total documents: ${status.progress.total}`);
           console.log(`   - Processed: ${status.progress.processed}`);
           console.log(`   - Failed: ${status.progress.failed}`);
-          console.log(`   - Duration: ${Math.round(
-            (new Date(status.completedAt) - new Date(status.startedAt)) / 1000
-          )} seconds`);
+          console.log(
+            `   - Duration: ${Math.round(
+              (new Date(status.completedAt) - new Date(status.startedAt)) / 1000
+            )} seconds`
+          );
         }
         break;
       } else if (status.status === 'failed') {
@@ -117,10 +121,9 @@ try {
 
   if (!completed) {
     console.error('⏰ Ingestion timed out after 5 minutes');
-    console.error('Check the RAG gateway logs to see if it\'s still running');
+    console.error("Check the RAG gateway logs to see if it's still running");
     process.exit(1);
   }
-
 } catch (error) {
   console.error('❌ Failed to trigger ingestion:', error.message);
 

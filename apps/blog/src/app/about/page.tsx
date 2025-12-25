@@ -11,7 +11,8 @@ import ExperienceTimeline from '@/features/navigation/ui/experience-timeline';
 
 export const metadata: Metadata = {
   title: '소개 - DEV_BBAK 블로그',
-  description: '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
+  description:
+    '2026년 5년차 프론트엔드 엔지니어 박준형입니다. 사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.',
   openGraph: {
     title: '소개 - DEV_BBAK 블로그',
     description: `프론트엔드 엔지니어 박준형입니다.`,

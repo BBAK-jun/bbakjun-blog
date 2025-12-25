@@ -4,28 +4,28 @@
  */
 
 export interface MCPTool {
-  name: string
-  description: string
+  name: string;
+  description: string;
   inputSchema: {
-    type: 'object'
-    properties: Record<string, any>
-    required?: string[]
-  }
+    type: 'object';
+    properties: Record<string, any>;
+    required?: string[];
+  };
 }
 
 export interface MCPToolResult {
   content: Array<{
-    type: 'text'
-    text: string
-  }>
-  isError?: boolean
+    type: 'text';
+    text: string;
+  }>;
+  isError?: boolean;
 }
 
 export class MCPClient {
-  private baseUrl: string
+  private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || process.env.NEXT_PUBLIC_RAG_URL || 'http://localhost:3002'
+    this.baseUrl = baseUrl || process.env.NEXT_PUBLIC_RAG_URL || 'http://localhost:3002';
   }
 
   /**
@@ -33,15 +33,15 @@ export class MCPClient {
    */
   async listTools(): Promise<MCPTool[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/mcp/tools`)
+      const response = await fetch(`${this.baseUrl}/mcp/tools`);
       if (!response.ok) {
-        throw new Error('Failed to list MCP tools')
+        throw new Error('Failed to list MCP tools');
       }
-      const data = await response.json()
-      return data.tools
+      const data = await response.json();
+      return data.tools;
     } catch (error) {
-      console.error('Failed to list MCP tools:', error)
-      return []
+      console.error('Failed to list MCP tools:', error);
+      return [];
     }
   }
 
@@ -59,23 +59,25 @@ export class MCPClient {
           tool: toolName,
           arguments: arguments_,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to invoke MCP tool: ${toolName}`)
+        throw new Error(`Failed to invoke MCP tool: ${toolName}`);
       }
 
-      const result = await response.json()
-      return result
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error(`Failed to invoke MCP tool ${toolName}:`, error)
+      console.error(`Failed to invoke MCP tool ${toolName}:`, error);
       return {
-        content: [{
-          type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }],
-        isError: true
-      }
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        ],
+        isError: true,
+      };
     }
   }
 
@@ -94,17 +96,17 @@ export class MCPClient {
           code,
           context,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to explain')
+        throw new Error('Failed to explain');
       }
 
-      const result = await response.json()
-      return result.explanation
+      const result = await response.json();
+      return result.explanation;
     } catch (error) {
-      console.error('Failed to explain:', error)
-      throw error
+      console.error('Failed to explain:', error);
+      throw error;
     }
   }
 
@@ -121,20 +123,20 @@ export class MCPClient {
           properties: {
             query: {
               type: 'string',
-              description: 'Search query to find relevant blog posts'
+              description: 'Search query to find relevant blog posts',
             },
             category: {
               type: 'string',
-              description: 'Filter by category (e.g., DEV, REACT, JS, etc.)'
+              description: 'Filter by category (e.g., DEV, REACT, JS, etc.)',
             },
             limit: {
               type: 'number',
               description: 'Maximum number of results to return',
-              default: 5
-            }
+              default: 5,
+            },
           },
-          required: ['query']
-        }
+          required: ['query'],
+        },
       },
       {
         name: 'explain_code',
@@ -144,15 +146,15 @@ export class MCPClient {
           properties: {
             code: {
               type: 'string',
-              description: 'Code snippet to explain'
+              description: 'Code snippet to explain',
             },
             context: {
               type: 'string',
-              description: 'Additional context for better explanation'
-            }
+              description: 'Additional context for better explanation',
+            },
           },
-          required: ['code']
-        }
+          required: ['code'],
+        },
       },
       {
         name: 'find_examples',
@@ -162,15 +164,15 @@ export class MCPClient {
           properties: {
             technology: {
               type: 'string',
-              description: 'Technology or concept to find examples for'
+              description: 'Technology or concept to find examples for',
             },
             use_case: {
               type: 'string',
-              description: 'Specific use case or scenario'
-            }
+              description: 'Specific use case or scenario',
+            },
           },
-          required: ['technology']
-        }
+          required: ['technology'],
+        },
       },
       {
         name: 'get_related_posts',
@@ -180,27 +182,27 @@ export class MCPClient {
           properties: {
             topic: {
               type: 'string',
-              description: 'Topic to find related posts for'
+              description: 'Topic to find related posts for',
             },
             limit: {
               type: 'number',
               description: 'Number of related posts to return',
-              default: 3
-            }
+              default: 3,
+            },
           },
-          required: ['topic']
-        }
-      }
-    ]
+          required: ['topic'],
+        },
+      },
+    ];
   }
 }
 
 // Singleton instance
-let mcpClient: MCPClient | null = null
+let mcpClient: MCPClient | null = null;
 
 export function getMCPClient(): MCPClient {
   if (!mcpClient) {
-    mcpClient = new MCPClient()
+    mcpClient = new MCPClient();
   }
-  return mcpClient
+  return mcpClient;
 }

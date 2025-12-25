@@ -58,15 +58,15 @@ Hono 기반의 REST API 서버로, 모든 RAG 관련 요청을 처리합니다.
 
 **주요 엔드포인트:**
 
-| 엔드포인트 | 설명 |
-|-----------|------|
-| `POST /api/rag/query` | RAG 쿼리 처리 (검색 + LLM 생성) |
-| `POST /api/rag/search` | 문서 검색만 수행 |
-| `GET /api/documents` | 문서 목록 조회 |
-| `POST /api/documents` | 문서 인덱싱 |
-| `GET /api/documents/:id` | 특정 문서 조회 |
-| `PUT /api/documents/:id` | 문서 재인덱싱 |
-| `DELETE /api/documents/:id` | 문서 삭제 |
+| 엔드포인트                  | 설명                            |
+| --------------------------- | ------------------------------- |
+| `POST /api/rag/query`       | RAG 쿼리 처리 (검색 + LLM 생성) |
+| `POST /api/rag/search`      | 문서 검색만 수행                |
+| `GET /api/documents`        | 문서 목록 조회                  |
+| `POST /api/documents`       | 문서 인덱싱                     |
+| `GET /api/documents/:id`    | 특정 문서 조회                  |
+| `PUT /api/documents/:id`    | 문서 재인덱싱                   |
+| `DELETE /api/documents/:id` | 문서 삭제                       |
 
 **디렉토리 구조:**
 
@@ -159,28 +159,28 @@ DocumentFilter:
 
 ### 백엔드
 
-| 기술 | 용도 | 설명 |
-|------|------|------|
-| **Hono** | 웹 프레임워크 | 가볍경량, 타입 안전한 라우터 |
-| **Node.js** | 런타임 | 서버 사이드 실행 환경 |
-| **TypeScript** | 언어 | 타입 안전성 |
-| **zod** | 검증 | 런타임 스키마 검증 |
+| 기술           | 용도          | 설명                         |
+| -------------- | ------------- | ---------------------------- |
+| **Hono**       | 웹 프레임워크 | 가볍경량, 타입 안전한 라우터 |
+| **Node.js**    | 런타임        | 서버 사이드 실행 환경        |
+| **TypeScript** | 언어          | 타입 안전성                  |
+| **zod**        | 검증          | 런타임 스키마 검증           |
 
 ### AI/ML
 
-| 기술 | 용도 | 설명 |
-|------|------|------|
-| **Qdrant** | 벡터 DB | 고성량 벡터 검색 엔진 |
-| **OpenAI** | 임베딩/LLM | text-embedding-3-small, GPT-4o-mini |
-| **GLM** | LLM | z.ai의 GLM-4 모델 (한국어) |
-| **SiliconFlow** | 임베딩 | BAAI/bge-m3 (한국어/다국어) |
+| 기술            | 용도       | 설명                                |
+| --------------- | ---------- | ----------------------------------- |
+| **Qdrant**      | 벡터 DB    | 고성량 벡터 검색 엔진               |
+| **OpenAI**      | 임베딩/LLM | text-embedding-3-small, GPT-4o-mini |
+| **GLM**         | LLM        | z.ai의 GLM-4 모델 (한국어)          |
+| **SiliconFlow** | 임베딩     | BAAI/bge-m3 (한국어/다국어)         |
 
 ### 개발 도구
 
-| 기술 | 용도 | 설명 |
-|------|------|------|
-| **Turborepo** | 모노레포 | 패키지 관리 |
-| **tsup** | 번들러 | TypeScript 빌드 |
+| 기술                  | 용도      | 설명                       |
+| --------------------- | --------- | -------------------------- |
+| **Turborepo**         | 모노레포  | 패키지 관리                |
+| **tsup**              | 번들러    | TypeScript 빌드            |
 | **t3-oss/env-nextjs** | 환경 변수 | 타입 안전한 환경 변수 관리 |
 
 ## 데이터 플로우

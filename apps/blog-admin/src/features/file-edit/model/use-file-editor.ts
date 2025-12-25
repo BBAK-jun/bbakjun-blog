@@ -5,11 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { parseFrontMatter, type EditorFormData } from '@/entities/frontmatter';
-import {
-  getFileContent,
-  updateFile,
-  previewMarkdown,
-} from '@/app/actions/files';
+import { getFileContent, updateFile, previewMarkdown } from '@/app/actions/files';
 import { fileKeys } from '@/entities/file';
 
 export function useFileEditor(pathname: string | null) {

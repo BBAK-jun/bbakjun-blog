@@ -15,6 +15,7 @@ RAG Gateway에 채팅 형태의 플레이그라운드 UI를 추가하여 RAG 질
 **`c.html()` 메서드 사용** - Hono의 내장 HTML 응답 메서드로 HTML을 직접 반환
 
 이 방식이 선택된 이유:
+
 - 추가 의존성 불필요 (serveStatic 미들웨어 불필요)
 - 단일 파일로 UI 관리 가능
 - 배포 시 별도의 정적 파일 불필요
@@ -28,7 +29,7 @@ RAG Gateway에 채팅 형태의 플레이그라운드 UI를 추가하여 RAG 질
 
 ```typescript
 // Playground UI
-app.get('/', playgroundHandler);      // 루트 접속 시 플레이그라운드로
+app.get('/', playgroundHandler); // 루트 접속 시 플레이그라운드로
 app.get('/playground', playgroundHandler);
 ```
 
@@ -37,6 +38,7 @@ app.get('/playground', playgroundHandler);
 플레이그라운드 UI 핸들러와 HTML을 포함하는 파일:
 
 **주요 기능:**
+
 - 채팅 인터페이스 (메시지 입력, 전송, 히스토리)
 - RAG API 호출 (`/api/rag/query`)
 - 로딩 상태 표시
@@ -45,6 +47,7 @@ app.get('/playground', playgroundHandler);
 - 소스 문서 미리보기
 
 **UI 구성:**
+
 1. 헤더: RAG Gateway 타이틀 + 상태 표시
 2. 채팅 영역: 메시지 버블 (사용자/AI)
 3. 입력 영역: 텍스트 입력 + 전송 버튼
@@ -111,6 +114,7 @@ UI에 메시지와 소스 표시
 ## Tailwind CSS 설정
 
 CDN을 통해 로드:
+
 ```html
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -151,14 +155,15 @@ CDN을 통해 로드:
 
 ## 주요 파일 목록
 
-| 파일 | 작업 | 설명 |
-|------|------|------|
-| `src/routes/playground.ts` | 신규 생성 | 플레이그라운드 UI 핸들러 |
-| `src/index.ts` | 수정 | 플레이그라운드 라우트 추가 |
+| 파일                       | 작업      | 설명                       |
+| -------------------------- | --------- | -------------------------- |
+| `src/routes/playground.ts` | 신규 생성 | 플레이그라운드 UI 핸들러   |
+| `src/index.ts`             | 수정      | 플레이그라운드 라우트 추가 |
 
 ## 참고: 채팅 UI 기능
 
 **기본 기능:**
+
 - 메시지 전송 (Enter 키 또는 전송 버튼)
 - 자동 스크롤 (최신 메시지로)
 - 로딩 인디케이터 (응답 대기 중)
@@ -167,12 +172,14 @@ CDN을 통해 로드:
 - 기록 지우기 버튼
 
 **소스 표시:**
+
 - 검색된 문서 목록 표시
 - 점수(관련성) 표시
 - 문서 URL 클릭 가능
 - 접기/펼치기 토글
 
 **다크 모드:**
+
 - 시스템 설정 자동 감지
 - 토글 버튼으로 수동 전환
 - 로컬 스토리지에 저장
