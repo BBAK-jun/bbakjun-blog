@@ -1,10 +1,6 @@
 import { createRoute } from '@hono/zod-openapi';
 import { ViewCounter } from '@repo/analytics';
-import {
-  viewsSlugParamSchema,
-  viewsGetResponseSchema,
-  viewsErrorSchema,
-} from '../../../shared/api/views';
+import { viewsSlugParamSchema, viewsGetResponseSchema, viewsErrorSchema } from '@/shared/api/views';
 
 /**
  * GET /api/v1/views/:slug - 조회수 조회

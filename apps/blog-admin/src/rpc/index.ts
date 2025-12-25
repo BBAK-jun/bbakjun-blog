@@ -30,9 +30,6 @@ import {
   // Experience
   experienceRoutes,
   experienceHandlers,
-  // RAG
-  ragRoutes,
-  ragHandlers,
   // Legacy routes for backward compatibility
   legacyAdminBlobFilesRoutes,
   legacyImageUploadRoutes,
@@ -85,23 +82,7 @@ const app = new OpenAPIHono<RpcEnv>()
   .openapi(getViewsBySlugRoute, getViewsBySlugHandler)
   .openapi(incrementViewsBySlugRoute, incrementViewsBySlugHandler)
   // Experience RPC
-  .openapi(experienceRoutes.getExperiences, experienceHandlers.getExperiences)
-  // RAG RPC (public endpoints)
-  .openapi(ragRoutes.queryBlogContent, ragHandlers.queryBlogContent)
-  .openapi(ragRoutes.searchBlogPosts, ragHandlers.searchBlogPosts)
-  // RAG RPC (admin endpoints)
-  .openapi(ragRoutes.ingestDocuments, async c => {
-    await requireAdminSession(c, async () => {});
-    return ragHandlers.ingestDocuments(c);
-  })
-  .openapi(ragRoutes.getIngestionStatus, async c => {
-    await requireAdminSession(c, async () => {});
-    return ragHandlers.getIngestionStatus(c);
-  })
-  .openapi(ragRoutes.getRAGStats, async c => {
-    await requireAdminSession(c, async () => {});
-    return ragHandlers.getRAGStats(c);
-  });
+  .openapi(experienceRoutes.getExperiences, experienceHandlers.getExperiences);
 
 // Legacy v1 routes for backward compatibility
 app.route('/api/v1/public/blob-files', legacyPublicBlobFilesRoutes);

@@ -1,9 +1,9 @@
 {
-  "name": "blog",
+  "name": "@apps/blog",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prepare": "turbo run build:rpc --filter=blog-admin",
+    "prepare": "turbo run build:rpc --filter @apps/blog-admin",
     "prebuild": "pnpm prepare",
     "predev": "pnpm prepare",
     "pretype-check": "pnpm prepare",
@@ -55,7 +55,7 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "blog-admin": "workspace:*",
+    "@apps/blog-admin": "workspace:*",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "openapi-typescript": "^7.9.1",

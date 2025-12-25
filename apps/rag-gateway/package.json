@@ -1,5 +1,5 @@
 {
-  "name": "@app/rag-gateway",
+  "name": "@apps/rag-gateway",
   "version": "0.1.0",
   "private": true,
   "exports": {
