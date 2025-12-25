@@ -4,7 +4,7 @@ import { Button } from '@repo/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hc } from 'hono/client';
 import { BarChart3, Clock, Database, Search, type LucideIcon } from 'lucide-react';
-import type { RagGatewayClient } from 'rag-gateway';
+import type { RagGatewayClient } from '@apps/rag-gateway';
 
 // RAG 게이트웨이 RPC 클라이언트
 const ragGatewayClient = hc<RagGatewayClient>(

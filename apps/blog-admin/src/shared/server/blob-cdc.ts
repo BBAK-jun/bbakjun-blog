@@ -5,7 +5,7 @@
 
 import { list } from '@vercel/blob';
 import { prisma } from '../lib/db';
-import { env } from '../config/env';
+import { env } from '@/env';
 
 /**
  * Blob 파일 목록을 DB와 동기화
