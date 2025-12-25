@@ -11,15 +11,14 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "prisma generate && turbo run build @repo/types#build @repo/analytics#build @repo/content#build @repo/ui#build @apps/rag-gateway#build:rpc && next build",
+    "build": "turbo run @repo/types#build @repo/analytics#build @repo/content#build @repo/ui#build @apps/rag-gateway#build:rpc && next build",
     "build:rpc": "tsup --config tsup.config.ts",
     "start": "next start -p 3001",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "postinstall": "prisma generate && pnpm build:rpc"
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -37,6 +36,7 @@
     "@repo/content": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@apps/rag-gateway": "workspace:*",
     "@t3-oss/env-nextjs": "^0.13.10",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/typography": "^0.5.19",
