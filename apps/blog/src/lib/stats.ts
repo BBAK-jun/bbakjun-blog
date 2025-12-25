@@ -1,4 +1,4 @@
-import { client } from '@/lib/rpc';
+import { client } from '@/shared/lib/rpc';
 
 export interface PopularPost {
   slug: string;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, queryOptions } from '@tanstack/react-query';
-import { client } from '@/lib/rpc';
+import { client } from '@/shared/lib/rpc';
 import { newsletterKeyConstructors } from './query-keys';
 
 export const newsletterQueries = {

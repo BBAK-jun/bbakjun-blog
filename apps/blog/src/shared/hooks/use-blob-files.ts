@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { client } from '@/lib/rpc';
+import { client } from '@/shared/lib/rpc';
 import type { BlobFileInfo } from '@repo/content';
 
 export function useBlobFiles() {

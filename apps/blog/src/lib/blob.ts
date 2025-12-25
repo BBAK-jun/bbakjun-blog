@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { client } from './rpc';
+import { client } from '@/shared/lib/rpc';
 import type { BlobFileInfo } from '@repo/content';
 
 /**

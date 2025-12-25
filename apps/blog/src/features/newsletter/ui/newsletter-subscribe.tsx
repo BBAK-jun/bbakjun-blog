@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react';
-import { client } from '@/lib/rpc';
+import { client } from '@/shared/lib/rpc';
 
 interface NewsletterSubscribeProps {
   source?: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { client } from '@/lib/rpc';
+import { client } from '@/shared/lib/rpc';
 import { useEffect } from 'react';
 
 interface ViewData {

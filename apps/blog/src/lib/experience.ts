@@ -1,4 +1,4 @@
-import { client } from './rpc';
+import { client } from '@/shared/lib/rpc';
 
 export interface Experience {
   id: string;
