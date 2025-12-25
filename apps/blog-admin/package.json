@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "prisma generate && turbo run build --filter=@repo/types --filter=@repo/analytics --filter=@repo/content --filter=@repo/ui && next build",
+    "build": "prisma generate && turbo run build @repo/types#build @repo/analytics#build @repo/content#build @repo/ui#build @apps/rag-gateway#build:rpc && next build",
     "build:rpc": "tsup --config tsup.config.ts",
     "start": "next start -p 3001",
     "lint": "eslint",

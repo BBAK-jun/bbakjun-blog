@@ -8,9 +8,6 @@
     "default": "./dist/index.mjs"
   },
   "scripts": {
-    "build:core": "turbo build --filter @repo/rag-core",
-    "build:ingestion": "turbo build --filter @repo/rag-ingestion",
-    "build:types": "turbo build --filter @repo/rag-types",
     "predev": "turbo run @repo/rag-core#build @repo/rag-ingestion#build @repo/rag-types#build",
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
