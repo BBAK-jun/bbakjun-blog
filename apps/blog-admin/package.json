@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "turbo run @repo/types#build @repo/analytics#build @repo/content#build @repo/ui#build @apps/rag-gateway#build:rpc && next build",
+    "build": "next build",
     "build:rpc": "tsup --config tsup.config.ts",
     "start": "next start -p 3001",
     "lint": "eslint",
