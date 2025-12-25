@@ -17,7 +17,9 @@ export default defineConfig({
     'next-auth',
     'hono',
     'hono/vercel',
+    'hono-pino',
     '@hono/zod-openapi',
+    'stoker',
     '@vercel/blob',
     'resend',
     '@prisma/client',
@@ -30,5 +32,8 @@ export default defineConfig({
     'react',
     'react-dom',
     'zod',
+    'pino',
+    'pino-pretty',
+    '@scalar/hono-api-reference',
   ],
 });

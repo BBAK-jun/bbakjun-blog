@@ -18,7 +18,7 @@ export default function NewsletterSubscribe({
 
   const subscribeMutation = useMutation({
     mutationFn: async ({ email, source }: { email: string; source: string }) => {
-      const response = await client.api.rpc.subscribeNewsletter.$post({
+      const response = await client.rpc.subscribeNewsletter.$post({
         json: { email, source },
       });
 

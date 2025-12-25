@@ -1,15 +1,21 @@
 'use client';
 
-import { client } from '@/lib/rpc';
 import { Button } from '@repo/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { hc } from 'hono/client';
 import { BarChart3, Clock, Database, Search, type LucideIcon } from 'lucide-react';
+import type { RagGatewayClient } from 'rag-gateway';
+
+// RAG 게이트웨이 RPC 클라이언트
+const ragGatewayClient = hc<RagGatewayClient>(
+  process.env.NEXT_PUBLIC_RAG_GATEWAY_URL || 'http://localhost:3002'
+);
 
 // RPC를 통한 API 함수들
 const ragApi = {
   // RAG 통계 조회
   getStats: async () => {
-    const response = await client.api.rpc.getRAGStats.$get({});
+    const response = await ragGatewayClient.admin.stats.$get();
     if (!response.ok) {
       throw new Error('RAG 통계 조회 실패');
     }
@@ -18,7 +24,7 @@ const ragApi = {
 
   // 인제스션 시작
   startIngestion: async (force: boolean = false, batchSize: number = 20) => {
-    const response = await client.api.rpc.ingestDocuments.$post({
+    const response = await ragGatewayClient.admin.reindex.$post({
       json: { force, batchSize },
     });
     if (!response.ok) {
@@ -29,8 +35,8 @@ const ragApi = {
 
   // 인제스션 상태 확인
   getIngestionStatus: async (jobId: string) => {
-    const response = await client.api.rpc.getIngestionStatus.$get({
-      query: { jobId },
+    const response = await ragGatewayClient.admin.reindex[':jobId'].$get({
+      param: { jobId },
     });
     if (!response.ok) {
       throw new Error('상태 확인 실패');
@@ -142,7 +148,7 @@ export default function RAGManagement() {
         <StatCard
           icon={BarChart3}
           title="시스템 상태"
-          value={stats?.system.status || 'Unknown'}
+          value="Active"
           subtitle={stats?.system.uptime || ''}
         />
       </div>

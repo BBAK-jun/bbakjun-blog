@@ -11,7 +11,7 @@ export const newsletterQueries = {
           throw new Error('유효하지 않은 구독 취소 링크입니다');
         }
 
-        const response = await client.api.rpc.unsubscribeNewsletter.$post({
+        const response = await client.rpc.unsubscribeNewsletter.$post({
           json: { token },
         });
 
@@ -35,7 +35,7 @@ export function useUnsubscribeMutation() {
         throw new Error('유효하지 않은 구독 취소 링크입니다');
       }
 
-      const response = await client.api.rpc.unsubscribeNewsletter.$post({
+      const response = await client.rpc.unsubscribeNewsletter.$post({
         json: { token },
       });
 

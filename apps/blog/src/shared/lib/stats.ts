@@ -27,7 +27,7 @@ export async function getPopularPostsStats(): Promise<ViewStats> {
   try {
     console.log('[getPopularPostsStats] RPC 통계 조회 시작');
 
-    const response = await client.api.rpc.getViewsStats.$get(
+    const response = await client.rpc.getViewsStats.$get(
       {},
       {
         init: {

@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   transpilePackages: ['@t3-oss/env-nextjs', '@t3-oss/env-core'],
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
   async headers() {
     return [
       {

@@ -6,7 +6,7 @@ export function useBlobFiles() {
   return useQuery({
     queryKey: ['blob-files'],
     queryFn: async (): Promise<BlobFileInfo[]> => {
-      const response = await client.api.rpc.getBlobFiles.$get({
+      const response = await client.rpc.getBlobFiles.$get({
         query: {},
       });
 

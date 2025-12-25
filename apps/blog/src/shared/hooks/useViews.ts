@@ -17,7 +17,7 @@ export function useViews(slug: string, increment: boolean = false): ViewData {
   const { data, isLoading, error } = useQuery({
     queryKey: ['views', slug],
     queryFn: async () => {
-      const response = await client.api.rpc.getViewsBySlug[':slug'].$get({
+      const response = await client.rpc.getViewsBySlug[':slug'].$get({
         param: { slug },
       });
 
@@ -34,7 +34,7 @@ export function useViews(slug: string, increment: boolean = false): ViewData {
   // 조회수 증가 mutation
   const incrementMutation = useMutation({
     mutationFn: async () => {
-      const response = await client.api.rpc.incrementViewsBySlug[':slug'].$post({
+      const response = await client.rpc.incrementViewsBySlug[':slug'].$post({
         param: { slug },
         json: {},
       });

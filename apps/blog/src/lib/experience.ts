@@ -29,7 +29,7 @@ export interface Achievement {
  */
 export async function getExperiences(): Promise<Experience[]> {
   try {
-    const response = await client.api.rpc.experiences.$get();
+    const response = await client.rpc.getExperiences.$get();
 
     if (!response.ok) {
       throw new Error('Failed to fetch experiences');

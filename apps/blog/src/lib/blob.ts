@@ -8,7 +8,7 @@ import type { BlobFileInfo } from '@repo/content';
  */
 export const getBlobFiles = cache(async (): Promise<BlobFileInfo[]> => {
   try {
-    const response = await client.api.rpc.getBlobFiles.$get({
+    const response = await client.rpc.getBlobFiles.$get({
       query: {},
     });
 

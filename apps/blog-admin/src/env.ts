@@ -12,6 +12,9 @@ export const env = createEnv({
 
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
+    // CORS
+    ALLOWED_ORIGINS: z.string().optional().default('http://localhost:3000'),
+
     // Auth
     AUTH_SECRET: z.string().min(1),
     AUTH_GOOGLE_ID: z.string().min(1),
@@ -56,6 +59,8 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
+    LOG_LEVEL: process.env.LOG_LEVEL,
+    ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
