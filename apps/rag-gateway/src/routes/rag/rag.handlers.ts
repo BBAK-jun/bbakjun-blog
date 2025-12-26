@@ -10,6 +10,7 @@ import * as routes from './rag.routes';
 import { IngestionPipeline } from '../../lib/rag/ingestion';
 import { env } from '@/env';
 import { sanitizeInput } from '@/middleware/input-validation';
+import { filterRAGResponse } from '@/middleware/output-filter';
 
 export const query: AppRouteHandler<typeof routes.query> = async c => {
   const request = c.req.valid('json');
@@ -32,7 +33,10 @@ export const query: AppRouteHandler<typeof routes.query> = async c => {
       query: sanitizedQuery,
     });
 
-    return c.json(response, HttpStatusCodes.OK);
+    // Filter sensitive information from response
+    const filteredResponse = filterRAGResponse(response);
+
+    return c.json(filteredResponse, HttpStatusCodes.OK);
   } catch (error) {
     // Check if it's a validation error
     if (error instanceof Error && error.message.includes('Invalid input detected')) {
@@ -79,7 +83,10 @@ export const search: AppRouteHandler<typeof routes.search> = async c => {
       query: sanitizedQuery,
     });
 
-    return c.json(response, HttpStatusCodes.OK);
+    // Filter sensitive information from response
+    const filteredResponse = filterRAGResponse(response);
+
+    return c.json(filteredResponse, HttpStatusCodes.OK);
   } catch (error) {
     // Check if it's a validation error
     if (error instanceof Error && error.message.includes('Invalid input detected')) {

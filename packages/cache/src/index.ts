@@ -5,8 +5,11 @@
  * 네온 DB public network 요청량을 줄입니다.
  */
 
-import type { RedisClientType } from 'redis';
-import { getRedisClient, isRedisAvailable } from './redis';
+import { closeRedisClient, getRedisClient, isRedisAvailable } from './redis';
+
+// Export Redis client functions for use in other packages (e.g., rate limiting)
+export type { RedisClient } from './redis';
+export { closeRedisClient, getRedisClient, isRedisAvailable };
 
 /**
  * 캐싱 옵션
@@ -46,9 +49,7 @@ export interface CachedResult<T> {
  * });
  * ```
  */
-export async function cachedQuery<T>(
-  options: CacheOptions<T>
-): Promise<CachedResult<T>> {
+export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedResult<T>> {
   const { key, query, ttl = 300, fallback = true, debug = false } = options;
 
   try {

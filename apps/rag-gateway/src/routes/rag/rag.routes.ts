@@ -1,6 +1,7 @@
 import {
   BadRequestErrorSchema,
   InternalServerErrorSchema,
+  TooManyRequestsErrorSchema,
   UnauthorizedErrorSchema,
 } from '@/libs/error';
 import { createRoute, z } from '@hono/zod-openapi';
@@ -26,6 +27,10 @@ export const query = createRoute({
     [HttpStatusCodes.OK]: jsonContent(RAGQueryResponseSchema, 'RAG query response'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid input'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: jsonContent(
+      TooManyRequestsErrorSchema,
+      'Rate limit exceeded'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'
@@ -44,6 +49,10 @@ export const search = createRoute({
     [HttpStatusCodes.OK]: jsonContent(SearchResponseSchema, 'RAG search response'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid input'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: jsonContent(
+      TooManyRequestsErrorSchema,
+      'Rate limit exceeded'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'

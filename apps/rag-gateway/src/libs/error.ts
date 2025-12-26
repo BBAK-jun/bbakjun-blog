@@ -20,7 +20,17 @@ export const UnauthorizedErrorSchema = z.object({
   message: z.string(),
 });
 
+export const TooManyRequestsErrorSchema = z.object({
+  error: z.literal('rate_limit_exceeded'),
+  message: z.string(),
+  retryAfter: z.number().optional(),
+  limit: z.number(),
+  remaining: z.number(),
+  reset: z.number(),
+});
+
 export type InternalServerError = z.infer<typeof InternalServerErrorSchema>;
 export type BadRequestError = z.infer<typeof BadRequestErrorSchema>;
 export type NotFoundError = z.infer<typeof NotFoundErrorSchema>;
 export type UnauthorizedError = z.infer<typeof UnauthorizedErrorSchema>;
+export type TooManyRequestsError = z.infer<typeof TooManyRequestsErrorSchema>;

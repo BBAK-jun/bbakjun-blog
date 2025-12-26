@@ -68,7 +68,9 @@ The RAG Gateway is an AI backend service that provides semantic search and quest
 | Authentication | 🟢 **Implemented** | P0 | API key validation via middleware |
 | Client-Side Calls | 🟢 **Fixed** | P0 | Server Actions only |
 | Prompt Injection Protection | 🟢 **Implemented** | P1 | Input sanitization middleware |
-| Rate Limiting | 🟡 **Not Implemented** | P2 | No request throttling |
+| Rate Limiting | 🟢 **Implemented** | P2 | Redis-based rate limiting |
+| Security Headers | 🟢 **Implemented** | P2 | CSP, HSTS, X-Frame-Options, etc. |
+| Output Filtering | 🟢 **Implemented** | P2 | Sensitive data redaction |
 | Audit Logging | 🟡 **Not Implemented** | P2 | No query history tracking |
 | CORS Configuration | 🟢 **Implemented** | - | ALLOWED_ORIGINS enforced |
 
@@ -77,7 +79,8 @@ The RAG Gateway is an AI backend service that provides semantic search and quest
 1. ~~**Unauthenticated API Access**: Any client that can bypass CORS can call the API~~ ✅ **FIXED**
 2. ~~**Client-Side Exposure**: API endpoint is callable from the browser~~ ✅ **FIXED**
 3. ~~**Prompt Injection**: No filtering for adversarial prompts~~ ✅ **FIXED**
-4. **No Rate Limiting**: Vulnerable to DoS attacks
+4. ~~**No Rate Limiting**: Vulnerable to DoS attacks~~ ✅ **FIXED**
+5. **No Audit Logging**: Cannot track queries for security investigations (P2, optional)
 
 ---
 
@@ -85,7 +88,7 @@ The RAG Gateway is an AI backend service that provides semantic search and quest
 
 Use this checklist to track security implementation progress.
 
-### P0 - Critical (Implement Immediately)
+### P0 - Critical (Implement Immediately) ✅
 
 - [x] Move client-side RPC calls to Server Actions
 - [x] Implement API Key authentication between blog-admin and rag-gateway
@@ -93,19 +96,19 @@ Use this checklist to track security implementation progress.
 - [x] Create authentication middleware (`src/middleware/auth.ts`)
 - [x] Add authentication to `/api/rag/*` routes
 
-### P1 - High Priority (Implement Soon)
+### P1 - High Priority (Implement Soon) ✅
 
 - [x] Implement prompt injection detection and prevention
 - [x] Add input validation middleware
 
 ### P2 - Medium Priority (Implement When Possible)
 
-- [ ] Implement rate limiting using Redis
+- [x] Implement rate limiting using Redis
+- [x] Add output filtering for sensitive information
+- [x] Add security headers (CSP, X-Frame-Options, etc.)
 - [ ] Create audit log table in database
 - [ ] Log all RAG queries with timestamp
-- [ ] Add output filtering for sensitive information
 - [ ] Implement query monitoring and alerting
-- [ ] Add security headers (CSP, X-Frame-Options, etc.)
 
 ---
 
@@ -142,7 +145,7 @@ Use this checklist to track security implementation progress.
 - Server-side RPC calls only
 - All requests validated
 
-#### 3. Denial of Service (DoS)
+#### 3. Denial of Service (DoS) ✅ MITIGATED
 
 **Description**: Attacker overwhelms the system with excessive requests.
 
@@ -151,10 +154,19 @@ Use this checklist to track security implementation progress.
 - Expensive embedding computations
 - Vector database overload
 
-**Mitigation**: ⏳ Pending (P2)
-- Implement rate limiting per user
-- Cache embeddings and queries
-- Set timeout limits
+**Mitigation**: ✅ Implemented
+- Redis-based rate limiting (60 req/min for authenticated, 10 req/min for public)
+- In-memory fallback when Redis unavailable
+- Per-API-key and per-IP limits
+
+#### 4. Sensitive Data Leakage ✅ MITIGATED
+
+**Description**: Sensitive information (emails, API keys, tokens) exposed in responses.
+
+**Mitigation**: ✅ Implemented
+- Output filtering middleware (`src/middleware/output-filter.ts`)
+- Detects and redacts emails, credit cards, API keys, tokens
+- Applied to all RAG query and search responses
 
 ---
 
@@ -236,93 +248,113 @@ Use this checklist to track security implementation progress.
 
 ---
 
-### Phase 3: Rate Limiting & Monitoring (P2)
+### Phase 3: Rate Limiting (P2) ✅
 
-**Goal**: Prevent abuse and enable security monitoring.
+**Goal**: Prevent abuse and DoS attacks.
 
 **Tasks**:
 
-1. **Rate Limiting**
+1. **Rate Limiting Middleware** ✅
    ```typescript
    // apps/rag-gateway/src/middleware/rate-limit.ts
-   import { Redis } from 'ioredis';
+   import { getRedisClient, isRedisAvailable } from '@repo/cache';
 
-   const redis = new Redis(env.REDIS_URL);
+   export const DEFAULT_RATE_LIMITS = {
+     STRICT: { limit: 10, window: 60 },      // Public endpoints
+     STANDARD: { limit: 60, window: 60 },    // Authenticated endpoints
+     LENIENT: { limit: 30, window: 60 },     // Health checks
+   };
 
-   export async function rateLimit(userId: string, limit: number = 10): Promise<boolean> {
-     const key = `ratelimit:rag:${userId}`;
-     const count = await redis.incr(key);
-
-     if (count === 1) {
-       await redis.expire(key, 60);  // 1 minute window
-     }
-
-     return count <= limit;
-   }
+   export const ragRateLimit = rateLimit(DEFAULT_RATE_LIMITS.STANDARD);
+   export const healthRateLimit = rateLimit(DEFAULT_RATE_LIMITS.LENIENT);
    ```
 
-2. **Audit Logging**
-   ```typescript
-   // apps/rag-gateway/src/lib/audit.ts
-   export async function logQuery(data: {
-     query: string;
-     response: string;
-     sources: unknown[];
-     queryTime: number;
-     timestamp: Date;
-   }) {
-     // Log to file or database
-   }
-   ```
+2. **Applied to Routes** ✅
+   - All RAG routes (`/query`, `/search`, `/ingest`, `/ingest/status`) use `ragRateLimit`
+   - Health check uses `healthRateLimit`
+   - Returns 429 Too Many Requests with `retry-after` header
+
+3. **OpenAPI Schema** ✅
+   - Added `TooManyRequestsErrorSchema` to error.ts
+   - Added 429 responses to query and search routes
 
 **Verification**:
-- [ ] Users are rate-limited after threshold
-- [ ] All queries are logged with timestamp
-- [ ] Audit log is queryable for investigations
+- [x] Rate limiting works with Redis
+- [x] In-memory fallback when Redis unavailable
+- [x] Rate limit headers present in responses
+- [x] 429 response returned when limit exceeded
 
 ---
 
-### Phase 4: Hardening (P2)
+### Phase 4: Security Headers (P2) ✅
 
-**Goal**: Additional security layers and best practices.
+**Goal**: Add security headers to prevent common web vulnerabilities.
 
 **Tasks**:
 
-1. **Security Headers**
+1. **Security Headers Middleware** ✅
    ```typescript
-   // apps/rag-gateway/src/libs/create-app.ts
-   app.use('*', async (c, next) => {
-     await next();
-
-     c.header('X-Content-Type-Options', 'nosniff');
-     c.header('X-Frame-Options', 'DENY');
-     c.header('X-XSS-Protection', '1; mode=block');
-     c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-     c.header('Content-Security-Policy', "default-src 'self'");
-   });
+   // apps/rag-gateway/src/middleware/security-headers.ts
+   export const DEFAULT_SECURITY_HEADERS: SecurityHeadersConfig = {
+     csp: "default-src 'none'; frame-ancestors 'none'",
+     frameOptions: 'DENY',
+     noSniff: true,
+     xssProtection: true,
+     hsts: true,
+     hstsMaxAge: 31536000,
+     hstsIncludeSubDomains: true,
+     hstsPreload: true,
+     referrerPolicy: 'no-referrer',
+     permissionsPolicy: 'geolocation=(), microphone=(), ...',
+     coop: 'same-origin',
+     coep: 'require-corp',
+     corp: 'same-origin',
+   };
    ```
 
-2. **Output Filtering**
-   ```typescript
-   // apps/rag-gateway/src/lib/output-filter.ts
-   const SENSITIVE_PATTERNS = [
-     /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,  // Email
-     /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,  // Credit card
-     /Bearer\s+[A-Za-z0-9\-._~+/]+/g,  // Bearer tokens
-   ];
+2. **Applied to All Routes** ✅
+   - `apiSecurityHeaders` middleware applied to `*` routes
+   - Skipped in development mode
 
-   export function redactSensitiveInfo(text: string): string {
-     let redacted = text;
-     for (const pattern of SENSITIVE_PATTERNS) {
-       redacted = redacted.replace(pattern, '[REDACTED]');
-     }
-     return redacted;
+**Verification**:
+- [x] Security headers present in production responses
+- [x] CSP, HSTS, X-Frame-Options, X-Content-Type-Options all present
+
+---
+
+### Phase 5: Output Filtering (P2) ✅
+
+**Goal**: Redact sensitive information from RAG responses.
+
+**Tasks**:
+
+1. **Output Filtering Middleware** ✅
+   ```typescript
+   // apps/rag-gateway/src/middleware/output-filter.ts
+   export const SENSITIVE_PATTERNS = {
+     email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/gi,
+     creditCard: /\b(?:\d[ -]*?){13,16}\b/g,
+     phone: /\b\+?[\d\s-]{10,}\b/g,
+     authToken: /Bearer\s+[A-Za-z0-9\-._~+/]+/gi,
+     apiKey: /\b[A-Za-z0-9]{32,}\b/g,
+     awsAccessKey: /\bAKIA[0-9A-Z]{16}\b/g,
+     awsSecretKey: /\b[A-Za-z0-9/+=]{40}\b/g,
+     urlWithCredentials: /:\/\/[^:\s]+:[^@\s]+@/g,
+   };
+
+   export function filterRAGResponse<T>(response: T): T {
+     // Recursively filter all string values
    }
    ```
 
+2. **Applied to Handlers** ✅
+   - `query` handler filters response before returning
+   - `search` handler filters response before returning
+
 **Verification**:
-- [ ] Security headers are present in responses
-- [ ] Sensitive patterns are redacted from outputs
+- [x] Emails are redacted in responses
+- [x] API keys and tokens are redacted
+- [x] Nested objects are filtered recursively
 
 ---
 
@@ -343,10 +375,6 @@ BLOG_ADMIN_URL=http://localhost:3001
 
 # Security (P0)
 RAG_GATEWAY_API_KEY=<generate-with-openssl-rand-base64-32>
-
-# Rate Limiting (P2)
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_PER_MINUTE=10
 ```
 
 ### Blog-Admin
@@ -518,6 +546,38 @@ describe('RAG Security Tests', () => {
   - Implemented prompt injection detection (`src/middleware/input-validation.ts`)
   - Added input validation to query handlers
   - Blocks common prompt injection patterns
+
+- ✅ **Phase 3 (P2) Completed - Rate Limiting**:
+  - Created rate limiting middleware (`src/middleware/rate-limit.ts`)
+  - Uses `@repo/cache` Redis client for distributed rate limiting
+  - In-memory fallback when Redis unavailable
+  - Per-API-key and per-IP rate limits
+  - Rate limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+  - Default limits: 60 req/min (authenticated), 10 req/min (public), 30 req/min (health)
+  - Added `TooManyRequestsErrorSchema` to error schemas
+  - Added 429 responses to query and search routes
+  - Applied to all RAG routes in `src/routes/rag/rag.index.ts`
+
+- ✅ **Phase 4 (P2) Completed - Security Headers**:
+  - Created security headers middleware (`src/middleware/security-headers.ts`)
+  - Implemented headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection
+  - Additional headers: Referrer-Policy, Permissions-Policy, COOP, COEP, CORP
+  - Applied to all routes with `apiSecurityHeaders`
+  - Skips in development mode for convenience
+
+- ✅ **Phase 5 (P2) Completed - Output Filtering**:
+  - Created output filtering middleware (`src/middleware/output-filter.ts`)
+  - Detects and redacts: emails, credit cards, phone numbers, API keys, auth tokens
+  - Special patterns: AWS keys, URLs with credentials
+  - Recursive filtering for nested objects and arrays
+  - Applied to query and search handlers
+  - Functions: `filterRAGResponse()`, `redactSensitiveInfo()`, `detectSensitiveInfo()`
+
+- Initial security documentation created
+- Documented current architecture and vulnerabilities
+- Created implementation roadmap with priorities
+- Added threat model and security checklist
+- Updated changelog with all phases completed
 
 - Initial security documentation created
 - Documented current architecture and vulnerabilities

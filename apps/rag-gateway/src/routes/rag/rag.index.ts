@@ -1,10 +1,22 @@
 import { createRouter } from '@/libs';
 import { verifyAuth } from '@/middleware/auth';
+import { apiSecurityHeaders } from '@/middleware/security-headers';
+import { ragRateLimit, healthRateLimit } from '@/middleware/rate-limit';
 
 import * as routes from './rag.routes';
 import * as handlers from './rag.handlers';
 
 const router = createRouter();
+
+// Apply security headers to all RAG routes
+router.use('*', apiSecurityHeaders);
+
+// Apply rate limiting: authenticated routes use standard limits, health check uses lenient limits
+router.use('/query', ragRateLimit);
+router.use('/search', ragRateLimit);
+router.use('/ingest', ragRateLimit);
+router.use('/ingest/status', ragRateLimit);
+router.use('/health', healthRateLimit);
 
 // Apply authentication to all RAG routes except health check
 router.use('/query', verifyAuth);
