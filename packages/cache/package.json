@@ -1,0 +1,31 @@
+{
+  "name": "@repo/cache",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./redis": {
+      "types": "./dist/redis.d.ts",
+      "default": "./dist/redis.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/redis.ts --format esm,cjs --dts",
+    "type-check": "tsc --noEmit",
+    "dev": "tsup src/index.ts src/redis.ts --format esm,cjs --dts --watch"
+  },
+  "dependencies": {
+    "redis": "^5.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsup": "^8.4.0",
+    "typescript": "^5"
+  },
+  "envMode": "loose"
+}
