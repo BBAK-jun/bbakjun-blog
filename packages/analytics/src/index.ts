@@ -1,17 +1,17 @@
-import { createClient } from 'redis';
+import { getRedisClient, type RedisClient } from '@repo/cache/redis';
 
-let redisClient: ReturnType<typeof createClient> | null = null;
-
-async function getRedisClient() {
-  if (!redisClient) {
-    redisClient = createClient({ url: process.env.REDIS_URL });
-    await redisClient.connect();
-  }
-  return redisClient;
-}
-
+/**
+ * ViewCounter - 블로그 포스트 조회수 추적
+ *
+ * Redis를 사용하여 해시 기반 조회수를 저장하고,
+ * 세션 기반 중복 방지를 제공합니다.
+ */
 export class ViewCounter {
   private static readonly VIEW_KEY_PREFIX = 'views:';
+
+  private static async getClient(): Promise<RedisClient> {
+    return await getRedisClient();
+  }
 
   // 해시 키 생성
   private static getHashKey(slug: string): string {
@@ -25,7 +25,7 @@ export class ViewCounter {
 
   // 기존 문자열 키를 해시로 마이그레이션
   private static async migrateToHash(
-    redis: ReturnType<typeof createClient>,
+    redis: RedisClient,
     hashKey: string
   ): Promise<number> {
     try {
@@ -51,7 +51,7 @@ export class ViewCounter {
   // 반환값: [조회수, 새로 증가시켰는지 여부]
   static async incrementWithSession(sessionId: string, slug: string): Promise<[number, boolean]> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const hashKey = this.getHashKey(slug);
       const sessionField = this.getSessionField(sessionId);
 
@@ -101,7 +101,7 @@ export class ViewCounter {
   // 조회수 증가 (세션 없이)
   static async increment(slug: string): Promise<number> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const hashKey = this.getHashKey(slug);
 
       // 키 타입 확인 및 마이그레이션
@@ -127,7 +127,7 @@ export class ViewCounter {
   // 조회수 조회
   static async get(slug: string): Promise<number> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const hashKey = this.getHashKey(slug);
 
       // 키 타입 확인
@@ -147,7 +147,7 @@ export class ViewCounter {
     } catch (error) {
       // WRONGTYPE 에러 등 발생 시 기존 방식으로 fallback
       try {
-        const redis = await getRedisClient();
+        const redis = await this.getClient();
         const hashKey = this.getHashKey(slug);
         const views = await redis.get(hashKey);
         return views ? Number(views) : 0;
@@ -161,7 +161,7 @@ export class ViewCounter {
   // 여러 포스트의 조회수를 한번에 조회
   static async getMultiple(slugs: string[]): Promise<Record<string, number>> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const hashKeys = slugs.map(slug => this.getHashKey(slug));
       const pipeline = redis.multi();
 
@@ -203,7 +203,7 @@ export class ViewCounter {
   // 전체 조회수 통계
   static async getTotalViews(): Promise<number> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return 0;
 
@@ -231,7 +231,7 @@ export class ViewCounter {
     limit: number = 10
   ): Promise<Array<{ slug: string; views: number }>> {
     try {
-      const redis = await getRedisClient();
+      const redis = await this.getClient();
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return [];
 
