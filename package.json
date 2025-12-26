@@ -16,6 +16,7 @@
     "build:rag-packages": "turbo run build --filter=@repo/rag-*",
     "start": "turbo run start",
     "lint": "turbo run lint",
+    "test": "turbo run test",
     "type-check": "turbo run type-check",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,mdx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,mdx}\"",
