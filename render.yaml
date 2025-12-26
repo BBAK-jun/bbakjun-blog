@@ -40,8 +40,5 @@ services:
       - key: PORT
         value: 3002
 
-    # Health check
-    healthCheckPath: /api/admin/health
-
     # Auto-deploy on main branch push
     branch: main
