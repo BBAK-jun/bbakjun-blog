@@ -1,8 +1,8 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { z } from 'zod';
 import { env } from '../env';
-import type { QdrantPoint, DocumentFilter, SearchParams, SimilarityResult } from '@repo/rag-types';
-import type { IQdrantService } from '@repo/rag-types';
+import type { QdrantPoint, DocumentFilter, SearchParams, SimilarityResult } from '../lib/rag/types';
+import type { IQdrantService } from '../lib/rag/types';
 
 // Zod schemas for Qdrant API responses
 const CollectionInfoSchema = z.object({

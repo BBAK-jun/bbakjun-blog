@@ -3,7 +3,7 @@ import type {
   RAGQueryResponse,
   SourceReference,
   ILLMService,
-} from '@repo/rag-types';
+} from '../../lib/rag/types';
 import { env } from '../../env';
 import type { LLMProviderStrategy } from './types';
 import { LLMProviderFactory } from './factory';

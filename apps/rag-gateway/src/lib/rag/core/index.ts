@@ -8,4 +8,4 @@ export { MCPClient, getMCPClient, MCP_TOOLS } from './mcp';
 export type { QueryProcessorOptions } from './query';
 
 // Note: Service interfaces (IQdrantService, IEmbeddingService, ILLMService)
-// are now exported from @repo/rag-types
+// are now exported from ../types

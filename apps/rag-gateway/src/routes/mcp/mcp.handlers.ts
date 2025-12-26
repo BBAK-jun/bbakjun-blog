@@ -2,7 +2,7 @@ import { AppRouteHandler } from '@/libs';
 import { getQdrantService } from '@/services/qdrant';
 import { getEmbeddingService } from '@/services/embedding';
 import { getLLMService } from '@/services/llm';
-import { QueryProcessor } from '@repo/rag-core';
+import { QueryProcessor } from '../../lib/rag/core';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './mcp.routes';
 

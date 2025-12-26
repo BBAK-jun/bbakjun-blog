@@ -1,5 +1,5 @@
-import type { Embedding, EmbeddingConfig, EmbeddingModel } from '@repo/rag-types';
-import { generateTextHash, type IEmbeddingService } from '@repo/rag-types';
+import type { Embedding, EmbeddingConfig, EmbeddingModel } from '../lib/rag/types';
+import { generateTextHash, type IEmbeddingService } from '../lib/rag/types';
 import OpenAI from 'openai';
 import { env } from '../env';
 

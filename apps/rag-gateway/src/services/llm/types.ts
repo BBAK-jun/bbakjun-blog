@@ -1,4 +1,4 @@
-import type { LLMUsage } from '@repo/rag-types';
+import type { LLMUsage } from '../../lib/rag/types';
 
 /**
  * LLM Provider Strategy Interface

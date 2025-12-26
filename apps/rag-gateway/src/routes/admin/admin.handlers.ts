@@ -2,7 +2,7 @@ import { AppRouteHandler } from '@/libs';
 import { getQdrantService } from '@/services/qdrant';
 import { getEmbeddingService } from '@/services/embedding';
 import { getLLMService } from '@/services/llm';
-import { IngestionPipeline } from '@repo/rag-ingestion';
+import { IngestionPipeline } from '../../lib/rag/ingestion';
 import { env } from '@/env';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './admin.routes';

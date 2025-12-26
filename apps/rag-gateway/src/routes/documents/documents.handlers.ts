@@ -1,13 +1,13 @@
 import { AppRouteHandler } from '@/libs';
 import { getQdrantService } from '@/services/qdrant';
 import { getEmbeddingService } from '@/services/embedding';
-import { SemanticChunker } from '@repo/rag-ingestion';
+import { SemanticChunker } from '../../lib/rag/ingestion';
 import {
   generateDocumentId,
   generateChunkId,
   type DocumentFilter,
   type DocumentMetadata,
-} from '@repo/rag-types';
+} from '../../lib/rag/types';
 import matter from 'gray-matter';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './documents.routes';

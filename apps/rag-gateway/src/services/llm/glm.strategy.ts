@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { LLMUsage } from '@repo/rag-types';
+import type { LLMUsage } from '../../lib/rag/types';
 import type { LLMProviderStrategy, ModelPricing } from './types';
 
 /**

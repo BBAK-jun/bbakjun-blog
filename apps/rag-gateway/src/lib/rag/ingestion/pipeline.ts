@@ -1,7 +1,6 @@
-import type { ChunkingOptions, Document, QdrantPoint, DocumentSource } from '@repo/rag-types';
-import { generateDocumentId } from '@repo/rag-types';
+import type { ChunkingOptions, Document, QdrantPoint, DocumentSource } from '../types';
+import { generateDocumentId } from '../types';
 import matter from 'gray-matter';
-import { SemanticChunker } from './chunkers/semantic';
 
 // BlobFile 타입 정의 (외부에서 전달받을 파일 정보)
 export interface BlobFileInfo {
@@ -291,6 +290,7 @@ export class IngestionPipeline {
         }
 
         // Chunk the document
+        const { SemanticChunker } = await import('./chunkers/semantic');
         const chunker = new SemanticChunker();
         const chunks = await chunker.chunk(document.content, options.chunking);
 

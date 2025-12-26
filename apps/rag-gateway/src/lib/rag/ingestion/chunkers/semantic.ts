@@ -1,4 +1,4 @@
-import type { Chunk, ChunkingStrategy, ChunkingOptions, ChunkType } from '@repo/rag-types';
+import type { Chunk, ChunkingStrategy, ChunkingOptions, ChunkType } from '../../types';
 
 /**
  * Semantic chunking strategy that tries to maintain semantic coherence

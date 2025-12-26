@@ -1,4 +1,4 @@
-import type { Chunk, ChunkingStrategy, ChunkingOptions, ChunkType } from '@repo/rag-types';
+import type { Chunk, ChunkingStrategy, ChunkingOptions, ChunkType } from '../../types';
 
 /**
  * Fixed-size chunking strategy that splits content into chunks of fixed size
@@ -78,7 +78,7 @@ export class FixedSizeChunker implements ChunkingStrategy {
   }
 
   /**
-   * Create a chunk object
+   * Create a chunk
    */
   private createChunk(
     index: number,

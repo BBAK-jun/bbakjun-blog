@@ -8,7 +8,7 @@ import type {
   IQdrantService,
   IEmbeddingService,
   ILLMService,
-} from '@repo/rag-types';
+} from '../types';
 
 export interface QueryProcessorOptions {
   maxResults?: number;

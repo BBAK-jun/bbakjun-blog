@@ -1,4 +1,4 @@
-import type { SourceReference, QueryIntent } from '@repo/rag-types';
+import type { SourceReference, QueryIntent } from '../../lib/rag/types';
 
 /**
  * Prompt builder utilities for RAG queries

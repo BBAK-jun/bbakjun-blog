@@ -5,7 +5,7 @@ import {
   SearchRequestSchema,
   RAGQueryResponseSchema,
   SearchResponseSchema,
-} from '@repo/rag-types';
+} from '../../lib/rag/types';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers';
 

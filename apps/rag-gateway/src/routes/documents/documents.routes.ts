@@ -1,6 +1,6 @@
 import { InternalServerErrorSchema, NotFoundErrorSchema } from '@/libs/error';
 import { createRoute, z } from '@hono/zod-openapi';
-import { DocumentSourceSchema } from '@repo/rag-types';
+import { DocumentSourceSchema } from '../../lib/rag/types';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers';
 

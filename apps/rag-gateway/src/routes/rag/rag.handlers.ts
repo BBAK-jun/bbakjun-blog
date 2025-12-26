@@ -4,10 +4,10 @@ import { getEmbeddingService } from '@/services/embedding';
 import { getLLMService } from '@/services/llm';
 import { getQdrantService } from '@/services/qdrant';
 import { z } from '@hono/zod-openapi';
-import { QueryProcessor } from '@repo/rag-core';
+import { QueryProcessor } from '../../lib/rag/core';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './rag.routes';
-import { IngestionPipeline } from '@repo/rag-ingestion';
+import { IngestionPipeline } from '../../lib/rag/ingestion';
 import { env } from '@/env';
 
 export const query: AppRouteHandler<typeof routes.query> = async c => {
