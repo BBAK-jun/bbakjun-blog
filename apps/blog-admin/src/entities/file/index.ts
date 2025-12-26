@@ -7,13 +7,6 @@
 export type { BlobFile, FileMetadata, FileContent } from './model/types';
 // Alias for backward compatibility
 export type { FileContent as FileData } from './model/types';
-export {
-  uploadBlob,
-  deleteBlob,
-  getBlobMetadata,
-  downloadBlob,
-  listBlobs,
-} from './api/blob-client';
 export { fileKeys, useFilesQuery, useFileQuery, useDeleteFileMutation } from './api/queries';
 export { FileListItem } from './ui';
 export {
