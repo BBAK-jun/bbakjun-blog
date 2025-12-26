@@ -26,7 +26,6 @@ export const env = createEnv({
 
     // API Keys
     BACKOFFICE_API_KEY: z.string().min(1),
-    JWT_SECRET: z.string().min(1),
     RESEND_API_KEY: z.string().min(1).optional(),
 
     // Blog Revalidation
@@ -35,10 +34,8 @@ export const env = createEnv({
     // Blob CDC Sync Interval (in minutes)
     BLOB_SYNC_INTERVAL_MINUTES: z.coerce.number().min(1).optional().default(30),
 
-    // Admin Credentials (optional, for initial setup)
-    ADMIN_USERNAME: z.string().optional(),
-    ADMIN_PASSWORD: z.string().optional(),
-    ADMIN_EMAIL: z.string().email().optional(),
+    // Redis (optional - for API response caching)
+    REDIS_URL: z.string().url().optional(),
 
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   },
@@ -49,7 +46,6 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_BLOG_URL: z.string().url(),
-    NEXT_PUBLIC_RAG_GATEWAY_URL: z.string().url().optional(),
   },
 
   /**
@@ -67,16 +63,12 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     BLOB_STORE_ID: process.env.BLOB_STORE_ID,
     BACKOFFICE_API_KEY: process.env.BACKOFFICE_API_KEY,
-    JWT_SECRET: process.env.JWT_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     BLOG_REVALIDATION_SECRET: process.env.BLOG_REVALIDATION_SECRET,
     BLOB_SYNC_INTERVAL_MINUTES: process.env.BLOB_SYNC_INTERVAL_MINUTES,
-    ADMIN_USERNAME: process.env.ADMIN_USERNAME,
-    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+    REDIS_URL: process.env.REDIS_URL,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_BLOG_URL: process.env.NEXT_PUBLIC_BLOG_URL,
-    NEXT_PUBLIC_RAG_GATEWAY_URL: process.env.NEXT_PUBLIC_RAG_GATEWAY_URL,
   },
 
   /**
