@@ -1,10 +1,10 @@
 import type { AppRouteHandler } from '@/rpc/libs';
+import { getCachedBlobFiles } from '@/shared/server/blob-cdc';
 import { ViewCounter } from '@repo/analytics';
 import { getAllPosts } from '@repo/content';
-import { getCachedBlobFiles } from '@/shared/server/blob-cdc';
 import * as routes from './views.routes';
 
-export const getViewsBySlug: AppRouteHandler<typeof routes.getViewsBySlug> = async (c) => {
+export const getViewsBySlug: AppRouteHandler<typeof routes.getViewsBySlug> = async c => {
   const { slug } = c.req.valid('param');
   const views = await ViewCounter.get(slug);
   return c.json({ slug, views }, 200, {
@@ -12,10 +12,13 @@ export const getViewsBySlug: AppRouteHandler<typeof routes.getViewsBySlug> = asy
   });
 };
 
-export const incrementViewsBySlug: AppRouteHandler<typeof routes.incrementViewsBySlug> = async (
-  c
-) => {
+export const incrementViewsBySlug: AppRouteHandler<
+  typeof routes.incrementViewsBySlug
+> = async c => {
   const { slug } = c.req.valid('param');
+
+  console.log('slug', slug);
+
   const { sessionId, userAgent } = c.req.valid('json');
 
   // 봇이나 크롤러 제외
@@ -54,16 +57,12 @@ export const incrementViewsBySlug: AppRouteHandler<typeof routes.incrementViewsB
     incremented = true;
   }
 
-  return c.json(
-    { slug, views, incremented },
-    200,
-    {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-    }
-  );
+  return c.json({ slug, views, incremented }, 200, {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+  });
 };
 
-export const getViewsStats: AppRouteHandler<typeof routes.getViewsStats> = async (c) => {
+export const getViewsStats: AppRouteHandler<typeof routes.getViewsStats> = async c => {
   const logger = c.get('logger');
   logger?.info('[stats] RPC API 호출 시작');
 
@@ -71,7 +70,10 @@ export const getViewsStats: AppRouteHandler<typeof routes.getViewsStats> = async
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error('Operation timed out after ' + timeoutMs + 'ms')), timeoutMs)
+        setTimeout(
+          () => reject(new Error('Operation timed out after ' + timeoutMs + 'ms')),
+          timeoutMs
+        )
       ),
     ]);
   };
