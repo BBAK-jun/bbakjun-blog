@@ -6,7 +6,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { rateLimit, DEFAULT_RATE_LIMITS, ragRateLimit, healthRateLimit, _clearInMemoryStoreForTesting } from '@/middleware/rate-limit';
+import {
+  rateLimit,
+  DEFAULT_RATE_LIMITS,
+  ragRateLimit,
+  healthRateLimit,
+  _clearInMemoryStoreForTesting,
+} from '@/middleware/rate-limit';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 // Mock @repo/cache Redis functions
@@ -96,7 +102,7 @@ describe('Rate Limiting 미들웨어', () => {
       });
 
       const response = await app.request('/test');
-      const json = await response.json() as { retryAfter?: number };
+      const json = (await response.json()) as { retryAfter?: number };
 
       expect(json.retryAfter).toBeDefined();
       expect(json.retryAfter).toBeGreaterThan(0);
@@ -156,9 +162,7 @@ describe('Rate Limiting 미들웨어', () => {
       });
 
       // Check that Redis key uses API key (last 8 chars: 'y-abc123')
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        expect.stringContaining('apikey:y-abc123')
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith(expect.stringContaining('apikey:y-abc123'));
     });
 
     it('API Key가 없으면 IP 주소를 식별자로 사용해야 함', async () => {
@@ -170,9 +174,7 @@ describe('Rate Limiting 미들웨어', () => {
         headers: { 'X-Forwarded-For': '192.168.1.1' },
       });
 
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        expect.stringContaining('ip:192.168.1.1')
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith(expect.stringContaining('ip:192.168.1.1'));
     });
 
     it('X-Real-IP 헤더를 우선 사용해야 함', async () => {
@@ -187,9 +189,7 @@ describe('Rate Limiting 미들웨어', () => {
         },
       });
 
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        expect.stringContaining('ip:10.0.0.1')
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith(expect.stringContaining('ip:10.0.0.1'));
     });
   });
 
@@ -246,15 +246,17 @@ describe('Rate Limiting 미들웨어', () => {
     it('커스텀 getKey 함수로 식별자를 지정할 수 있어야 함', async () => {
       const customKey = 'user:123';
 
-      app.use('/test', rateLimit(DEFAULT_RATE_LIMITS.STANDARD, () => customKey), async c => {
-        return c.json({ message: 'Success' });
-      });
+      app.use(
+        '/test',
+        rateLimit(DEFAULT_RATE_LIMITS.STANDARD, () => customKey),
+        async c => {
+          return c.json({ message: 'Success' });
+        }
+      );
 
       await app.request('/test');
 
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        expect.stringContaining(customKey)
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith(expect.stringContaining(customKey));
     });
   });
 
@@ -301,10 +303,7 @@ describe('Rate Limiting 미들웨어', () => {
 
       await app.request('/test');
 
-      expect(mockRedis.expire).toHaveBeenCalledWith(
-        expect.any(String),
-        window + 1
-      );
+      expect(mockRedis.expire).toHaveBeenCalledWith(expect.any(String), window + 1);
     });
   });
 

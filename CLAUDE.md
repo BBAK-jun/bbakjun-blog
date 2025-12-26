@@ -283,11 +283,11 @@ await invalidateCache(CacheKeys.blobFilesPattern());
 
 #### Cached Endpoints
 
-| Endpoint | Cache Key | TTL | Notes |
-|----------|-----------|-----|-------|
-| `GET /api/rpc/blob-files` | `blob-files:{limit}:{offset}:{search}` | 300s (5min) | Paginated file list |
+| Endpoint                        | Cache Key                              | TTL         | Notes                       |
+| ------------------------------- | -------------------------------------- | ----------- | --------------------------- |
+| `GET /api/rpc/blob-files`       | `blob-files:{limit}:{offset}:{search}` | 300s (5min) | Paginated file list         |
 | `GET /api/rpc/blob-files/admin` | `blob-files:{limit}:{offset}:{search}` | 300s (5min) | Auto-sync invalidates cache |
-| `GET /api/rpc/views/stats` | `views:stats` | 180s (3min) | Expensive aggregation query |
+| `GET /api/rpc/views/stats`      | `views:stats`                          | 180s (3min) | Expensive aggregation query |
 
 #### Cache Invalidation
 
@@ -303,10 +303,10 @@ All invalidations are non-blocking (`.catch()`), meaning cache failures don't bl
 
 ```typescript
 // packages/cache/src/index.ts
-export { cachedQuery, invalidateCache, CacheKeys, cache, CacheKeyBuilder, CacheWrapper }
+export { cachedQuery, invalidateCache, CacheKeys, cache, CacheKeyBuilder, CacheWrapper };
 
 // packages/cache/src/redis.ts
-export { getRedisClient, closeRedisClient, isRedisAvailable }
+export { getRedisClient, closeRedisClient, isRedisAvailable };
 ```
 
 #### Benefits

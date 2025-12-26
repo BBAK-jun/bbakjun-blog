@@ -12,7 +12,7 @@ const requireApiKey = (authHeader?: string | null) => {
   return apiKey && verifyApiKeySync(apiKey);
 };
 
-export const uploadMarkdown: AppRouteHandler<typeof routes.uploadMarkdown> = async (c) => {
+export const uploadMarkdown: AppRouteHandler<typeof routes.uploadMarkdown> = async c => {
   if (!BLOB_TOKEN) {
     return c.json(
       { error: 'BLOB_READ_WRITE_TOKEN is not configured', message: 'Server configuration error' },
@@ -54,7 +54,7 @@ export const uploadMarkdown: AppRouteHandler<typeof routes.uploadMarkdown> = asy
   if (file.size > MAX_SIZE) {
     return c.json(
       {
-        error: 'File size exceeds ' + (MAX_SIZE / 1024 / 1024) + 'MB limit',
+        error: 'File size exceeds ' + MAX_SIZE / 1024 / 1024 + 'MB limit',
         message: 'File size validation failed',
       },
       400
@@ -93,7 +93,7 @@ export const uploadMarkdown: AppRouteHandler<typeof routes.uploadMarkdown> = asy
   );
 };
 
-export const uploadImage: AppRouteHandler<typeof routes.uploadImage> = async (c) => {
+export const uploadImage: AppRouteHandler<typeof routes.uploadImage> = async c => {
   if (!BLOB_TOKEN) {
     return c.json(
       { error: 'BLOB_READ_WRITE_TOKEN is not configured', message: 'Server configuration error' },
@@ -129,7 +129,7 @@ export const uploadImage: AppRouteHandler<typeof routes.uploadImage> = async (c)
   if (file.size > MAX_SIZE) {
     return c.json(
       {
-        error: 'File size exceeds ' + (MAX_SIZE / 1024 / 1024) + 'MB limit',
+        error: 'File size exceeds ' + MAX_SIZE / 1024 / 1024 + 'MB limit',
         message: 'File size validation failed',
       },
       400

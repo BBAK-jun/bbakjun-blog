@@ -82,7 +82,7 @@ export default function RAGQueryPage() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           content: result.data.answer,
-          sources: result.data.sources.map((s) => ({
+          sources: result.data.sources.map(s => ({
             id: s.id,
             title: s.title,
             slug: s.slug,
@@ -99,7 +99,8 @@ export default function RAGQueryPage() {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: result.error || '죄송합니다. 쿼리 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+          content:
+            result.error || '죄송합니다. 쿼리 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMessage]);

@@ -97,17 +97,11 @@ export const unsubscribeNewsletter: AppRouteHandler<
   });
 
   if (!subscriber) {
-    return c.json(
-      { error: '구독 정보를 찾을 수 없습니다', message: 'Subscriber not found' },
-      404
-    );
+    return c.json({ error: '구독 정보를 찾을 수 없습니다', message: 'Subscriber not found' }, 404);
   }
 
   if (!subscriber.isActive) {
-    return c.json(
-      { error: '이미 구독 취소된 이메일입니다', message: 'Already unsubscribed' },
-      400
-    );
+    return c.json({ error: '이미 구독 취소된 이메일입니다', message: 'Already unsubscribed' }, 400);
   }
 
   await prisma.subscriber.update({

@@ -314,9 +314,7 @@ describe('RAG 보안 통합 테스트', () => {
       app.use('/api/rag/query', async c => {
         return c.json({
           answer: 'Here is your answer',
-          sources: [
-            { title: 'Test Document', content: 'Normal content without sensitive info' },
-          ],
+          sources: [{ title: 'Test Document', content: 'Normal content without sensitive info' }],
         });
       });
     });
@@ -354,9 +352,11 @@ describe('RAG 보안 통합 테스트', () => {
     });
 
     it('여러 정상 요청을 연속으로 보낼 수 있어야 함', async () => {
-      const requests = Array(10).fill(null).map((_, i) => ({
-        query: `Test query ${i}`,
-      }));
+      const requests = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          query: `Test query ${i}`,
+        }));
 
       for (const req of requests) {
         const response = await app.request('/api/rag/query', {

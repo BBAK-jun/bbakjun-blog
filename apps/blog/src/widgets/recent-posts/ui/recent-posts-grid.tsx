@@ -39,7 +39,10 @@ export default async function RecentPostsGrid({ limit = 6, className = '' }: Rec
   return (
     <div className={`grid gap-6 lg:grid-cols-2 ${className}`}>
       {displayPosts.map(post => (
-        <Card key={post.slug} className="transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+        <Card
+          key={post.slug}
+          className="transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+        >
           <Link href={`/blog/${post.slug}`} className="block">
             <CardContent className="p-6">
               <div className="space-y-4">
@@ -48,7 +51,9 @@ export default async function RecentPostsGrid({ limit = 6, className = '' }: Rec
                 </h3>
 
                 {post.description && (
-                  <p className="text-muted-foreground line-clamp-3 leading-relaxed">{post.description}</p>
+                  <p className="text-muted-foreground line-clamp-3 leading-relaxed">
+                    {post.description}
+                  </p>
                 )}
 
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -56,7 +61,9 @@ export default async function RecentPostsGrid({ limit = 6, className = '' }: Rec
                     {formatDate(post.date)}
                   </time>
                   {post.readingTime && (
-                    <span className="text-xs bg-muted px-2 py-1 rounded-md">{post.readingTime}</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded-md">
+                      {post.readingTime}
+                    </span>
                   )}
                 </div>
 

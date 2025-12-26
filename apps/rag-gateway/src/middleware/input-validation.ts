@@ -105,10 +105,7 @@ export function sanitizeInput(
     checkPromptInjection?: boolean;
   } = {}
 ): string {
-  const {
-    maxLength = INPUT_LIMITS.MAX_QUERY_LENGTH,
-    checkPromptInjection = true,
-  } = options;
+  const { maxLength = INPUT_LIMITS.MAX_QUERY_LENGTH, checkPromptInjection = true } = options;
 
   // Trim whitespace
   const trimmed = input.trim();

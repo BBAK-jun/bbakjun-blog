@@ -2,7 +2,7 @@ import type { AppRouteHandler } from '@/rpc/libs';
 import { prisma } from '@/shared/lib/db';
 import * as routes from './experience.routes';
 
-export const getExperiences: AppRouteHandler<typeof routes.getExperiences> = async (c) => {
+export const getExperiences: AppRouteHandler<typeof routes.getExperiences> = async c => {
   const experiences = await prisma.experience.findMany({
     include: {
       achievements: {
@@ -11,11 +11,7 @@ export const getExperiences: AppRouteHandler<typeof routes.getExperiences> = asy
         },
       },
     },
-    orderBy: [
-      { isCurrent: 'desc' },
-      { sortOrder: 'desc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ isCurrent: 'desc' }, { sortOrder: 'desc' }, { createdAt: 'desc' }],
   });
 
   return c.json(

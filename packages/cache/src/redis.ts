@@ -31,9 +31,7 @@ export async function getRedisClient(): Promise<RedisClient> {
   const redisUrl = process.env.REDIS_URL;
 
   if (!redisUrl) {
-    throw new Error(
-      'REDIS_URL environment variable is not set. Redis caching is disabled.'
-    );
+    throw new Error('REDIS_URL environment variable is not set. Redis caching is disabled.');
   }
 
   // 연결 시작
@@ -43,7 +41,7 @@ export async function getRedisClient(): Promise<RedisClient> {
       const client = createClient({
         url: redisUrl,
         socket: {
-          reconnectStrategy: (retries) => {
+          reconnectStrategy: retries => {
             // 재연결 전략: 최대 10회 시도, 지수 백오프
             if (retries > 10) {
               console.error('Redis reconnection failed after 10 attempts');
@@ -57,7 +55,7 @@ export async function getRedisClient(): Promise<RedisClient> {
       });
 
       // 이벤트 리스너
-      client.on('error', (err) => {
+      client.on('error', err => {
         console.error('Redis Client Error:', err);
       });
 

@@ -17,7 +17,8 @@ export const getViewsBySlug = createRoute({
   method: 'get',
   tags,
   summary: 'Get view count by slug',
-  description: 'Retrieve view count for a specific post. Supports nested slugs (e.g., "DEV/my-post").',
+  description:
+    'Retrieve view count for a specific post. Supports nested slugs (e.g., "DEV/my-post").',
   request: {
     query: viewsGetQuerySchema,
   },
@@ -33,7 +34,8 @@ export const incrementViewsBySlug = createRoute({
   method: 'post',
   tags,
   summary: 'Increment view count by slug',
-  description: 'Increment view count for a specific post with session-based deduplication. Supports nested slugs (e.g., "DEV/my-post").',
+  description:
+    'Increment view count for a specific post with session-based deduplication. Supports nested slugs (e.g., "DEV/my-post").',
   request: {
     query: viewsGetQuerySchema,
     body: jsonContentRequired(viewsIncrementBodySchema, 'Increment request'),

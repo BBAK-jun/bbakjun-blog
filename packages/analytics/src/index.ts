@@ -24,10 +24,7 @@ export class ViewCounter {
   }
 
   // 기존 문자열 키를 해시로 마이그레이션
-  private static async migrateToHash(
-    redis: RedisClient,
-    hashKey: string
-  ): Promise<number> {
+  private static async migrateToHash(redis: RedisClient, hashKey: string): Promise<number> {
     try {
       // 기존 문자열 값 읽기
       const oldValue = await redis.get(hashKey);
