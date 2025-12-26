@@ -13,7 +13,7 @@ configureOpenAPI(app);
 const routers = [ragRouter, adminRouter, documentsRouter, mcpRouter] as const;
 
 routers.forEach(router => {
-  app.route('/api', router);
+  app.route('/', router);
 });
 
 export type RagGatewayApp = (typeof routers)[number];

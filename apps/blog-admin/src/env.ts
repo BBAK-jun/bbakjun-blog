@@ -37,6 +37,9 @@ export const env = createEnv({
     // Redis (optional - for API response caching)
     REDIS_URL: z.string().url().optional(),
 
+    // RAG Gateway API Key
+    RAG_GATEWAY_API_KEY: z.string().min(1),
+
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   },
 
@@ -46,6 +49,7 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_BLOG_URL: z.string().url(),
+    NEXT_PUBLIC_RAG_GATEWAY_URL: z.string().url(),
   },
 
   /**
@@ -67,8 +71,10 @@ export const env = createEnv({
     BLOG_REVALIDATION_SECRET: process.env.BLOG_REVALIDATION_SECRET,
     BLOB_SYNC_INTERVAL_MINUTES: process.env.BLOB_SYNC_INTERVAL_MINUTES,
     REDIS_URL: process.env.REDIS_URL,
+    RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_BLOG_URL: process.env.NEXT_PUBLIC_BLOG_URL,
+    NEXT_PUBLIC_RAG_GATEWAY_URL: process.env.NEXT_PUBLIC_RAG_GATEWAY_URL,
   },
 
   /**

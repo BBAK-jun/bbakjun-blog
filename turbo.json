@@ -30,7 +30,10 @@
     "SILICONFLOW_API_KEY",
     "EMBEDDING_PROVIDER",
     "EMBEDDING_MODEL",
-    "NEXT_PUBLIC_RAG_URL"
+    "NEXT_PUBLIC_RAG_URL",
+    "NEXT_PUBLIC_RAG_GATEWAY_URL",
+    "BLOG_ADMIN_URL",
+    "RAG_GATEWAY_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -60,7 +63,10 @@
         "LLM_PROVIDER",
         "SILICONFLOW_API_KEY",
         "EMBEDDING_PROVIDER",
-        "EMBEDDING_MODEL"
+        "EMBEDDING_MODEL",
+        "NEXT_PUBLIC_RAG_GATEWAY_URL",
+        "BLOG_ADMIN_URL",
+        "RAG_GATEWAY_API_KEY"
       ]
     },
     "build:rpc": {

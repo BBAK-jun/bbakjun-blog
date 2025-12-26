@@ -1,4 +1,8 @@
-import { BadRequestErrorSchema, InternalServerErrorSchema } from '@/libs/error';
+import {
+  BadRequestErrorSchema,
+  InternalServerErrorSchema,
+  UnauthorizedErrorSchema,
+} from '@/libs/error';
 import { createRoute, z } from '@hono/zod-openapi';
 import {
   RAGQueryRequestSchema,
@@ -20,6 +24,8 @@ export const query = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RAGQueryResponseSchema, 'RAG query response'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid input'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'
@@ -36,6 +42,8 @@ export const search = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(SearchResponseSchema, 'RAG search response'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid input'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'
@@ -67,6 +75,7 @@ export const ingest = createRoute({
       }),
       'RAG ingest response'
     ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'
@@ -100,6 +109,7 @@ export const ingestStatus = createRoute({
       'RAG ingest status response'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'RAG ingest status request'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
       InternalServerErrorSchema,
       'Internal server error'

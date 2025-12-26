@@ -1,5 +1,5 @@
 import { AppRouteHandler } from '@/libs';
-import { InternalServerErrorSchema } from '@/libs/error';
+import { BadRequestErrorSchema, InternalServerErrorSchema } from '@/libs/error';
 import { getEmbeddingService } from '@/services/embedding';
 import { getLLMService } from '@/services/llm';
 import { getQdrantService } from '@/services/qdrant';
@@ -9,11 +9,15 @@ import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './rag.routes';
 import { IngestionPipeline } from '../../lib/rag/ingestion';
 import { env } from '@/env';
+import { sanitizeInput } from '@/middleware/input-validation';
 
 export const query: AppRouteHandler<typeof routes.query> = async c => {
   const request = c.req.valid('json');
 
   try {
+    // Validate and sanitize input for prompt injection
+    const sanitizedQuery = sanitizeInput(request.query);
+
     // Initialize services
     const qdrantService = getQdrantService();
     const embeddingService = getEmbeddingService();
@@ -22,14 +26,28 @@ export const query: AppRouteHandler<typeof routes.query> = async c => {
     // Create query processor
     const queryProcessor = new QueryProcessor(qdrantService, embeddingService, llmService);
 
-    // Process query
-    const response = await queryProcessor.processRAGQuery(request);
+    // Process query with sanitized input
+    const response = await queryProcessor.processRAGQuery({
+      ...request,
+      query: sanitizedQuery,
+    });
 
     return c.json(response, HttpStatusCodes.OK);
   } catch (error) {
+    // Check if it's a validation error
+    if (error instanceof Error && error.message.includes('Invalid input detected')) {
+      return c.json(
+        {
+          error: 'Invalid input',
+          message: error.message,
+        } satisfies z.infer<typeof BadRequestErrorSchema>,
+        HttpStatusCodes.BAD_REQUEST
+      );
+    }
+
     return c.json(
       {
-        error: '❌ RAG query failed',
+        error: 'RAG query failed',
         message: error instanceof Error ? error.message : 'Unknown error',
       } satisfies z.infer<typeof InternalServerErrorSchema>,
       HttpStatusCodes.INTERNAL_SERVER_ERROR
@@ -41,6 +59,9 @@ export const search: AppRouteHandler<typeof routes.search> = async c => {
   const request = c.req.valid('json');
 
   try {
+    // Validate and sanitize input for prompt injection
+    const sanitizedQuery = sanitizeInput(request.query);
+
     // Initialize services
     const qdrantService = getQdrantService();
     const embeddingService = getEmbeddingService();
@@ -52,12 +73,26 @@ export const search: AppRouteHandler<typeof routes.search> = async c => {
       null // No LLM needed for search only
     );
 
-    // Search documents
-    const response = await queryProcessor.searchDocuments(request);
+    // Search documents with sanitized input
+    const response = await queryProcessor.searchDocuments({
+      ...request,
+      query: sanitizedQuery,
+    });
 
     return c.json(response, HttpStatusCodes.OK);
   } catch (error) {
-    console.error('❌ Search failed:', error);
+    // Check if it's a validation error
+    if (error instanceof Error && error.message.includes('Invalid input detected')) {
+      return c.json(
+        {
+          error: 'Invalid input',
+          message: error.message,
+        },
+        HttpStatusCodes.BAD_REQUEST
+      );
+    }
+
+    console.error('Search failed:', error);
     return c.json(
       {
         error: 'Search failed',

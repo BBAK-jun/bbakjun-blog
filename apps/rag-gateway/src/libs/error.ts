@@ -15,6 +15,12 @@ export const NotFoundErrorSchema = z.object({
   message: z.string(),
 });
 
+export const UnauthorizedErrorSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+});
+
 export type InternalServerError = z.infer<typeof InternalServerErrorSchema>;
 export type BadRequestError = z.infer<typeof BadRequestErrorSchema>;
 export type NotFoundError = z.infer<typeof NotFoundErrorSchema>;
+export type UnauthorizedError = z.infer<typeof UnauthorizedErrorSchema>;

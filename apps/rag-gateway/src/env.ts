@@ -47,6 +47,9 @@ export const env = createEnv({
 
     // CORS Configuration
     ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
+
+    // API Key Authentication
+    RAG_GATEWAY_API_KEY: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_RAG_URL: z.string().url(),
@@ -66,6 +69,7 @@ export const env = createEnv({
     REDIS_URL: process.env.REDIS_URL,
     BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+    RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,
     NEXT_PUBLIC_RAG_URL: process.env.NEXT_PUBLIC_RAG_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

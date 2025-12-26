@@ -9,14 +9,14 @@ export default function configureOpenAPI(app: AppOpenAPI) {
     openapi: '3.0.0',
     info: {
       version: packageJSON.version,
-      title: 'Tasks API',
+      title: 'RAG Gateway API',
     },
   });
 
   app.get(
     '/reference',
     Scalar({
-      url: '/doc',
+      url: '/api/doc',
       theme: 'kepler',
       layout: 'classic',
       defaultHttpClient: {
