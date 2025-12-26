@@ -26,6 +26,7 @@ export default defineConfig({
     '@auth/prisma-adapter',
     '@prisma/adapter-pg',
     '@repo/analytics',
+    '@repo/cache',
     '@repo/content',
     '@repo/types',
     '@repo/ui',
