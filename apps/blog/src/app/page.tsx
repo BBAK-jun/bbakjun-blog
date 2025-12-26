@@ -1,16 +1,8 @@
 import { Button } from '@/shared/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import { Suspense } from 'react';
 import Link from 'next/link';
-import StreamingPostsGrid, {
-  StreamingPostsFallback,
-  StreamingPostsSkeleton,
-} from '@/processes/streaming-posts/ui/streaming-posts-grid';
-import StreamingRecentPostsGrid, {
-  StreamingRecentPostFallback,
-  StreamingRecentPostsSkeleton,
-} from '@/processes/streaming-posts/ui/streaming-recent-posts-grid';
-import ErrorBoundary from '@/shared/ui/error-boundary';
+import { PopularPostsGrid } from '@/widgets/popular-posts';
+import { RecentPostsGrid } from '@/widgets/recent-posts';
 
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
 export const revalidate = 60;
@@ -58,11 +50,7 @@ export default function Home() {
                   </Button>
                 </div>
 
-                <ErrorBoundary fallback={StreamingRecentPostFallback}>
-                  <Suspense fallback={<StreamingRecentPostsSkeleton limit={6} />}>
-                    <StreamingRecentPostsGrid limit={6} />
-                  </Suspense>
-                </ErrorBoundary>
+                <RecentPostsGrid limit={6} />
               </div>
             </TabsContent>
 
@@ -75,11 +63,7 @@ export default function Home() {
                   </Button>
                 </div>
 
-                <ErrorBoundary fallback={StreamingPostsFallback}>
-                  <Suspense fallback={<StreamingPostsSkeleton limit={12} />}>
-                    <StreamingPostsGrid limit={12} />
-                  </Suspense>
-                </ErrorBoundary>
+                <PopularPostsGrid limit={12} />
               </div>
             </TabsContent>
           </Tabs>
