@@ -1,0 +1,47 @@
+# Render deployment configuration for RAG Gateway
+# https://render.com/docs/yaml-spec
+
+services:
+  # RAG Gateway Web Service
+  - type: pserv
+    name: rag-gateway
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: pnpm install && pnpm --filter=rag-gateway build
+    startCommand: pnpm --filter=rag-gateway start
+
+    # Environment variables (set these in Render dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Qdrant Configuration
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: claude-docs
+
+      # API Keys
+      - key: RAG_GATEWAY_API_KEY
+        sync: false
+      - key: GLM_API_KEY
+        sync: false
+
+      # Blog Admin URL (for blob files)
+      - key: BLOG_ADMIN_URL
+        sync: false
+
+      # Redis (optional - for rate limiting)
+      - key: REDIS_URL
+        sync: false
+
+      # Port
+      - key: PORT
+        value: 3002
+
+    # Health check
+    healthCheckPath: /api/admin/health
+
+    # Auto-deploy on main branch push
+    branch: main
