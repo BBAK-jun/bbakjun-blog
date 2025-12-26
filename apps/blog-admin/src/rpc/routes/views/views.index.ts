@@ -1,7 +1,6 @@
 import { createRouter } from '@/rpc/libs';
-import * as routes from './views.routes';
 import * as handlers from './views.handlers';
-import { withSession } from '@/rpc/middleware/session';
+import * as routes from './views.routes';
 
 const router = createRouter()
   .openapi(routes.getViewsBySlug, handlers.getViewsBySlug)

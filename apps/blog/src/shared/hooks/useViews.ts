@@ -17,8 +17,9 @@ export function useViews(slug: string, increment: boolean = false): ViewData {
   const { data, isLoading, error } = useQuery({
     queryKey: ['views', slug],
     queryFn: async () => {
-      const response = await client.rpc.getViewsBySlug[':slug'].$get({
-        param: { slug },
+      // Query parameter approach for nested paths like "DEV/my-post"
+      const response = await client.rpc.getViewsBySlug.$get({
+        query: { slug },
       });
 
       if (!response.ok) {
@@ -34,8 +35,9 @@ export function useViews(slug: string, increment: boolean = false): ViewData {
   // 조회수 증가 mutation
   const incrementMutation = useMutation({
     mutationFn: async () => {
-      const response = await client.rpc.incrementViewsBySlug[':slug'].$post({
-        param: { slug },
+      // Query parameter approach for nested paths like "DEV/my-post"
+      const response = await client.rpc.incrementViewsBySlug.$post({
+        query: { slug },
         json: {},
       });
 

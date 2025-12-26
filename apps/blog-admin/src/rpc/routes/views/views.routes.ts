@@ -1,9 +1,9 @@
-import { createRoute, z } from '@hono/zod-openapi';
+import { createRoute } from '@hono/zod-openapi';
 import { BadRequestErrorSchema, InternalServerErrorSchema } from '../../libs/error';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers';
 import {
-  viewsSlugParamSchema,
+  viewsGetQuerySchema,
   viewsIncrementBodySchema,
   viewsGetResponseSchema,
   viewsIncrementResponseSchema,
@@ -13,13 +13,13 @@ import {
 const tags = ['Views'];
 
 export const getViewsBySlug = createRoute({
-  path: '/rpc/getViewsBySlug/:slug',
+  path: '/rpc/getViewsBySlug',
   method: 'get',
   tags,
   summary: 'Get view count by slug',
-  description: 'Retrieve view count for a specific post',
+  description: 'Retrieve view count for a specific post. Supports nested slugs (e.g., "DEV/my-post").',
   request: {
-    params: viewsSlugParamSchema,
+    query: viewsGetQuerySchema,
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(viewsGetResponseSchema, 'View count'),
@@ -29,13 +29,13 @@ export const getViewsBySlug = createRoute({
 });
 
 export const incrementViewsBySlug = createRoute({
-  path: '/rpc/incrementViewsBySlug/:slug',
+  path: '/rpc/incrementViewsBySlug',
   method: 'post',
   tags,
   summary: 'Increment view count by slug',
-  description: 'Increment view count for a specific post with session-based deduplication',
+  description: 'Increment view count for a specific post with session-based deduplication. Supports nested slugs (e.g., "DEV/my-post").',
   request: {
-    params: viewsSlugParamSchema,
+    query: viewsGetQuerySchema,
     body: jsonContentRequired(viewsIncrementBodySchema, 'Increment request'),
   },
   responses: {

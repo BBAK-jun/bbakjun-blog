@@ -5,7 +5,7 @@ import { getAllPosts } from '@repo/content';
 import * as routes from './views.routes';
 
 export const getViewsBySlug: AppRouteHandler<typeof routes.getViewsBySlug> = async c => {
-  const { slug } = c.req.valid('param');
+  const { slug } = c.req.valid('query');
   const views = await ViewCounter.get(slug);
   return c.json({ slug, views }, 200, {
     'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
@@ -15,7 +15,7 @@ export const getViewsBySlug: AppRouteHandler<typeof routes.getViewsBySlug> = asy
 export const incrementViewsBySlug: AppRouteHandler<
   typeof routes.incrementViewsBySlug
 > = async c => {
-  const { slug } = c.req.valid('param');
+  const { slug } = c.req.valid('query');
 
   console.log('slug', slug);
 
