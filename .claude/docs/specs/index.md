@@ -8,15 +8,59 @@
 .claude/docs/specs/
 ├── index.md                    # 이 파일
 ├── apps/
-│   └── blog-admin/
-│       ├── blob-file-management.md  # 블롭 파일 관리 기능 명세
-│       ├── cdc-sync-cache.md        # CDC 동기화 캐시 기능 명세
-│       └── rbac.md                  # 역할 기반 접근 제어 기능 명세
+│   ├── blog/
+│   │   ├── isr-content-delivery.md       # ISR 기반 콘텐츠 전달
+│   │   ├── view-tracking.md              # 조회수 추적 시스템
+│   │   ├── search-and-discovery.md       # 검색 및 콘텐츠 발견
+│   │   ├── content-rendering.md          # 콘텐츠 렌더링
+│   │   └── cross-app-integration.md      # Blog-Admin 연동
+│   ├── blog-admin/
+│   │   ├── blob-file-management.md  # 블롭 파일 관리 기능 명세
+│   │   ├── cdc-sync-cache.md        # CDC 동기화 캐시 기능 명세
+│   │   └── rbac.md                  # 역할 기반 접근 제어 기능 명세
+│   └── rag-gateway/
+│       # RAG Gateway 기능 명세 (추가 예정)
 └── packages/
     # 공유 패키지 기능 명세 (추가 예정)
 ```
 
 ## 앱별 기능 명세
+
+### Blog (`apps/blog`)
+
+공개 블로그 애플리케이션 기능 명세
+
+- [ISR 기반 콘텐츠 전달](apps/blog/isr-content-delivery.md) `생성일: 2025-12-26`
+  - ISR(Incremental Static Regeneration)을 활용한 정적/동적 하이브리드 콘텐츠 전달
+  - 60초 자동 재검증 (포스트, 홈)
+  - On-Demand 재검증 API
+  - OG 이미지 동적 생성
+
+- [조회수 추적 시스템](apps/blog/view-tracking.md) `생성일: 2025-12-26`
+  - Redis 기반 세션 당 중복 방지 조회수 추적
+  - TanStack Query로 클라이언트 캐싱 (1분)
+  - 봇 필터링 (User-Agent)
+  - 통계 조회 (총 조회수, 인기글)
+
+- [검색 및 콘텐츠 발견](apps/blog/search-and-discovery.md) `생성일: 2025-12-26`
+  - 서버 사이드 검색 (제목, 설명, 태그, 내용)
+  - 태그 필터링 및 태그 목록
+  - 시리즈 네비게이션 (이전/다음)
+  - 연관 포스트 추천 (알고리즘 기반)
+  - 인기글/최신글 위젯
+
+- [콘텐츠 렌더링](apps/blog/content-rendering.md) `생성일: 2025-12-26`
+  - MDX 마크다운 처리 파이프라인
+  - Mermaid 차트 렌더링 (다이어그램)
+  - 코드 하이라이팅 (syntax highlighting)
+  - 이미지 최적화 (WebP/AVIF, lazy loading)
+  - 목차 (Table of Contents) 자동 생성
+
+- [Blog-Admin 연동](apps/blog/cross-app-integration.md) `생성일: 2025-12-26`
+  - Hono RPC를 통한 타입 안전한 통신
+  - CDC 캐시로 Vercel Blob API 호출 97.6% 절감
+  - 조회수, 통계, Blob 파일 조회
+  - 경력 타임라인, 뉴스레터 구독
 
 ### Blog Admin (`apps/blog-admin`)
 
@@ -39,10 +83,14 @@
   - 자동/수동 동기화, 소프트 삭제 처리
   - 연간 $28,800 비용 절감
 
-### Blog (`apps/blog`)
+### RAG Gateway (`apps/rag-gateway`)
 
-공개 블로그 애플리케이션 기능 명세
+RAG(Retrieval-Augmented Generation) 게이트웨이 기능 명세
 _명세서 준비 중..._
+
+### Shared Packages (`packages/`)
+
+공유 패키지 기능 명세 (해당 앱 명세서에 포함)
 
 ## 명세서 작성 가이드
 
@@ -80,7 +128,9 @@ _명세서 준비 중..._
 
 ## Last Updated
 
-- **날짜**: 2025-12-22
-- **커밋**: 2c541823391c87ad23934193eddd21e2335f0b09
-- **전체 명세서 수**: 3개 (Blog Admin)
+- **날짜**: 2025-12-26
+- **커밋**: main
+- **전체 명세서 수**: 8개
+  - Blog: 5개
+  - Blog Admin: 3개
 - **상태**: 모든 명세서 As-Is (현재 구현됨)
