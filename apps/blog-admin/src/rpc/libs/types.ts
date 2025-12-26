@@ -4,21 +4,19 @@ import type { PinoLogger } from 'hono-pino';
 import type { Session } from 'next-auth';
 import type { UserRole } from '@prisma/client';
 
-export type RpcSession =
-  | (Session & {
-      user?: Session['user'] & {
-        id: string;
-        role: UserRole;
-      };
-    })
-  | null;
+interface UserWithSession extends Session {
+  user: Session['user'] & {
+    id: string;
+    role: UserRole;
+  };
+}
 
 // Simpler AppBindings without complex session type
 // This avoids type incompatibility with stoker's validation hook
 export interface AppBindings {
   Variables: {
     logger: PinoLogger;
-    session?: RpcSession;
+    session?: UserWithSession | null;
   };
 }
 
