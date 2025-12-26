@@ -49,7 +49,8 @@ export const PROMPT_INJECTION_PATTERNS: RegExp[] = [
 
   // Encoding bypass attempts
   /\\u[0-9a-f]{4}/gi, // Unicode escape
-  /&#x?[0-9a-f]{1,4};/gi, // HTML entity encoding
+  /&#x?[0-9a-f]{1,4};/gi, // HTML entity encoding (numeric)
+  /&(lt|gt|quot|amp|apos|nbsp);/gi, // HTML entity encoding (named)
 
   // Multi-step injection attempts
   /translate\s+the\s+above/i,
@@ -147,9 +148,27 @@ export function sanitizeInput(
  * @throws Error if context is invalid
  */
 export function sanitizeContext(context: string): string {
-  return sanitizeInput(context, {
-    maxLength: INPUT_LIMITS.MAX_CONTEXT_LENGTH,
-  });
+  const trimmed = context.trim();
+
+  // Check for empty input
+  if (!trimmed) {
+    throw new Error(VALIDATION_ERRORS.EMPTY_INPUT);
+  }
+
+  // Check context length limit
+  if (trimmed.length > INPUT_LIMITS.MAX_CONTEXT_LENGTH) {
+    throw new Error(VALIDATION_ERRORS.CONTEXT_TOO_LONG);
+  }
+
+  // Check for prompt injection patterns
+  for (const pattern of PROMPT_INJECTION_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      console.warn(`[Security] Prompt injection pattern detected: ${pattern}`);
+      throw new Error(VALIDATION_ERRORS.PROMPT_INJECTION);
+    }
+  }
+
+  return trimmed;
 }
 
 /**

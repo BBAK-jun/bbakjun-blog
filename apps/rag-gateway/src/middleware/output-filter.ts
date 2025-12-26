@@ -27,7 +27,7 @@ export const SENSITIVE_PATTERNS = {
   creditCard: /\b(?:\d[ -]*?){13,16}\b/g,
 
   /** Phone numbers (international format) */
-  phone: /\b\+?[\d\s-]{10,}\b/g,
+  phone: /\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
 
   /** API keys and tokens (Bearer, Basic, etc.) */
   authToken: /Bearer\s+[A-Za-z0-9\-._~+/]+/gi,
@@ -67,6 +67,7 @@ export const DEFAULT_REDACT_OPTIONS: RedactOptions = {
   patterns: [
     'email',
     'creditCard',
+    'phone',
     'authToken',
     'apiKey',
     'awsAccessKey',

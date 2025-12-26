@@ -126,11 +126,11 @@ export function securityHeaders(
   options: { skipDevelopment?: boolean } = {}
 ) {
   const { skipDevelopment = true } = options;
-  const isDevelopment = process.env.NODE_ENV === 'development';
 
   return async (c: Context, next: Next) => {
     // Skip in development if enabled
-    if (skipDevelopment && isDevelopment) {
+    // Check environment at request time, not middleware creation time
+    if (skipDevelopment && process.env.NODE_ENV === 'development') {
       await next();
       return;
     }

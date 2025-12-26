@@ -61,6 +61,14 @@ interface RateLimitErrorResponse {
 const inMemoryStore = new Map<string, { count: number; resetTime: number }>();
 
 /**
+ * Clear the in-memory store.
+ * WARNING: This is only exposed for testing purposes.
+ */
+export function _clearInMemoryStoreForTesting() {
+  inMemoryStore.clear();
+}
+
+/**
  * Cleanup expired entries from in-memory store.
  */
 function cleanupInMemoryStore() {
@@ -189,8 +197,9 @@ function extractIdentifier(c: Context): string {
   }
 
   // Fallback to IP address
+  // X-Real-IP has priority over X-Forwarded-For
   const ip =
-    c.req.header('x-forwarded-for')?.split(',')[0] || c.req.header('x-real-ip') || 'unknown';
+    c.req.header('x-real-ip') || c.req.header('x-forwarded-for')?.split(',')[0] || 'unknown';
   return `ip:${ip}`;
 }
 
