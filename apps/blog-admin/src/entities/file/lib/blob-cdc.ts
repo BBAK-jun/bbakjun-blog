@@ -6,6 +6,7 @@
 import { list } from '@vercel/blob';
 import { prisma } from '@/shared/lib/db';
 import { env } from '@/env';
+import { invalidateCache, CacheKeys } from '@repo/cache';
 
 /**
  * Blob 파일 목록을 DB와 동기화
@@ -129,7 +130,7 @@ export async function onBlobUpload(blob: {
   contentType?: string;
   uploadedBy?: string;
 }) {
-  return await prisma.blobFile.upsert({
+  const result = await prisma.blobFile.upsert({
     where: { pathname: blob.pathname },
     create: {
       url: blob.url,
@@ -148,19 +149,33 @@ export async function onBlobUpload(blob: {
       isDeleted: false, // 재업로드 시 복구
     },
   });
+
+  // 캐시 무효화 (비차단)
+  invalidateCache(CacheKeys.blobFilesPattern()).catch(err => {
+    console.warn('[BlobCDC] Failed to invalidate cache after upload:', err);
+  });
+
+  return result;
 }
 
 /**
  * 파일 삭제 시 DB에서 표시 (훅)
  */
 export async function onBlobDelete(pathname: string) {
-  return await prisma.blobFile.update({
+  const result = await prisma.blobFile.update({
     where: { pathname },
     data: {
       isDeleted: true,
       lastChecked: new Date(),
     },
   });
+
+  // 캐시 무효화 (비차단)
+  invalidateCache(CacheKeys.blobFilesPattern()).catch(err => {
+    console.warn('[BlobCDC] Failed to invalidate cache after delete:', err);
+  });
+
+  return result;
 }
 
 /**
