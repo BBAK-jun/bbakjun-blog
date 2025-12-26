@@ -5,12 +5,6 @@ export { DeleteConfirmModal, ImageUploader } from './ui';
 export {
   QueryProvider,
   verifyApiKeySync,
-  verifyApiKeyLegacy,
-  getSession,
-  isAuthenticated,
-  createSession,
-  deleteSession,
-  userRepository,
   formatFileSize,
   formatDate,
   formatDateLong,
