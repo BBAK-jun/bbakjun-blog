@@ -3,13 +3,16 @@
 
 services:
   # RAG Gateway Web Service
-  - type: pserv
+  - type: web
     name: rag-gateway
     env: node
     region: singapore
     plan: free
     buildCommand: pnpm install && pnpm --filter=rag-gateway build
     startCommand: pnpm --filter=rag-gateway start
+
+    # Health check (web service only)
+    healthCheckPath: /api/admin/health
 
     # Environment variables (set these in Render dashboard)
     envVars:
@@ -36,7 +39,7 @@ services:
       - key: REDIS_URL
         sync: false
 
-      # Port
+      # Port (Render sets PORT automatically)
       - key: PORT
         value: 3002
 
