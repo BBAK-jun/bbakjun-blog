@@ -153,6 +153,19 @@ const HealthErrorResponseSchema = z.object({
   error: z.string(),
 });
 
+// Clear collection schemas
+const ClearCollectionRequestSchema = z.object({
+  confirm: z.literal('yes', {
+    errorMap: () => ({ message: 'Must confirm by passing confirm=yes' }),
+  }),
+});
+
+const ClearCollectionResponseSchema = z.object({
+  message: z.string(),
+  deletedCount: z.number(),
+  clearedAt: z.string(),
+});
+
 export const getStats = createRoute({
   path: '/admin/stats',
   method: 'get',
@@ -244,6 +257,26 @@ export const getHealth = createRoute({
     [HttpStatusCodes.SERVICE_UNAVAILABLE]: jsonContentRequired(
       HealthErrorResponseSchema,
       'Service unhealthy'
+    ),
+  },
+});
+
+export const clearCollection = createRoute({
+  path: '/admin/collection',
+  method: 'delete',
+  tags,
+  request: {
+    body: jsonContentRequired(ClearCollectionRequestSchema, 'Confirmation required'),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(ClearCollectionResponseSchema, 'Collection cleared successfully'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContentRequired(
+      ClearCollectionRequestSchema,
+      'Must confirm with confirm=yes'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
+      InternalServerErrorSchema,
+      'Failed to clear collection'
     ),
   },
 });

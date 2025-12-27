@@ -324,6 +324,33 @@ export class QdrantService implements IQdrantService {
   }
 
   /**
+   * Delete all points from the collection
+   * WARNING: This is a destructive operation
+   */
+  async deleteAllPoints(): Promise<number> {
+    try {
+      // Get count before deletion
+      const collectionInfo = await this.client.getCollection(this.COLLECTION_NAME);
+      const beforeCount = collectionInfo.points_count ?? 0;
+
+      // Delete all points using empty filter
+      await this.client.delete(this.COLLECTION_NAME, {
+        wait: true,
+        filter: {}, // Empty filter deletes all points
+      });
+
+      console.log(`✅ Deleted all ${beforeCount} points from collection`);
+      return beforeCount;
+    } catch (error) {
+      console.error(
+        '❌ Failed to delete all points:',
+        error instanceof Error ? error.message : String(error)
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Get collection info
    */
   async getCollectionInfo(): Promise<CollectionInfo> {

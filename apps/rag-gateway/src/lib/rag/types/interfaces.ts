@@ -40,6 +40,12 @@ export interface IQdrantService {
   deletePoint(pointId: string): Promise<void>;
 
   /**
+   * Delete all points from the collection
+   * WARNING: This is a destructive operation
+   */
+  deleteAllPoints(): Promise<number>;
+
+  /**
    * Get collection info
    */
   getCollectionInfo(): Promise<{

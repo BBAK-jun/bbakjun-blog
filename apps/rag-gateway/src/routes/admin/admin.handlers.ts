@@ -282,6 +282,33 @@ export const clearCache: AppRouteHandler<typeof routes.clearCache> = async c => 
   }
 };
 
+export const clearCollection: AppRouteHandler<typeof routes.clearCollection> = async c => {
+  try {
+    const qdrantService = getQdrantService();
+
+    // Delete all points using the public method
+    const deletedCount = await qdrantService.deleteAllPoints();
+
+    return c.json(
+      {
+        message: 'All vectors deleted from collection',
+        deletedCount,
+        clearedAt: new Date().toISOString(),
+      },
+      HttpStatusCodes.OK
+    );
+  } catch (error) {
+    console.error('❌ Failed to clear collection:', error);
+    return c.json(
+      {
+        error: 'Failed to clear collection',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
 export const getHealth: AppRouteHandler<typeof routes.getHealth> = async c => {
   try {
     const qdrantService = getQdrantService();

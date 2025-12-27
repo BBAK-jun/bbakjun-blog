@@ -9,6 +9,7 @@ const router = createRouter()
   .openapi(routes.createReindex, handlers.createReindex)
   .openapi(routes.getReindexStatus, handlers.getReindexStatus)
   .openapi(routes.clearCache, handlers.clearCache)
+  .openapi(routes.clearCollection, handlers.clearCollection)
   .openapi(routes.getHealth, handlers.getHealth);
 
 export default router;

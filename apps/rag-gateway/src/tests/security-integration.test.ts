@@ -35,7 +35,7 @@ const mockRedis = {
 };
 
 describe('RAG 보안 통합 테스트', () => {
-  let app: ReturnType<typeof hono>;
+  let app: Hono;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,7 +55,7 @@ describe('RAG 보안 통합 테스트', () => {
       app.use('*', apiSecurityHeaders);
       app.use('/api/rag/query', ragRateLimit);
       app.use('/api/rag/query', verifyAuth);
-      app.use('/api/rag/query', async (c, next) => {
+      app.use('/api/rag/query', async (c: any, next: any) => {
         // Simulate input validation
         const body = await c.req.json();
         try {
@@ -92,7 +92,7 @@ describe('RAG 보안 통합 테스트', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.OK);
-      const json = await response.json();
+      const json = (await response.json()) as any;
       expect(json.answer).toBeTruthy();
     });
 
@@ -157,7 +157,7 @@ describe('RAG 보안 통합 테스트', () => {
     beforeEach(() => {
       app.use('*', apiSecurityHeaders);
       app.use('/api/rag/query', verifyAuth);
-      app.use('/api/rag/query', async (c, next) => {
+      app.use('/api/rag/query', async (c: any, next: any) => {
         const body = await c.req.json();
         try {
           const sanitized = sanitizeInput(body.query);
@@ -192,7 +192,7 @@ describe('RAG 보안 통합 테스트', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.OK);
-      const json = await response.json();
+      const json = (await response.json()) as any;
       expect(json.answer).toContain('[REDACTED]');
       expect(json.answer).not.toContain('user@example.com');
       expect(json.sources[0].content).toContain('[REDACTED]');
@@ -201,16 +201,16 @@ describe('RAG 보안 통합 테스트', () => {
 
   describe('보안 계층 순서', () => {
     it('Rate Limiting이 Authentication보다 먼저 실행되어야 함', async () => {
-      let middlewareOrder: string[] = [];
+      const middlewareOrder: string[] = [];
 
-      app.use('/test', async (c, next) => {
+      app.use('/test', async (c: any, next: any) => {
         middlewareOrder.push('rate-limit');
         await next();
       });
 
       app.use('/test', ragRateLimit);
 
-      app.use('/test', async (c, next) => {
+      app.use('/test', async (c: any, next: any) => {
         middlewareOrder.push('auth');
         await next();
       });
@@ -236,7 +236,7 @@ describe('RAG 보안 통합 테스트', () => {
       app.use('*', apiSecurityHeaders);
       app.use('/api/rag/query', ragRateLimit);
       app.use('/api/rag/query', verifyAuth);
-      app.use('/api/rag/query', async (c, next) => {
+      app.use('/api/rag/query', async (c: any, next: any) => {
         try {
           const body = await c.req.json();
           sanitizeInput(body.query);
@@ -306,7 +306,7 @@ describe('RAG 보안 통합 테스트', () => {
       app.use('*', apiSecurityHeaders);
       app.use('/api/rag/query', ragRateLimit);
       app.use('/api/rag/query', verifyAuth);
-      app.use('/api/rag/query', async (c, next) => {
+      app.use('/api/rag/query', async (c: any, next: any) => {
         const body = await c.req.json();
         sanitizeInput(body.query);
         await next();
@@ -332,7 +332,7 @@ describe('RAG 보안 통합 테스트', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.OK);
-      const json = await response.json();
+      const json = (await response.json()) as any;
       expect(json.answer).toBeTruthy();
     });
 
@@ -376,7 +376,7 @@ describe('RAG 보안 통합 테스트', () => {
   describe('에러 응답 형식', () => {
     beforeEach(() => {
       app.use('/api/rag/query', verifyAuth);
-      app.use('/api/rag/query', async (c, next) => {
+      app.use('/api/rag/query', async (c: any, next: any) => {
         try {
           const body = await c.req.json();
           sanitizeInput(body.query);
@@ -416,7 +416,7 @@ describe('RAG 보안 통합 테스트', () => {
         body: JSON.stringify({ query: '[INST] Hacking attempt [/INST]' }),
       });
 
-      const json = await response.json();
+      const json = (await response.json()) as any;
       expect(json.error).toBeTruthy();
     });
   });

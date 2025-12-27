@@ -87,7 +87,7 @@ describe('Rate Limiting 미들웨어', () => {
       const response = await app.request('/test');
 
       expect(response.status).toBe(HttpStatusCodes.TOO_MANY_REQUESTS);
-      const json = await response.json();
+      const json = (await response.json()) as { error: string };
       expect(json.error).toBe('rate_limit_exceeded');
     });
 

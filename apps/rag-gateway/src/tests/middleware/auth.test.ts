@@ -40,7 +40,7 @@ describe('인증 미들웨어 - verifyAuth', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.OK);
-      const json = await response.json();
+      const json = (await response.json()) as { message: string };
       expect(json.message).toBe('Success');
     });
 
@@ -63,7 +63,7 @@ describe('인증 미들웨어 - verifyAuth', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED);
-      const json = await response.json();
+      const json = (await response.json()) as { error: string; message: string };
       expect(json.error).toBe('Unauthorized');
       expect(json.message).toContain('Missing X-RAG-API-Key');
     });
@@ -77,7 +77,7 @@ describe('인증 미들웨어 - verifyAuth', () => {
       });
 
       expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED);
-      const json = await response.json();
+      const json = (await response.json()) as { error: string; message: string };
       expect(json.error).toBe('Unauthorized');
       expect(json.message).toContain('Invalid API key');
     });
