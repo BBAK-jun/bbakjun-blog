@@ -6,8 +6,7 @@ services:
   - type: web
     name: rag-gateway
     runtime: node
-    rootDir: apps/rag-gateway
-    buildCommand: pnpm build
+    buildCommand: pnpm build:rag-gateway
     startCommand: pnpm start
 
     # Health check (web service only)

@@ -12,8 +12,7 @@
     "build": "turbo run build",
     "build:blog": "turbo run build --filter=@apps/blog",
     "build:admin": "turbo run build --filter=@apps/blog-admin",
-    "build:rag": "turbo run build --filter=@apps/rag-gateway",
-    "build:rag-packages": "turbo run build --filter=@repo/rag-*",
+    "build:rag-gateway": "turbo run build --filter=@apps/rag-gateway",
     "start": "turbo run start",
     "lint": "turbo run lint",
     "test": "turbo run test",
@@ -23,9 +22,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "upload-posts": "node scripts/upload-posts.js",
     "upload-posts:prod": "NEXT_PUBLIC_ADMIN_URL=https://bbakjun-blog-admin.vercel.app node scripts/upload-posts.js",
-    "index-blog": "node scripts/index-blog.js",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "index-blog": "node scripts/index-blog.js"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.0",

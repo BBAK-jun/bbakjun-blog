@@ -19,7 +19,6 @@ export default defineConfig({
     'stoker',
     '@qdrant/js-client-rest',
     '@repo/cache',
-    '@repo/types',
     '@scalar/hono-api-reference',
     'openai',
     'pino',

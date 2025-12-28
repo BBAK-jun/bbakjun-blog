@@ -6,29 +6,21 @@ import { ragRateLimit, healthRateLimit } from '@/middleware/rate-limit';
 import * as routes from './rag.routes';
 import * as handlers from './rag.handlers';
 
-const router = createRouter();
-
-// Apply security headers to all RAG routes
-router.use('*', apiSecurityHeaders);
-
-// Apply rate limiting: authenticated routes use standard limits, health check uses lenient limits
-router.use('/query', ragRateLimit);
-router.use('/search', ragRateLimit);
-router.use('/ingest', ragRateLimit);
-router.use('/ingest/status', ragRateLimit);
-router.use('/health', healthRateLimit);
-
-// Apply authentication to all RAG routes except health check
-router.use('/query', verifyAuth);
-router.use('/search', verifyAuth);
-router.use('/ingest', verifyAuth);
-router.use('/ingest/status', verifyAuth);
-
-router
+const router = createRouter()
   .openapi(routes.query, handlers.query)
   .openapi(routes.search, handlers.search)
   .openapi(routes.ingest, handlers.ingest)
   .openapi(routes.ingestStatus, handlers.ingestStatus)
-  .openapi(routes.health, handlers.health);
+  .openapi(routes.health, handlers.health)
+  .use('*', apiSecurityHeaders)
+  .use('/query', ragRateLimit)
+  .use('/search', ragRateLimit)
+  .use('/ingest', ragRateLimit)
+  .use('/ingest/status', ragRateLimit)
+  .use('/health', healthRateLimit)
+  .use('/query', verifyAuth)
+  .use('/search', verifyAuth)
+  .use('/ingest', verifyAuth)
+  .use('/ingest/status', verifyAuth);
 
 export default router;
