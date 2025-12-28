@@ -8,7 +8,7 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: pnpm install && pnpm --filter=rag-gateway build
+    buildCommand: npm install -g pnpm && pnpm install && pnpm --filter=rag-gateway build
     startCommand: pnpm --filter=rag-gateway start
 
     # Health check (web service only)
