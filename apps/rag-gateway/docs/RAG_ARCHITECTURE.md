@@ -20,8 +20,8 @@ DEV_BBAK 블로그를 위한 RAG(Retrieval-Augmented Generation) 시스템으로
 │         └──────────────────┴──────────────────┘                  │
 │                            │                                     │
 │         ┌──────────────────▼──────────────────┐                  │
-│         │         QueryProcessor              │                  │
-│         │      (@repo/rag-core)               │                  │
+│         │         RAG Core Layer              │                  │
+│         │      (src/lib/rag/core/)            │                  │
 │         │  - Query Expansion                  │                  │
 │         │  - Document Retrieval               │                  │
 │         │  - Re-ranking                       │                  │
@@ -93,9 +93,9 @@ apps/rag-gateway/
     └── ingest-claude-docs.ts     # 문서 인덱싱 스크립트
 ```
 
-### 2. RAG Core (`packages/rag-core`)
+### 2. RAG Core (`src/lib/rag/core/`)
 
-RAG 처리의 핵심 로직을 담당하는 패키지입니다.
+RAG 처리의 핵심 로직을 담당하는 내부 모듈입니다.
 
 **주요 컴포넌트:**
 
@@ -106,15 +106,14 @@ RAG 처리의 핵심 로직을 담당하는 패키지입니다.
   - Chunk grouping by document
 
 ```
-packages/rag-core/
-├── src/
-│   ├── query.ts                  # QueryProcessor 클래스
-│   ├── retrieval.ts              # 검색 전략
-│   ├── ranking.ts                # Re-ranking 전략
-│   └── mcp.ts                    # MCP 클라이언트
+src/lib/rag/core/
+├── query.ts                  # QueryProcessor 클래스
+├── retrieval.ts              # 검색 전략
+├── ranking.ts                # Re-ranking 전략
+└── mcp.ts                    # MCP 클라이언트
 ```
 
-### 3. RAG Ingestion (`packages/rag-ingestion`)
+### 3. RAG Ingestion (`src/lib/rag/ingestion/`)
 
 문서 청킹(Chunking) 및 임베딩 파이프라인입니다.
 
@@ -132,7 +131,7 @@ packages/rag-core/
 - overlap: 200
 ```
 
-### 4. RAG Types (`packages/rag-types`)
+### 4. RAG Types (`src/lib/rag/types/`)
 
 공통 타입 정의입니다.
 

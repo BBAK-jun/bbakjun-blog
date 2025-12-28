@@ -5,14 +5,25 @@ services:
   # RAG Gateway Web Service
   - type: web
     name: rag-gateway
-    env: node
-    region: singapore
-    plan: free
-    buildCommand: npm install -g pnpm && pnpm install && pnpm --filter=rag-gateway build
-    startCommand: pnpm --filter=rag-gateway start
+    runtime: node
+    rootDir: apps/rag-gateway
+    buildCommand: pnpm build
+    startCommand: pnpm start
 
     # Health check (web service only)
     healthCheckPath: /api/admin/health
+
+    # Build filters - only redeploy when RAG Gateway files change
+    buildFilter:
+      includedPaths:
+        - apps/rag-gateway/**
+        - packages/**
+        - turbo.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+      ignoredPaths:
+        - apps/blog/**
+        - apps/blog-admin/**
 
     # Environment variables (set these in Render dashboard)
     envVars:

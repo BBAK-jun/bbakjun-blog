@@ -23,7 +23,6 @@
     "@hono/zod-openapi": "^0.16.4",
     "@hono/zod-validator": "^0.7.6",
     "@qdrant/js-client-rest": "^1.15.1",
-    "@repo/content": "workspace:*",
     "@scalar/hono-api-reference": "^0.9.30",
     "@t3-oss/env-nextjs": "^0.10.1",
     "dotenv": "^17.2.3",

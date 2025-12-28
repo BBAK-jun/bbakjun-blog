@@ -80,7 +80,7 @@ flowchart TB
       HEALTH["Health<br/>/health"]
     end
 
-    QP["QueryProcessor<br/>(@repo/rag-core)<br/>- Query Expansion<br/>- Document Retrieval<br/>- Re-ranking"]
+    QP["QueryProcessor<br/>(src/lib/rag/core/)<br/>- Query Expansion<br/>- Document Retrieval<br/>- Re-ranking"]
   end
 
   %% Routes -> QueryProcessor
