@@ -10,6 +10,7 @@
     }
   },
   "scripts": {
+    "prebuild": "pnpm install --no-frozen-lockfile",
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
     "build:rpc": "tsup --config tsup.rpc.config.ts",
