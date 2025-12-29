@@ -150,21 +150,52 @@ Example:
   - `../../facts/apps/blog-admin/apis/http.md`
   - `../../facts/apps/blog/pages/rendering.md`
 
+### Stale Facts Detection (CRITICAL)
+
+**Problem**: Insights based on deleted or modified facts can lead to incorrect business analysis.
+
+**Solution**: Verify all referenced facts documents exist and are up-to-date before analysis.
+
+**Verification Workflow**:
+
+1. **Check Facts Existence**: For each referenced facts doc, verify it exists
+2. **Check Last Verified**: Compare facts `last_verified` date with current date
+3. **Check Source Exists**: Verify facts have `source_exists: true` for all items
+4. **Flag Stale References**: If facts are stale, include a warning in the analysis
+
+**Warning Template**:
+
+```md
+## ⚠️ Facts Verification Status
+
+- **Last Facts Update**: YYYY-MM-DD
+- **Stale Warnings**:
+  - `../../facts/apps/blog-admin/apis/http.md`: No issues found
+  - `../../facts/apps/blog/pages/rendering.md`: Source file deleted (deprecated)
+```
+
+**If Facts Are Stale**:
+
+- Still produce the analysis, but clearly mark which insights are based on stale data
+- Add a "Data Freshness" section to the output
+- Recommend facts re-extraction in "Needed Data"
+
 ---
 
 ## Output Structure (REQUIRED)
 
 For each analysis, provide the following sections in order.
 
-1. **Executive Summary**: 2-3 sentence overview of the business significance
-2. **Facts**: Bullet list of the core facts (directly supported by the input)
-3. **Key Insights (Interpretation)**: Contextual takeaways tied to facts
-4. **Stakeholder Impact**: Who should know this and what actions they should consider
-5. **Recommendations**: Specific, actionable next steps
-6. **Risk/Opportunity Assessment**: Potential positive or negative outcomes
-7. **Assumptions** _(only if needed)_: Declared assumptions used for estimates
-8. **Needed Data** _(required when inputs are incomplete or uncertainty exists)_: Data to collect next
-9. **References**: Links to facts docs and/or data sources
+1. **⚠️ Facts Verification Status** _(REQUIRED when referencing facts docs)_: Existence and freshness check of referenced facts
+2. **Executive Summary**: 2-3 sentence overview of the business significance
+3. **Facts**: Bullet list of the core facts (directly supported by the input)
+4. **Key Insights (Interpretation)**: Contextual takeaways tied to facts
+5. **Stakeholder Impact**: Who should know this and what actions they should consider
+6. **Recommendations**: Specific, actionable next steps
+7. **Risk/Opportunity Assessment**: Potential positive or negative outcomes
+8. **Assumptions** _(only if needed)_: Declared assumptions used for estimates
+9. **Needed Data** _(required when inputs are incomplete or uncertainty exists)_: Data to collect next
+10. **References**: Links to facts docs and/or data sources
 
 ### Standard Template
 
@@ -177,6 +208,13 @@ For each analysis, provide the following sections in order.
   - <relative link to facts doc 2>
 - **Last Verified**: YYYY-MM-DD
 - **Repo Ref**: <commit sha 또는 tag (가능하면)>
+
+## ⚠️ Facts Verification Status
+
+- **Facts Last Updated**: YYYY-MM-DD
+- **Verification Results**:
+  - <facts doc 1>: ✅ Verified (source_exists: true)
+  - <facts doc 2>: ⚠️ Stale warning (last_verified > 30 days ago)
 
 ## Executive Summary
 
@@ -232,5 +270,21 @@ For each analysis, provide the following sections in order.
 - Consider both short-term tactical implications and long-term strategic relevance
 - Flag any data limitations or areas needing additional information
 - For technical data, translate into business benefits that non-technical stakeholders can understand
+
+### Facts Verification (CRITICAL)
+
+- **Always verify facts existence**: Check that all referenced facts documents exist before analysis
+- **Check source_exists**: Verify facts have `source_exists: true` for all documented items
+- **Flag stale facts**: If facts are old (>30 days) or reference deleted sources, clearly mark in analysis
+- **Recommend re-extraction**: If facts are stale, add to "Needed Data" section
+
+### Stale Facts Handling
+
+**When facts are outdated or reference deleted sources**:
+
+1. **Still produce analysis** - Don't block analysis, but clearly mark which insights are based on stale data
+2. **Add verification warning** - Include ⚠️ Facts Verification Status section at the top
+3. **Qualify insights** - Use language like "Based on data from YYYY-MM-DD" for stale facts
+4. **Recommend refresh** - Add facts re-extraction to "Needed Data" section
 
 Your goal is to elevate raw facts into strategic business intelligence that drives informed decision-making.

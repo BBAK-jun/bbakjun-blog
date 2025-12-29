@@ -137,10 +137,42 @@ Optionally, for shared packages:
 
 ### Cross-References (REQUIRED)
 
-Every spec MUST include a “Based on” section linking to supporting documents when available:
+Every spec MUST include a "Based on" section linking to supporting documents when available:
 
 - Based on Facts: `../../facts/apps/<app-name>/...`
 - Based on Insights: `../../insights/apps/<app-name>/...`
+
+### Stale Facts Detection (CRITICAL)
+
+**Problem**: Specs based on deleted or modified facts can document non-existent code or outdated implementations.
+
+**Solution**: Verify all referenced facts documents exist and are up-to-date before writing the spec.
+
+**Verification Workflow**:
+
+1. **Check Facts Existence**: For each referenced facts doc, verify it exists
+2. **Check Last Verified**: Compare facts `last_verified` date with current date
+3. **Check Source Exists**: Verify facts have `source_exists: true` for all items
+4. **Flag Stale References**: If facts are stale, mark the spec status as "Needs Verification"
+
+**Status Options**:
+
+- **As-Is (현재 구현)**: All facts verified with `source_exists: true`
+- **To-Be (계획)**: Planned feature (no facts needed)
+- **Mixed**: Some facts verified, some TBD
+- **Needs Verification**: Facts are stale or reference deleted sources
+
+**Warning Template**:
+
+```md
+## ⚠️ Facts Verification Status
+
+- **Last Facts Update**: YYYY-MM-DD
+- **Verification Results**:
+  - `../../facts/apps/blog-admin/apis/http.md`: ✅ Verified
+  - `../../facts/apps/blog/components/ui.md`: ⚠️ Source file deleted
+- **Spec Status**: Needs Verification (recommend facts re-extraction)
+```
 
 ---
 
@@ -164,13 +196,23 @@ Write the specification in Korean. Use the following structure in order.
 # <기능명 / Feature Title>
 
 - **App**: <apps/<app-name>>
-- **Status**: As-Is (현재 구현) | To-Be (계획) | Mixed
+- **Status**: As-Is (현재 구현) | To-Be (계획) | Mixed | Needs Verification
 - **Scope**: <in/out of scope>
 - **Based on**:
   - Facts: <relative links...>
   - Insights: <relative links...>
 - **Last Verified**: YYYY-MM-DD
 - **Repo Ref**: <commit sha 또는 tag (가능하면)>
+
+## ⚠️ Facts Verification Status
+
+_(REQUIRED when referencing facts docs)_
+
+- **Last Facts Update**: YYYY-MM-DD
+- **Verification Results**:
+  - <facts doc 1>: ✅ Verified (source_exists: true)
+  - <facts doc 2>: ⚠️ Stale warning (last_verified > 30 days ago)
+- **Spec Status**: <As-Is / To-Be / Mixed / Needs Verification>
 
 ## 개요 (Overview)
 
@@ -253,5 +295,30 @@ Write the specification in Korean. Use the following structure in order.
 - Keep structure consistent and navigable
 - Ensure all technical claims are backed by evidence or marked TBD
 - Include constraints, operations, and acceptance criteria where possible
+
+### Facts Verification (CRITICAL)
+
+- **Always verify facts existence**: Check that all referenced facts documents exist before writing spec
+- **Check source_exists**: Verify facts have `source_exists: true` for all documented items
+- **Set appropriate status**: Use "Needs Verification" if facts are stale or reference deleted sources
+- **Document verification results**: Include ⚠️ Facts Verification Status section when referencing facts
+
+### Stale Facts Handling
+
+**When facts are outdated or reference deleted sources**:
+
+1. **Set spec status to "Needs Verification"** - Clearly indicate the spec needs facts refresh
+2. **Add verification warning** - Include ⚠️ Facts Verification Status section
+3. **Mark affected sections** - Use comments like "⚠️ Based on stale facts from YYYY-MM-DD"
+4. **Add to Needed Data** - Include facts re-extraction as a needed action
+
+**Status Selection Guide**:
+
+| Facts Status | Spec Status | Action |
+|--------------|-------------|--------|
+| All verified with `source_exists: true` | As-Is | Document as implemented |
+| Planned feature (no facts) | To-Be | Document as planned |
+| Mixed verified/TBD | Mixed | Mark TBD items explicitly |
+| Stale or deleted sources | Needs Verification | Flag for facts re-extraction |
 
 Your goal is to produce a polished, trustworthy feature specification that functions as both a technical reference and a cross-functional communication artifact.

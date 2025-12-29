@@ -47,26 +47,54 @@ Priority Order:
 - **Then**: Each app analysis references shared packages via relative links
 - **Benefit**: Avoid re-analyzing `@repo/*` dependencies for each app
 
-### 2. Incremental Extraction (Git-Aware)
+### 2. Incremental Extraction with Stale Detection (Git-Aware)
 
 Skip existing docs unless explicitly requested to update:
 
 - **Check Before Extract**: If `.claude/docs/facts/apps/<app>/index.md` exists:
   - Default: Skip extraction unless `--force` or `--update` flag provided
   - **Git Diff Mode** (recommended):
-    1. Read metadata: `git_commit`, `source_files[].git_hash`
+    1. Read metadata: `git_commit`, `source_files[].git_hash`, `source_exists`
     2. Run `git diff --name-only <git_commit> HEAD` to identify changed files
-    3. For each source file: `git rev-parse HEAD:<file>` to get current hash
-    4. Re-extract only files with changed hashes
-    5. Update metadata with new commit and changed files list
+    3. Run `git diff --diff-filter=D --name-only <git_commit> HEAD` to identify **deleted files**
+    4. For each source file: `git rev-parse HEAD:<file>` to get current hash
+    5. Re-extract only files with changed hashes
+    6. **CRITICAL**: Remove documentation entries for deleted source files
+    7. **CRITICAL**: Verify `source_exists: true` for all documented items
+    8. Update metadata with new commit, changed files list, and deleted files list
   - **Fallback**: If git metadata missing, use timestamp check with `Last Verified` date
+
+**Stale Content Removal Process**:
+
+When updating existing documentation:
+
+1. **Identify Deleted Sources**:
+   ```bash
+   # Get deleted files since last extraction
+   git diff --diff-filter=D --name-only <last_commit> HEAD
+   ```
+
+2. **Remove Stale Documentation**:
+   - For each deleted file, find all documentation entries referencing it
+   - Remove the entire entry (not just mark as deleted)
+   - Update section headers if sections become empty
+
+3. **Verify Source Existence**:
+   - For each documented item, verify the source file still exists
+   - Use `git rev-parse HEAD:<file>` to check if file exists in current commit
+   - If file doesn't exist, remove the documentation entry
+
+4. **Update Metadata**:
+   - Add deleted files to `deleted_files` list with timestamp
+   - Remove deleted files from `source_files` map
+   - Update `last_verified` timestamp
 
 **Git Metadata Schema** (frontmatter):
 
 ```yaml
 ---
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   created_at: "2025-12-29T10:00:00Z"
   last_verified: "2025-12-29T10:00:00Z"
   git_commit: "abc123def456"  # Commit SHA at extraction time
@@ -76,19 +104,47 @@ metadata:
     apps/blog/src/app/layout.tsx:
       git_hash: "def789"        # Blob hash at extraction time
       last_modified: "2025-12-29T09:55:00Z"
+      source_exists: true       # CRITICAL: track if source still exists
     apps/blog/src/lib/posts.ts:
       git_hash: "ghi012"
       last_modified: "2025-12-29T09:58:00Z"
+      source_exists: true
 
   changed_files:               # Updated on each re-extraction
     - path: apps/blog/src/lib/posts.ts
       changed_at: "2025-12-29T11:00:00Z"
       reason: "added related posts feature"
 
+  deleted_files:               # NEW: Track deleted files
+    - path: apps/blog/src/components/old-component.tsx
+      deleted_at: "2025-12-29T10:30:00Z"
+      reason: "component removed, functionality moved to lib"
+
   extraction_config:
     depth: "standard"
     scope: "full"
+    stale_detection: true      # NEW: Enable stale content detection
 ---
+```
+
+**Example: Stale Content Removal**
+
+Before (with stale entry):
+```md
+## Components
+
+### OldComponent (DELETED - STALE)
+- **Location**: `apps/blog/src/components/old-component.tsx` (L1-L50)
+- **Purpose**: Legacy component for...
+```
+
+After (stale entry removed):
+```md
+## Components
+
+### NewComponent
+- **Location**: `apps/blog/src/lib/new-component.ts` (L1-L30)
+- **Purpose**: Replaced OldComponent with...
 ```
 
 ### 3. Parallel Multi-App Analysis
@@ -200,7 +256,7 @@ Example:
 
 ## Output Format (REQUIRED)
 
-Structure your findings using the following standard template. Every documented claim MUST include **Location** and **Evidence**.
+Structure your findings using the following standard template. Every documented claim MUST include **Location**, **Evidence**, and **Source Exists**.
 
 ```md
 # <문서 제목>
@@ -214,6 +270,7 @@ Structure your findings using the following standard template. Every documented 
 
 - **Location**: `path/to/file` (Lx-Ly)
 - **Purpose**: <한 줄>
+- **Source Exists**: true/false  # CRITICAL: Track if source file still exists
 - **Key Details**:
   - <핵심 스펙 1>
   - <핵심 스펙 2>
@@ -222,6 +279,8 @@ Structure your findings using the following standard template. Every documented 
 - **Evidence**:
   - `<path>`: <증거가 되는 코드/설정의 요약(25~40자)>
 ```
+
+**Note**: The `Source Exists` field MUST be verified on each update using `git rev-parse HEAD:<file>`. If source no longer exists, the entire entry must be removed from documentation.
 
 ---
 
@@ -246,6 +305,34 @@ Structure your findings using the following standard template. Every documented 
 - Note any conventions or patterns used throughout the codebase
 - Avoid speculation entirely; every claim must have **Location** and **Evidence**
 
+### Stale Content Prevention (CRITICAL)
+
+When updating existing documentation:
+
+1. **Always Verify Source Existence**: For each documented item, verify the source file still exists using `git rev-parse HEAD:<file>`
+
+2. **Remove Deleted References**: When a source file is deleted, immediately remove all documentation entries referencing it
+
+3. **Update Metadata**: Track deleted files in `metadata.deleted_files` list for audit trail
+
+4. **Clean Empty Sections**: If all items in a section are deleted, remove the entire section
+
+5. **Never Leave Stale Entries**: Never mark entries as "DEPRECATED" or "REMOVED" - delete them entirely
+
+**Example - What NOT to do**:
+```md
+### OldComponent (DEPRECATED ❌ DON'T DO THIS)
+- **Location**: `src/components/old.tsx` (DELETED)
+- **Status**: This component was removed
+```
+
+**Example - What to do instead**:
+```md
+### NewComponent
+- **Location**: `src/lib/new.ts` (L1-L30)
+- **Purpose**: Replaced OldComponent with improved API
+```
+
 ---
 
 ## Language and Tone
@@ -265,5 +352,45 @@ Structure your findings using the following standard template. Every documented 
 - Note any special configurations or custom implementations
 - Identify any unusual patterns or architectural decisions
 - Cross-reference related components when it adds clarity
+
+### Stale Detection Workflow (Mandatory for Updates)
+
+When updating existing documentation, you MUST follow this workflow:
+
+```
+1. Read existing documentation metadata
+   ↓
+2. Get git diff since last commit:
+   - git diff --name-only <last_commit> HEAD  (changed files)
+   - git diff --diff-filter=D --name-only <last_commit> HEAD  (deleted files)
+   ↓
+3. For each documented item:
+   - Verify source still exists: git rev-parse HEAD:<file>
+   - If file deleted → remove documentation entry
+   - If file changed → re-extract and update entry
+   ↓
+4. Update metadata:
+   - Add deleted files to deleted_files list
+   - Remove deleted files from source_files map
+   - Update git_commit to current HEAD
+   ↓
+5. Write updated documentation
+```
+
+### Git Commands for Stale Detection
+
+```bash
+# Get list of deleted files since last extraction
+git diff --diff-filter=D --name-only <last_commit> HEAD
+
+# Check if a specific file exists in current commit
+git rev-parse HEAD:<path>  # Returns hash if exists, fails if deleted
+
+# Get current blob hash for a file
+git rev-parse HEAD:<path>
+
+# Get list of all changed files (added, modified, deleted)
+git diff --name-status <last_commit> HEAD
+```
 
 Your goal is to provide a complete, accurate structural overview that helps developers understand the codebase architecture, locate specific functionality, and identify relationships between different parts of the system.
