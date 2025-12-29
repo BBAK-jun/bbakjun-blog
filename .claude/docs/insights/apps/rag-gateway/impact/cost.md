@@ -4,29 +4,38 @@
 - **Based on Facts**:
   - [../../../facts/apps/rag-gateway/config/index.md](../../../facts/apps/rag-gateway/config/index.md)
   - [../../../facts/apps/rag-gateway/apis/index.md](../../../facts/apps/rag-gateway/apis/index.md)
-- **Last Verified**: 2024-12-26
+- **Last Verified**: 2025-12-29
 - **Repo Ref**: bbakjun-blog monorepo
 
 ---
 
 ## Executive Summary
 
-RAG Gateway has **$45-100/month fixed infrastructure costs** plus **$0.00003/query variable costs** (GLM). Multi-LLM strategy reduces Korean content costs by 97%. Rate limiting caps maximum monthly spend at ~$148 (GLM) or ~$824 (OpenAI).
+RAG Gateway has **$25-50/month fixed infrastructure costs** (Render Free + Qdrant) or **$45-100/month** (Vercel Pro + Qdrant), plus **$0.000012/query variable costs** (GLM). Multi-LLM strategy reduces Korean content costs by 95%. **Render deployment option saves $20-50/month** in hosting costs.
 
 ## Facts
 
 ### Fixed Infrastructure Costs
 
-| Service | Provider | Tier | Monthly Cost | Source |
-|---------|----------|------|--------------|--------|
-| Qdrant Cloud | Qdrant | 1GB Starter | $25-50 | [config/index.md](../../../facts/apps/rag-gateway/config/index.md) |
-| Redis | Vercel KV | Basic Usage | $0.20-10 | Shared cache |
-| Hosting | Vercel | Pro | $20-40 | Node.js server |
-| **Total** | | | **$45-100** | |
+**Deployment Options**:
+
+| Option | Provider | Tier | Monthly Cost | Notes |
+|--------|----------|------|--------------|-------|
+| **Render Free** | Render | Free Web Service | $0 | 750h/month, 15min sleep |
+| **Qdrant Cloud** | Qdrant | 1GB Starter | $25-50 | Vector storage |
+| **Redis (optional)** | Vercel KV | Basic | $0.20-10 | Rate limiting |
+| **Vercel Pro** | Vercel | Pro | $20-40 | Alternative to Render |
+| **Total (Render)** | | | **$25-50** | New deployment option |
+| **Total (Vercel)** | | | **$45-100** | Original deployment |
+
+**Key Changes** (2025-12-29):
+- **New**: Render Free tier deployment option ($0 hosting)
+- **Updated**: GLM API key now required (was optional)
+- **Removed**: SiliconFlow provider (cost reduction)
+
+---
 
 ### Variable Costs Per Query
-
-**Source**: [config/index.md](../../../facts/apps/rag-gateway/config/index.md#llm-models)
 
 #### OpenAI (Default)
 
@@ -191,9 +200,52 @@ RAG Gateway has **$45-100/month fixed infrastructure costs** plus **$0.00003/que
 
 ---
 
-## Cost Comparison: Self-Hosted vs Managed
+## Cost Comparison: Deployment Options
 
-### Self-Hosted Alternative
+### Render Free Tier (New - 2025-12-29)
+
+| Component | Cost | Notes |
+|-----------|------|-------|
+| Render Web Service | $0 | 750h/month, 15min sleep |
+| Qdrant Cloud 1GB | $25-50/month | Managed service |
+| Redis (optional) | $0.20-10/month | Rate limiting |
+| Variable costs | $1-30/month | At 10k-100k queries |
+| **Total** | **$26-80/month** | Zero hosting cost |
+
+**Pros**:
+- Free hosting (saves $20-40/month)
+- Simple `render.yaml` configuration
+- Auto-deploy on git push
+
+**Cons**:
+- 15min sleep mode (cold start ~30s)
+- No persistent storage (cleanup script unavailable)
+- 512MB RAM limit
+
+**Workarounds**:
+- Use cron-job.org or UptimeRobot to prevent sleep
+- Use `DELETE /api/admin/collection` for full cleanup
+
+### Vercel Pro (Original)
+
+| Component | Cost | Notes |
+|-----------|------|-------|
+| Vercel Pro hosting | $20-40/month | Serverless |
+| Qdrant Cloud 1GB | $25-50/month | Managed service |
+| Redis (Vercel KV) | $0.20-10/month | Shared |
+| Variable costs | $1-30/month | At 10k-100k queries |
+| **Total** | **$46-130/month** | Zero maintenance |
+
+**Pros**:
+- No sleep mode (always on)
+- Full Vercel ecosystem integration
+- Better performance (edge functions)
+
+**Cons**:
+- $20-40/month hosting fee
+- More complex deployment setup
+
+### Self-Hosted Alternative (For Reference)
 
 | Component | Cost | Notes |
 |-----------|------|-------|
@@ -213,33 +265,67 @@ RAG Gateway has **$45-100/month fixed infrastructure costs** plus **$0.00003/que
 | Variable costs | $1-30/month | At 10k-100k queries |
 | **Total** | **$46-130/month** | Zero maintenance |
 
-**Conclusion**: Managed solution is **40-60% cheaper** than self-hosting + eliminates maintenance overhead.
+**Conclusion**: Render Free tier is **40-50% cheaper** than Vercel Pro ($26-80 vs $46-130/month), with the trade-off of sleep mode and no persistent storage. Managed solutions are **40-60% cheaper** than self-hosting + eliminate maintenance overhead.
+
+---
+
+## Operational Efficiency Improvements
+
+### New Features (2025-12-29)
+
+**Stale Document Cleanup**:
+- **Script**: `scripts/cleanup-stale-docs.ts`
+- **Purpose**: Removes Qdrant documents that no longer exist in `.claude/docs/`
+- **Impact**: Reduces database bloat, improves search relevance
+- **Limitation**: Requires persistent filesystem (not available on Render Free)
+
+**Admin Collection Delete API**:
+- **Endpoint**: `DELETE /api/admin/collection`
+- **Purpose**: Full collection reset for reindexing
+- **Use Case**: Clean slate reindexing, migration, testing
+- **Alternative to cleanup script** on Render
 
 ---
 
 ## Recommendations
 
-1. **Deploy with GLM Provider**
+### Deployment Choice
+
+1. **Choose Render Free Tier for Cost Savings**
+   - Saves $20-50/month vs Vercel Pro
+   - Use UptimeRobot or cron-job.org to prevent sleep mode
+   - Accept 30s cold start penalty
+   - **Best for**: Low-traffic blogs, development, testing
+
+2. **Choose Vercel Pro for Production**
+   - No sleep mode, consistent performance
+   - Better integration with blog/blog-admin apps
+   - **Best for**: High-traffic blogs, production use
+
+### Cost Optimization
+
+3. **Deploy with GLM Provider**
    - Set `LLM_PROVIDER=glm` and `GLM_API_KEY`
+   - GLM API key is now **required** (not optional)
    - A/B test quality for 1-2 weeks
    - If quality acceptable, switch 100% to GLM
 
-2. **Set Budget Alerts**
-   - Vercel spending limit: $200/month
+4. **Set Budget Alerts**
+   - Vercel/Render spending limit: $100/month
    - Daily anomaly alert: $10/day
    - OpenAI API usage alert (if using hybrid)
 
-3. **Monitor Cache Effectiveness**
+5. **Monitor Cache Effectiveness**
    - Track embedding cache hit rate
    - Add Redis-based distributed cache
    - Target >80% hit rate
 
-4. **Optimize Token Usage**
+6. **Optimize Token Usage**
    - Truncate source chunks to 2,000 characters
    - Use concise system prompts
    - Set max token limits: 1000 input, 500 output
 
-5. **Consider Response Caching**
+7. **Consider Response Caching**
    - Cache identical queries for 1 hour
    - Expected 30-50% hit rate
    - Reduces latency more than cost

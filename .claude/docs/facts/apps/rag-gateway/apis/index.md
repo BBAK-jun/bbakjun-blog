@@ -590,7 +590,45 @@ type?: string       # Default: "all"
 }
 ```
 
-**Handler**: `src/routes/admin/admin.handlers.ts` (L285-L358)
+**Handler**: `src/routes/admin/admin.handlers.ts` (L312-L385)
+
+---
+
+### DELETE /api/admin/collection
+
+**Location**: `src/routes/admin/admin.routes.ts` (L264-L282)
+
+**Purpose**: 전체 컬렉션 삭제 (모든 벡터 제거)
+
+**Request Headers**:
+```
+X-RAG-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+**Request Body**:
+```typescript
+{
+  confirm: 'yes';              // Required: Must be literal "yes"
+}
+```
+
+**Response** (200 OK):
+```typescript
+{
+  message: string;             // e.g., "All vectors deleted from collection"
+  deletedCount: number;        // Number of vectors deleted
+  clearedAt: string;           // ISO 8601 datetime
+}
+```
+
+**Error Responses**:
+- 400 Bad Request: Missing or invalid `confirm` parameter
+- 500 Internal Server Error: Deletion failed
+
+**Handler**: `src/routes/admin/admin.handlers.ts` (L285-L310)
+- Calls `qdrantService.deleteAllPoints()` to remove all vectors
+- Useful for full reindexing or cleanup
 
 ---
 

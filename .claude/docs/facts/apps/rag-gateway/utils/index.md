@@ -517,6 +517,85 @@ function generateTextHash(text: string): string;
 
 ---
 
+## Scripts
+
+### cleanup-stale-docs.ts
+
+**Location**: `scripts/cleanup-stale-docs.ts`
+
+**Purpose**: 파일시스템에 존재하지 않는 문서(stale documents)를 Qdrant에서 정리
+
+**Usage**:
+```bash
+# 로컬 개발 환경
+RAG_GATEWAY_URL=http://localhost:3002 node scripts/cleanup-stale-docs.ts
+
+# 프로덕션 환경 (확인 없이 바로 삭제)
+RAG_GATEWAY_URL=https://rag-gateway.onrender.com node scripts/cleanup-stale-docs.ts --yes
+
+# 또는 -y 플래그
+RAG_GATEWAY_URL=https://rag-gateway.onrender.com node scripts/cleanup-stale-docs.ts -y
+```
+
+**How It Works**:
+
+1. **파일시스템 스캔**: `.claude/docs/` 디렉토리의 모든 markdown 파일 스캔
+2. **Slug 생성**: 파일 경로에서 slug 생성 (예: `facts/apps/rag-gateway/index.md`)
+3. **Qdrant 조회**: `/api/documents?limit=1000`으로 모든 문서 가져오기
+4. **Stale 문서 감지**: Qdrant에 있지만 파일시스템에 없는 문서 식별
+5. **삭제 확인**: `--yes` 또는 `-y` 플래그로 삭제 승인
+6. **일괄 삭제**: stale 문서들을 Qdrant에서 삭제
+
+**Filters**:
+- Only scans documents with slugs starting with:
+  - `facts/apps/`
+  - `insights/apps/`
+  - `specs/apps/`
+- Skips blog posts and other content
+
+**Output**:
+```
+🔍 Scanning .claude/docs for markdown files...
+📁 Found 125 markdown files
+✅ Built index of 125 unique documents
+
+📥 Fetching documents from Qdrant...
+📊 Qdrant has 150 documents
+
+🗑️  Found 25 stale documents:
+
+  - facts/apps/old-app/index.md (Old App Documentation)
+  - insights/apps/deprecated-feature/impact/roi.md (Deprecated Feature)
+
+⚠️  This will DELETE the above documents from Qdrant.
+Run with --yes or -y to confirm.
+
+# With --yes flag:
+🗑️  Deleting stale documents...
+
+  ✅ Deleted: facts/apps/old-app/index.md
+  ✅ Deleted: insights/apps/deprecated-feature/impact/roi.md
+
+=== Summary ===
+✅ Deleted: 25
+❌ Failed: 0
+📊 Total stale: 25
+
+📊 Updated Qdrant stats:
+  Vectors: 1250
+```
+
+**Use Cases**:
+- 문서 구조 변경 후 정리
+- 앱 삭제 후 관련 문서 제거
+- 주기적인 데이터베이스 정리
+
+**Important Notes**:
+- Render 배포 환경에서는 작동하지 않음 (영구 스토리지 없음)
+- 로컬 개발 또는 영구 스토리지 있는 환경에서만 사용
+
+---
+
 ## MCP Tools
 
 **Location**: `src/routes/mcp/mcp.handlers.ts` (L150-L353)

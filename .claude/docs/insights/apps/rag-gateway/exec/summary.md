@@ -4,7 +4,7 @@
 - **Based on Facts**:
   - [../../facts/apps/rag-gateway/index.md](../../facts/apps/rag-gateway/index.md)
   - [../../facts/apps/rag-gateway/apis/index.md](../../facts/apps/rag-gateway/apis/index.md)
-- **Last Verified**: 2024-12-26
+- **Last Verified**: 2025-12-29
 - **Repo Ref**: bbakjun-blog monorepo
 
 ---

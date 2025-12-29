@@ -2,7 +2,7 @@
 
 - **App**: apps/rag-gateway
 - **Status**: Production Ready (As-Is 구현 완료)
-- **Last Verified**: 2024-12-26
+- **Last Verified**: 2025-12-29
 - **Repo Ref**: bbakjun-blog monorepo
 
 ---
@@ -29,6 +29,13 @@ RAG Gateway는 DEV_BBAK 블로그의 콘텐츠를 지능적으로 검색하고 �
 |--------|------|------|
 | [security-layer.md](./security-layer.md) | API 보안 계층 (인증, 검증, Rate limiting, 필터링) | As-Is |
 | [multi-llm-strategy.md](./multi-llm-strategy.md) | 다중 LLM 제공자 전략 (OpenAI, GLM) | As-Is |
+| [render-deployment.md](./render-deployment.md) | Render 무료 플랜 배포 전략 ($0 호스팅) | ✅ New (2025-12-29) |
+
+### Operations & Maintenance (운영 및 유지보수)
+
+| 명세서 | 설명 | 상태 |
+|--------|------|------|
+| [stale-document-cleanup.md](./stale-document-cleanup.md) | 오래된 문서 자동 정리 스크립트 | ✅ New (2025-12-29) |
 
 ### Integrations (통합)
 
@@ -63,6 +70,7 @@ RAG Gateway는 DEV_BBAK 블로그의 콘텐츠를 지능적으로 검색하고 �
 - `GET /api/admin/reindex/{jobId}` - 재인덱싱 상태
 - `DELETE /api/admin/cache` - 캐시 삭제
 - `GET /api/admin/health` - 상세 헬스 체크
+- `DELETE /api/admin/collection` - 컬렉션 전체 삭제 (신규)
 
 #### MCP API
 - `GET /api/mcp/tools` - 도구 목록
@@ -106,6 +114,7 @@ RAG Gateway는 DEV_BBAK 블로그의 콘텐츠를 지능적으로 검색하고 �
 ```bash
 QDRANT_URL=                    # Qdrant cluster URL
 OPENAI_API_KEY=                # OpenAI API key
+GLM_API_KEY=                   # Zhipu AI GLM key (Now Required!)
 RAG_GATEWAY_API_KEY=           # API authentication key
 BLOG_ADMIN_URL=                # Blog-Admin URL for blob files
 ```
@@ -113,19 +122,29 @@ BLOG_ADMIN_URL=                # Blog-Admin URL for blob files
 **Optional**:
 ```bash
 QDRANT_API_KEY=                # Qdrant API key (if required)
-GLM_API_KEY=                   # Zhipu AI GLM key
 LLM_PROVIDER=openai|glm        # LLM provider (default: openai)
-EMBEDDING_PROVIDER=openai|siliconflow  # Embedding provider
+EMBEDDING_PROVIDER=openai|glm  # Embedding provider (siliconflow 제거됨)
 EMBEDDING_MODEL=text-embedding-3-small  # Embedding model
 REDIS_URL=                     # Redis for rate limiting
 ```
 
-### Cost Structure
+**Changes** (2025-12-29):
+- `GLM_API_KEY`: 선택사항 → **필수** 변경
+- `EMBEDDING_PROVIDER`: `siliconflow` 옵션 제거됨
+- `SILICONFLOW_API_KEY`: 환경 변수 제거됨
 
-**Fixed Monthly Costs**:
+### Deployment Options
+
+**Render Free Tier** (New - 2025-12-29):
+- Render Web Service: $0
+- Qdrant Cloud (1GB): $25-50/월
+- Redis (optional): $0.20-10/월
+- **Total**: ~$25-50/월
+
+**Vercel Pro** (Original):
+- Vercel Pro hosting: $20-40/월
 - Qdrant Cloud (1GB): $25-50/월
 - Redis (Vercel KV): $0.20-10/월
-- Vercel Pro hosting: $20-40/월
 - **Total**: ~$45-100/월
 
 **Variable Costs (Per Query)**:
@@ -289,6 +308,13 @@ pnpm start:rag-gateway
 
 ## Changelog (변경 로그)
 
+### 2025-12-29
+- **New**: Render 무료 플랜 배포 전략 명세서 추가
+- **New**: Stale Document Cleanup 스크립트 명세서 추가
+- **Updated**: 환경 변수 변경사항 반영 (GLM_API_KEY 필수, SiliconFlow 제거)
+- **Updated**: 비용 분석에 Render 배포 옵션 추가
+- **Updated**: API 엔드포인트에 `DELETE /api/admin/collection` 추가
+
 ### 2024-12-26
 - Initial feature specifications created
 - All core features documented (As-Is)
@@ -308,4 +334,4 @@ MIT
 
 ---
 
-**Last Updated**: 2024-12-26
+**Last Updated**: 2025-12-29
