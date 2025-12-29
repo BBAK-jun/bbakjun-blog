@@ -15,7 +15,7 @@ export const EmbeddingModelSchema = z.enum([
 export type EmbeddingModel = z.infer<typeof EmbeddingModelSchema>;
 
 // Embedding provider
-export const EmbeddingProviderSchema = z.enum(['openai', 'glm', 'siliconflow']);
+export const EmbeddingProviderSchema = z.enum(['openai', 'glm']);
 export type EmbeddingProvider = z.infer<typeof EmbeddingProviderSchema>;
 
 // Embedding configuration

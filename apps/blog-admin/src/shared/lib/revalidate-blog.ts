@@ -21,7 +21,7 @@ interface RevalidateResponse {
  */
 export async function revalidateBlogPath(path: string): Promise<RevalidateResponse> {
   const blogUrl = env.NEXT_PUBLIC_BLOG_URL;
-  const secret = env.BLOG_REVALIDATION_SECRET;
+  const secret = env.REVALIDATION_SECRET;
 
   if (!blogUrl) {
     console.warn('NEXT_PUBLIC_BLOG_URL is not set. Skipping blog revalidation.');
@@ -32,7 +32,7 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
   }
 
   if (!secret) {
-    console.warn('BLOG_REVALIDATION_SECRET is not set. Skipping blog revalidation.');
+    console.warn('REVALIDATION_SECRET is not set. Skipping blog revalidation.');
     return {
       success: false,
       error: 'Revalidation secret not configured',
@@ -76,7 +76,7 @@ export async function revalidateBlogPath(path: string): Promise<RevalidateRespon
  */
 export async function revalidateAllBlogPages(): Promise<RevalidateResponse> {
   const blogUrl = env.NEXT_PUBLIC_BLOG_URL;
-  const secret = env.BLOG_REVALIDATION_SECRET;
+  const secret = env.REVALIDATION_SECRET;
 
   if (!blogUrl || !secret) {
     console.warn('Blog URL or secret not configured. Skipping revalidation.');

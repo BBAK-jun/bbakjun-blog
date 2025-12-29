@@ -1,11 +1,5 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
-import { config } from 'dotenv';
-
-// Load .env files in development
-if (process.env.NODE_ENV !== 'production') {
-  config();
-}
 
 export const env = createEnv({
   server: {
@@ -19,12 +13,11 @@ export const env = createEnv({
 
     // LLM Configuration
     OPENAI_API_KEY: z.string().min(1),
-    GLM_API_KEY: z.string().optional(), // Optional z.ai key
-    LLM_PROVIDER: z.enum(['openai', 'glm']).default('openai'), // Choose which LLM to use
+    GLM_API_KEY: z.string().min(1),
+    LLM_PROVIDER: z.enum(['openai', 'glm']).default('openai'),
 
     // Embedding Configuration
-    SILICONFLOW_API_KEY: z.string().optional(),
-    EMBEDDING_PROVIDER: z.enum(['openai', 'siliconflow']).default('openai'),
+    EMBEDDING_PROVIDER: z.enum(['openai', 'glm']).default('openai'),
     EMBEDDING_MODEL: z
       .enum([
         'text-embedding-3-small',
@@ -51,9 +44,6 @@ export const env = createEnv({
     // API Key Authentication
     RAG_GATEWAY_API_KEY: z.string().min(1),
   },
-  client: {
-    NEXT_PUBLIC_RAG_URL: z.string().url(),
-  },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
@@ -63,14 +53,12 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GLM_API_KEY: process.env.GLM_API_KEY,
     LLM_PROVIDER: process.env.LLM_PROVIDER,
-    SILICONFLOW_API_KEY: process.env.SILICONFLOW_API_KEY,
     EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
     EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
     REDIS_URL: process.env.REDIS_URL,
     BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,
-    NEXT_PUBLIC_RAG_URL: process.env.NEXT_PUBLIC_RAG_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

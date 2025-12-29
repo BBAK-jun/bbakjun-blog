@@ -67,7 +67,6 @@ async function retryWithBackoff<T>(
 
 export class EmbeddingService implements IEmbeddingService {
   private openaiClient: OpenAI;
-  private siliconflowClient: OpenAI;
   private cache: Map<string, number[]> = new Map();
   private config: EmbeddingConfig;
 
@@ -95,22 +94,12 @@ export class EmbeddingService implements IEmbeddingService {
       apiKey: env.OPENAI_API_KEY,
       maxRetries: 0, // We handle retries manually
     });
-
-    // Initialize SiliconFlow client (uses OpenAI-compatible API)
-    this.siliconflowClient = new OpenAI({
-      apiKey: env.SILICONFLOW_API_KEY || '',
-      baseURL: 'https://api.siliconflow.cn/v1',
-      maxRetries: 0,
-    });
   }
 
   /**
    * Get the appropriate client based on provider
    */
   private getClient(): OpenAI {
-    if (this.config.provider === 'siliconflow') {
-      return this.siliconflowClient;
-    }
     return this.openaiClient;
   }
 

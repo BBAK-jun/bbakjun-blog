@@ -28,8 +28,8 @@ export const env = createEnv({
     BACKOFFICE_API_KEY: z.string().min(1),
     RESEND_API_KEY: z.string().min(1).optional(),
 
-    // Blog Revalidation
-    BLOG_REVALIDATION_SECRET: z.string().min(1).optional(),
+    // Blog Revalidation (uses same secret as blog app)
+    REVALIDATION_SECRET: z.string().min(1).optional(),
 
     // Blob CDC Sync Interval (in minutes)
     BLOB_SYNC_INTERVAL_MINUTES: z.coerce.number().min(1).optional().default(30),
@@ -68,7 +68,7 @@ export const env = createEnv({
     BLOB_STORE_ID: process.env.BLOB_STORE_ID,
     BACKOFFICE_API_KEY: process.env.BACKOFFICE_API_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
-    BLOG_REVALIDATION_SECRET: process.env.BLOG_REVALIDATION_SECRET,
+    REVALIDATION_SECRET: process.env.REVALIDATION_SECRET,
     BLOB_SYNC_INTERVAL_MINUTES: process.env.BLOB_SYNC_INTERVAL_MINUTES,
     REDIS_URL: process.env.REDIS_URL,
     RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,

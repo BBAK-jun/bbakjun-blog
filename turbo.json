@@ -17,23 +17,10 @@
     "BACKOFFICE_API_KEY",
     "NEXT_PUBLIC_BLOG_URL",
     "NEXT_PUBLIC_ADMIN_URL",
-    "BLOG_REVALIDATION_SECRET",
     "REVALIDATION_SECRET",
     "JWT_SECRET",
     "REDIS_URL",
-    "RESEND_API_KEY",
-    "QDRANT_URL",
-    "QDRANT_API_KEY",
-    "GLM_API_KEY",
-    "OPENAI_API_KEY",
-    "LLM_PROVIDER",
-    "SILICONFLOW_API_KEY",
-    "EMBEDDING_PROVIDER",
-    "EMBEDDING_MODEL",
-    "NEXT_PUBLIC_RAG_URL",
-    "NEXT_PUBLIC_RAG_GATEWAY_URL",
-    "BLOG_ADMIN_URL",
-    "RAG_GATEWAY_API_KEY"
+    "RESEND_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -49,7 +36,22 @@
       "dependsOn": ["@apps/blog-admin#build:rpc", "^build"]
     },
     "@apps/blog-admin#build": {
-      "dependsOn": ["@apps/rag-gateway#build:rpc", "^build"]
+      "dependsOn": ["@apps/rag-gateway#build:rpc", "^build"],
+      "env": ["RAG_GATEWAY_API_KEY", "NEXT_PUBLIC_RAG_GATEWAY_URL"]
+    },
+    "@apps/rag-gateway#build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "QDRANT_URL",
+        "QDRANT_API_KEY",
+        "OPENAI_API_KEY",
+        "GLM_API_KEY",
+        "LLM_PROVIDER",
+        "EMBEDDING_PROVIDER",
+        "EMBEDDING_MODEL",
+        "RAG_GATEWAY_API_KEY",
+        "BLOG_ADMIN_URL"
+      ]
     },
     "dev": {
       "cache": false,
