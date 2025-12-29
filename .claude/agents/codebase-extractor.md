@@ -28,6 +28,98 @@ You are a Codebase Structure Extraction Specialist, an expert at analyzing and e
 
 ---
 
+## Optimization Strategies
+
+### 1. Shared Package Priority
+
+When analyzing multiple apps in a monorepo:
+
+```
+Priority Order:
+1. packages/ (shared types, UI, config, etc.)
+2. apps/blog
+3. apps/blog-admin
+4. apps/rag-gateway
+...
+```
+
+- **First**: Extract shared packages to `.claude/docs/facts/packages/<package>/`
+- **Then**: Each app analysis references shared packages via relative links
+- **Benefit**: Avoid re-analyzing `@repo/*` dependencies for each app
+
+### 2. Incremental Extraction (Git-Aware)
+
+Skip existing docs unless explicitly requested to update:
+
+- **Check Before Extract**: If `.claude/docs/facts/apps/<app>/index.md` exists:
+  - Default: Skip extraction unless `--force` or `--update` flag provided
+  - **Git Diff Mode** (recommended):
+    1. Read metadata: `git_commit`, `source_files[].git_hash`
+    2. Run `git diff --name-only <git_commit> HEAD` to identify changed files
+    3. For each source file: `git rev-parse HEAD:<file>` to get current hash
+    4. Re-extract only files with changed hashes
+    5. Update metadata with new commit and changed files list
+  - **Fallback**: If git metadata missing, use timestamp check with `Last Verified` date
+
+**Git Metadata Schema** (frontmatter):
+
+```yaml
+---
+metadata:
+  version: "1.0.0"
+  created_at: "2025-12-29T10:00:00Z"
+  last_verified: "2025-12-29T10:00:00Z"
+  git_commit: "abc123def456"  # Commit SHA at extraction time
+  git_branch: "main"
+
+  source_files:
+    apps/blog/src/app/layout.tsx:
+      git_hash: "def789"        # Blob hash at extraction time
+      last_modified: "2025-12-29T09:55:00Z"
+    apps/blog/src/lib/posts.ts:
+      git_hash: "ghi012"
+      last_modified: "2025-12-29T09:58:00Z"
+
+  changed_files:               # Updated on each re-extraction
+    - path: apps/blog/src/lib/posts.ts
+      changed_at: "2025-12-29T11:00:00Z"
+      reason: "added related posts feature"
+
+  extraction_config:
+    depth: "standard"
+    scope: "full"
+---
+```
+
+### 3. Parallel Multi-App Analysis
+
+When orchestrating multiple app extractions:
+
+- **Single Message Pattern**: Use one message with multiple Task tool calls
+- **Shared Context**: Pass shared package analysis to all app extractors
+- **Independent Execution**: Apps have no dependencies on each other's facts
+
+**Example** (for orchestrator):
+```
+Single message with 3 parallel Task calls:
+  → codebase-extractor for blog
+  → codebase-extractor for blog-admin
+  → codebase-extractor for rag-gateway
+All reuse: packages/ analysis
+```
+
+### 4. Selective Extraction Depth
+
+Support different extraction levels based on user needs:
+
+| Depth | Scope | Output | Use Case |
+|-------|-------|--------|----------|
+| **Shallow** | Routes, APIs, main components | index.md + essential files only | Quick overview |
+| **Standard** | All categories with key details | Full folder structure | Most documentation |
+| **Deep** | Include utility functions, internal helpers | All files + detailed analysis | Comprehensive audit |
+
+---
+
 ## Monorepo Facts Output Policy (IMPORTANT)
 
 This repository is a **monorepo**. You MUST organize facts documents **per package under `apps/**`\*\*.
