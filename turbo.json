@@ -38,40 +38,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": [
-        "DATABASE_URL",
-        "DIRECT_URL",
-        "AUTH_SECRET",
-        "AUTH_GOOGLE_ID",
-        "AUTH_GOOGLE_SECRET",
-        "BLOB_READ_WRITE_TOKEN",
-        "BLOB_STORE_ID",
-        "BLOB_SYNC_INTERVAL_MINUTES",
-        "BACKOFFICE_API_KEY",
-        "NEXT_PUBLIC_BLOG_URL",
-        "NEXT_PUBLIC_ADMIN_URL",
-        "BLOG_REVALIDATION_SECRET",
-        "REVALIDATION_SECRET",
-        "JWT_SECRET",
-        "REDIS_URL",
-        "RESEND_API_KEY",
-        "QDRANT_URL",
-        "QDRANT_API_KEY",
-        "GLM_API_KEY",
-        "OPENAI_API_KEY",
-        "LLM_PROVIDER",
-        "SILICONFLOW_API_KEY",
-        "EMBEDDING_PROVIDER",
-        "EMBEDDING_MODEL",
-        "NEXT_PUBLIC_RAG_GATEWAY_URL",
-        "BLOG_ADMIN_URL",
-        "RAG_GATEWAY_API_KEY"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "build:rpc": {
-      "cache": false,
-      "persistent": true
+      "dependsOn": ["^build:rpc"],
+      "outputs": ["dist/**/*.js", "dist/**/*.d.ts", "dist/**/*.mjs"],
+      "cache": true
+    },
+    "@apps/blog#build": {
+      "dependsOn": ["@apps/blog-admin#build:rpc", "^build"]
+    },
+    "@apps/blog-admin#build": {
+      "dependsOn": ["@apps/rag-gateway#build:rpc", "^build"]
     },
     "dev": {
       "cache": false,

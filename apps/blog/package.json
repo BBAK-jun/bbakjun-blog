@@ -3,10 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prepare": "turbo run build:rpc --filter @apps/blog-admin",
-    "prebuild": "pnpm prepare",
-    "predev": "pnpm prepare",
-    "pretype-check": "pnpm prepare",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
