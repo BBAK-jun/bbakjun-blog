@@ -2,7 +2,7 @@
 
 - **Scope**: apps/rag-gateway - RAG (Retrieval-Augmented Generation) API 서비스
 - **Source of Truth**: Hono routes, TypeScript types, Environment variables
-- **Last Verified**: 2024-12-26
+- **Last Verified**: 2025-12-29
 - **Repo Ref**: bbakjun-blog monorepo
 
 ## Overview

@@ -14,8 +14,8 @@
 |----------|------|-------------|---------|
 | `QDRANT_URL` | string (URL) | Qdrant cluster URL | `https://cluster.qdrant.io` |
 | `OPENAI_API_KEY` | string (min: 1) | OpenAI API key | `sk-...` |
+| `GLM_API_KEY` | string (min: 1) | Zhipu AI GLM API key (required) | Generate from Zhipu AI platform |
 | `RAG_GATEWAY_API_KEY` | string (min: 1) | API authentication key | Generate with `openssl rand -base64 32` |
-| `REDIS_URL` | string (URL, optional) | Redis for caching | `redis://localhost:6379` |
 | `BLOG_ADMIN_URL` | string (URL) | Blog-Admin URL | `http://localhost:3001` |
 | `ALLOWED_ORIGINS` | string | CORS allowed origins (comma-separated) | `http://localhost:3000,http://localhost:3001` |
 
@@ -27,14 +27,18 @@
 | `PORT` | number (coerced) | `3002` | Server port |
 | `LOG_LEVEL` | enum | `info` | `trace` \| `debug` \| `info` \| `warn` \| `error` \| `fatal` |
 | `QDRANT_API_KEY` | string | - | Qdrant API key (if required) |
-| `GLM_API_KEY` | string | - | Zhipu AI GLM API key |
+| `REDIS_URL` | string (URL) | - | Redis for rate limiting caching |
 | `LLM_PROVIDER` | enum | `openai` | `openai` \| `glm` |
-| `SILICONFLOW_API_KEY` | string | - | SiliconFlow API key (for Korean embeddings) |
-| `EMBEDDING_PROVIDER` | enum | `openai` | `openai` \| `siliconflow` |
+| `EMBEDDING_PROVIDER` | enum | `openai` | `openai` \| `glm` |
 | `EMBEDDING_MODEL` | enum | `text-embedding-3-small` | See Embedding Models below |
-| `NEXT_PUBLIC_RAG_URL` | string (URL) | - | Public RAG Gateway URL |
 
-**Location**: `src/env.ts` (L10-L76)
+**Location**: `src/env.ts` (L4-L64)
+
+**Important Changes** (2025-12-29):
+- `GLM_API_KEY`: Changed from optional to **required**
+- `EMBEDDING_PROVIDER`: Removed `siliconflow` option (now `openai` \| `glm`)
+- `NEXT_PUBLIC_RAG_URL`: Removed (client-side variable no longer needed)
+- `SILICONFLOW_API_KEY`: Removed (SiliconFlow provider deprecated)
 
 ---
 
@@ -48,18 +52,18 @@
 | `text-embedding-3-large` | 3072 | 8191 | High accuracy |
 | `text-embedding-ada-002` | 1536 | 8191 | Legacy |
 
-### SiliconFlow Models (Korean/Multilingual)
+### GLM (Zhipu AI) Models
 
 | Model | Dimensions | Max Tokens | Use Case |
 |-------|------------|------------|----------|
-| `BAAI/bge-m3` | 1024 | 8192 | Multilingual, Korean |
-| `BAAI/bge-large-zh-v1.5` | 1024 | 8192 | Chinese |
-| `embedding-2` | 1024 | 8192 | GLM embedding |
+| `embedding-2` | 1024 | 8192 | GLM embedding (default for GLM provider) |
 | `embedding-3` | 1024 | 8192 | GLM embedding v3 |
-| `zephyr-embedding` | 1024 | 8192 | Zephyr |
-| `zephyr-embedding-large` | 1024 | 8192 | Zephyr large |
 
 **Location**: `src/services/embedding.ts` (L7-L20)
+
+**Important Changes** (2025-12-29):
+- Removed SiliconFlow models (`BAAI/bge-m3`, `BAAI/bge-large-zh-v1.5`, `zephyr-embedding`)
+- GLM embedding models retained for Korean/multilingual support
 
 ---
 
