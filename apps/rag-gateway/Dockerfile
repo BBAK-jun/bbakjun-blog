@@ -1,49 +1,81 @@
-FROM node:20-alpine AS base
+# -----------------------------------------------------------------------------
+# RAG Gateway Dockerfile
+# Multi-stage build for optimal image size and security
+# Designed for Turborepo monorepo structure
+# -----------------------------------------------------------------------------
 
-# Install dependencies
+FROM node:24-alpine AS base
+
+# Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat curl
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+# Copy workspace files
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/rag-gateway/package.json ./apps/rag-gateway/
+COPY packages ./packages
+COPY .npmrc ./.npmrc
 
-# Build application
+# Install all dependencies (needed for workspace protocol)
+# Note: --no-frozen-lockfile is used because Docker COPY doesn't expand globs the same way
+RUN corepack enable pnpm && pnpm install --no-frozen-lockfile
+
+# -----------------------------------------------------------------------------
+# Builder stage
+# -----------------------------------------------------------------------------
 FROM base AS builder
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache libc6-compat
+
+# Copy installed dependencies
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source files
 COPY . .
 
 # Build the application
-RUN corepack enable pnpm && pnpm build
+# Build workspace dependencies (@repo/cache), then rag-gateway
+ENV CI=true
+RUN corepack enable pnpm && pnpm --filter=@repo/cache build && pnpm --filter=@apps/rag-gateway build
 
-# Production image
+# -----------------------------------------------------------------------------
+# Production runner stage
+# -----------------------------------------------------------------------------
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production \
+    PORT=3002
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Install runtime dependencies (curl for health check)
+RUN apk add --no-cache libc6-compat curl
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
+# Create non-root user for security
+RUN addgroup --system --gid 1001 rag-gateway && \
+    adduser --system --uid 1001 -G rag-gateway rag-gateway
+
+# Copy only rag-gateway production dependencies
+COPY --from=builder /app/apps/rag-gateway/package.json ./package.json
+COPY --from=builder /app/apps/rag-gateway/dist ./dist
+
+# Copy workspace dependencies that rag-gateway uses
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
-# Change ownership
-USER nextjs
+# Set ownership to non-root user
+RUN chown -R rag-gateway:rag-gateway /app
+
+# Switch to non-root user
+USER rag-gateway
 
 # Expose port
 EXPOSE 3002
 
-ENV PORT 3002
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3002/health || exit 1
+# Health check - matches the app's health endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3002/api/admin/health || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]
