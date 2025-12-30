@@ -34,7 +34,7 @@ export const SourceReferenceSchema = z.object({
   slug: z.string(),
   content: z.string(),
   score: z.number(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type SourceReference = z.infer<typeof SourceReferenceSchema>;

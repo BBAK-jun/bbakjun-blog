@@ -35,7 +35,7 @@ const DocumentsStatsSchema = z.object({
   total: z.number(),
   indexed: z.number(),
   failed: z.number(),
-  categories: z.record(z.number()),
+  categories: z.record(z.string(), z.number()),
 });
 
 const PerformanceStatsSchema = z.object({
@@ -55,7 +55,7 @@ const LogEntrySchema = z.object({
   timestamp: z.string(),
   level: z.string(),
   message: z.string(),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 const LogsResponseSchema = z.object({
@@ -155,9 +155,7 @@ const HealthErrorResponseSchema = z.object({
 
 // Clear collection schemas
 const ClearCollectionRequestSchema = z.object({
-  confirm: z.literal('yes', {
-    errorMap: () => ({ message: 'Must confirm by passing confirm=yes' }),
-  }),
+  confirm: z.literal('yes'),
 });
 
 const ClearCollectionResponseSchema = z.object({
