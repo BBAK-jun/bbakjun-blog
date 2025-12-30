@@ -1,0 +1,71 @@
+services:
+  rag-gateway:
+    build:
+      context: ../..
+      dockerfile: apps/rag-gateway/Dockerfile
+    image: rag-gateway:latest
+    container_name: rag-gateway
+    ports:
+      - "0.0.0.0:3002:3002"
+    environment:
+      # Server
+      NODE_ENV: production
+      PORT: 3002
+      LOG_LEVEL: info
+
+      # Qdrant Vector DB
+      QDRANT_URL: ${QDRANT_URL}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+
+      # LLM Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GLM_API_KEY: ${GLM_API_KEY}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+
+      # Embedding Configuration
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+
+      # Optional Redis for caching
+      REDIS_URL: ${REDIS_URL:-}
+
+      # Blog-Admin URL for fetching blob files
+      BLOG_ADMIN_URL: ${BLOG_ADMIN_URL:-http://localhost:3001}
+
+      # CORS Configuration
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+
+      # API Key Authentication
+      RAG_GATEWAY_API_KEY: ${RAG_GATEWAY_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/admin/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+# Optional: Add Qdrant if running locally
+  # qdrant:
+  #   image: qdrant/qdrant:latest
+  #   container_name: qdrant
+  #   ports:
+  #     - "6333:6333"
+  #     - "6334:6334"
+  #   volumes:
+  #     - qdrant_data:/qdrant/storage
+  #   restart: unless-stopped
+
+# Optional: Add Redis if running locally
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+
+# volumes:
+#   qdrant_data:
+#   redis_data:

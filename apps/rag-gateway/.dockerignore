@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+*.log
+.nyc_output
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+docs
+*.md
+
+# Scripts (not needed in container)
+scripts
+tsup.*.config.ts
+
+# Tests
+src/tests
+*.test.ts
+*.spec.ts
+vitest.config.ts
+
+# Misc
+.turbo
