@@ -10,14 +10,14 @@ const CollectionInfoSchema = z.object({
   segments_count: z.number().nullable().default(0),
   disk_data_size: z.number().nullable().default(0),
   ram_data_size: z.number().nullable().default(0),
-  config: z.record(z.unknown()).nullable().default({}),
+  config: z.record(z.string(), z.unknown()).nullable().default({}),
 });
 
 const ScrollResultSchema = z.object({
   points: z.array(
     z.object({
       id: z.union([z.string(), z.number()]),
-      payload: z.record(z.unknown()).optional(),
+      payload: z.record(z.string(), z.unknown()).optional(),
     })
   ),
   next_page_offset: z
@@ -31,8 +31,8 @@ const CountResultSchema = z.object({
 });
 
 const QdrantFilterSchema = z.object({
-  must: z.array(z.record(z.unknown())).optional(),
-  should: z.array(z.record(z.unknown())).optional(),
+  must: z.array(z.record(z.string(), z.unknown())).optional(),
+  should: z.array(z.record(z.string(), z.unknown())).optional(),
   minimum_should: z.number().optional(),
 });
 

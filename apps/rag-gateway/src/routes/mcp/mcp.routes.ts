@@ -10,14 +10,14 @@ const ToolParameterSchema = z.object({
   type: z.string(),
   description: z.string(),
   optional: z.boolean().optional(),
-  default: z.any().optional(),
+  default: z.unknown().optional(),
 });
 
 // Tool definition schema
 const MCPToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string(),
-  parameters: z.record(z.any()),
+  parameters: z.record(z.string(), z.unknown()),
 });
 
 // List tools response
@@ -30,7 +30,7 @@ const ListToolsResponseSchema = z.object({
 // Invoke tool request
 const InvokeToolRequestSchema = z.object({
   tool: z.string().min(1),
-  arguments: z.record(z.any()),
+  arguments: z.record(z.string(), z.unknown()),
   context: z
     .object({
       conversationId: z.string().optional(),

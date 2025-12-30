@@ -3,8 +3,6 @@ import { env } from './env';
 import { getQdrantService } from './services/qdrant';
 import app from './app';
 
-import type { RagGatewayApp } from './app';
-
 // Initialize Qdrant collection before starting server
 async function startServer() {
   try {
@@ -22,6 +20,5 @@ async function startServer() {
 
 startServer();
 
-export type RagGatewayClient = RagGatewayApp;
-
 export default app;
+export * from './rpc';

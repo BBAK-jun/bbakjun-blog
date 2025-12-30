@@ -33,10 +33,10 @@
       "cache": true
     },
     "@apps/blog#build": {
-      "dependsOn": ["@apps/blog-admin#build:rpc", "^build"]
+      "dependsOn": ["@apps/blog-admin#build:rpc", "^build", "generate:prisma"]
     },
     "@apps/blog-admin#build": {
-      "dependsOn": ["@apps/rag-gateway#build:rpc", "^build"],
+      "dependsOn": ["@apps/rag-gateway#build", "^build", "generate:prisma"],
       "env": ["RAG_GATEWAY_API_KEY", "NEXT_PUBLIC_RAG_GATEWAY_URL"]
     },
     "@apps/rag-gateway#build": {
@@ -52,6 +52,10 @@
         "RAG_GATEWAY_API_KEY",
         "BLOG_ADMIN_URL"
       ]
+    },
+    "generate:prisma": {
+      "dependsOn": ["^generate:prisma"],
+      "outputs": ["prisma/**"]
     },
     "dev": {
       "cache": false,
