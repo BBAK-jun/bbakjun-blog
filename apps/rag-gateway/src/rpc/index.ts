@@ -17,5 +17,4 @@ routers.forEach(router => {
 });
 
 export type RagGatewayApp = (typeof routers)[number];
-export const rpcApp = app;
 export default app;

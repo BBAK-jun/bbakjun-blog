@@ -80,13 +80,14 @@ export const SearchParamsSchema = z.object({
   limit: z.number().min(1).max(100).default(10),
   threshold: z.number().min(0).max(1).default(0.7),
   includeMetadata: z.boolean().default(true),
-  filter: z.record(z.any()).optional(),
+  filter: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type SearchParams = z.infer<typeof SearchParamsSchema>;
 
 // Generate hash for caching
 export function generateTextHash(text: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const crypto = require('crypto');
   return crypto.createHash('md5').update(text).digest('hex');
 }

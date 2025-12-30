@@ -11,7 +11,7 @@ const DocumentListItemSchema = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string(),
-  metadata: z.record(z.any()),
+  metadata: z.record(z.string(), z.unknown()),
 });
 
 const ListDocumentsResponseSchema = z.object({
@@ -36,7 +36,7 @@ const DocumentDetailResponseSchema = z.object({
   title: z.string(),
   slug: z.string(),
   chunks: z.array(ChunkSchema),
-  metadata: z.record(z.any()),
+  metadata: z.record(z.string(), z.unknown()),
 });
 
 // Create document request
@@ -61,7 +61,7 @@ const CreateDocumentResponseSchema = z.object({
   slug: z.string(),
   status: z.literal('indexed'),
   chunksCreated: z.number(),
-  metadata: z.record(z.any()),
+  metadata: z.record(z.string(), z.unknown()),
 });
 
 // Update document request
