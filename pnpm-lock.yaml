@@ -379,6 +379,9 @@ importers:
       '@qdrant/js-client-rest':
         specifier: ^1.15.1
         version: 1.16.2(typescript@5.9.3)
+      '@repo/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
       '@scalar/hono-api-reference':
         specifier: ^0.9.30
         version: 0.9.30(hono@4.11.1)
