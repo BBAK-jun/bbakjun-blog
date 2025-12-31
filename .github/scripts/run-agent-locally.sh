@@ -15,17 +15,25 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Claude Code Agent - Local Runner${NC}"
 echo -e "${BLUE}========================================${NC}"
 
-# Get previous commit (main~1 or user-specified)
-PREVIOUS_COMMIT=${1:-$(git rev-parse main~1)}
+# Get previous commit (main or user-specified)
+PREVIOUS_COMMIT=${1:-$(git rev-parse main)}
 CURRENT_COMMIT=$(git rev-parse HEAD)
 
 echo -e "${YELLOW}Previous commit: ${PREVIOUS_COMMIT}${NC}"
 echo -e "${YELLOW}Current commit:  ${CURRENT_COMMIT}${NC}"
+echo -e "${YELLOW}Comparing: main...HEAD${NC}"
 
-# Detect changed files
+# Detect changed files (including uncommitted changes)
 echo -e "\n${BLUE}Detecting changed files...${NC}"
 
-CHANGED_FILES=$(git diff --name-only "${PREVIOUS_COMMIT}...HEAD" | grep -v -E '^(\\.claude/docs/|\\.github/)' || echo "")
+# Get committed changes
+COMMITTED_FILES=$(git diff --name-only "${PREVIOUS_COMMIT}...HEAD" | grep -v -E '^(\\.claude/docs/|\\.github/)' || echo "")
+
+# Get uncommitted changes (staged + unstaged)
+UNCOMMITTED_FILES=$(git diff --name-only main | grep -v -E '^(\\.claude/docs/|\\.github/)' || echo "")
+
+# Combine and deduplicate
+CHANGED_FILES=$(echo -e "${COMMITTED_FILES}\n${UNCOMMITTED_FILES}" | sort -u | grep -v '^$' || echo "")
 
 if [ -z "$CHANGED_FILES" ]; then
     echo -e "${YELLOW}No changes detected. Exiting.${NC}"

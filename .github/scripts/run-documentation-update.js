@@ -14,7 +14,9 @@ const path = require('path');
 const CONFIG = {
   previousMain: process.env.PREVIOUS_MAIN,
   baseCommit: process.env.BASE_COMMIT,
-  changedFiles: process.env.CHANGED_FILES?.split('\n') || [],
+  changedFiles: (process.env.CHANGED_FILES?.split('\n') || [])
+    .filter(Boolean)
+    .map(filePath => ({ path: filePath })),
   targetApps: process.env.TARGET_APPS || 'all',
   forceUpdate: process.env.FORCE_UPDATE === 'true',
   docsDir: path.join(process.cwd(), '.claude', 'docs'),
