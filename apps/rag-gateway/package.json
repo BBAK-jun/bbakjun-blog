@@ -26,7 +26,6 @@
     "@repo/cache": "workspace:*",
     "@scalar/hono-api-reference": "^0.9.30",
     "@t3-oss/env-nextjs": "^0.10.1",
-    "@repo/cache": "workspace:*",
     "dotenv": "^17.2.3",
     "gray-matter": "^4.0.3",
     "hono": "catalog:hono",
