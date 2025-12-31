@@ -1,44 +1,52 @@
 # Blog Admin Dashboard
 
-독립적인 백오피스 시스템으로, Azure Blob Storage를 통해 마크다운 파일을 관리하고 업로드할 수 있는 관리 대시보드입니다.
+Vercel Blob Storage와 CDC(Change Data Capture)를 통해 MDX 블로그 포스트를 관리하는 관리자 대시보드입니다.
 
 ## 개요
 
-- **분리된 배포**: blog 앱과 독립적으로 배포 가능
-- **보안 격리**: 별도의 인증 토큰으로 보호
-- **Azure 통합**: Blob Storage에 직접 마크다운 파일 저장
-- **버전 관리**: 파일 버전 관리 및 복원 기능
+- **인증 시스템**: Auth.js v5 + Google OAuth로 보안
+- **Vercel Blob Storage**: MDX 파일 저장 및 관리
+- **CDC 파이프라인**: PostgreSQL 캐시로 Blob API 호출 97% 감소
+- **마크다운 편집기**: CodeMirror 기반 실시간 프리뷰
+- **뉴스레터**: Resend API를 활용한 구독자 관리
 
 ## 프로젝트 구조
 
 ```
 apps/blog-admin/
+├── prisma/
+│   └── schema.prisma          # Prisma 스키마 (BlobFile, User, Newsletter)
 ├── src/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── admin/
-│   │   │       ├── upload/route.ts      # 파일 업로드 API
-│   │   │       ├── files/route.ts       # 파일 목록 조회 API
-│   │   │       ├── history/route.ts     # 업로드 이력 API
-│   │   │       └── restore/route.ts     # 버전 복원 API
-│   │   ├── dashboard/
-│   │   │   └── page.tsx                 # 대시보드 메인 페이지
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
+│   │   ├── actions/           # Server Actions
+│   │   │   ├── auth.ts        # 인증 관련 액션
+│   │   │   ├── experience.ts  # 경력 관리 액션
+│   │   │   ├── files.ts       # 파일 관리 액션
+│   │   │   └── newsletter.ts  # 뉴스레터 액션
+│   │   ├── api/               # API Routes
+│   │   ├── dashboard/         # 대시보드 페이지
+│   │   │   ├── experience/    # 경력 관리
+│   │   │   ├── files/         # 파일 관리
+│   │   │   ├── newsletter/    # 뉴스레터 관리
+│   │   │   ├── settings/      # 설정
+│   │   │   └── upload/        # 파일 업로드
+│   │   ├── login/             # 로그인 페이지
+│   │   └── layout.tsx         # 루트 레이아웃
 │   ├── components/
-│   │   ├── FileSelector.tsx             # 파일 선택 컴포넌트
-│   │   ├── MarkdownPreview.tsx          # 미리보기 컴포넌트
-│   │   ├── UploadQueue.tsx              # 업로드 대기열
-│   │   └── UploadHistory.tsx            # 업로드 이력
-│   └── lib/
-│       ├── auth.ts                      # API Key 검증
-│       └── azure.ts                     # Azure Blob Storage 클라이언트
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-├── next.config.ts
-└── postcss.config.mjs
+│   │   └── ui/                # Radix UI 컴포넌트
+│   ├── contract/              # Zod 스키마 (Hono RPC)
+│   ├── lib/
+│   │   ├── blob-cdc.ts        # Vercel Blob CDC 로직
+│   │   └── auth.ts            # Auth.js 설정
+│   └── rpc/
+│       └── routes/            # Hono RPC 라우트
+│           ├── blob-files.ts  # Blob 파일 API
+│           ├── experience.ts  # 경력 API
+│           ├── newsletter.ts  # 뉴스레터 API
+│           └── upload.ts      # 업로드 API
+├── scripts/
+│   └── initial-blob-sync.js   # 초기 Blob 동기화 스크립트
+└── tests/                     # Vitest 테스트
 ```
 
 ## 시작하기
@@ -50,7 +58,7 @@ apps/blog-admin/
 pnpm install
 
 # blog-admin만 설치
-pnpm install --filter=blog-admin
+pnpm install --filter=@apps/blog-admin
 ```
 
 ### 환경 변수 설정
@@ -58,18 +66,32 @@ pnpm install --filter=blog-admin
 `.env.local` 파일을 생성하고 다음 변수를 설정하세요:
 
 ```env
+# 데이터베이스 (Neon PostgreSQL)
+DATABASE_URL=postgresql://...
+DIRECT_URL=postgresql://...
+
+# 인증 (Auth.js v5)
+AUTH_SECRET=...  # openssl rand -base64 32
+AUTH_GOOGLE_ID=...  # Google OAuth Client ID
+AUTH_GOOGLE_SECRET=...  # Google OAuth Client Secret
+
 # Vercel Blob Storage
-BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
+BLOB_READ_WRITE_TOKEN=...  # Vercel 대시보드에서 발급
+BLOB_STORE_ID=...
 
-# 백오피스 보안
-BACKOFFICE_API_KEY=your-secret-api-key
+# JWT (대시보드 인증)
+JWT_SECRET=...  # openssl rand -base64 32
+
+# Redis (선택사항 - API 응답 캐싱)
+REDIS_URL=redis://...
+
+# 뉴스레터 (선택사항)
+RESEND_API_KEY=...
+
+# 기타
+NEXT_PUBLIC_BLOG_URL=https://your-blog.com
+BLOB_SYNC_INTERVAL_MINUTES=30  # CDC 동기화 간격
 ```
-
-**BLOB_READ_WRITE_TOKEN 획득**:
-
-1. Vercel 프로젝트 대시보드 접속
-2. Settings → Storage → Blob 생성
-3. 자동 생성된 토큰을 .env.local에 복사
 
 ### 개발 서버 실행
 
@@ -77,10 +99,7 @@ BACKOFFICE_API_KEY=your-secret-api-key
 # blog-admin만 실행 (포트 3001)
 pnpm dev:admin
 
-# blog와 blog-admin 동시 실행
-pnpm dev:all
-
-# 루트에서 모든 앱 실행
+# 모든 앱 실행
 pnpm dev
 ```
 
@@ -90,224 +109,129 @@ pnpm dev
 # blog-admin만 빌드
 pnpm build:admin
 
-# 모든 앱 빌드
+# 전체 빌드
 pnpm build
 ```
 
-## API 엔드포인트
+## Hono RPC API
 
-모든 API 요청에는 `Authorization: Bearer {BACKOFFICE_API_KEY}` 헤더가 필요합니다.
+Blog-Admin은 Hono RPC를 통해 Blog 앱과 통신합니다.
 
-### POST /api/admin/upload
+### Public Endpoints (Blog 앱에서 접근)
 
-마크다운 파일을 Blob Storage에 업로드합니다.
+**Blob Files API** (`/api/rpc/blob-files`):
 
-**Request:**
+- `GET /api/rpc/blob-files` - 캐시된 Blob 파일 목록 조회
+  - Query: `limit`, `offset`, `search`
+  - Response: `{ files, total, hasMore }`
+
+**Views API** (`/api/rpc/views`):
+
+- `GET /api/rpc/views/stats` - 조회수 통계
+
+### Admin Endpoints (인증 필요)
+
+**Blob Files Admin API** (`/api/rpc/blob-files/admin`):
+
+- `GET /api/rpc/blob-files/admin` - 자동 동기화 포함 파일 목록
+- `POST /api/rpc/blob-files/admin/sync` - 수동 동기화 트리거
+
+## Vercel Blob CDC (Change Data Capture)
+
+### 문제
+
+Vercel Blob 무료 플랜은 월 2,000회 작업으로 제한됩니다. 파일 관리 UI에서 빈번한 `list()` API 호출이 이 제한을 초과할 수 있습니다.
+
+### 해결책
+
+PostgreSQL에 Blob 파일 목록을 캐싱하여 API 호출을 97% 감소시킵니다.
 
 ```
-multipart/form-data
-- file: File (마크다운 파일, .md 또는 .mdx)
-- path: string (저장 경로, 예: "DEV/my-post")
-- tags: string (선택사항, 쉼표로 구분)
-- status: "published" | "draft" (기본값: "draft")
+Vercel Blob Storage (진실 공급원)
+    ↓ 30분마다 동기화 (BLOB_SYNC_INTERVAL_MINUTES)
+PostgreSQL BlobFile 테이블 (캐시)
+    ↓ 읽기 작업
+Blog-Admin UI & Blog App
 ```
 
-**Response:**
+### 주요 컴포넌트
 
-```json
-{
-  "success": true,
-  "fileId": "uuid",
-  "version": 1,
-  "message": "파일이 업로드되었습니다",
-  "metadata": {
-    "id": "uuid",
-    "filename": "my-post.mdx",
-    "path": "DEV/my-post",
-    "size": 12345,
-    "uploadedAt": "2025-12-12T10:00:00Z",
-    "hash": "sha256:...",
-    "tags": ["nextjs", "typescript"],
-    "status": "draft"
-  }
+**BlobFile Model** (`prisma/schema.prisma`):
+
+```prisma
+model BlobFile {
+  id          String   @id @default(cuid())
+  url         String
+  pathname    String   @unique  // 고유 식별자
+  size        BigInt
+  uploadedAt  DateTime
+  contentType String?
+  syncedAt    DateTime @default(now())
+  isDeleted   Boolean  @default(false)
 }
 ```
 
-### GET /api/admin/files
+**동기화 함수** (`lib/blob-cdc.ts`):
 
-파일 목록을 조회합니다.
+- `syncBlobToDatabase()` - Vercel Blob API 호출 후 DB 동기화
+- `getCachedBlobFiles()` - DB 캐시에서 파일 목록 조회
+- `onBlobUpload()` - 업로드 후 실시간 DB 업데이트 (upsert)
+- `onBlobDelete()` - 삭제 후 실시간 DB 업데이트 (soft delete)
 
-**Query Parameters:**
+### 비용 절감
 
-- `category`: string (선택사항, 카테고리로 필터링)
-- `limit`: number (기본값: 50)
+- **동기화 전**: ~2,000+ API 호출/월 (제한 초과)
+- **동기화 후 (30분 간격)**: ~48 API 호출/월
+- **절감율**: 97.6%
 
-**Response:**
+## 테스트
 
-```json
-{
-  "files": [
-    {
-      "filename": "my-post.mdx",
-      "path": "DEV/my-post",
-      "size": 12345,
-      "uploadedAt": "2025-12-12T10:00:00Z",
-      "version": 1,
-      "status": "published"
-    }
-  ],
-  "total": 5
-}
-```
+```bash
+# 테스트 실행
+pnpm --filter=@apps/blog-admin test
 
-### GET /api/admin/history
+# 한 번 실행
+pnpm --filter=@apps/blog-admin test:run
 
-파일 업로드 이력을 조회합니다.
-
-**Query Parameters:**
-
-- `fileId`: string (파일 ID)
-
-**Response:**
-
-```json
-{
-  "fileId": "uuid",
-  "filename": "my-post.mdx",
-  "versions": [
-    {
-      "version": 2,
-      "uploadedAt": "2025-12-12T11:00:00Z",
-      "uploadedBy": "admin",
-      "size": 12500
-    },
-    {
-      "version": 1,
-      "uploadedAt": "2025-12-12T10:00:00Z",
-      "size": 12345
-    }
-  ]
-}
-```
-
-### POST /api/admin/restore
-
-파일을 특정 버전으로 복원합니다.
-
-**Request:**
-
-```json
-{
-  "fileId": "uuid",
-  "targetVersion": 1
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "v1로 복원되었습니다",
-  "newVersion": 3
-}
-```
-
-### DELETE /api/admin/file/:fileId
-
-파일을 삭제합니다.
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "파일이 삭제되었습니다"
-}
+# UI 모드
+pnpm --filter=@apps/blog-admin test:ui
 ```
 
 ## 공유 패키지 활용
 
-blog-admin은 monorepo의 공유 패키지를 활용합니다:
-
-- **@repo/content**: 마크다운 처리 (processMarkdown, getPosts)
-- **@repo/analytics**: 뷰 트래킹 (ViewCounter)
+- **@repo/analytics**: Redis 기반 조회수 추적
+- **@repo/cache**: API 응답 캐싱
+- **@repo/content**: MDX 처리
 - **@repo/types**: 공유 타입 정의
-- **@repo/ui**: UI 컴포넌트 및 유틸리티
-
-## 개발 단계
-
-### Phase 1: 기초 구조 (진행 중)
-
-- [x] Next.js 기본 설정
-- [x] 기본 파일 선택 UI 구조
-- [x] API Routes 스켈레톤
-- [ ] 마크다운 미리보기 통합
-
-### Phase 2: Blob Storage 연동
-
-- [x] Azure SDK 설정
-- [x] 파일 업로드 API
-- [x] 메타데이터 저장
-- [ ] 에러 처리 & 재시도 로직
-
-### Phase 3: 버전 관리 & 이력
-
-- [ ] 버전 관리 시스템
-- [ ] 이력 조회 API
-- [ ] 버전 복원 기능
-- [ ] 이력 UI
-
-### Phase 4: 보안 & 최적화
-
-- [x] 인증 시스템
-- [x] 파일 크기/유형 검증
-- [ ] 접근 제어 강화
-- [ ] 성능 최적화
-
-### Phase 5: 배포 & 모니터링
-
-- [ ] 프로덕션 환경 설정
-- [ ] 로깅 & 모니터링
-- [ ] 에러 트래킹
-- [ ] 문서화
-
-## 보안 고려사항
-
-1. **API 인증**: 모든 API 요청은 Bearer Token으로 보호
-2. **파일 검증**: .md, .mdx 파일만 허용, 10MB 크기 제한
-3. **HTTPS 필수**: 프로덕션 환경에서는 HTTPS만 사용
-4. **환경 변수**: API Key는 환경 변수에 저장
-5. **접근 제어**: IP 화이트리스트 설정 권장
+- **@repo/ui**: UI 컴포넌트
 
 ## 배포
 
 ### Vercel 배포
 
-1. GitHub에 코드 푸시
-2. Vercel에서 새 프로젝트 생성
-3. Root Directory: `apps/blog-admin`
-4. Build Command: `pnpm build:admin`
+1. Vercel 대시보드에서 새 프로젝트 생성
+2. Root Directory: `apps/blog-admin`
+3. Build Command: `pnpm build:admin`
+4. Install Command: `pnpm install`
 5. Start Command: `pnpm start`
 6. 환경 변수 설정
 
-## 트러블슈팅
+### 중요: 첫 배포 후 초기 동기화
 
-### Azure 연결 오류
+배포 후 반드시 초기 Blob 동기화를 실행해야 합니다:
 
-```
-Error: Azure Storage configuration is missing
-```
-
-→ 환경 변수가 올바르게 설정되었는지 확인하세요.
-
-### 파일 업로드 실패
-
-```
-Error: FILE_TOO_LARGE
+```bash
+node scripts/initial-blob-sync.js
 ```
 
-→ 파일 크기가 10MB를 초과했습니다. 파일을 분할하거나 압축하세요.
+자세한 배포 가이드는 [apps/blog-admin/docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)를 참고하세요.
+
+## 문서
+
+- [docs/SETUP.md](docs/SETUP.md) - 로컬 환경 설정
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Vercel 배포 가이드
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - 아키텍처 설명
+- [docs/API.md](docs/API.md) - API 문서
 
 ## 라이선스
 
