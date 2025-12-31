@@ -14,7 +14,7 @@ const path = require('path');
 const CONFIG = {
   previousMain: process.env.PREVIOUS_MAIN,
   baseCommit: process.env.BASE_COMMIT,
-  changedFiles: process.env.CHANGED_FILES?.split('\n') || [],
+  changedFiles: process.env.CHANGED_FILES?.split('\n').filter(Boolean) || [],
   targetApps: process.env.TARGET_APPS || 'all',
   forceUpdate: process.env.FORCE_UPDATE === 'true',
   docsDir: path.join(process.cwd(), '.claude', 'docs'),
@@ -51,6 +51,76 @@ function execCommand(command, options = {}) {
     log(`Command failed: ${command}`, 'red');
     throw error;
   }
+}
+
+/**
+ * Get changed files with blob hashes from git
+ */
+function getChangedFilesWithHashes() {
+  logStep('Detect', 'Changed files from git');
+
+  const changedFiles = [];
+
+  // If previous commit is available, use git diff
+  if (CONFIG.previousMain) {
+    try {
+      const changedFilesList = execSync(`git diff --name-only ${CONFIG.previousMain}...HEAD`, {
+        encoding: 'utf-8',
+      }).split('\n').filter(Boolean);
+
+      // Exclude .claude/docs and .github
+      const relevantFiles = changedFilesList.filter(
+        file => !file.startsWith('.claude/docs/') && !file.startsWith('.github/')
+      );
+
+      for (const file of relevantFiles) {
+        try {
+          const currentHash = execSync(`git rev-parse HEAD:${file}`, {
+            encoding: 'utf-8',
+          }).trim();
+
+          changedFiles.push({
+            path: file,
+            currentHash,
+          });
+        } catch {
+          // File was deleted, skip
+          log(`  - Deleted: ${file}`, 'yellow');
+        }
+      }
+
+      log(`  Found ${changedFiles.length} changed files`, 'green');
+      return changedFiles;
+    } catch (error) {
+      log(`  Git diff failed: ${error.message}`, 'yellow');
+    }
+  }
+
+  // Fallback: use env var changed files
+  const envFiles = CONFIG.changedFiles || [];
+  for (const filePath of envFiles) {
+    // Skip docs and github
+    if (filePath.startsWith('.claude/docs/') || filePath.startsWith('.github/')) {
+      continue;
+    }
+
+    try {
+      const currentHash = execSync(`git rev-parse HEAD:${filePath}`, {
+        encoding: 'utf-8',
+      }).trim();
+
+      changedFiles.push({
+        path: filePath,
+        currentHash,
+      });
+    } catch {
+      // File was deleted, skip
+      log(`  - Deleted: ${filePath}`, 'yellow');
+    }
+  }
+
+  log(`  Found ${changedFiles.length} changed files`, 'green');
+  return changedFiles;
 }
 
 /**
@@ -110,7 +180,7 @@ function writeFileContent(filePath, content) {
  * Extract codebase facts using z.ai
  */
 async function extractCodebaseFacts(appName, changedFiles) {
-  logStep('Stage 1', `Extracting codebase facts for ${appName}`);
+  logStep('Stage 1', `Extracting facts for ${appName}`);
 
   // Read relevant source files
   const fileContents = [];
@@ -166,7 +236,7 @@ ${fileContents.join('\n\n')}
  * Analyze business context using z.ai
  */
 async function analyzeBusinessContext(appName, facts) {
-  logStep('Stage 2', `Analyzing business context for ${appName}`);
+  logStep('Stage 2', `Analyzing context for ${appName}`);
 
   const prompt = `다음 코드베이스 분석 결과(facts)를 기반으로 비즈니스 컨텍스트를 분석해주세요.
 
@@ -204,7 +274,7 @@ ${facts.substring(0, 5000)}...
  * Generate feature specification using z.ai
  */
 async function generateFeatureSpec(appName, facts, insights) {
-  logStep('Stage 3', `Generating feature specification for ${appName}`);
+  logStep('Stage 3', `Generating spec for ${appName}`);
 
   const prompt = `다음 facts와 insights를 기반으로 기능 명세서를 작성해주세요.
 
@@ -261,7 +331,7 @@ async function processApp(appName, changedFiles) {
 
     return { status: 'success', appName };
   } catch (error) {
-    log(`  Error processing ${appName}: ${error.message}`, 'red');
+    log(`  Error: ${error.message}`, 'red');
     return { status: 'error', appName, error: error.message };
   }
 }
@@ -276,11 +346,15 @@ async function main() {
 
   // Log configuration
   log('Configuration:', 'bright');
-  log(`  Previous: ${CONFIG.previousMain?.substring(0, 8)}`);
-  log(`  Current:  ${CONFIG.baseCommit?.substring(0, 8)}`);
+  log(`  Previous: ${CONFIG.previousMain?.substring(0, 8) || 'N/A'}`);
+  log(`  Current:  ${CONFIG.baseCommit?.substring(0, 8) || 'N/A'}`);
   log(`  Apps:     ${CONFIG.targetApps}`);
   log(`  Force:    ${CONFIG.forceUpdate}`);
   log(`  API:      ${CONFIG.zaiApiBase}`);
+  log(`  Env files: ${CONFIG.changedFiles.length}`);
+
+  // Get changed files from git
+  const changedFiles = getChangedFilesWithHashes();
 
   // Determine target apps
   let targetApps = [];
@@ -309,7 +383,7 @@ async function main() {
   // Process each app
   const results = {};
   for (const appName of targetApps) {
-    const appFiles = CONFIG.changedFiles.filter(
+    const appFiles = changedFiles.filter(
       f => f.path.startsWith(`apps/${appName}/`) || f.path.startsWith('packages/')
     );
 
