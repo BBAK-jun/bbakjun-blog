@@ -10,19 +10,82 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Find the latest documentation update tag
+ * @returns {string|null} Latest tag commit or null if not found
+ */
+function findLatestDocTag() {
+  try {
+    // Fetch all tags matching docs/update-* pattern
+    const tags = execCommand('git tag -l "docs/update-*"', { stdio: 'pipe' }).trim().split('\n').filter(Boolean);
+
+    if (tags.length === 0) {
+      log('No documentation tags found, falling back to HEAD~1', 'yellow');
+      return null;
+    }
+
+    // Sort tags by version (run_number and timestamp)
+    // Format: docs/update-{run_number}-{timestamp}
+    const sortedTags = tags.sort((a, b) => {
+      const aParts = a.match(/docs\/update-(\d+)-(\d+)/);
+      const bParts = b.match(/docs\/update-(\d+)-(\d+)/);
+      if (!aParts || !bParts) return 0;
+      // Compare by run_number first, then timestamp
+      if (aParts[1] !== bParts[1]) {
+        return parseInt(bParts[1]) - parseInt(aParts[1]);
+      }
+      return parseInt(bParts[2]) - parseInt(aParts[2]);
+    });
+
+    const latestTag = sortedTags[0];
+    const latestCommit = execCommand(`git rev-list -1 ${latestTag}`, { stdio: 'pipe' }).trim();
+
+    log(`Found latest doc tag: ${latestTag} (${latestCommit})`, 'green');
+    return latestCommit;
+  } catch (error) {
+    log(`Failed to find doc tag: ${error.message}`, 'yellow');
+    return null;
+  }
+}
+
 // Configuration
-const CONFIG = {
-  previousMain: process.env.PREVIOUS_MAIN,
-  baseCommit: process.env.BASE_COMMIT,
-  changedFiles: (process.env.CHANGED_FILES?.split('\n') || [])
-    .filter(Boolean)
-    .map(filePath => ({ path: filePath })),
-  targetApps: process.env.TARGET_APPS || 'all',
-  forceUpdate: process.env.FORCE_UPDATE === 'true',
-  docsDir: path.join(process.cwd(), '.claude', 'docs'),
-  zaiApiKey: process.env.ZAI_API_KEY,
-  zaiApiBase: process.env.ZAI_API_BASE || 'https://open.bigmodel.cn/api/paas/v4/',
-};
+function getConfig() {
+  // Try to find latest documentation tag
+  const latestDocTag = findLatestDocTag();
+
+  // Fall back to environment variable if tag not found
+  const previousMain = latestDocTag || process.env.PREVIOUS_MAIN;
+
+  const baseCommit = execCommand('git rev-parse HEAD', { stdio: 'pipe' }).trim();
+
+  // Get changed files between previous doc update and current commit
+  let changedFiles = [];
+  if (previousMain) {
+    try {
+      const files = execCommand(`git diff --name-only ${previousMain}...HEAD`, { stdio: 'pipe' }).trim();
+      changedFiles = files.split('\n').filter(Boolean);
+      // Exclude .claude/docs and .github from changed files
+      changedFiles = changedFiles.filter(f =>
+        !f.startsWith('.claude/docs/') && !f.startsWith('.github/')
+      );
+    } catch (error) {
+      log(`Failed to get changed files: ${error.message}`, 'yellow');
+    }
+  }
+
+  return {
+    previousMain,
+    baseCommit,
+    changedFiles: changedFiles.map(filePath => ({ path: filePath })),
+    targetApps: process.env.TARGET_APPS || 'all',
+    forceUpdate: process.env.FORCE_UPDATE === 'true',
+    docsDir: path.join(process.cwd(), '.claude', 'docs'),
+    zaiApiKey: process.env.ZAI_API_KEY,
+    zaiApiBase: process.env.ZAI_API_BASE || 'https://open.bigmodel.cn/api/paas/v4/',
+  };
+}
+
+const CONFIG = getConfig();
 
 // ANSI color codes for output
 const colors = {
@@ -310,6 +373,7 @@ async function main() {
 
   // Process each app
   const results = {};
+  let hasActualUpdates = false; // Track if any app was actually processed (not skipped)
   for (const appName of targetApps) {
     const appFiles = CONFIG.changedFiles.filter(
       f => f.path.startsWith(`apps/${appName}/`) || f.path.startsWith('packages/')
@@ -321,7 +385,13 @@ async function main() {
       continue;
     }
 
-    results[appName] = await processApp(appName, appFiles);
+    const result = await processApp(appName, appFiles);
+    results[appName] = result;
+
+    // Mark that we have actual updates if processing was successful
+    if (result.status === 'success') {
+      hasActualUpdates = true;
+    }
   }
 
   // Summary
@@ -335,6 +405,13 @@ async function main() {
     if (result.error) log(`      ${result.error}`, 'red');
   }
 
+  // Check if all apps were skipped (no actual documentation updates)
+  if (!hasActualUpdates) {
+    log('\n⏭️ All apps skipped - no documentation changes needed', 'yellow');
+    log('Exiting without creating PR...\n', 'yellow');
+    process.exit(0); // Exit with success but workflow can detect no changes
+  }
+
   // Save summary
   const summaryPath = path.join(CONFIG.docsDir, 'update-summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify({
@@ -342,6 +419,7 @@ async function main() {
     previousMain: CONFIG.previousMain,
     baseCommit: CONFIG.baseCommit,
     results,
+    hasActualUpdates,
   }, null, 2));
 
   log(`\nSummary: ${summaryPath}`, 'green');
