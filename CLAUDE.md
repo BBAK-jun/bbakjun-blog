@@ -1336,8 +1336,82 @@ Before marking a task complete, ask:
 
 **If any answer is YES but not done → Update documentation/tests first, then complete task.**
 
-- 한 줄에서 여러 에이전트 명시적으로 호출
-  코드를 분석해줄래. 다음을 병렬로 실행해:
-- Use code-analyst to extract facts
-- 그 다음 domain-analyst와 feature-spec-writer를 동시에 실행해서
-  facts.md를 기반으로 context.md와 FEATURE_SPEC.md를 생성해줄래
+## GitHub Actions Documentation Automation
+
+이 프로젝트는 main 브랜치에 머지될 때 자동으로 문서를 업데이트하는 GitHub Actions 파이프라인을 포함합니다. **z.ai glm-4.7** API를 사용합니다.
+
+### Overview
+
+```
+main 브랜치 푸시
+    ↓
+1. 변경 감지 (git diff HEAD~1...HEAD)
+    ↓
+2. z.ai API로 문서 업데이트 (glm-4.7)
+    ↓
+3. PR 자동 생성
+```
+
+### Files
+
+| 파일 | 설명 |
+|------|------|
+| `.github/workflows/doc-update.yml` | 메인 GitHub Actions 워크플로우 |
+| `.github/scripts/run-documentation-update.js` | z.ai API 호출 스크립트 |
+| `.github/scripts/run-agent-locally.sh` | 로컬 테스트용 스크립트 |
+| `.github/README.md` | 전체 설정 가이드 |
+
+### Required GitHub Secrets
+
+**`ZAI_API_KEY`**: z.ai API 호출을 위한 키 (필수)
+
+1. GitHub Repository → Settings → Secrets and variables → Actions
+2. Name: `ZAI_API_KEY`
+3. Value: z.ai API 키 (https://open.bigmodel.cn/에서 발급)
+
+**`ZAI_API_BASE`**: API 엔드포인트 (선택)
+
+- 기본값: `https://open.bigmodel.cn/api/paas/v4/`
+- 별도 엔드포인트 사용 시 설정
+
+### Local Testing
+
+```bash
+# 로컬에서 테스트 (main~1과 현재 HEAD 비교)
+.github/scripts/run-agent-locally.sh
+
+# 특정 커밋과 비교
+.github/scripts/run-agent-locally.sh <commit-hash>
+```
+
+로컬 테스트 시 환경 변수 설정:
+```bash
+export ZAI_API_KEY="your-zai-api-key"
+node .github/scripts/run-documentation-update.js
+```
+
+### Workflow Features
+
+- **증분 업데이트**: 변경된 파일만 기반으로 문서 업데이트
+- **자동 PR 생성**: 변경사항이 있으면 자동으로 PR 생성 (`docs/auto-update-{run_number}` 브랜치)
+- **수동 실행**: Actions 탭에서 "Force full documentation update" 옵션으로 전체 업데이트 가능
+- **멀티 앱 지원**: `blog`, `blog-admin`, `rag-gateway` 각각 별도로 처리
+
+### Document Structure
+
+```
+.claude/docs/
+├── facts/apps/<app>/      # 코드베이스 구조 및 기술적 사실
+├── insights/apps/<app>/   # 비즈니스 컨텍스트 및 분석
+└── specs/apps/<app>/      # 기능 명세서
+```
+
+### z.ai API Workflow
+
+스크립트는 3단계로 z.ai API를 호출합니다:
+
+1. **Stage 1**: 코드베이스 구조 분석 → Facts 생성
+2. **Stage 2**: 비즈니스 컨텍스트 분석 → Insights 생성
+3. **Stage 3**: 기능 명세서 작성 → Specs 생성
+
+각 Stage는 이전 Stage의 결과를 의존하므로 순차적으로 실행됩니다.
