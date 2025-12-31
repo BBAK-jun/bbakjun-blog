@@ -10,6 +10,16 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// ANSI color codes for output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+};
+
 /**
  * Find the latest documentation update tag
  * @returns {string|null} Latest tag commit or null if not found
@@ -86,16 +96,6 @@ function getConfig() {
 }
 
 const CONFIG = getConfig();
-
-// ANSI color codes for output
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-};
 
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
