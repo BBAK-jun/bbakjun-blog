@@ -2,18 +2,36 @@
 
 - **Scope**: Prisma 데이터베이스 모델 및 관계 정의
 - **Source of Truth**: `prisma/schema.prisma`
-- **Last Verified**: 2025-12-22
-- **Repo Ref**: main
+- **Last Verified**: 2025-12-31
+- **Repo Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
+
+## 메타데이터
+
+```yaml
+metadata:
+  version: "2.0.0"
+  created_at: "2024-12-22T00:00:00Z"
+  last_verified: "2025-12-31T00:57:47Z"
+  git_commit: "c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d"
+
+  changed_files:
+    - path: apps/blog-admin/prisma/schema.prisma
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "ADDED: Experience and Achievement models for career management"
+
+  deleted_files: []
+```
 
 ## User 모델
 
 - **Location**: `prisma/schema.prisma` (L25-L47)
 - **Purpose**: Auth.js v5 인증 시스템의 사용자 정보 저장
+- **source_exists**: true
 - **Key Details**:
   - `id`: CUID 기반 고유 식별자
   - `email`: 고유 이메일 주소 (로그인용)
   - `role`: 사용자 권한 레벨 (SUPER_ADMIN, ADMIN, GUEST)
-  - `username`: 레거시 호환성을 위한 고유 사용자名 (선택사항)
+  - `username`: 레거시 호환성을 위한 고유 사용자명 (선택사항)
   - Auth.js 요구 필드: name, emailVerified, image
 - **Relationships**:
   - `accounts`: OAuth 계정 연결 정보 (1:N)
@@ -28,6 +46,7 @@
 
 - **Location**: `prisma/schema.prisma` (L49-L68)
 - **Purpose**: OAuth 제공자별 계정 연결 정보 저장
+- **source_exists**: true
 - **Key Details**:
   - `provider`: OAuth 제공자 (예: "google")
   - `providerAccountId`: 제공자별 계정 ID
@@ -44,6 +63,7 @@
 
 - **Location**: `prisma/schema.prisma` (L70-L80)
 - **Purpose**: 사용자 로그인 세션 관리
+- **source_exists**: true
 - **Key Details**:
   - `sessionToken`: 고유 세션 토큰
   - `expires`: 세션 만료 시간
@@ -58,6 +78,7 @@
 
 - **Location**: `prisma/schema.prisma` (L82-L89)
 - **Purpose**: 이메일 인증 토큰 관리
+- **source_exists**: true
 - **Key Details**:
   - `identifier`: 인증 대상 이메일
   - `token`: 인증 토큰
@@ -71,6 +92,7 @@
 
 - **Location**: `prisma/schema.prisma` (L95-L111)
 - **Purpose**: 뉴스레터 구독자 관리
+- **source_exists**: true
 - **Key Details**:
   - `email`: 고유 구독자 이메일
   - `isActive`: 구독 상태 (활성/비활성)
@@ -85,10 +107,59 @@
 - **Evidence**:
   - `prisma/schema.prisma`: `model Subscriber { email String @unique; isActive Boolean @default(true) }`
 
+## Experience 모델 (NEW)
+
+- **Location**: `prisma/schema.prisma` (L117-L138)
+- **Purpose**: 경력 타임라인 관리
+- **source_exists**: true
+- **git_hash**: "c0049e1"
+- **last_modified**: "2025-12-31T00:00:00Z"
+- **Key Details**:
+  - `company`: 회사명 (String, required)
+  - `position`: 직책 (String, required)
+  - `team`: 팀명 (String?, optional)
+  - `period`: 근무 기간 (String, e.g., "2023.01 ~ 2024.12", "2024.01 ~ 재직중")
+  - `isCurrent`: 재직중 여부 (Boolean, default: false)
+  - `description`: 회사/직무 설명 (String?, optional)
+  - `sortOrder`: 정렬 순서 (Int, 높을수록 최신)
+- **Relationships**:
+  - `achievements`: Achievement (1:N, Cascade delete)
+- **Indexes**:
+  - `isCurrent`: 재직중 필터링
+  - `sortOrder`: 정렬 최적화
+  - `createdAt`: 생성일순 정렬
+- **Evidence**:
+  - `prisma/schema.prisma`: L117-L138
+  - `src/app/actions/experience.ts`: CRUD Server Actions
+  - `src/app/dashboard/experience/page.tsx`: UI
+
+## Achievement 모델 (NEW)
+
+- **Location**: `prisma/schema.prisma` (L140-L160)
+- **Purpose**: 경력별 성과 관리
+- **source_exists**: true
+- **git_hash**: "c0049e1"
+- **last_modified**: "2025-12-31T00:00:00Z"
+- **Key Details**:
+  - `title`: 성과 제목 (String, required)
+  - `description`: 성과 상세 설명 (Text, required)
+  - `tags`: 기술 태그 (String?, JSON 배열 형식)
+  - `sortOrder`: 정렬 순서 (Int)
+  - `experienceId`: Experience FK (String, required)
+- **Relationships**:
+  - `experience`: Experience (N:1, onDelete: Cascade)
+- **Indexes**:
+  - `experienceId`: Experience별 쿼리
+  - `sortOrder`: 정렬 최적화
+- **Evidence**:
+  - `prisma/schema.prisma`: L140-L160
+  - `src/app/actions/experience.ts`: Achievement CRUD
+
 ## BlobFile 모델
 
-- **Location**: `prisma/schema.prisma` (L117-L137)
+- **Location**: `prisma/schema.prisma` (L166-L186)
 - **Purpose**: Vercel Blob Storage CDC (Change Data Capture) 캐시
+- **source_exists**: true
 - **Key Details**:
   - `pathname`: 파일 경로 (고유 식별자, NOT url)
   - `url`: Blob URL (재업로드 시 변경됨)
@@ -111,6 +182,7 @@
 
 - **Location**: `prisma/schema.prisma` (L15-L19)
 - **Purpose**: 역할 기반 접근 제어 (RBAC)
+- **source_exists**: true
 - **Values**:
   - `SUPER_ADMIN`: 최고 관리자 - 모든 권한 + 사용자 역할 관리
   - `ADMIN`: 일반 관리자 - 콘텐츠 관리 (CRUD)
@@ -150,6 +222,7 @@
    - BlobFile pathname을 유니크로 변경
    - 중복 pathname 정리 (최신 파일 유지)
    - url 유니크 제약조건 제거
+6. ** TBD**: Experience, Achievement 모델 추가 (2025-12-31)
 
 ## 관계 다이어그램
 
@@ -157,6 +230,7 @@
 User (1) ←→ (N) Account
 User (1) ←→ (N) Session
 Subscriber (독립)
+Experience (1) ←→ (N) Achievement (NEW)
 BlobFile (독립, CDC 캐시)
 VerificationToken (독립)
 ```
