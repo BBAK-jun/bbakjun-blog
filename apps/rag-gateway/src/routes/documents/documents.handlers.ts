@@ -198,7 +198,7 @@ export const createDocument: AppRouteHandler<typeof routes.createDocument> = asy
 
     // Generate deterministic ID from slug or title
     const docSlug = slug || `/blog/${title.toLowerCase().replace(/\s+/g, '-')}`;
-    const docId = generateDocumentId('upload', docSlug);
+    const docId = await generateDocumentId('upload', docSlug);
 
     // Parse content for front matter
     let parsedContent = content;
@@ -252,17 +252,19 @@ export const createDocument: AppRouteHandler<typeof routes.createDocument> = asy
     const embeddings = await embeddingService.generateBatchEmbeddings(texts);
 
     // Create Qdrant points
-    const points = chunks.map((chunk, index) => ({
-      id: generateChunkId(docId, index),
-      vector: embeddings[index],
-      payload: {
+    const points = await Promise.all(
+      chunks.map(async (chunk, index) => ({
+        id: await generateChunkId(docId, index),
+        vector: embeddings[index],
+        payload: {
         documentId: docId,
         chunkIndex: index,
         content: chunk.content,
         metadata,
         position: chunk.metadata.position,
       },
-    }));
+    }))
+    );
 
     // Check if document exists and delete if updating
     const existingFilter: DocumentFilter = { documentId: docId };
@@ -372,17 +374,19 @@ export const updateDocument: AppRouteHandler<typeof routes.updateDocument> = asy
     await qdrantService.deletePoints(filter);
 
     // Create new points with merged metadata
-    const points = chunksToIndex.map((chunk, index) => ({
-      id: generateChunkId(id, index),
-      vector: embeddings[index],
-      payload: {
+    const points = await Promise.all(
+      chunksToIndex.map(async (chunk, index) => ({
+        id: await generateChunkId(id, index),
+        vector: embeddings[index],
+        payload: {
         documentId: id,
         chunkIndex: index,
         content: chunk.content,
         metadata: updatedMetadata as DocumentMetadata,
         position: chunk.position,
       },
-    }));
+    }))
+    );
 
     await qdrantService.upsertPoints(points);
 

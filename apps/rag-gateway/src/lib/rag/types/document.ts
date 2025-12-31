@@ -70,19 +70,25 @@ export const DocumentFilterSchema = z.object({
 
 export type DocumentFilter = z.infer<typeof DocumentFilterSchema>;
 
-// Deterministic ID generation
-export function generateDocumentId(source: string, path: string): string {
-  const crypto = require('crypto');
-  const hash = crypto.createHash('sha256').update(`${source}:${path}`).digest('hex');
+// Deterministic ID generation (Edge Runtime compatible)
+export async function generateDocumentId(source: string, path: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${source}:${path}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   // Return UUID format (first 32 chars of hash, formatted as UUID)
   const hashPart = hash.substring(0, 32);
   return `${hashPart.substring(0, 8)}-${hashPart.substring(8, 12)}-${hashPart.substring(12, 16)}-${hashPart.substring(16, 20)}-${hashPart.substring(20, 32)}`;
 }
 
-export function generateChunkId(docId: string, position: number): string {
-  const crypto = require('crypto');
+export async function generateChunkId(docId: string, position: number): Promise<string> {
   // Use docId + position to generate a deterministic UUID
-  const hash = crypto.createHash('sha256').update(`${docId}:${position}`).digest('hex');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${docId}:${position}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   const hashPart = hash.substring(0, 32);
   return `${hashPart.substring(0, 8)}-${hashPart.substring(8, 12)}-${hashPart.substring(12, 16)}-${hashPart.substring(16, 20)}-${hashPart.substring(20, 32)}`;
 }

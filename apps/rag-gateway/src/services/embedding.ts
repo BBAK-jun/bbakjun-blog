@@ -107,7 +107,7 @@ export class EmbeddingService implements IEmbeddingService {
    * Generate embedding for a single text
    */
   async generateEmbedding(text: string): Promise<number[]> {
-    const hash = generateTextHash(text);
+    const hash = await generateTextHash(text);
 
     // Check cache first
     if (this.cache.has(hash)) {
@@ -151,15 +151,16 @@ export class EmbeddingService implements IEmbeddingService {
       const uncachedTexts: string[] = [];
       const uncachedIndices: number[] = [];
 
-      batch.forEach((text, idx) => {
-        const hash = generateTextHash(text);
+      for (let idx = 0; idx < batch.length; idx++) {
+        const text = batch[idx];
+        const hash = await generateTextHash(text);
         if (this.cache.has(hash)) {
           embeddings[i + idx] = this.cache.get(hash)!;
         } else {
           uncachedTexts.push(text);
           uncachedIndices.push(idx);
         }
-      });
+      }
 
       // Generate embeddings for uncached texts
       if (uncachedTexts.length > 0) {
@@ -171,16 +172,17 @@ export class EmbeddingService implements IEmbeddingService {
           });
         });
 
-        response.data.forEach((embedding, idx) => {
+        for (let idx = 0; idx < response.data.length; idx++) {
+          const embedding = response.data[idx];
           const originalIdx = i + uncachedIndices[idx];
           const vector = embedding.embedding;
 
           embeddings[originalIdx] = vector;
 
           // Cache the result
-          const hash = generateTextHash(uncachedTexts[idx]);
+          const hash = await generateTextHash(uncachedTexts[idx]);
           this.cache.set(hash, vector);
-        });
+        }
       }
     }
 
@@ -195,7 +197,7 @@ export class EmbeddingService implements IEmbeddingService {
     metadata?: Partial<Omit<Embedding, 'id' | 'vector' | 'text' | 'hash'>>
   ): Promise<Embedding> {
     const vector = await this.generateEmbedding(text);
-    const hash = generateTextHash(text);
+    const hash = await generateTextHash(text);
 
     return {
       id: `emb_${hash}`,
@@ -215,7 +217,7 @@ export class EmbeddingService implements IEmbeddingService {
    * Get embedding from cache or generate new one
    */
   async getOrGenerate(text: string): Promise<number[]> {
-    const hash = generateTextHash(text);
+    const hash = await generateTextHash(text);
 
     if (this.cache.has(hash)) {
       return this.cache.get(hash)!;

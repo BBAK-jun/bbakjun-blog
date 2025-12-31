@@ -159,7 +159,7 @@ export class IngestionPipeline {
           const { data, content } = matter(post.content);
 
           const document: Document = {
-            id: generateDocumentId('blob', post.slug),
+            id: await generateDocumentId('blob', post.slug),
             content,
             metadata: {
               title: data.title || post.slug,
@@ -191,7 +191,7 @@ export class IngestionPipeline {
           const content = await this.readProjectFile(docName);
           if (content) {
             const document: Document = {
-              id: generateDocumentId('api', docName),
+              id: await generateDocumentId('api', docName),
               content,
               metadata: {
                 title: docName.replace('.md', '').toUpperCase(),
