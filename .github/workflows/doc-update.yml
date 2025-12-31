@@ -43,7 +43,7 @@ jobs:
 
           # Detect changed files (excluding .claude/docs/ and .github/)
           CHANGED_FILES=$(git diff --name-only ${PREVIOUS_MAIN}...HEAD | grep -v -E '^(\\.claude/docs/|\\.github/)' || echo "")
-          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^v' || echo "0")
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c . || echo "0")
 
           echo "Changed files count: ${CHANGED_COUNT}"
           echo "${CHANGED_FILES}"
