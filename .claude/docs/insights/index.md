@@ -20,14 +20,31 @@ This directory contains business insights and analysis extracted from the codeba
 - [Stakeholder Mapping](apps/blog-admin/stakeholders/mapping.md) - Complete stakeholder analysis and engagement strategies
 - [ROI Analysis](apps/blog-admin/impact/roi.md) - Complete return on investment with projections
 - [Impact Overview](apps/blog-admin/impact/index.md) - Business impact summary
-- **Strategic Decisions** (NEW):
+- **Strategic Decisions**:
   - [18-Month Roadmap](apps/blog-admin/decisions/recommendations.md) - Complete strategic recommendations with ROI
   - [Technical Trade-offs](apps/blog-admin/decisions/tradeoffs.md) - In-depth analysis of key architectural decisions
+- **Feature Analysis** (NEW):
+  - [Experience Business Context](apps/blog-admin/exec/experience-business-context.md) - 경력 관리 시스템 비즈니스 분석
+  - [RAG Business Context](apps/blog-admin/exec/rag-business-context.md) - RAG 통합 비즈니스 분석
 - [Full Insights](apps/blog-admin/index.md) - Complete insight directory
 
 ### 📝 Blog Application
 
-_Insights coming soon..._
+**Path**: [apps/blog/](apps/blog/)
+
+**Available Analyses**:
+- [Executive Summary](apps/blog/exec/summary.md) - Blog app business overview
+- [ROI Analysis](apps/blog/impact/roi.md) - Blog content delivery ROI
+
+### 🔍 RAG Gateway Application
+
+**Path**: [apps/rag-gateway/](apps/rag-gateway/)
+
+**Available Analyses**:
+- [Executive Summary](apps/rag-gateway/exec/summary.md) - RAG Gateway business overview
+- [Cost Analysis](apps/rag-gateway/impact/cost.md) - RAG implementation costs
+- [Customer Impact](apps/rag-gateway/impact/customer.md) - User experience analysis
+- [ROI Analysis](apps/rag-gateway/impact/roi.md) - RAG ROI assessment
 
 ## Insights Framework
 
@@ -82,10 +99,13 @@ All insights are generated using the **Business Context Analyst** framework:
 
 ## Last Updated
 
-- **Date**: 2025-12-22
-- **Facts Extraction**: Based on documentation extracted on 2025-12-22
-- **Repository**: bbakjun-blog (main)
-- **Commit Ref**: 2c54182
+- **Date**: 2025-12-31
+- **Facts Extraction**: Based on documentation updated on 2025-12-31
+- **Repository**: bbakjun-blog (BBAK-jun/pattaya)
+- **Commit Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
+- **Major Updates**:
+  - Experience Management System business context added
+  - RAG Integration business context added
 
 ## Generate New Insights
 

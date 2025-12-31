@@ -2,12 +2,57 @@
 
 - **Scope**: Blog-admin 애플리케이션의 전체 구조와 기술 문서
 - **Source of Truth**: Feature-Sliced Design (FSD) 아키텍처 기반 파일 구조
-- **Last Verified**: 2025-12-22
-- **Repo Ref**: 2c54182
+- **Last Verified**: 2025-12-31
+- **Repo Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
+
+## 메타데이터
+
+```yaml
+metadata:
+  version: "2.0.0"
+  created_at: "2024-12-22T00:00:00Z"
+  last_verified: "2025-12-31T00:57:47Z"
+  git_commit: "c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d"
+  git_branch: "BBAK-jun/pattaya"
+
+  changed_files:
+    - path: apps/blog-admin/src/app/actions/experience.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Experience management server actions"
+    - path: apps/blog-admin/src/app/actions/rag.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: RAG integration server actions"
+    - path: apps/blog-admin/src/app/dashboard/experience/page.tsx
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Experience management UI"
+    - path: apps/blog-admin/src/app/dashboard/rag/page.tsx
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: RAG query interface"
+    - path: apps/blog-admin/src/lib/rag.rpc.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: RAG Gateway Hono client"
+    - path: apps/blog-admin/prisma/schema.prisma
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "ADDED: Experience and Achievement models"
+
+  deleted_files:
+    - path: apps/blog-admin/src/rpc/routes/blob-files/getBlobFiles.ts
+      deleted_at: "2025-12-31T00:00:00Z"
+      reason: "RPC route restructuring - moved to blob-files.routes.ts"
+    - path: apps/blog-admin/src/rpc/routes/blob-files/getBlobFilesAdmin.ts
+      deleted_at: "2025-12-31T00:00:00Z"
+      reason: "RPC route restructuring - moved to blob-files.routes.ts"
+    - path: apps/blog-admin/src/rpc/routes/blob-files/syncBlobFiles.ts
+      deleted_at: "2025-12-31T00:00:00Z"
+      reason: "RPC route restructuring - moved to blob-files.routes.ts"
+    - path: apps/blog-admin/src/entities/file/api/blob-client.ts
+      deleted_at: "2025-12-31T00:00:00Z"
+      reason: "Removed direct Blob client, using CDC cache instead"
+```
 
 ## 개요
 
-Blog-Admin은 DEV_BBAK 블로그의 관리자 대시보드 애플리케이션으로, 블로그 포스트 관리, 파일 업로드, Vercel Blob CDC 동기화, 뉴스레터 구독자 관리 등의 기능을 제공합니다.
+Blog-Admin은 DEV_BBAK 블로그의 관리자 대시보드 애플리케이션으로, 블로그 포스트 관리, 파일 업로드, Vercel Blob CDC 동기화, 뉴스레터 구독자 관리, 경력 관리, RAG 쿼리 등의 기능을 제공합니다.
 
 ## 아키텍처
 
@@ -38,7 +83,7 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 
 ### Pages
 
-- [Routes](pages/routes.md) - 페이지 라우팅 구조
+- [Routes](pages/routes.md) - 페이지 라우팅 구조 (UPDATED: New Experience, RAG pages)
 - [Layouts](pages/layouts.md) - 레이아웃 구성
 - [Rendering](pages/rendering.md) - 렌더링 전략
 
@@ -52,7 +97,7 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 
 ### Schemas
 
-- [Database](schemas/db.md) - 데이터베이스 스키마
+- [Database](schemas/db.md) - 데이터베이스 스키마 (UPDATED: New Experience, Achievement models)
 - [Validation](schemas/validation.md) - 유효성 검사
 - [Types](schemas/types.md) - 타입 정의
 
@@ -61,6 +106,11 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - [Component Architecture](components/index.md) - 컴포넌트 구조
 - [UI Components](components/ui.md) - 공용 UI 컴포넌트
 - [Patterns](components/patterns.md) - 컴포넌트 패턴
+
+### Features (NEW)
+
+- [Experience Management](features/experience-management.md) - 경력 타임라인 관리 (NEW)
+- [RAG Integration](features/rag-integration.md) - RAG Gateway 연동 (NEW)
 
 ### Config
 
@@ -88,6 +138,30 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - **인증**: NextAuth.js v5 (Google OAuth)
 - **API**: Hono RPC + Next.js App Router
 - **CDC 동기화**: Vercel Blob → PostgreSQL (30분 간격)
+- **RAG Gateway**: 지능형 콘텐츠 검색 (NEW)
+- **경력 관리**: Experience/Achievement 모델 (NEW)
 - **테스트**: `pnpm --filter=blog-admin test`
 - **빌드**: `pnpm --filter=blog-admin build`
 - **개발 서버**: `pnpm --filter=blog-admin dev`
+
+## 새로운 기능 (2025-12-31)
+
+### Experience Management System
+
+- **위치**: `/dashboard/experience`
+- **기능**: 경력 타임라인 및 성과 CRUD
+- **데이터 모델**: Experience, Achievement
+- **상세**: [Experience Management](features/experience-management.md)
+
+### RAG Integration
+
+- **위치**: `/dashboard/rag`
+- **기능**: 블로그 콘텐츠 지능형 검색 및 질문 답변
+- **연동**: RAG Gateway (Hono RPC)
+- **상세**: [RAG Integration](features/rag-integration.md)
+
+### RPC Routes Restructuring
+
+- **변경**: 단일 파일 → 모듈화된 구조
+- **패턴**: `<route>/<route>.routes.ts`, `<route>/<route>.handlers.ts`
+- **적용 대상**: blob-files, newsletter, upload, views, experience
