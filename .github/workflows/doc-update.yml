@@ -115,7 +115,8 @@ jobs:
 
       - name: Run documentation update
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          ZAI_API_BASE: ${{ secrets.ZAI_API_BASE || 'https://open.bigmodel.cn/api/paas/v4/' }}
           PREVIOUS_MAIN: ${{ needs.detect-changes.outputs.previous_main }}
           BASE_COMMIT: ${{ needs.detect-changes.outputs.base_commit }}
           CHANGED_FILES: ${{ needs.detect-changes.outputs.changed_files }}

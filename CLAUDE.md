@@ -1338,7 +1338,7 @@ Before marking a task complete, ask:
 
 ## GitHub Actions Documentation Automation
 
-이 프로젝트는 main 브랜치에 머지될 때 자동으로 문서를 업데이트하는 GitHub Actions 파이프라인을 포함합니다.
+이 프로젝트는 main 브랜치에 머지될 때 자동으로 문서를 업데이트하는 GitHub Actions 파이프라인을 포함합니다. **z.ai glm-4.7** API를 사용합니다.
 
 ### Overview
 
@@ -1347,7 +1347,7 @@ main 브랜치 푸시
     ↓
 1. 변경 감지 (git diff HEAD~1...HEAD)
     ↓
-2. feature-orchestrator 에이전트 실행
+2. z.ai API로 문서 업데이트 (glm-4.7)
     ↓
 3. PR 자동 생성
 ```
@@ -1357,17 +1357,22 @@ main 브랜치 푸시
 | 파일 | 설명 |
 |------|------|
 | `.github/workflows/doc-update.yml` | 메인 GitHub Actions 워크플로우 |
-| `.github/scripts/run-documentation-update.js` | 변경 감지 및 오케스트레이션 스크립트 |
+| `.github/scripts/run-documentation-update.js` | z.ai API 호출 스크립트 |
 | `.github/scripts/run-agent-locally.sh` | 로컬 테스트용 스크립트 |
 | `.github/README.md` | 전체 설정 가이드 |
 
 ### Required GitHub Secrets
 
-**`ANTHROPIC_API_KEY`**: Claude AI API 호출을 위한 키
+**`ZAI_API_KEY`**: z.ai API 호출을 위한 키 (필수)
 
 1. GitHub Repository → Settings → Secrets and variables → Actions
-2. Name: `ANTHROPIC_API_KEY`
-3. Value: [Anthropic Console](https://console.anthropic.com/)에서 발급 (`sk-ant-...`)
+2. Name: `ZAI_API_KEY`
+3. Value: z.ai API 키 (https://open.bigmodel.cn/에서 발급)
+
+**`ZAI_API_BASE`**: API 엔드포인트 (선택)
+
+- 기본값: `https://open.bigmodel.cn/api/paas/v4/`
+- 별도 엔드포인트 사용 시 설정
 
 ### Local Testing
 
@@ -1377,6 +1382,12 @@ main 브랜치 푸시
 
 # 특정 커밋과 비교
 .github/scripts/run-agent-locally.sh <commit-hash>
+```
+
+로컬 테스트 시 환경 변수 설정:
+```bash
+export ZAI_API_KEY="your-zai-api-key"
+node .github/scripts/run-documentation-update.js
 ```
 
 ### Workflow Features
@@ -1395,12 +1406,12 @@ main 브랜치 푸시
 └── specs/apps/<app>/      # 기능 명세서
 ```
 
-### Agent Workflow
+### z.ai API Workflow
 
-feature-orchestrator 에이전트는 3단계 워크플로우를 실행합니다:
+스크립트는 3단계로 z.ai API를 호출합니다:
 
-1. **Stage 1 - codebase-extractor**: 코드 구조 추출
-2. **Stage 2 - business-context-analyst**: 비즈니스 컨텍스트 분석
-3. **Stage 3 - feature-spec-writer**: 기능 명세서 작성
+1. **Stage 1**: 코드베이스 구조 분석 → Facts 생성
+2. **Stage 2**: 비즈니스 컨텍스트 분석 → Insights 생성
+3. **Stage 3**: 기능 명세서 작성 → Specs 생성
 
-각 스테이지는 이전 스테이지의 출력을 의존하므로 순차적으로 실행됩니다.
+각 Stage는 이전 Stage의 결과를 의존하므로 순차적으로 실행됩니다.

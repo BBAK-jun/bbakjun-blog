@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * GitHub Actions Documentation Update Script
+ * GitHub Actions Documentation Update Script (z.ai API)
  *
- * This script orchestrates the feature-orchestrator agent to update
- * documentation based on code changes detected between commits.
+ * This script orchestrates the documentation update process using z.ai's glm-4.7 API.
  */
 
 const { execSync } = require('child_process');
@@ -19,6 +18,8 @@ const CONFIG = {
   targetApps: process.env.TARGET_APPS || 'all',
   forceUpdate: process.env.FORCE_UPDATE === 'true',
   docsDir: path.join(process.cwd(), '.claude', 'docs'),
+  zaiApiKey: process.env.ZAI_API_KEY,
+  zaiApiBase: process.env.ZAI_API_BASE || 'https://open.bigmodel.cn/api/paas/v4/',
 };
 
 // ANSI color codes for output
@@ -52,225 +53,273 @@ function execCommand(command, options = {}) {
   }
 }
 
-function getChangedFilesWithHashes() {
-  logStep('1', 'Detecting changed files with current blob hashes');
-
-  const changedFiles = [];
-  const changedFilesList = execSync(`git diff --name-only ${CONFIG.previousMain}...HEAD`, {
-    encoding: 'utf-8',
-  }).split('\n').filter(Boolean);
-
-  // Exclude .claude/docs and .github
-  const relevantFiles = changedFilesList.filter(
-    file => !file.startsWith('.claude/docs/') && !file.startsWith('.github/')
-  );
-
-  for (const file of relevantFiles) {
-    try {
-      const currentHash = execSync(`git rev-parse HEAD:${file}`, {
-        encoding: 'utf-8',
-      }).trim();
-
-      changedFiles.push({
-        path: file,
-        currentHash,
-      });
-    } catch {
-      // File was deleted, skip
-      log(`  - Skipped (deleted): ${file}`, 'yellow');
-    }
+/**
+ * Call z.ai glm-4.7 API
+ */
+async function callZaiAPI(messages, model = 'glm-4.7') {
+  if (!CONFIG.zaiApiKey) {
+    throw new Error('ZAI_API_KEY is not set');
   }
 
-  log(`  Found ${changedFiles.length} changed files`, 'green');
-  return changedFiles;
+  const response = await fetch(`${CONFIG.zaiApiBase}chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CONFIG.zaiApiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`z.ai API error: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
 }
 
-function loadExistingMetadata(appName) {
-  const metadataPath = path.join(CONFIG.docsDir, 'facts', 'apps', appName, 'metadata.json');
-
-  if (fs.existsSync(metadataPath)) {
-    try {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-      return metadata;
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
-
-function needsUpdate(appName, changedFiles) {
-  const metadata = loadExistingMetadata(appName);
-
-  // No existing metadata - needs initial extraction
-  if (!metadata) {
-    log(`  ${appName}: No existing metadata - needs full extraction`, 'yellow');
-    return { needsUpdate: true, reason: 'no-metadata' };
-  }
-
-  // Force update flag
-  if (CONFIG.forceUpdate) {
-    log(`  ${appName}: Force update enabled`, 'yellow');
-    return { needsUpdate: true, reason: 'force' };
-  }
-
-  // Check if any source files changed
-  const changedFileHashes = new Map(changedFiles.map(f => [f.path, f.currentHash]));
-
-  for (const sourceFile of metadata.sourceFiles || []) {
-    const currentHash = changedFileHashes.get(sourceFile.path);
-    if (currentHash && currentHash !== sourceFile.gitHash) {
-      log(`  ${appName}: File changed - ${sourceFile.path}`, 'yellow');
-      return { needsUpdate: true, reason: 'file-changed', file: sourceFile.path };
-    }
-  }
-
-  // Check git commit
+/**
+ * Read file content
+ */
+function readFileContent(filePath) {
   try {
-    const currentCommit = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
-    if (metadata.gitCommit !== currentCommit) {
-      log(`  ${appName}: Different commit detected`, 'yellow');
-      return { needsUpdate: true, reason: 'commit-diff' };
-    }
+    return fs.readFileSync(filePath, 'utf-8');
   } catch {
-    // Git check failed, assume update needed
-    return { needsUpdate: true, reason: 'git-check-failed' };
+    return null;
   }
-
-  log(`  ${appName}: No changes detected - skipping`, 'green');
-  return { needsUpdate: false };
 }
 
-function createClaudeCodeAgentPrompt(appName, changedFiles) {
-  const changedFilesList = changedFiles.map(f => f.path).join('\n');
+/**
+ * Write file content
+ */
+function writeFileContent(filePath, content) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, content, 'utf-8');
+}
 
-  return {
-    role: 'user',
-    content: `${appName} 앱의 문서를 업데이트해줘.
+/**
+ * Extract codebase facts using z.ai
+ */
+async function extractCodebaseFacts(appName, changedFiles) {
+  logStep('Stage 1', `Extracting codebase facts for ${appName}`);
 
-## 변경사항 정보
+  // Read relevant source files
+  const fileContents = [];
+  for (const file of changedFiles.slice(0, 10)) { // Limit to 10 files
+    const content = readFileContent(path.join(process.cwd(), file.path));
+    if (content) {
+      fileContents.push(`### ${file.path}\n\`\`\`\n${content.substring(0, 3000)}\n\`\`\``);
+    }
+  }
 
-- 이전 커밋: ${CONFIG.previousMain}
-- 현재 커밋: ${CONFIG.baseCommit}
-- 강제 업데이트: ${CONFIG.forceUpdate ? 'true' : 'false'}
+  const prompt = `다음 코드베이스 변경사항을 분석하여 기술적 사실(facts)을 추출해주세요.
+
+## 앱 이름
+${appName}
 
 ## 변경된 파일
+${changedFiles.map(f => f.path).join('\n')}
 
-\`\`\`
-${changedFilesList}
-\`\`\`
+## 파일 내용 (일부)
+${fileContents.join('\n\n')}
 
 ## 요청사항
+1. 코드베이스 구조를 분석하고 기술적 사실을 추출해주세요
+2. 페이지, API, 스키마, 컴포넌트 구조를 문서화해주세요
+3. 변경사항의 영향을 받는 부분을 식별해주세요
 
-1. feature-orchestrator 에이전트의 워크플로우를 따라서 문서를 생성해줘
-2. 변경된 파일만 기반으로 증분 업데이트를 수행해줘
-3. 각 스테이지(facts, insights, specs)의 결과물을 \`.claude/docs/\` 디렉토리에 저장해줘
-4. 기존 문서가 있다면 변경사항만 반영해줘`,
-  };
+## 출력 형식 (Markdown)
+- 각 섹션을 명확한 헤딩으로 구분
+- 코드 예제와 파일 경로 포함
+- 테이블과 목록을 활용하여 가독성 향상`;
+
+  const facts = await callZaiAPI([
+    { role: 'system', content: '당신은 코드베이스를 분석하여 기술적 문서를 작성하는 전문가입니다.' },
+    { role: 'user', content: prompt },
+  ]);
+
+  // Save facts
+  const factsDir = path.join(CONFIG.docsDir, 'facts', 'apps', appName);
+  writeFileContent(path.join(factsDir, 'index.md'), facts);
+
+  // Save metadata
+  writeFileContent(path.join(factsDir, 'metadata.json'), JSON.stringify({
+    gitCommit: CONFIG.baseCommit,
+    sourceFiles: changedFiles,
+    extractedAt: new Date().toISOString(),
+  }, null, 2));
+
+  log(`  Facts saved to: ${factsDir}/index.md`, 'green');
+  return facts;
 }
 
-async function runAgentForApp(appName, changedFiles) {
-  const updateCheck = needsUpdate(appName, changedFiles);
+/**
+ * Analyze business context using z.ai
+ */
+async function analyzeBusinessContext(appName, facts) {
+  logStep('Stage 2', `Analyzing business context for ${appName}`);
 
-  if (!updateCheck.needsUpdate) {
-    return { status: 'skipped', reason: updateCheck.reason };
+  const prompt = `다음 코드베이스 분석 결과(facts)를 기반으로 비즈니스 컨텍스트를 분석해주세요.
+
+## 앱 이름
+${appName}
+
+## Facts (코드베이스 분석)
+${facts.substring(0, 5000)}...
+
+## 요청사항
+1. 비즈니스 목표와 이해관계자를 식별해주세요
+2. 사용자 워크플로우와 유스케이스를 분석해주세요
+3. 개선 기회와 영향도를 평가해주세요
+
+## 출력 형식 (Markdown)
+- 실행 요약 (Executive Summary)
+- 이해관계자 매핑
+- 영향도 분석 (ROI, 비용, 리스크)
+- 권장사항과 트레이드오프`;
+
+  const insights = await callZaiAPI([
+    { role: 'system', content: '당신은 비즈니스 컨텍스트를 분석하여 전략적 인사이트를 제공하는 전문가입니다.' },
+    { role: 'user', content: prompt },
+  ]);
+
+  // Save insights
+  const insightsDir = path.join(CONFIG.docsDir, 'insights', 'apps', appName);
+  writeFileContent(path.join(insightsDir, 'index.md'), insights);
+
+  log(`  Insights saved to: ${insightsDir}/index.md`, 'green');
+  return insights;
+}
+
+/**
+ * Generate feature specification using z.ai
+ */
+async function generateFeatureSpec(appName, facts, insights) {
+  logStep('Stage 3', `Generating feature specification for ${appName}`);
+
+  const prompt = `다음 facts와 insights를 기반으로 기능 명세서를 작성해주세요.
+
+## 앱 이름
+${appName}
+
+## Facts
+${facts.substring(0, 3000)}...
+
+## Insights
+${insights.substring(0, 3000)}...
+
+## 요청사항
+1. 기능 개요와 목표를 정의해주세요
+2. 기술 아키텍처와 설계 결정을 문서화해주세요
+3. API 계약과 데이터 모델을 명시해주세요
+4. 구현 로드맵과 마일스톤을 제시해주세요
+5. 테스트 전략과 수용 기준을 정의해주세요
+
+## 출력 형식 (Markdown)
+- 명확한 섹션 구분
+- 코드 예제와 다이어그램 (텍스트 기반)
+- 우선순위와 타임라인 포함`;
+
+  const spec = await callZaiAPI([
+    { role: 'system', content: '당신은 기능 명세서를 작성하는 기술 문서 전문가입니다.' },
+    { role: 'user', content: prompt },
+  ]);
+
+  // Save spec
+  const specDir = path.join(CONFIG.docsDir, 'specs', 'apps', appName);
+  const timestamp = new Date().toISOString().split('T')[0];
+  writeFileContent(path.join(specDir, `update-${timestamp}.md`), spec);
+
+  log(`  Spec saved to: ${specDir}/update-${timestamp}.md`, 'green');
+  return spec;
+}
+
+/**
+ * Process single app
+ */
+async function processApp(appName, changedFiles) {
+  logStep('Processing', `App: ${appName}`);
+
+  try {
+    // Stage 1: Extract facts
+    const facts = await extractCodebaseFacts(appName, changedFiles);
+
+    // Stage 2: Analyze business context
+    const insights = await analyzeBusinessContext(appName, facts);
+
+    // Stage 3: Generate spec
+    const spec = await generateFeatureSpec(appName, facts, insights);
+
+    return { status: 'success', appName };
+  } catch (error) {
+    log(`  Error processing ${appName}: ${error.message}`, 'red');
+    return { status: 'error', appName, error: error.message };
   }
-
-  logStep('2', `Running feature-orchestrator for ${appName}`);
-
-  // In CI environment, we need to call the agent via CLI
-  // For now, we'll create a summary file that the agent can process
-  const summaryPath = path.join(CONFIG.docsDir, `${appName}-update-request.json`);
-  fs.writeFileSync(
-    summaryPath,
-    JSON.stringify({
-      appName,
-      changedFiles: changedFiles.filter(f => f.path.startsWith(`apps/${appName}/`) || f.path.startsWith('packages/')),
-      previousMain: CONFIG.previousMain,
-      baseCommit: CONFIG.baseCommit,
-      timestamp: new Date().toISOString(),
-    }, null, 2)
-  );
-
-  log(`  Created update request: ${summaryPath}`, 'green');
-
-  // In a real CI environment, you would call the agent here
-  // For GitHub Actions, we'll use a placeholder that logs what would happen
-  log(`  NOTE: Agent execution would happen here in actual workflow`, 'yellow');
-
-  return { status: 'success', path: summaryPath };
 }
 
-function determineTargetApps() {
-  const targetApps = [];
+/**
+ * Main execution
+ */
+async function main() {
+  log('\n========================================', 'bright');
+  log('  GitHub Actions Doc Update (z.ai)', 'bright');
+  log('========================================\n', 'bright');
 
+  // Log configuration
+  log('Configuration:', 'bright');
+  log(`  Previous: ${CONFIG.previousMain?.substring(0, 8)}`);
+  log(`  Current:  ${CONFIG.baseCommit?.substring(0, 8)}`);
+  log(`  Apps:     ${CONFIG.targetApps}`);
+  log(`  Force:    ${CONFIG.forceUpdate}`);
+  log(`  API:      ${CONFIG.zaiApiBase}`);
+
+  // Determine target apps
+  let targetApps = [];
   if (CONFIG.targetApps === 'all') {
-    targetApps.push('blog', 'blog-admin');
+    targetApps = ['blog', 'blog-admin'];
   } else {
-    targetApps.push(...CONFIG.targetApps.split(',').filter(Boolean));
+    targetApps = CONFIG.targetApps.split(',').filter(Boolean);
   }
 
-  // Check for rag-gateway
   if (fs.existsSync(path.join(process.cwd(), 'apps', 'rag-gateway'))) {
     if (CONFIG.targetApps === 'all' || CONFIG.targetApps.includes('rag-gateway')) {
       targetApps.push('rag-gateway');
     }
   }
 
-  return targetApps;
-}
-
-async function main() {
-  log('\n========================================', 'bright');
-  log('  GitHub Actions Documentation Update', 'bright');
-  log('========================================\n', 'bright');
-
-  // Log configuration
-  log('Configuration:', 'bright');
-  log(`  Previous main: ${CONFIG.previousMain}`);
-  log(`  Base commit: ${CONFIG.baseCommit}`);
-  log(`  Target apps: ${CONFIG.targetApps}`);
-  log(`  Force update: ${CONFIG.forceUpdate}`);
-  log(`  Changed files: ${CONFIG.changedFiles.length}`);
-
-  // Get changed files with hashes
-  const changedFiles = getChangedFilesWithHashes();
-
-  if (changedFiles.length === 0 && !CONFIG.forceUpdate) {
-    log('\nNo changes detected. Exiting.', 'yellow');
-    process.exit(0);
-  }
-
-  // Determine which apps to process
-  const targetApps = determineTargetApps();
-  log(`\nTarget apps: ${targetApps.join(', ')}`, 'blue');
-
-  // Create docs directory structure
-  const dirsToCreate = [
+  // Create docs directory
+  const dirs = [
     path.join(CONFIG.docsDir, 'facts', 'apps'),
     path.join(CONFIG.docsDir, 'insights', 'apps'),
     path.join(CONFIG.docsDir, 'specs', 'apps'),
   ];
-
-  for (const dir of dirsToCreate) {
+  for (const dir of dirs) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
   // Process each app
   const results = {};
-
   for (const appName of targetApps) {
-    const appFiles = changedFiles.filter(
+    const appFiles = CONFIG.changedFiles.filter(
       f => f.path.startsWith(`apps/${appName}/`) || f.path.startsWith('packages/')
     );
 
-    try {
-      results[appName] = await runAgentForApp(appName, appFiles);
-    } catch (error) {
-      log(`Failed to process ${appName}: ${error.message}`, 'red');
-      results[appName] = { status: 'error', error: error.message };
+    if (appFiles.length === 0 && !CONFIG.forceUpdate) {
+      results[appName] = { status: 'skipped', reason: 'no changes' };
+      log(`  Skipping ${appName}: no changes`, 'yellow');
+      continue;
     }
+
+    results[appName] = await processApp(appName, appFiles);
   }
 
   // Summary
@@ -279,17 +328,12 @@ async function main() {
   log('========================================\n', 'bright');
 
   for (const [appName, result] of Object.entries(results)) {
-    const statusIcon = result.status === 'success' ? '✅' : result.status === 'skipped' ? '⏭️' : '❌';
-    log(`  ${statusIcon} ${appName}: ${result.status}`);
-    if (result.reason) {
-      log(`      Reason: ${result.reason}`);
-    }
-    if (result.error) {
-      log(`      Error: ${result.error}`, 'red');
-    }
+    const icon = result.status === 'success' ? '✅' : result.status === 'skipped' ? '⏭️' : '❌';
+    log(`  ${icon} ${appName}: ${result.status}`);
+    if (result.error) log(`      ${result.error}`, 'red');
   }
 
-  // Create summary file for GitHub Actions to read
+  // Save summary
   const summaryPath = path.join(CONFIG.docsDir, 'update-summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify({
     timestamp: new Date().toISOString(),
@@ -298,11 +342,11 @@ async function main() {
     results,
   }, null, 2));
 
-  log(`\nSummary written to: ${summaryPath}`, 'green');
+  log(`\nSummary: ${summaryPath}`, 'green');
 }
 
 main().catch(error => {
-  log(`\nFatal error: ${error.message}`, 'red');
+  log(`\nFatal: ${error.message}`, 'red');
   console.error(error);
   process.exit(1);
 });
