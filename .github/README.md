@@ -33,6 +33,30 @@ z.ai의 API 키가 필요합니다. GitHub Marketplace 또는 https://open.bigmo
 
 별도의 API 엔드포인트를 사용하는 경우 설정하세요.
 
+### GH_PAT (권장)
+
+GitHub Actions가 PR을 생성할 수 있는 Personal Access Token (PAT)입니다.
+
+**왜 필요한가요?**
+
+GitHub의 기본 `GITHUB_TOKEN`은 API를 통한 PR 생성을 제한합니다. PR 자동 생성 기능을 완전히 활성화하려면 PAT를 사용하는 것이 권장됩니다.
+
+**설정 방법:**
+
+1. GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. "Generate new token (classic)" 클릭
+3. Name: `Documentation Automation` 또는 원하는 이름
+4. Expiration: 원하는 만료 기간 선택 (또는 No expiration)
+5. Scopes: `repo` (전체 repository 액세스 권한)
+6. "Generate token" 클릭
+7. 생성된 토큰 복사
+8. Repository → Settings → Secrets and variables → Actions
+9. New repository secret 클릭
+10. Name: `GH_PAT`
+11. Value: 복사한 토큰 붙여넣기
+
+**참고**: `GH_PAT`가 설정되지 않은 경우, 워크플로우는 `GITHUB_TOKEN`을 사용하며 PR 생성이 제한될 수 있습니다.
+
 ## 워크플로우 파일
 
 | 파일 | 설명 |
@@ -99,3 +123,28 @@ PR 본문에는 다음 정보가 포함됩니다:
 - 베이스 커밋 정보 (이전/현재)
 - 변경된 파일 목록
 - 생성된 문서 설명
+
+### PR 생성 실패 시
+
+`GH_PAT`가 설정되지 않은 경우, GitHub Actions는 `GITHUB_TOKEN`을 사용합니다. 이 경우 다음 오류가 발생할 수 있습니다:
+
+```
+Error: GitHub Actions is not permitted to create or approve pull requests.
+```
+
+이런 경우에도 브랜치는 정상적으로 push되므로, 수동으로 PR을 생성할 수 있습니다:
+
+1. Repository 페이지에서 "Pull requests" 탭 클릭
+2. "Compare & pull request" 버튼이 표시되는지 확인
+3. 또는 직접 compare 페이지로 이동: `https://github.com/{owner}/{repo}/compare/main...docs/auto-update-{run_number}`
+
+### 완전한 자동화를 위한 설정
+
+PR 자동 생성이 완전히 작동하도록 하려면:
+
+1. 위에서 설명한 대로 `GH_PAT` secret 설정
+2. PAT에 `repo` scope가 포함되어 있는지 확인
+3. Repository의 Actions 권한이 "Read and write permissions"로 설정되어 있는지 확인
+   - Settings → Actions → General → Workflow permissions
+   - "Read and write permissions" 선택
+   - "Allow GitHub Actions to create and approve pull requests" 체크 (Enterprise 한정)

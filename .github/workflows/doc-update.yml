@@ -144,6 +144,7 @@ jobs:
         if: steps.check_docs.outputs.has_doc_changes == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           title: 'docs: automated documentation update [skip ci]'
           body: |
             ## 자동 생성된 문서 업데이트
@@ -174,3 +175,5 @@ jobs:
           commit-message: 'docs: automated documentation update'
           labels: documentation, automated
           draft: false
+          # fallback to branch-only push if PR creation fails
+          push-to-fork: false
