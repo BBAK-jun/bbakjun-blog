@@ -7,12 +7,21 @@
 ```
 main 브랜치 푸시
     ↓
-1. 변경 감지 (git diff)
+1. 변경 감지 (latest doc tag → HEAD)
     ↓
 2. z.ai API로 문서 업데이트 (glm-4.7)
     ↓
 3. PR 자동 생성
+    ↓
+4. PR 머지 시 태그 생성 (docs/update-{run_number}-{timestamp})
 ```
+
+### 태그 기반 증분 업데이트
+
+- **첫 실행**: 태그가 없으면 `HEAD~1` 사용
+- **이후 실행**: 가장 최근 `docs/update-*` 태그부터 변경사항만 반영
+- **태그 형식**: `docs/update-{run_number}-{timestamp}`
+- **무한 루프 방지**: 자동화 커밋 메시지로 감지하여 건너뜀
 
 ## 필요한 GitHub Secrets
 
@@ -61,14 +70,15 @@ GitHub의 기본 `GITHUB_TOKEN`은 API를 통한 PR 생성을 제한합니다. P
 
 | 파일 | 설명 |
 |------|------|
-| `.github/workflows/doc-update.yml` | 메인 GitHub Actions 워크플로우 |
+| `.github/workflows/doc-update.yml` | 메인 문서 업데이트 워크플로우 |
+| `.github/workflows/doc-tag.yml` | PR 머지 시 태그 생성 워크플로우 |
 | `.github/scripts/run-documentation-update.js` | z.ai API 호출 스크립트 |
 | `.github/scripts/run-agent-locally.sh` | 로컬 테스트용 스크립트 |
 
 ## 로컬에서 테스트하기
 
 ```bash
-# 기본 테스트 (main~1과 현재 HEAD 비교)
+# 기본 테스트 (최신 태그와 현재 HEAD 비교)
 .github/scripts/run-agent-locally.sh
 
 # 특정 커밋과 비교
@@ -116,13 +126,28 @@ GitHub Actions 탭에서 워크플로우를 수동으로 실행할 수 있습니
 - **Branch**: `docs/auto-update-{run_number}`
 - **Title**: `docs: automated documentation update [skip ci]`
 - **Labels**: `documentation`, `automated`
+- **Commit Message**: `docs: automated documentation update`
 
 PR 본문에는 다음 정보가 포함됩니다:
 
 - 변경된 앱 목록
-- 베이스 커밋 정보 (이전/현재)
-- 변경된 파일 목록
 - 생성된 문서 설명
+- 태그 기반 증분 업데이트 설명
+
+### PR 머지 시 태그 생성
+
+`automated` 라벨이 있는 PR이 머지되면 자동으로 태그가 생성됩니다:
+
+- **태그 형식**: `docs/update-{run_number}-{timestamp}`
+- **태그 메시지**: PR 정보 포함 (번호, 제목, 머지한 사용자)
+- **용도**: 다음 문서 업데이트 시 이 태그부터 비교
+
+### 무한 루프 방지
+
+시스템은 무한 루프를 방지하기 위해 두 가지 보호 장치를 갖추고 있습니다:
+
+1. **커밋 메시지 체크**: `docs: automated documentation update`로 시작하는 커밋을 건너뜀
+2. **파일 필터**: `.claude/docs/`와 `.github/` 변경사항을 무시
 
 ### PR 생성 실패 시
 
