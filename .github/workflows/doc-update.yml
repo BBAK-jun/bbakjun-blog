@@ -1,0 +1,171 @@
+name: Auto Documentation Update
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force full documentation update (skip incremental check)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  detect-changes:
+    name: Detect Code Changes
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.diff.outputs.has_changes }}
+      changed_files: ${{ steps.diff.outputs.changed_files }}
+      base_commit: ${{ steps.diff.outputs.base_commit }}
+      previous_main: ${{ steps.diff.outputs.previous_main }}
+      target_apps: ${{ steps.diff.outputs.target_apps }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect code changes
+        id: diff
+        run: |
+          # Get previous main commit (HEAD~1 for main branch)
+          PREVIOUS_MAIN=$(git rev-parse HEAD~1)
+          BASE_COMMIT=$(git rev-parse HEAD)
+          echo "previous_main=${PREVIOUS_MAIN}" >> $GITHUB_OUTPUT
+          echo "base_commit=${BASE_COMMIT}" >> $GITHUB_OUTPUT
+
+          # Detect changed files (excluding .claude/docs/ and .github/)
+          CHANGED_FILES=$(git diff --name-only ${PREVIOUS_MAIN}...HEAD | grep -v -E '^(\\.claude/docs/|\\.github/)' || echo "")
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '^v' || echo "0")
+
+          echo "Changed files count: ${CHANGED_COUNT}"
+          echo "${CHANGED_FILES}"
+
+          if [ "${CHANGED_COUNT}" -gt "0" ] || [ "${{ github.event.inputs.force_update }}" = "true" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "changed_files=${CHANGED_FILES}" >> $GITHUB_OUTPUT
+
+            # Detect which apps changed
+            TARGET_APPS=""
+
+            # Check if apps/blog changed
+            if echo "$CHANGED_FILES" | grep -q "^apps/blog/"; then
+              TARGET_APPS="${TARGET_APPS}blog,"
+            fi
+
+            # Check if apps/blog-admin changed
+            if echo "$CHANGED_FILES" | grep -q "^apps/blog-admin/"; then
+              TARGET_APPS="${TARGET_APPS}blog-admin,"
+            fi
+
+            # Check if rag-gateway exists and changed
+            if [ -d "apps/rag-gateway" ] && echo "$CHANGED_FILES" | grep -q "^apps/rag-gateway/"; then
+              TARGET_APPS="${TARGET_APPS}rag-gateway,"
+            fi
+
+            # Check if shared packages changed
+            if echo "$CHANGED_FILES" | grep -q "^packages/"; then
+              TARGET_APPS="${TARGET_APPS}all"
+            fi
+
+            # Default to all if no specific apps detected
+            if [ -z "$TARGET_APPS" ]; then
+              TARGET_APPS="all"
+            fi
+
+            # Remove trailing comma
+            TARGET_APPS=$(echo "$TARGET_APPS" | sed 's/,$//')
+            echo "target_apps=${TARGET_APPS}" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "changed_files=" >> $GITHUB_OUTPUT
+            echo "target_apps=" >> $GITHUB_OUTPUT
+          fi
+
+  update-documentation:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run documentation update
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PREVIOUS_MAIN: ${{ needs.detect-changes.outputs.previous_main }}
+          BASE_COMMIT: ${{ needs.detect-changes.outputs.base_commit }}
+          CHANGED_FILES: ${{ needs.detect-changes.outputs.changed_files }}
+          TARGET_APPS: ${{ needs.detect-changes.outputs.target_apps }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
+        run: |
+          # Run the orchestration script
+          node .github/scripts/run-documentation-update.js
+
+      - name: Check for documentation changes
+        id: check_docs
+        run: |
+          if [ -d ".claude/docs" ] && [ "$(git -C .claude/docs status --porcelain | wc -l)" -gt "0" ]; then
+            echo "has_doc_changes=true" >> $GITHUB_OUTPUT
+            git -C .claude/docs status --porcelain
+          else
+            echo "has_doc_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_docs.outputs.has_doc_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: 'docs: automated documentation update [skip ci]'
+          body: |
+            ## 자동 생성된 문서 업데이트
+
+            이 PR은 main 브랜치에 머지된 코드 변경사항을 기반으로 자동 생성되었습니다.
+
+            ### 변경된 앱
+            ${{ needs.detect-changes.outputs.target_apps }}
+
+            ### 베이스 커밋
+            - 이전: ${{ needs.detect-changes.outputs.previous_main }}
+            - 현재: ${{ needs.detect-changes.outputs.base_commit }}
+
+            ### 변경된 파일
+            ```
+            ${{ needs.detect-changes.outputs.changed_files }}
+            ```
+
+            ### 생성된 문서
+            - `.claude/docs/facts/` - 코드베이스 구조 및 기술적 세부사항
+            - `.claude/docs/insights/` - 비즈니스 컨텍스트 및 도메인 분석
+            - `.claude/docs/specs/` - 기능 명세서
+
+            ---
+            🤖 Generated by [Claude Code](https://claude.com/claude-code)
+          branch: docs/auto-update-${{ github.run_number }}
+          delete-branch: true
+          commit-message: 'docs: automated documentation update'
+          labels: documentation, automated
+          draft: false
