@@ -1,6 +1,3 @@
-# RAG Gateway - Multi-stage build with turbo prune
-# Target: ~500MB (from 2.14GB)
-
 FROM node:24-alpine AS base
 
 FROM base AS pruner
