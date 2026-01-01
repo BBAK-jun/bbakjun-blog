@@ -376,6 +376,12 @@ export async function previewMarkdown(content: string) {
 
 /**
  * Upload image to Blob Storage
+ *
+ * 개선사항:
+ * 1. crypto.randomUUID() 사용으로 고유한 파일명 보장 (동시성 문제 해결)
+ * 2. Vercel Blob 업로드 재시도 로직 추가
+ * 3. 구체적인 에러 메시지 제공
+ * 4. 파일명 sanitization 개선
  */
 export async function uploadImage(formData: FormData) {
   try {
@@ -405,17 +411,44 @@ export async function uploadImage(formData: FormData) {
       };
     }
 
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const pathname = `images/${timestamp}-${originalName}`;
+    // crypto.randomUUID() 사용으로 고유한 파일명 보장 (동시 업로드 시 충돌 방지)
+    const uniqueId = crypto.randomUUID().split('-')[0]; // 짧은 ID 사용
+    const extension = file.name.split('.').pop() || 'jpg';
+    const sanitizedBaseName = file.name.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+    const pathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
 
-    const blob = await put(pathname, file, {
-      access: 'public',
-      token: BLOB_TOKEN,
-      addRandomSuffix: false,
-    });
+    // Vercel Blob 업로드 재시도 로직 (최대 3회)
+    let blob;
+    let lastError;
 
-    // CDC: DB에 파일 정보 저장
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`[Image Upload] Attempt ${attempt}/3: ${pathname}`);
+        blob = await put(pathname, file, {
+          access: 'public',
+          token: BLOB_TOKEN,
+          addRandomSuffix: false,
+        });
+        break; // 성공 시 루프 탈출
+      } catch (putError) {
+        lastError = putError;
+        console.error(`[Image Upload] Attempt ${attempt} failed:`, putError);
+
+        if (attempt < 3) {
+          // 지수 백오프 대기: 1초, 2초, 4초
+          const waitTime = Math.pow(2, attempt - 1) * 1000;
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    if (!blob) {
+      throw lastError || new Error('Failed to upload after 3 attempts');
+    }
+
+    console.log(`[Image Upload] Success: ${blob.url}`);
+
+    // CDC: DB에 파일 정보 저장 (실패해도 업로드는 성공한 것으로 처리)
     try {
       await onBlobUpload({
         url: blob.url,
@@ -424,8 +457,10 @@ export async function uploadImage(formData: FormData) {
         uploadedAt: new Date(),
         contentType: file.type,
       });
+      console.log(`[Image Upload] CDC sync completed: ${blob.pathname}`);
     } catch (cdcError) {
-      console.error('CDC sync failed (non-critical):', cdcError);
+      console.error('[Image Upload] CDC sync failed (non-critical):', cdcError);
+      // CDC 실패는 업로드 실패로 처리하지 않음 (Blob Storage가 source of truth)
     }
 
     return {
@@ -436,10 +471,26 @@ export async function uploadImage(formData: FormData) {
       contentType: file.type,
     };
   } catch (error) {
-    console.error('Upload image error:', error);
+    console.error('[Image Upload] Final error:', error);
+
+    // 구체적인 에러 메시지 제공
+    let errorMessage = 'Failed to upload image';
+
+    if (error instanceof Error) {
+      if (error.message.includes('ECONNRESET') || error.message.includes('ETIMEDOUT')) {
+        errorMessage = '네트워크 연결이 불안정합니다. 다시 시도해 주세요.';
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorMessage = 'Blob Storage 용량 한도에 도달했습니다.';
+      } else if (error.message.includes('auth') || error.message.includes('token')) {
+        errorMessage = '인증 오류가 발생했습니다. 관리자에게 문의해 주세요.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to upload image',
+      error: errorMessage,
     };
   }
 }

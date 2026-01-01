@@ -136,13 +136,46 @@ export const uploadImage: AppRouteHandler<typeof routes.uploadImage> = async c =
     );
   }
 
-  const finalPathname = pathname || 'images/' + Date.now() + '-' + file.name;
+  // 개선된 파일명 생성 로직 (고유성 보장)
+  const finalPathname =
+    pathname ||
+    `images/${Date.now()}-${crypto.randomUUID().split('-')[0]}-${file.name
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 50)}`;
 
-  const blob = await put(finalPathname, file, {
-    access: 'public',
-    token: BLOB_TOKEN,
-    addRandomSuffix: false,
-  });
+  // Vercel Blob 업로드 재시도 로직 (최대 3회)
+  let blob;
+  let lastError;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      c.get('logger')?.info({ attempt, pathname: finalPathname }, 'Image upload attempt');
+      blob = await put(finalPathname, file, {
+        access: 'public',
+        token: BLOB_TOKEN,
+        addRandomSuffix: false,
+      });
+      break;
+    } catch (putError) {
+      lastError = putError;
+      c.get('logger')?.error({ attempt, error: putError }, 'Image upload attempt failed');
+
+      if (attempt < 3) {
+        const waitTime = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  if (!blob) {
+    return c.json(
+      {
+        error: lastError instanceof Error ? lastError.message : 'Failed to upload after 3 attempts',
+        message: 'Blob upload failed',
+      },
+      500
+    );
+  }
 
   try {
     await onBlobUpload({
