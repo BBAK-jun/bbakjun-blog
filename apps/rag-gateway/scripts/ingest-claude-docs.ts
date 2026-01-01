@@ -8,6 +8,7 @@ const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '../../..');
 
 const RAG_GATEWAY_URL = process.env.RAG_GATEWAY_URL || 'http://localhost:3002';
+const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || 'https://github.com/BBAK-jun/bbakjun-blog/blob/main';
 
 interface DocFile {
   path: string;
@@ -54,7 +55,9 @@ async function uploadDocument(
     const content = readFileSync(file.path, 'utf-8');
     const { data: frontMatter, content: markdownContent } = matter(content);
 
-    // Generate a slug from the file path
+    // Generate GitHub blob URL and slug
+    const relativePath = file.path.replace(ROOT_DIR + '/', '');
+    const githubUrl = `${GITHUB_REPO_URL}/${relativePath}`;
     const slug = file.path.replace('.claude/docs/', '').replace('.md', '');
 
     const response = await fetch(`${RAG_GATEWAY_URL}/api/documents`, {
@@ -67,6 +70,7 @@ async function uploadDocument(
         content: markdownContent,
         metadata: {
           slug,
+          githubUrl,
           category: file.category,
           tags: frontMatter.tags || [],
           author: frontMatter.author || 'claude-code',

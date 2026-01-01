@@ -34,6 +34,7 @@ export const SourceReferenceSchema = z.object({
   slug: z.string(),
   content: z.string(),
   score: z.number(),
+  githubUrl: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
