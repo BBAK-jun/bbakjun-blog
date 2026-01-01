@@ -4,6 +4,7 @@ import * as handlers from './upload.handlers';
 
 const router = createRouter()
   .openapi(routes.uploadMarkdown, handlers.uploadMarkdown)
-  .openapi(routes.uploadImage, handlers.uploadImage);
+  .openapi(routes.uploadImage, handlers.uploadImage)
+  .openapi(routes.uploadMultipleImages, handlers.uploadMultipleImages);
 
 export default router;

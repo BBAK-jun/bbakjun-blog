@@ -16,6 +16,21 @@ metadata:
   git_branch: "BBAK-jun/pattaya"
 
   changed_files:
+    - path: apps/blog-admin/src/app/actions/files.ts
+      changed_at: "2026-01-01T00:00:00Z"
+      reason: "IMPROVED: Image upload with retry logic, unique filename, better error messages"
+    - path: apps/blog-admin/src/rpc/routes/upload/upload.handlers.ts
+      changed_at: "2026-01-01T00:00:00Z"
+      reason: "IMPROVED: RPC uploadImage handler with retry logic and unique filename"
+    - path: apps/blog-admin/src/shared/ui/image-uploader/image-uploader.tsx
+      changed_at: "2026-01-01T00:00:00Z"
+      reason: "EXISTING: Image uploader UI component (referenced for documentation)"
+    - path: apps/blog-admin/src/rpc/routes/upload/upload.routes.ts
+      changed_at: "2026-01-01T00:00:00Z"
+      reason: "EXISTING: Upload API routes (referenced for documentation)"
+    - path: apps/blog-admin/src/shared/api/upload.ts
+      changed_at: "2026-01-01T00:00:00Z"
+      reason: "EXISTING: Upload API schemas (referenced for documentation)"
     - path: apps/blog-admin/src/app/actions/experience.ts
       changed_at: "2025-12-31T00:00:00Z"
       reason: "NEW: Experience management server actions"
@@ -144,7 +159,19 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - **빌드**: `pnpm --filter=blog-admin build`
 - **개발 서버**: `pnpm --filter=blog-admin dev`
 
-## 새로운 기능 (2025-12-31)
+## 새로운 기능 (2026-01-01)
+
+### Image Upload Reliability Improvements
+
+- **위치**: Server Action `uploadImage()`, RPC Handler `uploadImage`
+- **개선사항**:
+  1. **고유한 파일명 보장**: `crypto.randomUUID()` 사용으로 동시 업로드 시 충돌 방지
+  2. **업로드 재시도 로직**: Vercel Blob 업로드 실패 시 최대 3회 재시도 (지수 백오프: 1초, 2초, 4초)
+  3. **구체적인 에러 메시지**: 네트워크 오류, 용량 한도, 인증 오류 등에 따른 한글 에러 메시지
+  4. **파일명 sanitization 개선**: 확장자 보존, 특수문자 제거, 길이 제한(50자)
+- **상세**: [Image Upload System](apis/image-upload.md)
+
+## 이전 기능 (2025-12-31)
 
 ### Experience Management System
 

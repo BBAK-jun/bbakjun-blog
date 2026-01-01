@@ -562,6 +562,100 @@ export async function syncUploadedFile(input: {
 }
 
 /**
+ * Upload multiple images to Blob Storage
+ *
+ * 여러 이미지를 병렬로 업로드합니다.
+ * 각 파일은 독립적으로 처리되며, 개별 실패시 전체 작업이 계속 진행됩니다.
+ */
+export async function uploadMultipleImages(formData: FormData) {
+  try {
+    const files: File[] = [];
+    const pathname = formData.get('pathname') as string | null;
+
+    // FormData에서 모든 파일 추출
+    for (const [key, value] of formData.entries()) {
+      if (key === 'files' && value instanceof File) {
+        files.push(value);
+      }
+    }
+
+    if (files.length === 0) {
+      return {
+        success: false,
+        error: 'No files provided',
+      };
+    }
+
+    const MAX_FILES = 20;
+
+    if (files.length > MAX_FILES) {
+      return {
+        success: false,
+        error: `Too many files. Maximum ${MAX_FILES} files allowed`,
+      };
+    }
+
+    // 각 파일 개별 업로드
+    const uploadPromises = files.map(async file => {
+      try {
+        const singleFormData = new FormData();
+        singleFormData.append('file', file);
+        if (pathname) {
+          singleFormData.append('pathname', pathname);
+        }
+
+        const result = await uploadImage(singleFormData);
+
+        return {
+          ...result,
+          filename: file.name,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          filename: file.name,
+          error: error instanceof Error ? error.message : 'Failed to upload file',
+        };
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+
+    const uploaded = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    return {
+      success: uploaded > 0,
+      results,
+      total: files.length,
+      uploaded,
+      failed,
+    };
+  } catch (error) {
+    console.error('[Multiple Image Upload] Final error:', error);
+
+    let errorMessage = 'Failed to upload images';
+
+    if (error instanceof Error) {
+      if (error.message.includes('ECONNRESET') || error.message.includes('ETIMEDOUT')) {
+        errorMessage = '네트워크 연결이 불안정합니다. 다시 시도해 주세요.';
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorMessage = 'Blob Storage 용량 한도에 도달했습니다.';
+      } else if (error.message.includes('auth') || error.message.includes('token')) {
+        errorMessage = '인증 오류가 발생했습니다. 관리자에게 문의해 주세요.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
  * List all images from Blob Storage
  */
 export async function listImages(limit = 50) {

@@ -1,13 +1,14 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Save, ImageIcon } from 'lucide-react';
+import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
+import { ArrowLeft, Save, ImageIcon, Loader2, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { markdown } from '@codemirror/lang-markdown';
 import { useFileEditor } from '@/features/file-edit';
 import { ImageUploader, TagInput } from '@/shared/ui';
 import { toast } from 'sonner';
+import { uploadImage as uploadImageAction } from '@/app/actions/files';
 import '../../../markdown.css';
 
 const CodeMirror = dynamic(() => import('@uiw/react-codemirror').then(mod => mod.default), {
@@ -19,11 +20,14 @@ function EditPageContent() {
   const router = useRouter();
   const pathname = searchParams?.get('pathname') || null;
   const [showImageUploader, setShowImageUploader] = useState(false);
+  const [isPastingImage, setIsPastingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Scroll sync refs
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const isScrollingSyncRef = useRef(false);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     fileData,
@@ -59,6 +63,148 @@ function EditPageContent() {
     });
     setShowImageUploader(false);
   };
+
+  // 이미지 붙여넣기 처리 (Paste 이벤트)
+  const handlePaste = useCallback(
+    async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // 이미지 파일 찾기
+      let imageFile: File | null = null;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          imageFile = item.getAsFile();
+          break;
+        }
+      }
+
+      if (!imageFile) return;
+
+      // 기본 붙여넣기 동작 방지 (이미지인 경우만)
+      e.preventDefault();
+
+      setIsPastingImage(true);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+
+        const result = await uploadImageAction(formData);
+
+        if (!result.success || !result.url) {
+          throw new Error(result.error || '이미지 업로드에 실패했습니다');
+        }
+
+        // 이미지 마크다운 삽입
+        const imageMarkdown = `\n![${imageFile.name}](${result.url})\n`;
+        setFormData(prev => ({
+          ...prev,
+          content: prev.content + imageMarkdown,
+        }));
+
+        toast.success('이미지 업로드 완료', {
+          description: '이미지가 성공적으로 업로드되었습니다',
+        });
+      } catch (error) {
+        console.error('이미지 업로드 실패:', error);
+        toast.error('이미지 업로드 실패', {
+          description: error instanceof Error ? error.message : '다시 시도해주세요',
+        });
+      } finally {
+        setIsPastingImage(false);
+      }
+    },
+    []
+  );
+
+  // 붙여넣기 이벤트 리스너 등록
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+
+    const pasteHandler = (e: Event) => {
+      const clipboardEvent = e as ClipboardEvent;
+      handlePaste(clipboardEvent);
+    };
+
+    container.addEventListener('paste', pasteHandler);
+
+    return () => {
+      container.removeEventListener('paste', pasteHandler);
+    };
+  }, [handlePaste]);
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 에디터 영역을 벗어났는지 확인
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+      if (imageFiles.length === 0) {
+        toast.error('이미지 파일만 업로드 가능합니다', {
+          description: 'PNG, JPG, GIF, WebP 파일을 드래그해주세요',
+        });
+        return;
+      }
+
+      setIsPastingImage(true);
+
+      try {
+        for (const file of imageFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const result = await uploadImageAction(formData);
+
+          if (!result.success || !result.url) {
+            throw new Error(result.error || '이미지 업로드에 실패했습니다');
+          }
+
+          const imageMarkdown = `\n![${file.name}](${result.url})\n`;
+          setFormData(prev => ({
+            ...prev,
+            content: prev.content + imageMarkdown,
+          }));
+        }
+
+        toast.success('이미지 업로드 완료', {
+          description: `${imageFiles.length}개의 이미지가 업로드되었습니다`,
+        });
+      } catch (error) {
+        console.error('이미지 업로드 실패:', error);
+        toast.error('이미지 업로드 실패', {
+          description: error instanceof Error ? error.message : '다시 시도해주세요',
+        });
+      } finally {
+        setIsPastingImage(false);
+      }
+    },
+    []
+  );
 
   const handleSave = () => {
     save(undefined, {
@@ -327,46 +473,86 @@ function EditPageContent() {
       {/* Content Editor - Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Editor Section */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
+        <div
+          className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden relative transition-colors ${
+            isDragging ? 'border-blue-500 ring-2 ring-blue-500 ring-opacity-50' : ''
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">마크다운 편집</h2>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              💡 이미지 복사(Ctrl+V) 또는 드래그 앤 드롭
+            </span>
           </div>
           <div
             ref={editorScrollRef}
-            className="p-0 overflow-auto"
+            className="p-0 overflow-auto relative"
             style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}
           >
-            <CodeMirror
-              value={formData.content}
-              onChange={value => setFormData({ ...formData, content: value })}
-              height="100%"
-              theme="dark"
-              extensions={[markdown()]}
-              className="text-sm"
-              basicSetup={{
-                lineNumbers: true,
-                highlightActiveLineGutter: true,
-                highlightSpecialChars: true,
-                foldGutter: true,
-                drawSelection: true,
-                dropCursor: true,
-                allowMultipleSelections: true,
-                indentOnInput: true,
-                bracketMatching: true,
-                closeBrackets: true,
-                autocompletion: true,
-                rectangularSelection: true,
-                crosshairCursor: true,
-                highlightActiveLine: true,
-                highlightSelectionMatches: true,
-                closeBracketsKeymap: true,
-                searchKeymap: true,
-                foldKeymap: true,
-                completionKeymap: true,
-                lintKeymap: true,
-              }}
-            />
+            <div ref={editorContainerRef} className="h-full">
+              <CodeMirror
+                value={formData.content}
+                onChange={value => setFormData({ ...formData, content: value })}
+                height="100%"
+                theme="dark"
+                extensions={[markdown()]}
+                className="text-sm"
+                basicSetup={{
+                  lineNumbers: true,
+                  highlightActiveLineGutter: true,
+                  highlightSpecialChars: true,
+                  foldGutter: true,
+                  drawSelection: true,
+                  dropCursor: true,
+                  allowMultipleSelections: true,
+                  indentOnInput: true,
+                  bracketMatching: true,
+                  closeBrackets: true,
+                  autocompletion: true,
+                  rectangularSelection: true,
+                  crosshairCursor: true,
+                  highlightActiveLine: true,
+                  highlightSelectionMatches: true,
+                  closeBracketsKeymap: true,
+                  searchKeymap: true,
+                  foldKeymap: true,
+                  completionKeymap: true,
+                  lintKeymap: true,
+                }}
+              />
+            </div>
           </div>
+
+          {/* 드래그 오버레이 */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-blue-500/10 border-4 border-dashed border-blue-500 flex items-center justify-center z-40 pointer-events-none">
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg">
+                <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+                <p className="text-slate-900 dark:text-white font-semibold text-center">
+                  이미지를 여기에 드롭하세요
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1">
+                  PNG, JPG, GIF, WebP
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 붙여넣기/업로드 인디케이터 오버레이 */}
+          {isPastingImage && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg flex items-center gap-3">
+                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                <div>
+                  <p className="text-slate-900 dark:text-white font-semibold">이미지 업로드 중...</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">잠시만 기다려주세요</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Preview Section */}
