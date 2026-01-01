@@ -496,6 +496,72 @@ export async function uploadImage(formData: FormData) {
 }
 
 /**
+ * Get upload credentials for client-side upload
+ * This bypasses the 4.5MB serverless function payload limit
+ * The client uploads directly to Vercel Blob using these credentials
+ */
+export async function getUploadCredentials(filename: string) {
+  try {
+    if (!filename || typeof filename !== 'string') {
+      return {
+        success: false,
+        error: 'Filename is required',
+      };
+    }
+
+    // Generate unique pathname with timestamp and UUID
+    const uniqueId = crypto.randomUUID().split('-')[0];
+    const extension = filename.split('.').pop() || 'jpg';
+    const sanitizedBaseName = filename.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+    const pathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
+
+    // Return credentials for client-side upload
+    return {
+      success: true,
+      token: BLOB_TOKEN,
+      pathname,
+    };
+  } catch (error) {
+    console.error('[Get Upload Credentials] Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get upload credentials',
+    };
+  }
+}
+
+/**
+ * Sync uploaded file to CDC database
+ * Called after successful client-side upload
+ */
+export async function syncUploadedFile(input: {
+  url: string;
+  pathname: string;
+  size: number;
+  contentType: string;
+}) {
+  try {
+    await onBlobUpload({
+      url: input.url,
+      pathname: input.pathname,
+      size: input.size,
+      uploadedAt: new Date(),
+      contentType: input.contentType,
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('[Sync Uploaded File] Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync file',
+    };
+  }
+}
+
+/**
  * Upload multiple images to Blob Storage
  *
  * 여러 이미지를 병렬로 업로드합니다.
