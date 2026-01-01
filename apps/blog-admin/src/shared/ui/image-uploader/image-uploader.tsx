@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Upload, Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { uploadImage as uploadImageAction } from '@/app/actions/files';
+import { put } from '@vercel/blob/client';
+import { Upload, X, Loader2 } from 'lucide-react';
+import { getUploadCredentials, syncUploadedFile } from '@/app/actions/files';
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string, filename: string) => void;
 }
 
-interface UploadedImage {
-  url: string;
-  filename: string;
-}
+const MAX_SIZE = 25 * 1024 * 1024; // 25MB (client-side upload has no serverless limit)
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
@@ -19,23 +18,58 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`;
+    }
+    if (file.size > MAX_SIZE) {
+      return `File size exceeds ${MAX_SIZE / 1024 / 1024}MB limit`;
+    }
+    return null;
+  };
+
   const uploadImage = async (file: File) => {
     setIsUploading(true);
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const result = await uploadImageAction(formData);
-
-      if (!result.success || !result.url) {
-        throw new Error(result.error || 'Upload failed');
+      // Client-side validation
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        return;
       }
 
-      onImageUploaded(result.url, file.name);
+      // Step 1: Get upload credentials from server
+      const credentialsResult = await getUploadCredentials(file.name);
+
+      if (!credentialsResult.success || !credentialsResult.token || !credentialsResult.pathname) {
+        throw new Error(credentialsResult.error || 'Failed to get upload credentials');
+      }
+
+      // Step 2: Upload directly to Vercel Blob from client (bypasses 4.5MB serverless limit)
+      const blob = await put(credentialsResult.pathname, file, {
+        access: 'public',
+        token: credentialsResult.token,
+        addRandomSuffix: false,
+      });
+
+      // Step 3: Sync to CDC database (non-blocking)
+      syncUploadedFile({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: file.size,
+        contentType: file.type,
+      }).catch(err => {
+        console.error('[CDC Sync] Failed to sync uploaded file:', err);
+        // Non-critical: Blob Storage is the source of truth
+      });
+
+      onImageUploaded(blob.url, file.name);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMessage);
+      console.error('[Image Upload] Error:', err);
     } finally {
       setIsUploading(false);
     }
@@ -63,7 +97,7 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
     setIsDragging(false);
 
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file) {
       uploadImage(file);
     } else {
       setError('Please drop an image file');
@@ -102,7 +136,7 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
               Click to upload or drag and drop
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500">
-              PNG, JPG, GIF, WebP up to 5MB
+              PNG, JPG, GIF, WebP up to 25MB
             </p>
           </button>
         )}
