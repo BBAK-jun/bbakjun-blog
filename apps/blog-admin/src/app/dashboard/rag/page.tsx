@@ -21,6 +21,7 @@ interface Message {
     title: string;
     slug: string;
     score: number;
+    githubUrl?: string;
   }>;
   timestamp: Date;
   queryTime?: number;
@@ -87,6 +88,7 @@ export default function RAGQueryPage() {
             title: s.title,
             slug: s.slug,
             score: s.score,
+            githubUrl: s.githubUrl,
           })),
           timestamp: new Date(),
           queryTime: result.data.queryTime,
@@ -241,7 +243,7 @@ export default function RAGQueryPage() {
                     {message.sources.map((source, idx) => (
                       <a
                         key={source.id}
-                        href={`/blog/${source.slug}`}
+                        href={source.githubUrl || `/blog/${source.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 rounded hover:bg-background/50"
