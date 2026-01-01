@@ -9,8 +9,10 @@ import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers';
 import {
   uploadMarkdownRequestSchema,
   uploadImageRequestSchema,
+  uploadMultipleImagesRequestSchema,
   uploadMarkdownResponseSchema,
   uploadImageResponseSchema,
+  uploadMultipleImagesResponseSchema,
   uploadErrorSchema,
 } from '@/shared/api/upload';
 
@@ -56,6 +58,29 @@ export const uploadImage = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(uploadImageResponseSchema, 'Upload result'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid request'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(InternalServerErrorSchema, 'Server error'),
+  },
+});
+
+export const uploadMultipleImages = createRoute({
+  path: '/rpc/uploadMultipleImages',
+  method: 'post',
+  tags,
+  summary: 'Upload multiple image files',
+  description: 'Upload multiple image files to Vercel Blob (requires API key)',
+  request: {
+    body: {
+      content: {
+        'multipart/form-data': {
+          schema: uploadMultipleImagesRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(uploadMultipleImagesResponseSchema, 'Upload results'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid request'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(InternalServerErrorSchema, 'Server error'),

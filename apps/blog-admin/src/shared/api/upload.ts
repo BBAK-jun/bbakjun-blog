@@ -11,6 +11,11 @@ export const uploadImageRequestSchema = z.object({
   pathname: z.string().optional(),
 });
 
+export const uploadMultipleImagesRequestSchema = z.object({
+  files: z.array(z.instanceof(File)).min(1),
+  pathname: z.string().optional(),
+});
+
 // Response schemas
 export const uploadMarkdownResponseSchema = z.object({
   success: z.boolean(),
@@ -25,6 +30,24 @@ export const uploadImageResponseSchema = z.object({
   pathname: z.string(),
   size: z.number(),
   contentType: z.string(),
+});
+
+export const uploadMultipleImagesResponseSchema = z.object({
+  success: z.boolean(),
+  results: z.array(
+    z.object({
+      success: z.boolean(),
+      url: z.string().url().optional(),
+      pathname: z.string().optional(),
+      size: z.number().optional(),
+      contentType: z.string().optional(),
+      error: z.string().optional(),
+      filename: z.string(),
+    })
+  ),
+  total: z.number(),
+  uploaded: z.number(),
+  failed: z.number(),
 });
 
 // Error schemas
