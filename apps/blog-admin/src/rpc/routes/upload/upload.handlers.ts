@@ -23,83 +23,72 @@ const requireApiKey = (authHeader?: string | null) => {
  */
 export const clientUploadToken: AppRouteHandler<typeof routes.clientUploadToken> = async c => {
   if (!BLOB_TOKEN) {
-    return c.json(
-      { error: 'BLOB_READ_WRITE_TOKEN is not configured', message: 'Server configuration error' },
-      500
-    );
+    throw new Error('BLOB_READ_WRITE_TOKEN is not configured');
   }
 
-  try {
-    const body = await c.req.json();
+  const body = await c.req.json();
 
-    // Convert Hono request to Next.js-compatible Request for handleUpload
-    const honoReq = c.req.raw;
-    const url = new URL(honoReq.url);
-    const nextRequest = new Request(url, {
-      method: honoReq.method,
-      headers: honoReq.headers,
-      body: JSON.stringify(body),
-    });
+  // Convert Hono request to Next.js-compatible Request for handleUpload
+  const honoReq = c.req.raw;
+  const url = new URL(honoReq.url);
+  const nextRequest = new Request(url, {
+    method: honoReq.method,
+    headers: honoReq.headers,
+    body: JSON.stringify(body),
+  });
 
-    const response = await handleUpload({
-      body: body as HandleUploadBody,
-      request: nextRequest,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        // Generate unique pathname with timestamp and UUID
-        const uniqueId = crypto.randomUUID().split('-')[0];
-        const extension = pathname.split('.').pop() || 'jpg';
-        const sanitizedBaseName = pathname.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
-        const finalPathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
+  const response = await handleUpload({
+    body: body as HandleUploadBody,
+    request: nextRequest,
+    onBeforeGenerateToken: async (pathname, clientPayload) => {
+      // Generate unique pathname with timestamp and UUID
+      const uniqueId = crypto.randomUUID().split('-')[0];
+      const extension = pathname.split('.').pop() || 'jpg';
+      const sanitizedBaseName = pathname.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+      const finalPathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
 
-        // Pass clientPayload to tokenPayload so it's available in onUploadCompleted
-        return {
-          allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-          addRandomSuffix: false,
-          tokenPayload: clientPayload,
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        c.get('logger')?.info({ pathname: blob.pathname }, 'Client upload completed');
+      // Pass clientPayload to tokenPayload so it's available in onUploadCompleted
+      return {
+        allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        addRandomSuffix: false,
+        tokenPayload: clientPayload,
+      };
+    },
+    onUploadCompleted: async ({ blob, tokenPayload }) => {
+      c.get('logger')?.info({ pathname: blob.pathname }, 'Client upload completed');
 
-        try {
-          // Parse clientPayload to get file size and content type
-          let fileSize = 0;
-          let contentType = blob.contentType || 'application/octet-stream';
+      try {
+        // Parse clientPayload to get file size and content type
+        let fileSize = 0;
+        let contentType = blob.contentType || 'application/octet-stream';
 
-          if (tokenPayload) {
-            try {
-              const payload = JSON.parse(tokenPayload);
-              fileSize = payload.size || 0;
-              contentType = payload.contentType || contentType;
-            } catch {
-              c.get('logger')?.warn({}, 'Failed to parse tokenPayload');
-            }
+        if (tokenPayload) {
+          try {
+            const payload = JSON.parse(tokenPayload);
+            fileSize = payload.size || 0;
+            contentType = payload.contentType || contentType;
+          } catch {
+            c.get('logger')?.warn({}, 'Failed to parse tokenPayload');
           }
-
-          // Sync to CDC database
-          await onBlobUpload({
-            url: blob.url,
-            pathname: blob.pathname,
-            size: fileSize,
-            uploadedAt: new Date(),
-            contentType,
-          });
-          c.get('logger')?.info({ pathname: blob.pathname }, 'CDC sync completed');
-        } catch (error) {
-          c.get('logger')?.error({ error }, 'CDC sync failed (non-critical)');
         }
-      },
-    });
 
-    // Return the actual response from handleUpload
-    return c.json(response);
-  } catch (error) {
-    c.get('logger')?.error({ error }, 'Client upload error');
-    return c.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
-      400
-    );
-  }
+        // Sync to CDC database
+        await onBlobUpload({
+          url: blob.url,
+          pathname: blob.pathname,
+          size: fileSize,
+          uploadedAt: new Date(),
+          contentType,
+        });
+        c.get('logger')?.info({ pathname: blob.pathname }, 'CDC sync completed');
+      } catch (error) {
+        c.get('logger')?.error({ error }, 'CDC sync failed (non-critical)');
+      }
+    },
+  });
+
+  // Return the actual response from handleUpload
+  return c.json(response);
 };
 
 export const uploadMarkdown: AppRouteHandler<typeof routes.uploadMarkdown> = async c => {

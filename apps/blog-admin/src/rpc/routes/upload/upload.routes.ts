@@ -58,8 +58,6 @@ export const clientUploadToken = createRoute({
       ]),
       'Upload token or completion response'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid request'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(InternalServerErrorSchema, 'Server error'),
   },
 });
 
