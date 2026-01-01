@@ -5,6 +5,7 @@ import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Save, ImageIcon, Loader2, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { markdown } from '@codemirror/lang-markdown';
+import { ViewPlugin, EditorView } from '@codemirror/view';
 import { useFileEditor } from '@/features/file-edit';
 import { ImageUploader, TagInput } from '@/shared/ui';
 import { toast } from 'sonner';
@@ -14,6 +15,19 @@ import '../../../markdown.css';
 const CodeMirror = dynamic(() => import('@uiw/react-codemirror').then(mod => mod.default), {
   ssr: false,
 });
+
+// EditorView 레퍼런스를 저장하기 위한 ViewPlugin
+const viewRefPlugin = (ref: React.MutableRefObject<EditorView | null>) =>
+  ViewPlugin.fromClass(
+    class {
+      constructor(view: EditorView) {
+        ref.current = view;
+      }
+      destroy() {
+        ref.current = null;
+      }
+    }
+  );
 
 function EditPageContent() {
   const searchParams = useSearchParams();
@@ -28,6 +42,7 @@ function EditPageContent() {
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const isScrollingSyncRef = useRef(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
 
   const {
     fileData,
@@ -55,12 +70,37 @@ function EditPageContent() {
   }, [hasUnsavedChanges]);
 
   const handleImageUploaded = (url: string, filename: string) => {
-    // Insert markdown image syntax at cursor position or end of content
-    const imageMarkdown = `![${filename}](${url})`;
-    setFormData({
-      ...formData,
-      content: formData.content + '\n' + imageMarkdown + '\n',
-    });
+    // Insert markdown image syntax at cursor position
+    const imageMarkdown = `\n![${filename}](${url})\n`;
+    const view = editorViewRef.current;
+
+    if (view) {
+      // CodeMirror의 transaction을 사용하여 커서 위치에 삽입
+      const transaction = view.state.update({
+        changes: {
+          from: view.state.selection.main.head,
+          to: view.state.selection.main.head,
+          insert: imageMarkdown,
+        },
+        selection: {
+          anchor: view.state.selection.main.head + imageMarkdown.length,
+          head: view.state.selection.main.head + imageMarkdown.length,
+        },
+      });
+      view.dispatch(transaction);
+
+      // 새로운 content 값으로 state 업데이트
+      setFormData({
+        ...formData,
+        content: view.state.doc.toString(),
+      });
+    } else {
+      // Fallback: 끝에 추가
+      setFormData({
+        ...formData,
+        content: formData.content + imageMarkdown,
+      });
+    }
     setShowImageUploader(false);
   };
 
@@ -96,12 +136,35 @@ function EditPageContent() {
           throw new Error(result.error || '이미지 업로드에 실패했습니다');
         }
 
-        // 이미지 마크다운 삽입
+        // CodeMirror의 현재 커서 위치에 이미지 마크다운 삽입
+        const view = editorViewRef.current;
         const imageMarkdown = `\n![${imageFile.name}](${result.url})\n`;
-        setFormData(prev => ({
-          ...prev,
-          content: prev.content + imageMarkdown,
-        }));
+
+        if (view) {
+          const transaction = view.state.update({
+            changes: {
+              from: view.state.selection.main.head,
+              to: view.state.selection.main.head,
+              insert: imageMarkdown,
+            },
+            selection: {
+              anchor: view.state.selection.main.head + imageMarkdown.length,
+              head: view.state.selection.main.head + imageMarkdown.length,
+            },
+          });
+          view.dispatch(transaction);
+
+          setFormData(prev => ({
+            ...prev,
+            content: view.state.doc.toString(),
+          }));
+        } else {
+          // Fallback: 끝에 추가
+          setFormData(prev => ({
+            ...prev,
+            content: prev.content + imageMarkdown,
+          }));
+        }
 
         toast.success('이미지 업로드 완료', {
           description: '이미지가 성공적으로 업로드되었습니다',
@@ -174,6 +237,8 @@ function EditPageContent() {
       setIsPastingImage(true);
 
       try {
+        const view = editorViewRef.current;
+
         for (const file of imageFiles) {
           const formData = new FormData();
           formData.append('file', file);
@@ -185,9 +250,36 @@ function EditPageContent() {
           }
 
           const imageMarkdown = `\n![${file.name}](${result.url})\n`;
+
+          if (view) {
+            // 현재 커서 위치에 삽입
+            const cursorPos = view.state.selection.main.head;
+            const transaction = view.state.update({
+              changes: {
+                from: cursorPos,
+                to: cursorPos,
+                insert: imageMarkdown,
+              },
+              selection: {
+                anchor: cursorPos + imageMarkdown.length,
+                head: cursorPos + imageMarkdown.length,
+              },
+            });
+            view.dispatch(transaction);
+          } else {
+            // Fallback: 끝에 추가
+            setFormData(prev => ({
+              ...prev,
+              content: prev.content + imageMarkdown,
+            }));
+          }
+        }
+
+        // CodeMirror view가 있는 경우 최종 content 업데이트
+        if (view) {
           setFormData(prev => ({
             ...prev,
-            content: prev.content + imageMarkdown,
+            content: view.state.doc.toString(),
           }));
         }
 
@@ -498,7 +590,7 @@ function EditPageContent() {
                 onChange={value => setFormData({ ...formData, content: value })}
                 height="100%"
                 theme="dark"
-                extensions={[markdown()]}
+                extensions={[markdown(), viewRefPlugin(editorViewRef)]}
                 className="text-sm"
                 basicSetup={{
                   lineNumbers: true,
