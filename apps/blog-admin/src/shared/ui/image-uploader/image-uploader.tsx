@@ -51,7 +51,6 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
       const blob = await put(credentialsResult.pathname, file, {
         access: 'public',
         token: credentialsResult.token,
-        addRandomSuffix: false,
       });
 
       // Step 3: Sync to CDC database (non-blocking)
