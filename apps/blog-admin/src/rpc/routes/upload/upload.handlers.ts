@@ -41,7 +41,7 @@ export const clientUploadToken: AppRouteHandler<typeof routes.clientUploadToken>
       body: JSON.stringify(body),
     });
 
-    await handleUpload({
+    const response = await handleUpload({
       body: body as HandleUploadBody,
       request: nextRequest,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
@@ -91,14 +91,8 @@ export const clientUploadToken: AppRouteHandler<typeof routes.clientUploadToken>
       },
     });
 
-    // Return response matching our OpenAPI schema
-    return c.json({
-      type: 'blob.generate-client-token.response' as const,
-      token: 'generated-token',
-      url: 'https://blob.vercel-storage.com/images',
-      uploadUrl: 'https://blob.vercel-storage.com/images/upload',
-      pathname: 'images/upload',
-    });
+    // Return the actual response from handleUpload
+    return c.json(response);
   } catch (error) {
     c.get('logger')?.error({ error }, 'Client upload error');
     return c.json(
