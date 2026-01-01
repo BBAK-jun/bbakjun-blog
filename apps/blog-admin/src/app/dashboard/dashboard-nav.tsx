@@ -23,13 +23,20 @@ export default function DashboardNav() {
 
   const tabs = [
     { id: 'create', name: '새 글 작성', icon: PenSquare, href: '/dashboard/create' },
-    { id: 'files', name: '파일 관리', icon: FileText, href: '/dashboard/files' },
+    { id: 'files', name: '파일 관리', icon: FileText, href: '/dashboard/files', matchSubRoutes: true },
     { id: 'upload', name: '파일 업로드', icon: Upload, href: '/dashboard/upload' },
     { id: 'experience', name: '경력 관리', icon: Briefcase, href: '/dashboard/experience' },
     { id: 'rag', name: 'RAG 관리', icon: Search, href: '/dashboard/rag' },
     { id: 'history', name: '업로드 이력', icon: History, href: '/dashboard/history' },
     { id: 'settings', name: '설정', icon: Settings, href: '/dashboard/settings' },
   ];
+
+  const isTabActive = (href: string, matchSubRoutes?: boolean): boolean => {
+    if (matchSubRoutes) {
+      return pathname === href || pathname?.startsWith(href + '/');
+    }
+    return pathname === href;
+  };
 
   useEffect(() => {
     // Check initial theme
@@ -99,12 +106,7 @@ export default function DashboardNav() {
           <div className="flex space-x-8">
             {tabs.map(tab => {
               const Icon = tab.icon;
-              // Exact match for most tabs, but allow sub-routes for files
-              const isActive =
-                tab.id === 'files'
-                  ? pathname?.startsWith(tab.href + '/') &&
-                    !pathname?.startsWith('/dashboard/create')
-                  : pathname === tab.href || pathname?.startsWith(tab.href + '/');
+              const isActive = isTabActive(tab.href, tab.matchSubRoutes);
 
               return (
                 <button
