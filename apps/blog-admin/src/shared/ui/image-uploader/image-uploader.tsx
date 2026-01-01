@@ -7,12 +7,13 @@ import { getUploadCredentials, syncUploadedFile } from '@/app/actions/files';
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string, filename: string) => void;
+  multiple?: boolean;
 }
 
 const MAX_SIZE = 25 * 1024 * 1024; // 25MB (client-side upload has no serverless limit)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
+export default function ImageUploader({ onImageUploaded, multiple = false }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
         pathname: blob.pathname,
         size: file.size,
         contentType: file.type,
-      }).catch(err => {
+      }).catch((err: unknown) => {
         console.error('[CDC Sync] Failed to sync uploaded file:', err);
         // Non-critical: Blob Storage is the source of truth
       });
@@ -74,10 +75,76 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
     }
   };
 
+  const uploadImages = async (files: FileList | File[]) => {
+    setIsUploading(true);
+    setError(null);
+
+    const fileArray = Array.from(files);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (const file of fileArray) {
+        // Client-side validation
+        const validationError = validateFile(file);
+        if (validationError) {
+          setError(`${file.name}: ${validationError}`);
+          failCount++;
+          continue;
+        }
+
+        try {
+          // Step 1: Get upload credentials from server
+          const credentialsResult = await getUploadCredentials(file.name);
+
+          if (!credentialsResult.success || !credentialsResult.token || !credentialsResult.pathname) {
+            throw new Error(credentialsResult.error || 'Failed to get upload credentials');
+          }
+
+          // Step 2: Upload directly to Vercel Blob from client
+          const blob = await put(credentialsResult.pathname, file, {
+            access: 'public',
+            token: credentialsResult.token,
+          });
+
+          // Step 3: Sync to CDC database (non-blocking)
+          syncUploadedFile({
+            url: blob.url,
+            pathname: blob.pathname,
+            size: file.size,
+            contentType: file.type,
+          }).catch((err: unknown) => {
+            console.error('[CDC Sync] Failed to sync uploaded file:', err);
+          });
+
+          onImageUploaded(blob.url, file.name);
+          successCount++;
+        } catch (err) {
+          console.error(`[Image Upload] Error uploading ${file.name}:`, err);
+          failCount++;
+        }
+      }
+
+      if (failCount > 0) {
+        setError(`${successCount}개 성공, ${failCount}개 실패`);
+      }
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadImage(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      if (multiple || files.length > 1) {
+        uploadImages(files);
+      } else {
+        uploadImage(files[0]);
+      }
     }
   };
 
@@ -95,13 +162,17 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
     e.preventDefault();
     setIsDragging(false);
 
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      uploadImage(file);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      if (multiple || files.length > 1) {
+        uploadImages(files);
+      } else {
+        uploadImage(files[0]);
+      }
     } else {
       setError('Please drop an image file');
     }
-  }, []);
+  }, [multiple]);
 
   return (
     <div className="space-y-4">
@@ -119,6 +190,7 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple={multiple}
           onChange={handleFileChange}
           className="hidden"
         />
@@ -132,10 +204,10 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
           <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full">
             <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Click to upload or drag and drop
+              {multiple ? 'Click to upload or drag and drop (multiple files)' : 'Click to upload or drag and drop'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500">
-              PNG, JPG, GIF, WebP up to 25MB
+              PNG, JPG, GIF, WebP up to 25MB{multiple ? ' each' : ''}
             </p>
           </button>
         )}
