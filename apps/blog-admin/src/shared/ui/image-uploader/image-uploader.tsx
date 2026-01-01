@@ -80,27 +80,14 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
         }
 
         try {
-          // Step 1: Get upload credentials from server
-          const credentialsResult = await getUploadCredentials(file.name);
-
-          if (!credentialsResult.success || !credentialsResult.token || !credentialsResult.pathname) {
-            throw new Error(credentialsResult.error || 'Failed to get upload credentials');
-          }
-
-          // Step 2: Upload directly to Vercel Blob from client
-          const blob = await put(credentialsResult.pathname, file, {
+          // Upload directly to Vercel Blob from client using Hono RPC endpoint
+          const blob = await upload(file.name, file, {
             access: 'public',
-            token: credentialsResult.token,
-          });
-
-          // Step 3: Sync to CDC database (non-blocking)
-          syncUploadedFile({
-            url: blob.url,
-            pathname: blob.pathname,
-            size: file.size,
-            contentType: file.type,
-          }).catch((err: unknown) => {
-            console.error('[CDC Sync] Failed to sync uploaded file:', err);
+            handleUploadUrl: '/api/rpc/upload/client-token',
+            clientPayload: JSON.stringify({
+              size: file.size,
+              contentType: file.type,
+            }),
           });
 
           onImageUploaded(blob.url, file.name);
