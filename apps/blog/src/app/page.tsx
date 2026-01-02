@@ -1,5 +1,3 @@
-import { Button } from '@/shared/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import Link from 'next/link';
 import { PopularPostsGrid } from '@/widgets/popular-posts';
 import { RecentPostsGrid } from '@/widgets/recent-posts';
@@ -9,72 +7,61 @@ export const revalidate = 60;
 
 export default function Home() {
   return (
-    <div className="space-y-16">
+    <div className="max-w-3xl mx-auto space-y-20">
       {/* Hero Section */}
-      <section className="text-center py-16">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-linear-to-r from-primary to-gray-600 bg-clip-text text-transparent">
-          안녕하세요
+      <section className="space-y-6 py-8">
+        <h1 className="text-5xl md:text-6xl font-bold">
+          박준형
         </h1>
-        <p className="text-3xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-          프론트엔드 개발자 박준형입니다.
+        <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
+          프론트엔드 개발자
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button asChild size="lg" className="font-medium">
-            <Link href="/blog">모든 포스트 보기</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="font-medium">
-            <Link href="/about">소개</Link>
-          </Button>
+        <p className="text-base text-muted-foreground leading-relaxed">
+          사용자 경험을 만들고, 그 경험이 운영 환경에서도 안정적으로 유지되게 하는 데 관심이 있습니다.
+          React와 TypeScript로 확장 가능하고 유지보수하기 쉬운 웹 애플리케이션을 만듭니다.
+        </p>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link
+            href="https://github.com/BBAK-jun"
+            target="_blank"
+            className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
+          >
+            GitHub
+          </Link>
+          <Link
+            href="https://www.linkedin.com/in/bbakjun0913/"
+            target="_blank"
+            className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
+          >
+            LinkedIn
+          </Link>
+          <Link
+            href="mailto:wnsguddl789@gmail.com"
+            className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
+          >
+            Email
+          </Link>
+          <Link
+            href="https://bbakjun.notion.site/25c42b6fc4ab807b8b24d8e40d935819"
+            target="_blank"
+            className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
+          >
+            이력서
+          </Link>
         </div>
       </section>
 
-      {/* Tabbed Posts Section */}
-      <section className="grid md:grid-cols-4 gap-8">
-        <div className="md:col-span-4">
-          <Tabs defaultValue="recent" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="recent" className="text-base font-medium">
-                📅 최신글
-              </TabsTrigger>
-              <TabsTrigger value="popular" className="text-base font-medium">
-                🔥 인기글
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="recent">
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-foreground">최신 포스트</h2>
-                  <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
-                    <Link href="/blog">전체 보기 →</Link>
-                  </Button>
-                </div>
-
-                <RecentPostsGrid limit={6} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="popular">
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-foreground">인기 포스트</h2>
-                  <Button asChild variant="ghost" className="text-primary hover:text-primary/80">
-                    <Link href="/blog">전체 보기 →</Link>
-                  </Button>
-                </div>
-
-                <PopularPostsGrid limit={12} />
-              </div>
-            </TabsContent>
-          </Tabs>
+      {/* Posts Section */}
+      <section className="space-y-10">
+        <div>
+          <h2 className="text-2xl font-bold mb-8">최신 포스트</h2>
+          <RecentPostsGrid limit={10} />
         </div>
 
-        {/* Sidebar */}
-        {/* <div className="space-y-8">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-            <PopularPosts limit={5} />
-          </div>
-        </div> */}
+        <div className="pt-8 border-t border-border/15">
+          <h2 className="text-2xl font-bold mb-8">인기 포스트</h2>
+          <PopularPostsGrid limit={10} />
+        </div>
       </section>
     </div>
   );
