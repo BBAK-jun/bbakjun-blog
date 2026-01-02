@@ -13,7 +13,7 @@ interface HistoryItem {
   fileUrl: string | null;
   fileSize: number | null;
   contentType: string | null;
-  uploadedBy: string;
+  uploadedBy: string | null;
   createdAt: string;
 }
 
@@ -261,7 +261,7 @@ export function HistoryWidget({ initialData }: HistoryWidgetProps) {
                     <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">
                       {item.fileSize ? formatFileSize(item.fileSize) : '-'}
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">{item.uploadedBy}</td>
+                    <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">{item.uploadedBy || '-'}</td>
                     <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400 text-right">
                       {formatDate(item.createdAt)}
                     </td>

@@ -23,8 +23,8 @@ export const uploadHistoryItemSchema = z.object({
   fileUrl: z.string().nullable(),
   fileSize: z.number().nullable(),
   contentType: z.string().nullable(),
-  uploadedBy: z.string(),
-  createdAt: z.date(),
+  uploadedBy: z.string().nullable(),
+  createdAt: z.string(), // JSON responses use ISO strings
 });
 
 export const uploadHistoryResponseSchema = z.object({
