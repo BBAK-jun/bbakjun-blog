@@ -4,7 +4,7 @@
 
 ## 개요
 
-이미지 업로드 기능은 블로그 포스트에 이미지를 첨부하기 위한 핵심 기능입니다. **2026-01-01**에 안정성과 사용자 경험을 크게 개선하는 업데이트가 적용되었습니다.
+이미지 업로드 기능은 블로그 포스트에 이미지를 첨부하기 위한 핵심 기능입니다. **2026-01-01**에 안정성과 사용자 경험을 크게 개선하는 업데이트가 적용되었습니다. **2026-01-02**에 다중 파일 업로드, 드래그 앤 드롭, 붙여넣기, 커서 위치 삽입 기능이 추가되어 사용자 경험이 더욱 개선되었습니다.
 
 ## 아키텍처
 
@@ -29,10 +29,107 @@ PostgreSQL BlobFile Table
 **위치**: `shared/ui/image-uploader/image-uploader.tsx`
 
 **기능**:
-- 드래그 앤 드롭 지원
+- **다중 파일 업로드** (multiple prop)
+- **드래그 앤 드롭** 지원
+- **붙여넣기** 지원 (clipboard API)
 - 파일 선택 버튼
 - 업로드 진행 표시 (Loader2)
 - 에러 메시지 표시
+- 성공/실패 카운트 표시
+
+**Props**:
+```tsx
+interface ImageUploaderProps {
+  onImageUploaded: (url: string, filename: string) => void;
+  multiple?: boolean; // 다중 파일 업로드 활성화
+}
+```
+
+**다중 파일 업로드 구현** (2026-01-02 추가):
+
+```tsx
+const uploadImages = async (files: FileList | File[]) => {
+  setIsUploading(true);
+  setError(null);
+
+  const fileArray = Array.from(files);
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const file of fileArray) {
+    // Client-side validation
+    const validationError = validateFile(file);
+    if (validationError) {
+      setError(`${file.name}: ${validationError}`);
+      failCount++;
+      continue;
+    }
+
+    try {
+      // Upload directly to Vercel Blob from client
+      const blob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/rpc/upload/client-token',
+        clientPayload: JSON.stringify({
+          size: file.size,
+          contentType: file.type,
+        }),
+      });
+
+      onImageUploaded(blob.url, file.name);
+      successCount++;
+    } catch (err) {
+      console.error(`[Image Upload] Error uploading ${file.name}:`, err);
+      failCount++;
+    }
+  }
+
+  if (failCount > 0) {
+    setError(`${successCount}개 성공, ${failCount}개 실패`);
+  }
+};
+```
+
+**드래그 앤 드롭 구현**:
+
+```tsx
+const handleDragOver = useCallback((e: React.DragEvent) => {
+  e.preventDefault();
+  setIsDragging(true);
+}, []);
+
+const handleDragLeave = useCallback((e: React.DragEvent) => {
+  e.preventDefault();
+  setIsDragging(false);
+}, []);
+
+const handleDrop = useCallback((e: React.DragEvent) => {
+  e.preventDefault();
+  setIsDragging(false);
+
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0) {
+    if (multiple || files.length > 1) {
+      uploadImages(files);
+    } else {
+      uploadImage(files[0]);
+    }
+  }
+}, [multiple]);
+```
+
+**Validation**:
+```tsx
+const validateFile = (file: File): string | null => {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`;
+  }
+  if (file.size > MAX_SIZE) {
+    return `File size exceeds ${MAX_SIZE / 1024 / 1024}MB limit`;
+  }
+  return null;
+};
+```
 
 **주요 코드**:
 ```tsx
@@ -452,7 +549,7 @@ try {
 
 ## 사용 예시
 
-### 1. React Component에서 사용
+### 1. React Component에서 사용 (단일 파일)
 
 ```tsx
 'use client';
@@ -487,6 +584,161 @@ export function MyComponent() {
     />
   );
 }
+```
+
+### 2. 다중 파일 업로드 (Upload Page)
+
+**위치**: `app/dashboard/upload/page.tsx`
+
+```tsx
+const uploadImagesMutation = useMutation({
+  mutationFn: async ({ files, pathname }: { files: File[]; pathname: string }) => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    if (pathname.trim()) {
+      formData.append('pathname', pathname.trim());
+    }
+
+    const result = await uploadMultipleImages(formData);
+    if (!result.success && !result.results) {
+      throw new Error(result.error || '이미지 업로드 중 오류가 발생했습니다.');
+    }
+    return result;
+  },
+  onSuccess: data => {
+    queryClient.invalidateQueries({ queryKey: ['files'] });
+    if (data.results) {
+      setUploadResults(data.results);
+    }
+  },
+});
+```
+
+### 3. 커서 위치에 이미지 삽입 (Edit Page)
+
+**위치**: `app/dashboard/files/edit/page.tsx`
+
+**기능**: 업로드한 이미지를 CodeMirror 에디터의 현재 커서 위치에 마크다운 형식으로 삽입
+
+```tsx
+const handleImageUploaded = (url: string, filename: string) => {
+  // Insert markdown image syntax at cursor position
+  const imageMarkdown = `\n![${filename}](${url})\n`;
+  const view = editorViewRef.current;
+
+  if (view) {
+    // CodeMirror transaction을 사용하여 커서 위치에 삽입
+    const transaction = view.state.update({
+      changes: {
+        from: view.state.selection.main.head,
+        to: view.state.selection.main.head,
+        insert: imageMarkdown,
+      },
+      selection: {
+        anchor: view.state.selection.main.head + imageMarkdown.length,
+        head: view.state.selection.main.head + imageMarkdown.length,
+      },
+    });
+    view.dispatch(transaction);
+
+    // 새로운 content 값으로 state 업데이트
+    setFormData({
+      ...formData,
+      content: view.state.doc.toString(),
+    });
+  } else {
+    // Fallback: 끝에 추가
+    setFormData({
+      ...formData,
+      content: formData.content + imageMarkdown,
+    });
+  }
+  setShowImageUploader(false);
+};
+```
+
+### 4. 붙여넣기로 이미지 업로드 (Paste Event)
+
+**위치**: `app/dashboard/files/edit/page.tsx`
+
+```tsx
+const handlePaste = useCallback(
+  async (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    // 이미지 파일 찾기
+    let imageFile: File | null = null;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        imageFile = item.getAsFile();
+        break;
+      }
+    }
+
+    if (!imageFile) return;
+
+    // 기본 붙여넣기 동작 방지 (이미지인 경우만)
+    e.preventDefault();
+
+    setIsPastingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const result = await uploadImageAction(formData);
+
+      if (!result.success || !result.url) {
+        throw new Error(result.error || '이미지 업로드에 실패했습니다');
+      }
+
+      // CodeMirror의 현재 커서 위치에 이미지 마크다운 삽입
+      const view = editorViewRef.current;
+      const imageMarkdown = `\n![${imageFile.name}](${result.url})\n`;
+
+      if (view) {
+        const transaction = view.state.update({
+          changes: {
+            from: view.state.selection.main.head,
+            to: view.state.selection.main.head,
+            insert: imageMarkdown,
+          },
+          selection: {
+            anchor: view.state.selection.main.head + imageMarkdown.length,
+            head: view.state.selection.main.head + imageMarkdown.length,
+          },
+        });
+        view.dispatch(transaction);
+
+        setFormData({
+          ...formData,
+          content: view.state.doc.toString(),
+        });
+      }
+
+      toast.success('이미지가 업로드되었습니다');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '이미지 업로드에 실패했습니다');
+    } finally {
+      setIsPastingImage(false);
+    }
+  },
+  [formData]
+);
+
+// Paste 이벤트 리스너 등록
+useEffect(() => {
+  const editorElement = editorContainerRef.current;
+  if (editorElement) {
+    editorElement.addEventListener('paste', handlePaste);
+    return () => {
+      editorElement.removeEventListener('paste', handlePaste);
+    };
+  }
+}, [handlePaste]);
 ```
 
 ### 2. RPC API로 직접 호출
@@ -559,6 +811,16 @@ pnpm start:admin
 - **CDC Hook**: [blob-cdc.ts](../../../apps/blog-admin/src/shared/server/blob-cdc.ts)
 
 ## 변경사항
+
+### 2026-01-02
+
+- **추가**: 다중 파일 업로드 지원 (multiple prop)
+- **추가**: 드래그 앤 드롭 기능
+- **추가**: 붙여넣기로 이미지 업로드 (clipboard API)
+- **추가**: CodeMirror 에디터 커서 위치에 이미지 삽입
+- **추가**: 성공/실패 카운트 표시
+- **개선**: 클라이언트 측 직접 업로드 (Vercel Blob client SDK)
+- **개선**: 파일별 개별 에러 메시지
 
 ### 2026-01-01
 

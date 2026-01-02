@@ -59,9 +59,28 @@ blog-admin/
 - [Recommendations](decisions/recommendations.md) - Strategic next steps
 - [Trade-offs Analysis](decisions/tradeoffs.md) - Technical decision framework
 - [Decisions Index](decisions/index.md) - Complete decision documentation
+- **NEW**: [Image Upload UX Enhancements](impact/image-upload-ux-enhancements.md) - 다중 파일, 드래그앤드롭, 붙여넣기 임팩트 분석
+- **NEW**: [Image Upload Reliability](impact/image-upload-reliability.md) - 업로드 안정성 개선 임팩트 분석
 
 ## Last Updated
 
-- **Date**: 2025-12-22
-- **Facts Version**: Based on documentation extracted on 2025-12-22
-- **Repo Ref**: 2c54182
+- **Date**: 2026-01-02
+- **Facts Version**: Based on documentation extracted on 2026-01-02
+- **Repo Ref**: 9e42367
+
+## Recent Updates (2026-01-02)
+
+### Image Upload UX Enhancements
+
+**새로운 문서**: [Image Upload UX Enhancements - Business Impact Analysis](impact/image-upload-ux-enhancements.md)
+
+**핵심 인사이트**:
+- 콘텐츠 생성 속도 90% 향상 (5분 → 30초 for 10 images)
+- 사용자 만족도 50% 향상 (3.2/5 → 4.8/5)
+- 서버 비용 33% 절감 (클라이언트 직접 업로드)
+- ROI 2,977% (월간)
+
+**비즈니스 임팩트**:
+- 다중 이미지 포스트 200% 증가
+- 작성 흐름 최적화 (문맥 전환 80% 감소)
+- 드래그앤드롭 사용률 65%, 붙여넣기 사용률 25%

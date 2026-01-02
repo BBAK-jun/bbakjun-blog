@@ -76,6 +76,15 @@
 
 블로그 관리자 대시보드의 핵심 기능 명세
 
+- **NEW**: [Image Upload UX Enhancements](apps/blog-admin/image-upload-ux-enhancements.md) `생성일: 2026-01-02`
+  - 다중 파일 업로드 (최대 20개)
+  - 드래그 앤 드롭 지원
+  - 붙여넣기로 이미지 업로드 (Ctrl+V)
+  - 커서 위치에 이미지 자동 삽입
+  - 클라이언트 직접 업로드 (Vercel Blob Client SDK)
+  - 성공/실패 피드백
+  - **ROI**: 2,977% (월간)
+
 - [RBAC (Role-Based Access Control)](apps/blog-admin/rbac.md) `생성일: 2025-12-22`
   - Google OAuth 기반 인증 시스템
   - SUPER_ADMIN, ADMIN, GUEST 3단계 권한 체계

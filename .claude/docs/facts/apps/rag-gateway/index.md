@@ -2,8 +2,44 @@
 
 - **Scope**: apps/rag-gateway - RAG (Retrieval-Augmented Generation) API 서비스
 - **Source of Truth**: Hono routes, TypeScript types, Environment variables
-- **Last Verified**: 2025-12-29
-- **Repo Ref**: bbakjun-blog monorepo
+- **Last Verified**: 2026-01-02
+- **Repo Ref**: 9e42367
+
+## 메타데이터
+
+```yaml
+metadata:
+  version: "2.0.0"
+  created_at: "2025-12-29T00:00:00Z"
+  last_verified: "2026-01-02T00:00:00Z"
+  git_commit: "9e42367"
+  git_branch: "BBAK-jun/paris"
+
+  changed_files:
+    - path: apps/rag-gateway/src/app.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Hono app entry point with OpenAPI configuration"
+    - path: apps/rag-gateway/src/lib/rag/core/query.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: QueryProcessor with vector search and reranking"
+    - path: apps/rag-gateway/src/lib/rag/ingestion/pipeline.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Document ingestion pipeline with chunking"
+    - path: apps/rag-gateway/src/routes/documents/documents.handlers.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Document ingestion and query handlers"
+    - path: apps/rag-gateway/src/services/embedding.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Embedding service for vector generation"
+    - path: apps/rag-gateway/Dockerfile
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Docker container configuration"
+    - path: apps/rag-gateway/tsup.config.ts
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "EXISTING: Build configuration for RPC client export"
+
+  deleted_files: []
+```
 
 ## Overview
 

@@ -2,67 +2,69 @@
 
 - **Scope**: Blog-admin 애플리케이션의 전체 구조와 기술 문서
 - **Source of Truth**: Feature-Sliced Design (FSD) 아키텍처 기반 파일 구조
-- **Last Verified**: 2025-12-31
-- **Repo Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
+- **Last Verified**: 2026-01-02
+- **Repo Ref**: 9e42367
 
 ## 메타데이터
 
 ```yaml
 metadata:
-  version: "2.0.0"
+  version: "3.0.0"
   created_at: "2024-12-22T00:00:00Z"
-  last_verified: "2025-12-31T00:57:47Z"
-  git_commit: "c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d"
-  git_branch: "BBAK-jun/pattaya"
+  last_verified: "2026-01-02T00:00:00Z"
+  git_commit: "9e42367"
+  git_branch: "BBAK-jun/paris"
 
   changed_files:
+    # Image Upload Enhancements (2026-01-02)
+    - path: apps/blog-admin/src/shared/ui/image-uploader/image-uploader.tsx
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "ENHANCED: Multiple file upload, drag-drop, paste support, client-side upload"
+    - path: apps/blog-admin/src/app/dashboard/upload/page.tsx
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "ENHANCED: Multiple images upload tab with progress tracking"
+    - path: apps/blog-admin/src/app/dashboard/files/edit/page.tsx
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "ENHANCED: Cursor position insertion, paste image upload, drag-drop support"
     - path: apps/blog-admin/src/app/actions/files.ts
       changed_at: "2026-01-01T00:00:00Z"
       reason: "IMPROVED: Image upload with retry logic, unique filename, better error messages"
-    - path: apps/blog-admin/src/rpc/routes/upload/upload.handlers.ts
-      changed_at: "2026-01-01T00:00:00Z"
-      reason: "IMPROVED: RPC uploadImage handler with retry logic and unique filename"
-    - path: apps/blog-admin/src/shared/ui/image-uploader/image-uploader.tsx
-      changed_at: "2026-01-01T00:00:00Z"
-      reason: "EXISTING: Image uploader UI component (referenced for documentation)"
     - path: apps/blog-admin/src/rpc/routes/upload/upload.routes.ts
-      changed_at: "2026-01-01T00:00:00Z"
-      reason: "EXISTING: Upload API routes (referenced for documentation)"
-    - path: apps/blog-admin/src/shared/api/upload.ts
-      changed_at: "2026-01-01T00:00:00Z"
-      reason: "EXISTING: Upload API schemas (referenced for documentation)"
-    - path: apps/blog-admin/src/app/actions/experience.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Experience management server actions"
-    - path: apps/blog-admin/src/app/actions/rag.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG integration server actions"
-    - path: apps/blog-admin/src/app/dashboard/experience/page.tsx
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Experience management UI"
+      changed_at: "2026-01-02T00:00:00Z"
+      reason: "ADDED: Client token endpoint for direct-to-blob uploads"
+
+    # RAG Gateway Integration (2025-12-31)
     - path: apps/blog-admin/src/app/dashboard/rag/page.tsx
       changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG query interface"
+      reason: "NEW: RAG query interface for documentation search"
     - path: apps/blog-admin/src/lib/rag.rpc.ts
       changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG Gateway Hono client"
-    - path: apps/blog-admin/prisma/schema.prisma
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "ADDED: Experience and Achievement models"
+      reason: "NEW: RAG Gateway Hono RPC client"
 
-  deleted_files:
-    - path: apps/blog-admin/src/rpc/routes/blob-files/getBlobFiles.ts
-      deleted_at: "2025-12-31T00:00:00Z"
-      reason: "RPC route restructuring - moved to blob-files.routes.ts"
-    - path: apps/blog-admin/src/rpc/routes/blob-files/getBlobFilesAdmin.ts
-      deleted_at: "2025-12-31T00:00:00Z"
-      reason: "RPC route restructuring - moved to blob-files.routes.ts"
-    - path: apps/blog-admin/src/rpc/routes/blob-files/syncBlobFiles.ts
-      deleted_at: "2025-12-31T00:00:00Z"
-      reason: "RPC route restructuring - moved to blob-files.routes.ts"
-    - path: apps/blog-admin/src/entities/file/api/blob-client.ts
-      deleted_at: "2025-12-31T00:00:00Z"
-      reason: "Removed direct Blob client, using CDC cache instead"
+    # RAG Gateway App (NEW)
+    - path: apps/rag-gateway/src/app.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: RAG Gateway Hono app entry point"
+    - path: apps/rag-gateway/src/lib/rag/core/query.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: RAG query processor with vector search"
+    - path: apps/rag-gateway/src/lib/rag/ingestion/pipeline.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Document ingestion pipeline for vector embeddings"
+    - path: apps/rag-gateway/src/routes/documents/documents.handlers.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Document ingestion and query API endpoints"
+    - path: apps/rag-gateway/src/services/embedding.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Embedding service for vector generation"
+    - path: apps/rag-gateway/Dockerfile
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Docker container configuration for RAG Gateway"
+    - path: apps/rag-gateway/tsup.config.ts
+      changed_at: "2025-12-31T00:00:00Z"
+      reason: "NEW: Build configuration for RPC client export"
+
+  deleted_files: []
 ```
 
 ## 개요
@@ -159,7 +161,28 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - **빌드**: `pnpm --filter=blog-admin build`
 - **개발 서버**: `pnpm --filter=blog-admin dev`
 
-## 새로운 기능 (2026-01-01)
+## 새로운 기능 (2026-01-02)
+
+### Image Upload Enhancements (Multiple Files, Drag-Drop, Paste, Cursor Insertion)
+
+- **위치**: `ImageUploader` 컴포넌트, Upload 페이지, Edit 페이지
+- **개선사항**:
+  1. **다중 파일 업로드**: `multiple` prop으로 최대 20개 파일 동시 업로드
+  2. **드래그 앤 드롭**: 파일을 에디터로 드래그하여 업로드
+  3. **붙여넣기 지원**: 클립보드의 이미지를 Ctrl+V로 바로 업로드
+  4. **커서 위치 삽입**: 업로드한 이미지를 CodeMirror 에디터의 현재 커서 위치에 마크다운 형식으로 자동 삽입
+  5. **클라이언트 측 직접 업로드**: Vercel Blob Client SDK 사용으로 서버 부하 감소
+  6. **성공/실패 카운트**: 다중 파일 업로드 시 개별 결과 표시
+- **상세**: [Image Upload System](apis/image-upload.md)
+
+### RAG Gateway Integration (2025-12-31)
+
+- **위치**: `/dashboard/rag`, RAG Gateway 앱
+- **기능**: 블로그 콘텐츠 지능형 검색 및 질문 답변
+- **연동**: RAG Gateway (Hono RPC)
+- **상세**: [RAG Integration](features/rag-integration.md)
+
+## 이전 기능 (2026-01-01)
 
 ### Image Upload Reliability Improvements
 
@@ -169,7 +192,6 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
   2. **업로드 재시도 로직**: Vercel Blob 업로드 실패 시 최대 3회 재시도 (지수 백오프: 1초, 2초, 4초)
   3. **구체적인 에러 메시지**: 네트워크 오류, 용량 한도, 인증 오류 등에 따른 한글 에러 메시지
   4. **파일명 sanitization 개선**: 확장자 보존, 특수문자 제거, 길이 제한(50자)
-- **상세**: [Image Upload System](apis/image-upload.md)
 
 ## 이전 기능 (2025-12-31)
 
