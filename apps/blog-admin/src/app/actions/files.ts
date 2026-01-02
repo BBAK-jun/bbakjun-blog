@@ -4,7 +4,7 @@ import { put, del } from '@vercel/blob';
 import { processMarkdown } from '@repo/content';
 import { revalidatePath } from 'next/cache';
 import matter from 'gray-matter';
-import { auth } from '@/auth';
+import { auth } from '../../../auth';
 import { createFileSchema, updateFileSchema, deleteFileSchema } from '@/shared/lib/schemas';
 import { revalidateBlogPost } from '@/shared/lib/revalidate-blog';
 import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from '@/shared/server/blob-cdc';
