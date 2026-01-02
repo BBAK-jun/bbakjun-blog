@@ -219,3 +219,22 @@ model UploadHistory {
   @@index([actionType])
   @@map("upload_history")
 }
+
+// ==========================================
+// System Settings
+// ==========================================
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique     // Setting key (e.g., "blog.title", "blog.author")
+  value     String   @db.Text     // Setting value (JSON string for complex values)
+  category  String                 // Category: "blog", "system", "content"
+  type      String                 // Type: "string", "number", "boolean", "json"
+  label     String                 // Human-readable label
+  updatedAt DateTime @updatedAt
+  updatedBy String?               // User who last updated
+
+  @@index([category])
+  @@index([key])
+  @@map("settings")
+}
