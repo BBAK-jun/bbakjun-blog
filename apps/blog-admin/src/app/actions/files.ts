@@ -4,6 +4,7 @@ import { put, del } from '@vercel/blob';
 import { processMarkdown } from '@repo/content';
 import { revalidatePath } from 'next/cache';
 import matter from 'gray-matter';
+import { auth } from '@/auth';
 import { createFileSchema, updateFileSchema, deleteFileSchema } from '@/shared/lib/schemas';
 import { revalidateBlogPost } from '@/shared/lib/revalidate-blog';
 import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from '@/shared/server/blob-cdc';
@@ -82,6 +83,12 @@ export interface UpdateFileInput {
 
 export async function updateFile(input: UpdateFileInput) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     // Validate input with Zod
     const validationResult = updateFileSchema.safeParse(input);
 
@@ -116,7 +123,7 @@ export async function updateFile(input: UpdateFileInput) {
       addRandomSuffix: false, // Ensure file is overwritten, not duplicated
     });
 
-    // CDC: DB에 파일 정보 저장
+    // CDC: DB에 파일 정보 저장 + 사용자 정보 전달
     try {
       await onBlobUpload({
         url: blob.url,
@@ -124,7 +131,8 @@ export async function updateFile(input: UpdateFileInput) {
         size: Buffer.byteLength(fullContent, 'utf8'),
         uploadedAt: new Date(),
         contentType: 'text/markdown',
-      });
+        uploadedBy: session.user.email,
+      }, { actionType: 'UPDATE' });
     } catch (cdcError) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }
@@ -153,6 +161,12 @@ export async function updateFile(input: UpdateFileInput) {
  */
 export async function deleteFile(pathname: string) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     // Validate input with Zod
     const validationResult = deleteFileSchema.safeParse({ pathname });
 
@@ -170,10 +184,10 @@ export async function deleteFile(pathname: string) {
 
     await del(validationResult.data.pathname, { token: BLOB_TOKEN });
 
-    // CDC: DB에서 파일 삭제 표시
+    // CDC: DB에서 파일 삭제 표시 + 사용자 정보 전달
     if (fileToDelete) {
       try {
-        await onBlobDelete(fileToDelete.pathname);
+        await onBlobDelete(fileToDelete.pathname, session.user.email);
       } catch (cdcError) {
         console.error('CDC sync failed (non-critical):', cdcError);
       }
@@ -279,6 +293,12 @@ export async function listFiles(limit = 100) {
  */
 export async function uploadMarkdown(formData: FormData) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     const file = formData.get('file') as File;
     const path = formData.get('path') as string;
 
@@ -323,7 +343,7 @@ export async function uploadMarkdown(formData: FormData) {
       token: BLOB_TOKEN,
     });
 
-    // CDC: DB에 파일 정보 저장
+    // CDC: DB에 파일 정보 저장 + 사용자 정보 전달
     try {
       await onBlobUpload({
         url: blob.url,
@@ -331,7 +351,8 @@ export async function uploadMarkdown(formData: FormData) {
         size: file.size,
         uploadedAt: new Date(),
         contentType: file.type,
-      });
+        uploadedBy: session.user.email,
+      }, { actionType: 'CREATE' });
     } catch (cdcError) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }
@@ -385,6 +406,12 @@ export async function previewMarkdown(content: string) {
  */
 export async function uploadImage(formData: FormData) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     const file = formData.get('file') as File;
 
     if (!file) {
@@ -448,7 +475,7 @@ export async function uploadImage(formData: FormData) {
 
     console.log(`[Image Upload] Success: ${blob.url}`);
 
-    // CDC: DB에 파일 정보 저장 (실패해도 업로드는 성공한 것으로 처리)
+    // CDC: DB에 파일 정보 저장 + 사용자 정보 전달 (실패해도 업로드는 성공한 것으로 처리)
     try {
       await onBlobUpload({
         url: blob.url,
@@ -456,7 +483,8 @@ export async function uploadImage(formData: FormData) {
         size: file.size,
         uploadedAt: new Date(),
         contentType: file.type,
-      });
+        uploadedBy: session.user.email,
+      }, { actionType: 'CREATE' });
       console.log(`[Image Upload] CDC sync completed: ${blob.pathname}`);
     } catch (cdcError) {
       console.error('[Image Upload] CDC sync failed (non-critical):', cdcError);
@@ -541,13 +569,20 @@ export async function syncUploadedFile(input: {
   contentType: string;
 }) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     await onBlobUpload({
       url: input.url,
       pathname: input.pathname,
       size: input.size,
       uploadedAt: new Date(),
       contentType: input.contentType,
-    });
+      uploadedBy: session.user.email,
+    }, { actionType: 'CREATE' });
 
     return {
       success: true,
@@ -709,6 +744,12 @@ export interface CreateFileInput {
 
 export async function createFile(input: CreateFileInput) {
   try {
+    // 세션 확인
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: '인증이 필요합니다' };
+    }
+
     // Validate input with Zod
     const validationResult = createFileSchema.safeParse(input);
 
@@ -757,7 +798,7 @@ export async function createFile(input: CreateFileInput) {
       contentType: 'text/markdown',
     });
 
-    // CDC: DB에 파일 정보 저장
+    // CDC: DB에 파일 정보 저장 + 사용자 정보 전달
     try {
       await onBlobUpload({
         url: blob.url,
@@ -765,7 +806,8 @@ export async function createFile(input: CreateFileInput) {
         size: Buffer.byteLength(fullContent, 'utf8'),
         uploadedAt: new Date(),
         contentType: 'text/markdown',
-      });
+        uploadedBy: session.user.email,
+      }, { actionType: 'CREATE' });
     } catch (cdcError) {
       console.error('CDC sync failed (non-critical):', cdcError);
     }

@@ -1,6 +1,7 @@
 import configureOpenAPI from './libs/open-api';
 import createApp from './libs/create-app';
 
+import uploadHistoryRouter from './routes/upload-history/upload-history.index';
 import blobFilesRouter from './routes/blob-files/blob-files.index';
 import newsletterRouter from './routes/newsletter/newsletter.index';
 import uploadRouter from './routes/upload/upload.index';
@@ -11,18 +12,15 @@ const app = createApp();
 
 configureOpenAPI(app);
 
-const routers = [
-  blobFilesRouter,
-  newsletterRouter,
-  uploadRouter,
-  viewsRouter,
-  experienceRouter,
-] as const;
+// Register routes - uploadHistoryRouter must be first for type inference
+app.route('/', uploadHistoryRouter);
+app.route('/', blobFilesRouter);
+app.route('/', newsletterRouter);
+app.route('/', uploadRouter);
+app.route('/', viewsRouter);
+app.route('/', experienceRouter);
 
-routers.forEach(router => {
-  app.route('/', router);
-});
-
-export type BlogAdminApp = (typeof routers)[number];
+// Union type of all routers for hc client
+export type BlogAdminApp = typeof app;
 export const rpcApp = app;
 export default app;

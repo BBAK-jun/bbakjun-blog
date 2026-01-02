@@ -19,6 +19,15 @@ enum UserRole {
 }
 
 // ==========================================
+// Upload History Action Types
+// ==========================================
+enum ActionType {
+  CREATE   // 파일 생성
+  UPDATE   // 파일 수정 (URL이 변경됨)
+  DELETE   // 파일 삭제
+}
+
+// ==========================================
 // Auth.js Required Models
 // ==========================================
 
@@ -183,4 +192,30 @@ model BlobFile {
   @@index([isDeleted])
   @@index([lastChecked])
   @@map("blob_files")
+}
+
+// ==========================================
+// Upload History
+// ==========================================
+
+model UploadHistory {
+  id            String     @id @default(cuid())
+  actionType    ActionType // CREATE, UPDATE, DELETE
+  pathname      String              // 파일 경로
+
+  // 파일 정보 스냅샷
+  fileUrl       String?             // 삭제 시 null
+  fileSize      BigInt?             // 삭제 시 null
+  contentType   String?             // 삭제 시 null
+
+  // 작업자 정보
+  uploadedBy    String              // 사용자 email
+
+  // 타임스탬프
+  createdAt     DateTime   @default(now())
+
+  @@index([pathname])
+  @@index([createdAt])
+  @@index([actionType])
+  @@map("upload_history")
 }

@@ -129,7 +129,16 @@ export async function onBlobUpload(blob: {
   uploadedAt: Date;
   contentType?: string;
   uploadedBy?: string;
+}, options?: {
+  actionType?: 'CREATE' | 'UPDATE';
 }) {
+  // 기존 파일 확인 (CREATE vs UPDATE 판단)
+  const existingFile = await prisma.blobFile.findUnique({
+    where: { pathname: blob.pathname },
+  });
+
+  const actionType = options?.actionType || (existingFile ? 'UPDATE' : 'CREATE');
+
   const result = await prisma.blobFile.upsert({
     where: { pathname: blob.pathname },
     create: {
@@ -150,6 +159,22 @@ export async function onBlobUpload(blob: {
     },
   });
 
+  // 업로드 이력 기록 (uploadedBy가 있는 경우)
+  if (blob.uploadedBy) {
+    try {
+      await recordUploadHistory({
+        actionType,
+        pathname: blob.pathname,
+        fileUrl: blob.url,
+        fileSize: blob.size,
+        contentType: blob.contentType,
+        uploadedBy: blob.uploadedBy,
+      });
+    } catch (err) {
+      console.warn('[UploadHistory] Failed to record history:', err);
+    }
+  }
+
   // 캐시 무효화 (비차단)
   invalidateCache(CacheKeys.blobFilesPattern()).catch(err => {
     console.warn('[BlobCDC] Failed to invalidate cache after upload:', err);
@@ -161,7 +186,12 @@ export async function onBlobUpload(blob: {
 /**
  * 파일 삭제 시 DB에서 표시 (훅)
  */
-export async function onBlobDelete(pathname: string) {
+export async function onBlobDelete(pathname: string, uploadedBy?: string) {
+  // 기존 파일 정보 가져오기 (이력 기록용)
+  const file = await prisma.blobFile.findUnique({
+    where: { pathname },
+  });
+
   const result = await prisma.blobFile.update({
     where: { pathname },
     data: {
@@ -169,6 +199,22 @@ export async function onBlobDelete(pathname: string) {
       lastChecked: new Date(),
     },
   });
+
+  // 업로드 이력 기록 (uploadedBy가 있는 경우)
+  if (uploadedBy) {
+    try {
+      await recordUploadHistory({
+        actionType: 'DELETE',
+        pathname,
+        fileUrl: file?.url,
+        fileSize: file?.size ? Number(file.size) : undefined,
+        contentType: file?.contentType || undefined,
+        uploadedBy,
+      });
+    } catch (err) {
+      console.warn('[UploadHistory] Failed to record history:', err);
+    }
+  }
 
   // 캐시 무효화 (비차단)
   invalidateCache(CacheKeys.blobFilesPattern()).catch(err => {
@@ -200,4 +246,69 @@ export async function needsSync() {
   const syncIntervalMs = env.BLOB_SYNC_INTERVAL_MINUTES * 60 * 1000;
   const syncThreshold = new Date(Date.now() - syncIntervalMs);
   return lastSync < syncThreshold;
+}
+
+// ==========================================
+// Upload History Functions
+// ==========================================
+
+/**
+ * 업로드 이력 기록
+ */
+async function recordUploadHistory(params: {
+  actionType: 'CREATE' | 'UPDATE' | 'DELETE';
+  pathname: string;
+  fileUrl?: string;
+  fileSize?: number;
+  contentType?: string;
+  uploadedBy: string;
+}) {
+  await prisma.uploadHistory.create({
+    data: {
+      actionType: params.actionType,
+      pathname: params.pathname,
+      fileUrl: params.fileUrl || null,
+      fileSize: params.fileSize ? BigInt(params.fileSize) : null,
+      contentType: params.contentType || null,
+      uploadedBy: params.uploadedBy,
+    },
+  });
+}
+
+/**
+ * 업로드 이력 조회
+ */
+export async function getUploadHistory(options?: {
+  limit?: number;
+  offset?: number;
+  searchTerm?: string;
+  actionType?: 'CREATE' | 'UPDATE' | 'DELETE';
+}) {
+  const { limit = 50, offset = 0, searchTerm, actionType } = options || {};
+
+  const where = {
+    ...(searchTerm && {
+      pathname: { contains: searchTerm, mode: 'insensitive' as const },
+    }),
+    ...(actionType && { actionType }),
+  };
+
+  const [history, total] = await Promise.all([
+    prisma.uploadHistory.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.uploadHistory.count({ where }),
+  ]);
+
+  return {
+    history: history.map(h => ({
+      ...h,
+      fileSize: h.fileSize ? Number(h.fileSize) : null,
+    })),
+    total,
+    hasMore: offset + history.length < total,
+  };
 }
