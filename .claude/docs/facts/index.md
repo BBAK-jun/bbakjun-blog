@@ -10,8 +10,9 @@
 
 블로그 관리자 대시보드 - 콘텐츠 관리, 파일 업로드, 사용자 관리, 경력 관리, RAG 통합
 
-- [Overview](./apps/blog-admin/index.md) - 최종 업데이트: 2025-12-31
+- [Overview](./apps/blog-admin/index.md) - 최종 업데이트: 2026-01-02
 - **API Documentation**
+  - [Image Upload System](./apps/blog-admin/apis/image-upload.md) - 이미지 업로드 (ENHANCED: 다중 파일, 드래그앤드롭, 붙여넣기, 커서 삽입)
   - [API Architecture](./apps/blog-admin/apis/index.md)
   - [HTTP Routes](./apps/blog-admin/apis/http.md)
   - [RPC Routes](./apps/blog-admin/apis/rpc.md)
@@ -47,7 +48,7 @@
 
 RAG(Retrieval-Augmented Generation) API 서비스
 
-- [Overview](./apps/rag-gateway/index.md) - 최종 업데이트: 2025-12-29
+- [Overview](./apps/rag-gateway/index.md) - 최종 업데이트: 2026-01-02
 - **API Documentation**
   - [API Index](./apps/rag-gateway/apis/index.md)
 - **Components**
