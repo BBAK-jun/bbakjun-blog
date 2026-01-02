@@ -6,6 +6,7 @@ import newsletterRouter from './routes/newsletter/newsletter.index';
 import uploadRouter from './routes/upload/upload.index';
 import viewsRouter from './routes/views/views.index';
 import experienceRouter from './routes/experience/experience.index';
+import uploadHistoryRouter from './routes/upload-history/upload-history.index';
 
 const app = createApp();
 
@@ -17,6 +18,7 @@ const routers = [
   uploadRouter,
   viewsRouter,
   experienceRouter,
+  uploadHistoryRouter,
 ] as const;
 
 routers.forEach(router => {

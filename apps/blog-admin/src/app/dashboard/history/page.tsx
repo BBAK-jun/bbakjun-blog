@@ -1,24 +1,41 @@
-import { History } from 'lucide-react';
+/**
+ * Upload History Page
+ *
+ * Server component that fetches initial data and renders the client-side HistoryWidget
+ */
 
-export default function HistoryPage() {
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">업로드 이력</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          파일 업로드 및 수정 이력을 확인합니다
-        </p>
-      </div>
+import { client } from '@/lib/rpc';
+import { HistoryWidget } from './history-widget';
 
-      <div className="text-center py-12">
-        <History className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
-        <p className="text-slate-600 dark:text-slate-400 mb-2">
-          업로드 이력 기능이 곧 추가될 예정입니다
-        </p>
-        <p className="text-sm text-slate-500 dark:text-slate-500">
-          파일별 업로드 시간, 수정 이력, 작업자 정보 등을 제공할 예정입니다
-        </p>
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; search?: string; actionType?: string };
+}) {
+  const page = parseInt(searchParams.page || '1');
+  const limit = 50;
+  const offset = (page - 1) * limit;
+
+  const response = await client.rpc['upload-history'].$get({
+    query: {
+      limit: String(limit),
+      offset: String(offset),
+      search: searchParams.search,
+      actionType: searchParams.actionType as 'CREATE' | 'UPDATE' | 'DELETE' | undefined,
+    },
+  });
+
+  if (!response.ok) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8">
+        <div className="text-center py-12">
+          <p className="text-red-600 dark:text-red-400">이력을 불러오는데 실패했습니다</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const data = await response.json();
+
+  return <HistoryWidget initialData={data} />;
 }
