@@ -8,8 +8,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: '모든 포스트 | DEV_BBAK 블로그',
-  description: 'DEV_BBAK 블로그의 모든 포스트를 확인해보세요.',
+  title: '포스트 | 박준형',
+  description: '프론트엔드 개발자 박준형의 블로그 포스트',
 };
 
 type PageProps = {
@@ -57,32 +57,29 @@ export default async function PostsPage({ searchParams }: PageProps) {
   const filteredPosts = filterPosts(allPosts, searchQuery);
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-3xl mx-auto space-y-12">
       {/* 페이지 헤더 */}
-      <header className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">모든 포스트</h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
+      <header>
+        <h1 className="text-4xl font-bold mb-2">포스트</h1>
+        <p className="text-muted-foreground">
           {searchQuery
-            ? `"${searchQuery}" 검색결과 ${filteredPosts.length}개 / 전체 ${allPosts.length}개`
-            : `총 ${allPosts.length}개의 포스트가 있습니다.`}
+            ? `${filteredPosts.length}개의 결과`
+            : `${allPosts.length}개의 포스트`}
         </p>
       </header>
 
       {/* 검색 바 (클라이언트 컴포넌트) */}
-      <section className="max-w-2xl mx-auto">
-        <SearchBarClient placeholder="제목, 내용, 태그로 검색..." />
+      <section>
+        <SearchBarClient placeholder="검색..." />
       </section>
 
       {/* 태그 필터 */}
-      {tags.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-            태그로 필터링
-          </h2>
-          <div className="flex flex-wrap gap-2">
+      {tags.length > 0 && !searchQuery && (
+        <section>
+          <div className="flex flex-wrap gap-3 text-sm">
             <Link
               href="/blog"
-              className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="text-foreground hover:underline decoration-1 underline-offset-2"
             >
               전체
             </Link>
@@ -90,7 +87,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
               <Link
                 key={tag}
                 href={`/tags/${tag}`}
-                className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
               >
                 #{tag}
               </Link>
@@ -101,15 +98,6 @@ export default async function PostsPage({ searchParams }: PageProps) {
 
       {/* 포스트 목록 */}
       <BlogPostsList posts={filteredPosts} searchQuery={searchQuery} />
-
-      {/* 페이지네이션 */}
-      {filteredPosts.length > 12 && (
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400">
-            페이지네이션 기능은 포스트가 더 많아지면 추가할 예정입니다.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

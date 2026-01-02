@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { Post } from '@repo/content';
-import { Card, CardContent } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
 
 interface PostCardProps {
   post: Post;
@@ -21,40 +19,26 @@ export default function PostCard({ post }: PostCardProps) {
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
-      <Link href={`/blog/${slug}`} className="block">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-foreground line-clamp-2 hover:text-primary transition-colors">
-              {title}
-            </h3>
+    <Link href={`/blog/${slug}`} className="block py-4 group">
+      <article className="space-y-2">
+        <h3 className="text-lg font-medium text-foreground group-hover:underline decoration-1 underline-offset-2">
+          {title}
+        </h3>
 
-            <p className="text-muted-foreground line-clamp-3 leading-relaxed">{description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <time dateTime={date} className="font-medium">
-                {formatDate(date)}
-              </time>
-              <span className="text-xs bg-muted px-2 py-1 rounded-md">{readingTime}</span>
-            </div>
-
-            {tags && tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {tags.slice(0, 3).map(tag => (
-                  <Badge key={tag} variant="secondary" className="text-xs font-normal">
-                    #{tag}
-                  </Badge>
-                ))}
-                {tags.length > 3 && (
-                  <Badge variant="outline" className="text-xs font-normal">
-                    +{tags.length - 3}
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Link>
-    </Card>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <time dateTime={date}>{formatDate(date)}</time>
+          <span>·</span>
+          <span>{readingTime}</span>
+          {tags && tags.length > 0 && (
+            <>
+              <span>·</span>
+              <span className="font-medium">{tags[0]}</span>
+            </>
+          )}
+        </div>
+      </article>
+    </Link>
   );
 }

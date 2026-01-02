@@ -20,13 +20,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'DEV_BBAK 블로그',
-  description: '안녕하세요 프론트엔드 개발자 박준형입니다.',
+  title: '박준형 - 프론트엔드 개발자',
+  description: '프론트엔드 개발자 박준형의 블로그',
   keywords: '개발, 블로그, Next.js, React, TypeScript',
   authors: [{ name: 'bbakjun' }],
   openGraph: {
-    title: 'DEV_BBAK 블로그',
-    description: '안녕하세요 프론트엔드 개발자 박준형입니다.',
+    title: '박준형 - 프론트엔드 개발자',
+    description: '프론트엔드 개발자 박준형의 블로그',
     type: 'website',
     locale: 'ko_KR',
   },
@@ -57,7 +57,7 @@ export default function RootLayout({
             >
               <div className="min-h-screen flex flex-col">
                 <Header />
-                <main className="grow container mx-auto px-4 py-8 max-w-[1536px]">{children}</main>
+                <main className="grow px-4 py-12">{children}</main>
                 <Footer />
               </div>
             </ThemeProvider>
