@@ -64,6 +64,10 @@ const config: Config = {
               paddingLeft: '1rem',
               fontStyle: 'normal',
             },
+            'blockquote p': {
+              marginTop: '0',
+              marginBottom: '0',
+            },
             h1: {
               color: 'inherit',
               fontSize: '2.25rem',
