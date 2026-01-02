@@ -3,37 +3,43 @@ import { getRedisClient, type RedisClient } from '@repo/cache/redis';
 /**
  * ViewCounter - 블로그 포스트 조회수 추적
  *
- * Redis를 사용하여 해시 기반 조회수를 저장하고,
- * 세션 기반 중복 방지를 제공합니다.
+ * Redis 구조 (분리형):
+ * - 조회수: views:DEV/my-post → 해시 { views: "100" } (영구 유지)
+ * - 세션: sessions:DEV/my-post:user123 → "1" (24시간 TTL)
+ *
+ * 이 구조의 장점:
+ * - 조회수는 영구적으로 유지
+ * - 세션 데이터는 24시간 후 자동 삭제로 메모리 절약
+ * - 중복 조회 방지는 24시간 동안 유효
  */
 export class ViewCounter {
   private static readonly VIEW_KEY_PREFIX = 'views:';
+  private static readonly SESSION_KEY_PREFIX = 'sessions:';
+  private static readonly SESSION_TTL = 86400; // 24시간
 
   private static async getClient(): Promise<RedisClient> {
     return await getRedisClient();
   }
 
-  // 해시 키 생성
-  private static getHashKey(slug: string): string {
+  // 조회수 키 생성 (해시)
+  private static getViewKey(slug: string): string {
     return `${this.VIEW_KEY_PREFIX}${slug}`;
   }
 
-  // 세션 필드명 생성
-  private static getSessionField(sessionId: string): string {
-    return `sessions:${sessionId}`;
+  // 세션 키 생성 (별도 키)
+  private static getSessionKey(slug: string, sessionId: string): string {
+    return `${this.SESSION_KEY_PREFIX}${slug}:${sessionId}`;
   }
 
   // 기존 문자열 키를 해시로 마이그레이션
-  private static async migrateToHash(redis: RedisClient, hashKey: string): Promise<number> {
+  private static async migrateToHash(redis: RedisClient, viewKey: string): Promise<number> {
     try {
-      // 기존 문자열 값 읽기
-      const oldValue = await redis.get(hashKey);
+      const oldValue = await redis.get(viewKey);
       if (oldValue) {
         const views = Number(oldValue) || 0;
-        // 기존 키 삭제 후 해시로 생성
-        await redis.del(hashKey);
+        await redis.del(viewKey);
         if (views > 0) {
-          await redis.hSet(hashKey, 'views', views.toString());
+          await redis.hSet(viewKey, 'views', views.toString());
         }
         return views;
       }
@@ -44,47 +50,77 @@ export class ViewCounter {
     }
   }
 
+  // 기존 해시 기반 세션을 별도 키로 마이그레이션
+  private static async migrateSessionToSeparateKey(
+    redis: RedisClient,
+    slug: string,
+    sessionId: string
+  ): Promise<boolean> {
+    try {
+      const viewKey = this.getViewKey(slug);
+      const sessionField = `sessions:${sessionId}`;
+      const newSessionKey = this.getSessionKey(slug, sessionId);
+
+      // 기존 해시에서 세션 필드 확인
+      const existingSession = await redis.hGet(viewKey, sessionField);
+
+      if (existingSession) {
+        // 새 세션 키 생성 및 TTL 설정
+        await redis.set(newSessionKey, '1', { EX: this.SESSION_TTL });
+        // 기존 해시에서 세션 필드 삭제
+        await redis.hDel(viewKey, sessionField);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Failed to migrate session to separate key:', error);
+      return false;
+    }
+  }
+
   // 세션 기반 조회수 증가 (원자적 연산으로 중복 방지)
   // 반환값: [조회수, 새로 증가시켰는지 여부]
   static async incrementWithSession(sessionId: string, slug: string): Promise<[number, boolean]> {
     try {
       const redis = await this.getClient();
-      const hashKey = this.getHashKey(slug);
-      const sessionField = this.getSessionField(sessionId);
+      const viewKey = this.getViewKey(slug);
+      const sessionKey = this.getSessionKey(slug, sessionId);
 
-      // 키 타입 확인 및 마이그레이션
+      // 조회수 키 타입 확인 및 마이그레이션
       try {
-        const keyType = await redis.type(hashKey);
+        const keyType = await redis.type(viewKey);
         if (keyType === 'string') {
-          // 기존 문자열 키를 해시로 마이그레이션
-          await this.migrateToHash(redis, hashKey);
-        } else if (keyType === 'none') {
-          // 키가 없으면 새로 생성 (아무것도 안 함)
+          await this.migrateToHash(redis, viewKey);
         }
-        // keyType이 'hash'면 그대로 진행
       } catch (typeError) {
-        // 타입 확인 실패 시 무시하고 진행
-        console.warn('Failed to check key type:', typeError);
+        console.warn('Failed to check view key type:', typeError);
       }
 
-      // HSETNX로 세션 필드 설정 시도 (원자적 연산)
-      // 1이 반환되면 새로 설정됨 (이전에 없었음), 0이면 이미 존재함
-      const isNewSession = await redis.hSetNX(hashKey, sessionField, '1');
+      // 세션 키 확인 (기존 해시 기반 세션이 있으면 마이그레이션)
+      const sessionExists = await redis.exists(sessionKey);
+      if (!sessionExists) {
+        // 기존 해시 기반 세션 마이그레이션 시도
+        await this.migrateSessionToSeparateKey(redis, slug, sessionId);
+      }
+
+      // SET NX 옵션으로 원자적 세션 체크 및 설정
+      const isNewSession = !(await redis.exists(sessionKey));
 
       if (isNewSession) {
-        // 새 세션이면 조회수 증가 및 TTL 설정
-        // hIncrBy는 필드가 없으면 0에서 시작해서 1로 증가시킴
-        const views = await redis.hIncrBy(hashKey, 'views', 1);
+        // 새 세션 키 생성 (24시간 TTL)
+        await redis.set(sessionKey, '1', { EX: this.SESSION_TTL, NX: true });
+
+        // 조회수 증가 (영구 유지)
+        const views = await redis.hIncrBy(viewKey, 'views', 1);
         console.log(
-          `[ViewCounter.incrementWithSession] New session - slug: ${slug}, hashKey: ${hashKey}, views after increment: ${views}`
+          `[ViewCounter.incrementWithSession] New session - slug: ${slug}, viewKey: ${viewKey}, sessionKey: ${sessionKey}, views after increment: ${views}`
         );
-        // TTL 설정 (없으면 24시간)
-        await redis.expire(hashKey, 86400);
         return [views, true];
       } else {
         // 이미 조회한 세션이면 조회수만 조회
         console.log(
-          `[ViewCounter.incrementWithSession] Existing session - slug: ${slug}, hashKey: ${hashKey}`
+          `[ViewCounter.incrementWithSession] Existing session - slug: ${slug}, sessionKey: ${sessionKey}`
         );
         const views = await this.get(slug);
         return [views, false];
@@ -99,21 +135,20 @@ export class ViewCounter {
   static async increment(slug: string): Promise<number> {
     try {
       const redis = await this.getClient();
-      const hashKey = this.getHashKey(slug);
+      const viewKey = this.getViewKey(slug);
 
       // 키 타입 확인 및 마이그레이션
       try {
-        const keyType = await redis.type(hashKey);
+        const keyType = await redis.type(viewKey);
         if (keyType === 'string') {
-          await this.migrateToHash(redis, hashKey);
+          await this.migrateToHash(redis, viewKey);
         }
       } catch (typeError) {
         console.warn('Failed to check key type:', typeError);
       }
 
-      const views = await redis.hIncrBy(hashKey, 'views', 1);
-      // TTL 설정 (없으면 24시간)
-      await redis.expire(hashKey, 86400);
+      const views = await redis.hIncrBy(viewKey, 'views', 1);
+      // 조회수는 영구 유지 (TTL 없음)
       return views;
     } catch (error) {
       console.error('Failed to increment view count:', error);
@@ -125,33 +160,25 @@ export class ViewCounter {
   static async get(slug: string): Promise<number> {
     try {
       const redis = await this.getClient();
-      const hashKey = this.getHashKey(slug);
+      const viewKey = this.getViewKey(slug);
 
       // 키 타입 확인
-      const keyType = await redis.type(hashKey);
+      const keyType = await redis.type(viewKey);
 
       if (keyType === 'string') {
         // 기존 문자열 키면 값 읽기
-        const views = await redis.get(hashKey);
+        const views = await redis.get(viewKey);
         return views ? Number(views) : 0;
       } else if (keyType === 'hash') {
         // 해시 타입이면 해시 필드에서 읽기
-        const views = await redis.hGet(hashKey, 'views');
+        const views = await redis.hGet(viewKey, 'views');
         return views ? Number(views) : 0;
       }
 
       return 0;
     } catch (error) {
-      // WRONGTYPE 에러 등 발생 시 기존 방식으로 fallback
-      try {
-        const redis = await this.getClient();
-        const hashKey = this.getHashKey(slug);
-        const views = await redis.get(hashKey);
-        return views ? Number(views) : 0;
-      } catch {
-        console.error('Failed to get view count:', error);
-        return 0;
-      }
+      console.error('Failed to get view count:', error);
+      return 0;
     }
   }
 
@@ -159,11 +186,11 @@ export class ViewCounter {
   static async getMultiple(slugs: string[]): Promise<Record<string, number>> {
     try {
       const redis = await this.getClient();
-      const hashKeys = slugs.map(slug => this.getHashKey(slug));
+      const viewKeys = slugs.map(slug => this.getViewKey(slug));
       const pipeline = redis.multi();
 
-      hashKeys.forEach(hashKey => {
-        pipeline.hGet(hashKey, 'views');
+      viewKeys.forEach(viewKey => {
+        pipeline.hGet(viewKey, 'views');
       });
 
       const results = await pipeline.exec();
@@ -173,7 +200,6 @@ export class ViewCounter {
         const result = results?.[index];
         let views = 0;
 
-        // Redis pipeline 결과는 [error, value] 형태
         if (result && Array.isArray(result)) {
           const [error, value] = result;
           if (!error && value !== null) {
@@ -204,14 +230,12 @@ export class ViewCounter {
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return 0;
 
-      // 직접 조회 방식 (더 안정적)
       let total = 0;
       for (const key of keys) {
         try {
           const views = await redis.hGet(key, 'views');
           total += views ? Number(views) : 0;
         } catch (error) {
-          // 개별 키 조회 실패 시 무시하고 계속
           continue;
         }
       }
@@ -232,7 +256,6 @@ export class ViewCounter {
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return [];
 
-      // 직접 조회 방식 (더 안정적)
       const posts = [];
       for (const key of keys) {
         try {
