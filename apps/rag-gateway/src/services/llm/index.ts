@@ -15,10 +15,18 @@ import { buildContext, buildRAGPrompt, detectIntent } from './prompt';
  */
 export class LLMService implements ILLMService {
   private strategy: LLMProviderStrategy;
+  private readonly provider: string;
 
   constructor(provider?: string) {
-    const selectedProvider = provider || env.LLM_PROVIDER;
-    this.strategy = LLMProviderFactory.createStrategy(selectedProvider);
+    this.provider = provider || env.LLM_PROVIDER;
+    this.strategy = LLMProviderFactory.createStrategy(this.provider);
+  }
+
+  /**
+   * Get the current provider name
+   */
+  getProvider(): string {
+    return this.provider;
   }
 
   /**
@@ -72,8 +80,11 @@ export class LLMService implements ILLMService {
 let llmService: LLMService | null = null;
 
 export function getLLMService(): LLMService {
-  if (!llmService) {
-    llmService = new LLMService();
+  const currentProvider = env.LLM_PROVIDER;
+  // Recreate service if provider changed
+  if (!llmService || llmService.getProvider() !== currentProvider) {
+    LLMProviderFactory.clearCache();
+    llmService = new LLMService(currentProvider);
   }
   return llmService;
 }
