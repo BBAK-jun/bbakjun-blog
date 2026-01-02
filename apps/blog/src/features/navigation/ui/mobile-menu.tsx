@@ -5,10 +5,8 @@ import { useState } from 'react';
 import { cn } from '@/shared/lib/utils';
 
 const navLinks = [
-  { href: '/', label: '홈' },
   { href: '/blog', label: '포스트' },
-  { href: '/tags', label: '태그' },
-  { href: '/series', label: '시리즈' },
+  { href: '/about', label: '소개' },
 ];
 
 export default function MobileMenu() {
@@ -21,7 +19,7 @@ export default function MobileMenu() {
     <>
       {/* 모바일 메뉴 버튼 */}
       <button
-        className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground transition-colors"
         aria-label={isOpen ? '메뉴 닫기' : '메뉴 열기'}
         onClick={toggleMenu}
       >
@@ -49,15 +47,12 @@ export default function MobileMenu() {
       {/* 모바일 메뉴 드롭다운 */}
       {isOpen && (
         <div className="absolute top-full left-0 right-0 md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 bg-background border-t border-border/40 shadow-lg">
+          <div className="px-4 py-4 space-y-3 bg-background border-t border-border/15">
             {navLinks.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
-                className={cn(
-                  'block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors',
-                  'hover:underline hover:underline-offset-4'
-                )}
+                className="block py-2 text-base text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2 transition-colors"
                 onClick={closeMenu}
               >
                 {label}
