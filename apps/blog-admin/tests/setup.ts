@@ -1,6 +1,6 @@
 import { beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@repo/database';
+import { PrismaPg } from '@repo/database';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 

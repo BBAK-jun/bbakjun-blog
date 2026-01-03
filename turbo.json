@@ -24,7 +24,7 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@repo/database#db:generate"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "build:rpc": {
@@ -33,10 +33,10 @@
       "cache": true
     },
     "@apps/blog#build": {
-      "dependsOn": ["@apps/blog-admin#build:rpc", "^build", "generate:prisma"]
+      "dependsOn": ["@apps/blog-admin#build:rpc", "^build"]
     },
     "@apps/blog-admin#build": {
-      "dependsOn": ["@apps/rag-gateway#build", "^build", "generate:prisma"],
+      "dependsOn": ["@apps/rag-gateway#build", "^build"],
       "env": ["RAG_GATEWAY_API_KEY", "NEXT_PUBLIC_RAG_GATEWAY_URL"]
     },
     "@apps/rag-gateway#build": {
@@ -53,11 +53,26 @@
         "BLOG_ADMIN_URL"
       ]
     },
-    "generate:prisma": {
-      "dependsOn": ["^generate:prisma"],
-      "outputs": ["prisma/**"]
+    "db:generate": {
+      "cache": false,
+      "outputs": ["packages/database/generated/**"]
+    },
+    "db:migrate": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:deploy": {
+      "cache": false
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:push": {
+      "cache": false
     },
     "dev": {
+      "dependsOn": ["@repo/database#db:generate"],
       "cache": false,
       "persistent": true
     },
@@ -65,7 +80,7 @@
       "dependsOn": ["^lint"]
     },
     "type-check": {
-      "dependsOn": ["^type-check"]
+      "dependsOn": ["^type-check", "@repo/database#db:generate"]
     },
     "test": {
       "dependsOn": ["^test"]

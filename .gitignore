@@ -54,3 +54,6 @@ apps/blog/.next/
 
 # blog generated (OpenAPI types)
 apps/blog/src/generated/
+
+# Prisma generated types (platform-specific binaries)
+packages/database/generated/

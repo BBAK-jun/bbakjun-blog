@@ -2,7 +2,7 @@ import type { OpenAPIHono, RouteConfig, RouteHandler } from '@hono/zod-openapi';
 import type { Schema } from 'hono';
 import type { PinoLogger } from 'hono-pino';
 import type { Session } from 'next-auth';
-import type { UserRole } from '@prisma/client';
+import type { UserRole } from '@repo/database';
 
 interface UserWithSession extends Session {
   user: Session['user'] & {

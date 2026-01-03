@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -13,9 +14,9 @@ datasource db {
 // User Roles (역할 기반 접근 제어)
 // ==========================================
 enum UserRole {
-  SUPER_ADMIN  // 최고 관리자 - 모든 권한 + 사용자 역할 관리
-  ADMIN        // 일반 관리자 - 콘텐츠 관리 (CRUD)
-  GUEST        // 게스트 - 읽기 전용
+  SUPER_ADMIN // 최고 관리자 - 모든 권한 + 사용자 역할 관리
+  ADMIN       // 일반 관리자 - 콘텐츠 관리 (CRUD)
+  GUEST       // 게스트 - 읽기 전용
 }
 
 // ==========================================
@@ -31,7 +32,7 @@ model User {
 
   // Custom fields
   role          UserRole  @default(GUEST)
-  username      String?   @unique  // 레거시 호환성 (선택)
+  username      String?   @unique // 레거시 호환성 (선택)
 
   // Relations
   accounts      Account[]
@@ -50,7 +51,7 @@ model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
-  provider          String  // e.g., "google"
+  provider          String // e.g., "google"
   providerAccountId String
   refresh_token     String? @db.Text
   access_token      String? @db.Text
@@ -190,9 +191,9 @@ model BlobFile {
 // ==========================================
 
 enum ActionType {
-  CREATE   // 파일 생성
-  UPDATE   // 파일 수정 (URL이 변경됨)
-  DELETE   // 파일 삭제
+  CREATE // 파일 생성
+  UPDATE // 파일 수정 (URL이 변경됨)
+  DELETE // 파일 삭제
 }
 
 model UploadHistory {
