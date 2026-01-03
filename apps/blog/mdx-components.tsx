@@ -1,5 +1,4 @@
 import type { MDXComponents } from 'mdx/types';
-import Image, { ImageProps } from 'next/image';
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
@@ -52,13 +51,12 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         {children}
       </pre>
     ),
-    // Next.js Image 컴포넌트를 MDX에서 사용할 수 있도록
+    // 이미지는 서버사이드 rehype-optimize-images에서 최적화됨
+    // 여기서는 원본 비율을 유지하기 위해 일반 img 태그 사용
     img: props => (
-      <Image
-        {...(props as ImageProps)}
-        width={800}
-        height={400}
-        className="rounded-lg mb-4"
+      <img
+        {...props}
+        className="rounded-lg my-6 w-full h-auto"
         alt={props.alt || ''}
       />
     ),
