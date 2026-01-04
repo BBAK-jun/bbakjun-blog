@@ -22,7 +22,7 @@ export default async function TagsPage() {
   tagsWithCount.sort((a, b) => b.count - a.count);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12">
+    <div className="space-y-12">
       {/* 페이지 헤더 */}
       <header>
         <h1 className="text-4xl font-bold mb-2">태그</h1>

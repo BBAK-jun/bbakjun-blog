@@ -31,7 +31,7 @@ export default async function AboutPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-16">
+    <div className="space-y-16">
       {/* Hero Section */}
       <section className="space-y-6 py-8">
         <h1 className="text-5xl md:text-6xl font-bold">박준형</h1>

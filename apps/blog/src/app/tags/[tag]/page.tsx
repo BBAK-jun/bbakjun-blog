@@ -56,7 +56,7 @@ export default async function TagPage({ params }: TagPageProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12">
+    <div className="space-y-12">
       {/* 페이지 헤더 */}
       <header>
         <Link

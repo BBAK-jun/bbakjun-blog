@@ -62,7 +62,7 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div>
       {/* Header */}
       <div className="mb-8">
         <Button asChild variant="ghost" size="sm" className="-ml-4 mb-4">

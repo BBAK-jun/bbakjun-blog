@@ -7,7 +7,7 @@ export const revalidate = 60;
 
 export default function Home() {
   return (
-    <div className="max-w-3xl mx-auto space-y-20">
+    <div className="space-y-20">
       {/* Hero Section */}
       <section className="space-y-6 py-8">
         <h1 className="text-5xl md:text-6xl font-bold">
