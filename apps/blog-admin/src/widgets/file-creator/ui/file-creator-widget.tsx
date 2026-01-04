@@ -6,7 +6,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useScrollSync } from '@/shared/hooks/use-scroll-sync';
 import {
   Save,
   Plus,
@@ -42,6 +43,13 @@ export function FileCreatorWidget() {
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'split'>('editor');
   const [showDraftNotice, setShowDraftNotice] = useState(false);
+
+  // Scroll sync refs
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+
+  // 스크롤 동기화 훅 사용 (분할 모드에서만 활성화)
+  useScrollSync(editorScrollRef, previewScrollRef, { enabled: viewMode === 'split' });
 
   const handleImageUploaded = (url: string, filename: string) => {
     const imageMarkdown = `![${filename}](${url})`;
@@ -373,6 +381,7 @@ export function FileCreatorWidget() {
             <div className="flex items-center gap-1 border border-slate-300 dark:border-slate-600 rounded overflow-hidden">
               <button
                 onClick={() => setViewMode('editor')}
+                title="편집 모드"
                 className={`px-3 py-1 text-sm ${
                   viewMode === 'editor'
                     ? 'bg-blue-600 text-white'
@@ -386,6 +395,7 @@ export function FileCreatorWidget() {
                   setViewMode('split');
                   handlePreview();
                 }}
+                title="분할 보기"
                 className={`px-3 py-1 text-sm ${
                   viewMode === 'split'
                     ? 'bg-blue-600 text-white'
@@ -399,6 +409,7 @@ export function FileCreatorWidget() {
                   setViewMode('preview');
                   handlePreview();
                 }}
+                title="미리보기"
                 className={`px-3 py-1 text-sm ${
                   viewMode === 'preview'
                     ? 'bg-blue-600 text-white'
@@ -418,7 +429,7 @@ export function FileCreatorWidget() {
             <div
               className={`${viewMode === 'split' ? 'border-r border-slate-200 dark:border-slate-700' : ''}`}
             >
-              <div className="p-4">
+              <div ref={editorScrollRef} data-testid="markdown-editor-scroll" className="p-4 overflow-auto" style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}>
                 <MarkdownEditor
                   value={formData.content}
                   onChange={value => setFormData({ ...formData, content: value })}
@@ -434,27 +445,27 @@ export function FileCreatorWidget() {
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div className="p-4">
               <div
-                className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden"
+                ref={previewScrollRef}
+                data-testid="preview-scroll"
+                className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-auto"
                 style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
               >
-                <div className="overflow-auto h-full">
-                  {isPreviewLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-slate-600 dark:text-slate-400">미리보기 처리 중...</p>
-                    </div>
-                  ) : previewHtml ? (
-                    <article
-                      className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
-                      dangerouslySetInnerHTML={{ __html: previewHtml }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-slate-400 dark:text-slate-500 text-sm">
-                        내용을 입력하면 미리보기가 표시됩니다
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {isPreviewLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-slate-600 dark:text-slate-400">미리보기 처리 중...</p>
+                  </div>
+                ) : previewHtml ? (
+                  <article
+                    className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-slate-400 dark:text-slate-500 text-sm">
+                      내용을 입력하면 미리보기가 표시됩니다
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
