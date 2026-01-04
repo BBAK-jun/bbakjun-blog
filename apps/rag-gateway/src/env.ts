@@ -35,9 +35,6 @@ export const env = createEnv({
     // Optional Redis for caching
     REDIS_URL: z.string().url().optional(),
 
-    // Blog-Admin URL for fetching blob files
-    BLOG_ADMIN_URL: z.string().url().default('http://localhost:3001'),
-
     // CORS Configuration
     ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
 
@@ -56,7 +53,6 @@ export const env = createEnv({
     EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
     EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
     REDIS_URL: process.env.REDIS_URL,
-    BLOG_ADMIN_URL: process.env.BLOG_ADMIN_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,
   },
