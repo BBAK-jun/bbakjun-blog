@@ -1,6 +1,7 @@
 import type { ChunkingOptions, Document, QdrantPoint, DocumentSource } from '../types';
 import { generateDocumentId } from '../types';
 import matter from 'gray-matter';
+import { sendNotification, getNotificationConfig } from '@/lib/notifications';
 
 // BlobFile 타입 정의 (외부에서 전달받을 파일 정보)
 export interface BlobFileInfo {
@@ -78,15 +79,37 @@ export class IngestionPipeline {
       startedAt: new Date().toISOString(),
     });
 
-    // Run ingestion in background
-    this.runIngestion(jobId, options).catch(error => {
-      const job = this.jobs.get(jobId);
-      if (job) {
-        job.status = 'failed';
-        job.error = error instanceof Error ? error.message : String(error);
-        job.completedAt = new Date().toISOString();
-      }
-    });
+    // Run ingestion in background with notification
+    this.runIngestion(jobId, options)
+      .then(async () => {
+        // Job completed successfully - send notification
+        const job = this.jobs.get(jobId);
+        if (job) {
+          const config = getNotificationConfig();
+          if (config.slack || config.email) {
+            await sendNotification(job, config).catch(err => {
+              console.error('❌ Failed to send notification:', err);
+            });
+          }
+        }
+      })
+      .catch(async error => {
+        // Job failed - update status and send notification
+        const job = this.jobs.get(jobId);
+        if (job) {
+          job.status = 'failed';
+          job.error = error instanceof Error ? error.message : String(error);
+          job.completedAt = new Date().toISOString();
+
+          // Send failure notification
+          const config = getNotificationConfig();
+          if (config.slack || config.email) {
+            await sendNotification(job, config).catch(err => {
+              console.error('❌ Failed to send notification:', err);
+            });
+          }
+        }
+      });
 
     return jobId;
   }

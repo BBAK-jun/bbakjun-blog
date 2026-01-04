@@ -104,8 +104,8 @@ export const ingestStatus = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
-        jobId: z.string(),
-        status: z.enum(['pending', 'running', 'completed', 'failed']),
+        id: z.string(),
+        status: z.enum(['running', 'completed', 'failed']),
         progress: z.object({
           total: z.number(),
           processed: z.number(),
@@ -114,7 +114,9 @@ export const ingestStatus = createRoute({
           current: z.string(),
         }),
         startedAt: z.string().datetime(),
-      }),
+        completedAt: z.string().datetime().optional(),
+        error: z.string().optional(),
+      }).nullable(),
       'RAG ingest status response'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'RAG ingest status request'),

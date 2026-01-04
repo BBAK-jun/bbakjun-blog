@@ -50,6 +50,12 @@ BLOG_ADMIN_URL=https://your-blog-admin.vercel.app
 
 # 선택 사항 (Rate Limiting용 Redis)
 REDIS_URL=redis://default:password@host:port
+
+# 알림 설정 (선택사항)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+SLACK_CHANNEL=#notifications
+NOTIFICATION_EMAILS=user1@example.com,user2@example.com
+RESEND_API_KEY=re_xxxxxxxxxxxxx
 ```
 
 #### 환경 변수 생성 방법
