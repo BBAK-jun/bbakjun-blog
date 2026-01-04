@@ -1,8 +1,81 @@
 # Blog App Facts
 
 - **Scope**: Blog 앱 전체 아키텍처 및 기능
-- **Last Verified**: 2025-12-26
-- **Repo Ref**: main
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
+
+---
+
+## Metadata
+
+```yaml
+---
+metadata:
+  version: "2.0.0"
+  created_at: "2025-12-26T00:00:00Z"
+  last_verified: "2026-01-04T00:00:00Z"
+  git_commit: "628174858956a2b1ff3d7c33e4ae03c790ed3208"
+  git_branch: "BBAK-jun/vaduz"
+
+  source_files:
+    apps/blog/src/app/layout.tsx:
+      git_hash: "6281748"
+      last_modified: "2026-01-04T00:00:00Z"
+      source_exists: true
+    apps/blog/src/app/page.tsx:
+      git_hash: "6281748"
+      last_modified: "2026-01-04T00:00:00Z"
+      source_exists: true
+    apps/blog/mdx-components.tsx:
+      git_hash: "6ff4a48"
+      last_modified: "2026-01-04T00:00:00Z"
+      source_exists: true
+    apps/blog/tailwind.config.ts:
+      git_hash: "6281748"
+      last_modified: "2026-01-04T00:00:00Z"
+      source_exists: true
+    apps/blog/src/app/globals.css:
+      git_hash: "6281748"
+      last_modified: "2026-01-04T00:00:00Z"
+      source_exists: true
+
+  changed_files:
+    - path: apps/blog/src/app/layout.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Updated layout container hierarchy - unified max-width structure"
+    - path: apps/blog/src/app/page.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Refactored home page with improved spacing and structure"
+    - path: apps/blog/mdx-components.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Fixed image aspect ratio preservation with w-full h-auto"
+    - path: apps/blog/tailwind.config.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Updated typography configuration with custom font sizes"
+    - path: apps/blog/src/app/globals.css
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Added dark mode transitions and smooth animations"
+    - path: apps/blog/src/features/post-search/ui/search-bar-client.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Added keyboard shortcuts (Cmd+K, ESC) for search"
+    - path: apps/blog/src/features/navigation/ui/header.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Updated header with sticky positioning and border styling"
+    - path: apps/blog/src/widgets/popular-posts/ui/popular-posts-grid.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Refactored to use stats RPC with improved UI"
+    - path: apps/blog/src/widgets/recent-posts/ui/recent-posts-grid.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "Refactored to use stats RPC with improved UI"
+
+  deleted_files: []
+
+  extraction_config:
+    depth: "standard"
+    scope: "full"
+    stale_detection: true
+---
+```
 
 ---
 
@@ -25,6 +98,7 @@
 ### 2. 사용자 경험
 
 - **검색**: 제목, 설명, 태그, 내용 기반 (서버 사이드 필터링)
+- **키보드 단축키**: Cmd+K로 검색창 포커스, ESC로 검색 지우기
 - **태그 필터링**: 태그별 포스트 목록
 - **시리즈 네비게이션**: 이전/다음 포스트 이동
 - **목차 (TOC)**: 헤딩 기반 자동 생성 + 스크롤 추적
@@ -41,8 +115,15 @@
 
 - **Mermaid 차트**: 다이어그램 렌더링 (CDN 동적 로드)
 - **코드 하이라이팅**: syntax highlighting
-- **이미지 최적화**: Next.js Image, WebP/AVIF, lazy loading
+- **이미지 최적화**: Next.js Image, WebP/AVIF, lazy loading, 원본 비율 유지
 - **OG 이미지**: 동적 생성 (1200x630px)
+
+### 5. UI/UX 개선사항
+
+- **다크모드 애니메이션**: 200ms smooth transition으로 자연스러운 테마 전환
+- **레이아웃 통합**: max-w-3xl 중앙 정렬로 일관된 컨텐츠 너비
+- **이미지 비율 보존**: MDX 컴포넌트에서 w-full h-auto로 반응형 이미지 지원
+- **검색 UX 향상**: 키보드 단축키, 자동 포커스, ESC로 닫기
 
 ---
 
@@ -102,18 +183,17 @@
 src/
 ├── app/                    # App Router (페이지, 레이아웃)
 ├── entities/              # 비즈니스 엔티티
-│   ├── post/              # 포스트 관련 (PostCard, RelatedPosts)
-│   └── view/              # 조회수 관련
+│   └── post/              # 포스트 관련 (PostCard, RelatedPosts, SeriesNavigation)
 ├── features/              # 사용자 기능
-│   ├── navigation/        # 네비게이션 (Header, Footer)
-│   ├── post-search/       # 검색
+│   ├── navigation/        # 네비게이션 (Header, Footer, MobileMenu)
+│   ├── post-search/       # 검색 (SearchBar with keyboard shortcuts)
 │   ├── newsletter/        # 뉴스레터
 │   └── theme-toggle/      # 다크모드
 ├── processes/             # 비즈니스 프로세스
 │   └── post-reading/      # 포스트 읽기 (TOC, Mermaid, Comments)
 ├── widgets/               # 컴포지션 UI
-│   ├── popular-posts/     # 인기글 위젯
-│   └── recent-posts/      # 최신글 위젯
+│   ├── popular-posts/     # 인기글 위젯 (stats RPC 기반)
+│   └── recent-posts/      # 최신글 위젯 (stats RPC 기반)
 └── shared/                # 공유 코드
     ├── lib/               # 유틸리티 (blob, rpc, stats)
     ├── hooks/             # React 훅 (useViews)
@@ -166,18 +246,36 @@ RPC: POST /rpc/views/[slug]/increment
 조회수 +1 (중복 방지)
 ```
 
-### 3. 검색
+### 3. 검색 (키보드 단축키 포함)
 
 ```
-User types query
-    ↓ nuqs (URL state)
-?q=nextjs
+User presses Cmd+K
+    ↓ SearchBarClient
+inputRef.current?.focus()
+    ↓ User types query
+nuqs (URL state: ?q=nextjs)
     ↓ 서버 컴포넌트
 searchParamsCache.parse()
     ↓ filterPosts()
 제목, 설명, 태그, 내용 필터링
     ↓ BlogPostsList
 필터링된 포스트 목록 렌더링
+    ↓ User presses ESC
+clearSearch() or blur()
+```
+
+### 4. 인기글/최신글 로딩
+
+```
+PopularPostsGrid / RecentPostsGrid
+    ↓ getPopularPostsStats()
+RPC: GET /rpc/views/stats
+    ↓ Blog-Admin
+Redis aggregation
+    ↓
+{ popularPosts, recentPosts, totalViews, totalPosts }
+    ↓ UI 렌더링
+divide-y dividers, hover effects, date formatting
 ```
 
 ---
@@ -186,14 +284,14 @@ searchParamsCache.parse()
 
 | 경로 | 타입 | ISR | 주요 기능 |
 |------|------|-----|----------|
-| `/` | Static | 60s | 홈, 최신글/인기글 탭 |
-| `/blog` | Server | - | 포스트 목록, 검색 |
-| `/blog/[...slug]` | Static + ISR | 60s | 개별 포스트 |
+| `/` | Static | 60s | 홈, 최신글/인기글 탭, Hero 섹션 |
+| `/blog` | Server | - | 포스트 목록, 검색 (키보드 단축키 지원) |
+| `/blog/[...slug]` | Static + ISR | 60s | 개별 포스트, 시리즈 네비게이션 |
 | `/tags` | Server | - | 태그 목록 |
 | `/tags/[tag]` | Static + ISR | 300s | 태그별 포스트 |
 | `/series` | Static + ISR | 300s | 시리즈 목록 |
 | `/series/[slug]` | Static + ISR | 300s | 시리즈 상세 |
-| `/about` | Static + ISR | 300s | 소개, 통계, 경력 |
+| `/about` | Static + ISR | 300s | 소개, 통계, 경력 타임라인 |
 | `/feed.xml` | Static | 3600s | RSS 피드 |
 | `/api/og/[...slug]` | Edge | - | OG 이미지 생성 |
 | `/api/revalidate` | API | - | On-demand ISR |
@@ -209,7 +307,7 @@ searchParamsCache.parse()
 | `/rpc/blob-files` | GET | Blob 파일 목록 | React.cache |
 | `/rpc/views/[slug]` | GET | 조회수 조회 | 1분 |
 | `/rpc/views/[slug]/increment` | POST | 조회수 증가 | - |
-| `/rpc/views/stats` | GET | 통계 조회 | 5분 |
+| `/rpc/views/stats` | GET | 통계 조회 (인기글, 최신글) | 5분 |
 | `/rpc/experience` | GET | 경력 조회 | 5분 |
 
 ### App Router API Routes
@@ -257,6 +355,7 @@ searchParamsCache.parse()
 - **형식**: WebP, AVIF (자동 변환)
 - **Lazy loading**: `loading="lazy"`
 - **반응형**: deviceSizes (640px ~ 3840px)
+- **비율 보존**: `w-full h-auto`로 원본 비율 유지 (commit 6ff4a48)
 
 ### 3. 캐싱 전략
 
@@ -279,6 +378,41 @@ const [htmlContent, relatedPosts, series] = await Promise.all([
 ```
 
 **효과**: 200~300ms 절약
+
+---
+
+## UI/UX 개선사항
+
+### 1. 다크모드 애니메이션
+
+- **200ms smooth transition**: 자연스러운 테마 전환
+- **prefers-reduced-motion 지원**: 접근성 향상
+- **요소별 transition**: body, div, header, footer, nav, main, section, article, aside
+
+### 2. 레이아웃 통합 (commit 40e4015)
+
+- **max-w-3xl 중앙 정렬**: 모든 페이지에서 일관된 컨텐츠 너비
+- **Unified container hierarchy**: `max-w-3xl mx-auto px-4 py-12` 패턴
+- **flex flex-col grow**: Footer를 하단에 고정
+
+### 3. 검색 UX 향상
+
+- **Cmd+K (Mac) / Ctrl+K (Windows)**: 검색창 포커스
+- **ESC**: 검색어 지우기 또는 검색창 닫기
+- **Visual keyboard hint**: 검색창 우측에 ⌘K 표시
+- **Auto-clear**: 빈 문자열 입력 시 URL 파라미터 제거
+
+### 4. 이미지 비율 보존 (commit 6ff4a48)
+
+- **w-full h-auto**: 원본 비율 유지하면서 반응형
+- **문제 해결**: 이전의 고정 크기(800x400)로 인한 이미지 왜곡 수정
+
+### 5. 스타일링 개선
+
+- **divide-border/15**: 얇은 구분선 (15% opacity)
+- **hover:underline decoration-1**: 자연스러운 링크 호버 효과
+- **line-clamp-2**: 설명 텍스트 2줄 제한
+- **tabular-nums**: 조회수 숫자를 테이블 형식으로 정렬
 
 ---
 
@@ -337,12 +471,13 @@ console.error('Error fetching blob files:', error);
 
 ### 상세 문서
 
-- **[Pages & Routes](./pages/index.md)**: 페이지 구조, 라우팅, ISR 설정
-- **[API Endpoints](./apis/index.md)**: API 엔드포인트, RPC 클라이언트
-- **[Schemas & Types](./schemas/index.md)**: 데이터 스키마, 타입 정의
-- **[Components](./components/index.md)**: UI 컴포넌트, FSD 아키텍처
+- **[Pages & Routes](./pages/routes.md)**: 페이지 구조, 라우팅, ISR 설정
+- **[Layouts](./pages/layouts.md)**: 레이아웃 계층 구조, 컨테이너 패턴
+- **[Components](./components/ui.md)**: UI 컴포넌트, MDX 컴포넌트
+- **[Features](./features/index.md)**: 기능별 컴포넌트 (네비게이션, 검색)
+- **[Widgets](./widgets/index.md)**: 위젯 컴포넌트 (인기글, 최신글)
 - **[Configuration](./config/index.md)**: 환경변수, 설정 파일
-- **[Utils & Libraries](./utils/index.md)**: 유틸리티 함수, 헬퍼 라이브러리
+- **[Styling](./config/styling.md)**: Tailwind, globals.css, 다크모드
 
 ---
 
@@ -411,6 +546,34 @@ pnpm type-check
 - **Hono**: RPC 클라이언트
 - **Zod**: 스키마 검증
 - **Radix UI**: UI 프리미티브
+
+---
+
+## 변경사항 요약
+
+### 최근 주요 변경사항 (commit 9e42367 → 6281748)
+
+1. **레이아웃 통합 (commit 40e4015)**:
+   - 모든 페이지에서 max-w-3xl 중앙 정렬로 일관된 컨텐츠 너비
+   - flex flex-col grow로 Footer 하단 고정
+
+2. **이미지 비율 보존 (commit 6ff4a48)**:
+   - MDX 컴포넌트에서 w-full h-auto로 원본 비율 유지
+   - 이전 고정 크기(800x400)로 인한 왜곡 수정
+
+3. **다크모드 애니메이션 (commit c56ca3b)**:
+   - 200ms smooth transition으로 자연스러운 테마 전환
+   - prefers-reduced-motion 지원
+
+4. **검색 키보드 단축키 (commit c56ca3b)**:
+   - Cmd+K로 검색창 포커스
+   - ESC로 검색 지우기/닫기
+   - Visual keyboard hint 표시
+
+5. **인기글/최신글 위젯 개선**:
+   - stats RPC 통합으로 단일 API 호출
+   - 개선된 UI with divide-border/15, hover effects
+   - 빈 상태 처리
 
 ---
 

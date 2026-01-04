@@ -646,3 +646,137 @@ function isValidRedactOptions(options: unknown): options is RedactOptions;
 - `security-headers.ts` → Hono middleware
 - `input-validation.ts` → Standalone (pure patterns)
 - `output-filter.ts` → Standalone (regex patterns)
+
+---
+
+## Test Suite (NEW)
+
+### Overview
+
+**Location**: `src/tests/`, `vitest.config.ts`
+**Purpose**: 애플리케이션 테스트 및 테스트 설정
+**Framework**: Vitest
+**Last Verified**: 2026-01-04
+
+### Vitest Configuration
+
+- **Location**: `vitest.config.ts`
+- **Source Exists**: true
+
+```typescript
+{
+  test: {
+    globals: true,              // 전역 테스트 함수 (describe, it, expect)
+    environment: 'node',        // Node.js 환경
+    include: ['**/*.test.ts'],  // 테스트 파일 패턴
+    setupFiles: ['./src/tests/setup.ts'],  // 테스트 설정 파일
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
+  },
+}
+```
+
+### Test Setup
+
+- **Location**: `src/tests/setup.ts`
+- **Source Exists**: true
+
+**Features**:
+- 환경변수 설정 (`NODE_ENV='test'`, Redis, Qdrant, API keys)
+- @repo/cache 모킹
+- 서비스 모킹 (Qdrant, Embedding, LLM)
+
+### Handler Tests
+
+**Location**: `src/tests/handlers/rag.test.ts`
+**Source Exists**: true
+
+**Coverage**:
+- ingest() 핸들러: 문서 배열 처리, 빈 배열, force/batchSize 옵션, ID 자동 생성
+- ingestStatus() 핸들러: 상태 조회, 404/400 에러 처리, completed/failed 상태
+
+### Pipeline Tests
+
+**Location**: `src/tests/ingestion/pipeline.test.ts`
+**Source Exists**: true
+
+**Coverage**:
+- 빈 documents 배열 처리
+- 배치 처리 (batchSize별 나누기)
+- force 옵션 (재인덱싱 vs 건너뛰기)
+- 개별 문서 실패 처리
+- 진행률 업데이트
+- getJobStatus(), cleanupJobs(), getAllJobs()
+
+### Integration Tests
+
+**Location**: `src/tests/integration/batch-ingest.test.ts`
+**Source Exists**: true
+
+**Coverage**:
+- 다중/단일/대량(100개) 문서 인제스트
+- force 옵션 통합 테스트
+- batchSize 옵션 통합 테스트
+- 상태 조회 (jobId로 진행률 확인)
+- 에러 처리 (401, 422)
+
+### Test Commands
+
+```bash
+# Run all tests
+pnpm --filter=rag-gateway test
+
+# Run once
+pnpm --filter=rag-gateway test:run
+
+# UI mode
+pnpm --filter=rag-gateway test:ui
+
+# Coverage
+pnpm --filter=rag-gateway test:coverage
+```
+
+### Test Patterns
+
+**Service Mocking**:
+```typescript
+vi.mock('@/services/qdrant', () => ({
+  getQdrantService: vi.fn(() => ({
+    initializeCollection: vi.fn(),
+    upsertPoints: vi.fn(),
+  })),
+}));
+```
+
+**Dynamic Import**:
+```typescript
+const { default: ragRouter } = await import('@/routes/rag/rag.index');
+app.route('/api', ragRouter);
+```
+
+**Async Job Testing**:
+```typescript
+const jobId = await pipeline.startIngestion(options);
+await new Promise(resolve => setTimeout(resolve, 200));
+const job = pipeline.getJobStatus(jobId);
+```
+
+**HTTP Request Simulation**:
+```typescript
+const response = await app.request('/api/rag/ingest', {
+  method: 'POST',
+  headers: { 'X-RAG-API-Key': 'test-api-key' },
+  body: JSON.stringify({ documents: [] }),
+});
+```
+
+### Test Coverage Summary
+
+| Category | Test Files | Test Cases |
+|----------|-----------|-----------|
+| Handlers | rag.test.ts | 15+ |
+| Pipeline | pipeline.test.ts | 20+ |
+| Integration | batch-ingest.test.ts | 15+ |
+| **Total** | 3 files | 50+ |

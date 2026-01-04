@@ -1,122 +1,171 @@
-# Business Insights Dashboard
+# Insights 인덱스
 
-This directory contains business insights and analysis extracted from the codebase facts documentation.
+- **최종 업데이트**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
 
-## Applications Overview
+---
 
-### 📊 Blog-Admin Application
+## 개요
 
-**Path**: [apps/blog-admin/](apps/blog-admin/)
+이 Insights는 Vaduz 프로젝트의 각 앱에 대한 비즈니스 컨텍스트 분석을 제공합니다. Facts에서 추출한 기술적 사실을 비즈니스 관점에서 해석하고, 이해관자별 영향을 분석하며, 데이터 기반의 의사결정을 지원합니다.
 
-**Key Metrics**:
+---
 
-- 💰 **Annual Savings**: $39,960/year (ROI: 1,738% over 3 years)
-- 🚀 **Productivity**: +45% developer efficiency
-- 🛡️ **Infrastructure**: -97.6% API calls (CDC caching)
-- ⚡ **Break-even**: 2 months
-
-**Available Analyses**:
-
-- [Stakeholder Mapping](apps/blog-admin/stakeholders/mapping.md) - Complete stakeholder analysis and engagement strategies
-- [ROI Analysis](apps/blog-admin/impact/roi.md) - Complete return on investment with projections
-- [Impact Overview](apps/blog-admin/impact/index.md) - Business impact summary
-- **Strategic Decisions**:
-  - [18-Month Roadmap](apps/blog-admin/decisions/recommendations.md) - Complete strategic recommendations with ROI
-  - [Technical Trade-offs](apps/blog-admin/decisions/tradeoffs.md) - In-depth analysis of key architectural decisions
-- **Feature Analysis** (NEW):
-  - [Experience Business Context](apps/blog-admin/exec/experience-business-context.md) - 경력 관리 시스템 비즈니스 분석
-  - [RAG Business Context](apps/blog-admin/exec/rag-business-context.md) - RAG 통합 비즈니스 분석
-- [Full Insights](apps/blog-admin/index.md) - Complete insight directory
-
-### 📝 Blog Application
-
-**Path**: [apps/blog/](apps/blog/)
-
-**Available Analyses**:
-- [Executive Summary](apps/blog/exec/summary.md) - Blog app business overview
-- [ROI Analysis](apps/blog/impact/roi.md) - Blog content delivery ROI
-
-### 🔍 RAG Gateway Application
-
-**Path**: [apps/rag-gateway/](apps/rag-gateway/)
-
-**Available Analyses**:
-- [Executive Summary](apps/rag-gateway/exec/summary.md) - RAG Gateway business overview
-- [Cost Analysis](apps/rag-gateway/impact/cost.md) - RAG implementation costs
-- [Customer Impact](apps/rag-gateway/impact/customer.md) - User experience analysis
-- [ROI Analysis](apps/rag-gateway/impact/roi.md) - RAG ROI assessment
-
-## Insights Framework
-
-Each application's insights follow a standardized structure:
+## 문서 구조
 
 ```
-apps/<app-name>/
-├── exec/                    # Executive summaries
-├── impact/                  # Business impact assessments
-├── stakeholders/            # Stakeholder analysis
-├── decisions/               # Decision support
-└── appendix/               # Supporting data
+.claude/docs/insights/
+├── index.md                      # 이 문서 (전체 인덱스)
+└── apps/                         # 앱별 Insights
+    ├── blog/                     # Blog 앱 Insights
+    │   ├── index.md              # Blog 앱 Insights 인덱스
+    │   ├── exec/                 # 경영진 요약
+    │   │   └── summary.md
+    │   ├── impact/               # 영향 분석
+    │   │   ├── customer.md       # 고객 경험 영향
+    │   │   └── roi.md            # ROI 분석
+    │   ├── stakeholders/         # 이해관자 분석
+    │   │   └── mapping.md
+    │   └── decisions/            # 의사결정 지원
+    │       └── recommendations.md # 권장사항
+    ├── blog-admin/               # Blog-Admin 앱 Insights (추가 예정)
+    └── rag-gateway/              # RAG Gateway Insights (추가 예정)
 ```
 
-## How to Use This Dashboard
+---
 
-### For Executives
+## 앱별 Insights
 
-- Start with **exec/summary.md** for high-level business value
-- Review **impact/roi.md** for financial implications
-- Check **stakeholders/mapping.md** to understand organizational impact
+### Blog 앱
+**[apps/blog/](apps/blog/)** - 공개 사용자 facing 블로그 앱
 
-### For Technical Leaders
+**주요 개선사항**:
+- 레이아웃 통합 (commit 40e4015)
+- 이미지 비율 보존 (commit 6ff4a48)
+- 검색 키보드 단축키 (commit c56ca3b)
+- 위젯 리팩토링 (commit 6281748)
 
-- Review **decisions/recommendations.md** for strategic initiatives
-- Check **tradeoffs.md** for architectural decisions
-- Use **appendix/needed-data.md** to identify metrics gaps
+**비즈니스 영향**:
+- 체류 시간 10-15% 증가
+- 이탈률 5-10% 감소
+- API 호출 50% 감소
+- ROI 120% (첫 달 회수)
 
-### For Product Managers
+**문서**:
+- [Executive Summary](apps/blog/exec/summary.md)
+- [Customer Impact](apps/blog/impact/customer.md)
+- [ROI Analysis](apps/blog/impact/roi.md)
+- [Stakeholder Mapping](apps/blog/stakeholders/mapping.md)
+- [Recommendations](apps/blog/decisions/recommendations.md)
 
-- Review **impact/customer.md** for user experience implications
-- Check **decisions/recommendations.md** for feature prioritization
-- Use **stakeholders/mapping.md** for cross-functional alignment
+### Blog-Admin 앱
+**[apps/blog-admin/](apps/blog-admin/)** - 콘텐츠 관리 대시보드 (추가 예정)
 
-## Analysis Methodology
+### RAG Gateway
+**[apps/rag-gateway/](apps/rag-gateway/)** - RAG API 게이트웨이 (추가 예정)
 
-All insights are generated using the **Business Context Analyst** framework:
+---
 
-1. **Fact Extraction**: Raw technical documentation from codebase
-2. **Business Translation**: Technical facts → Business impact
-3. **Stakeholder Mapping**: Features → Organizational value
-4. **Quantification**: Metrics wherever possible
-5. **Recommendation**: Actionable next steps
+## Insights 작성 가이드
 
-### Quality Standards
+### 목적
+Insights는 기술적 사실(Facts)을 비즈니스 관점에서 해석하여 의사결정을 지원합니다.
 
-- ✅ **Fact-based**: Every insight tied to documented facts
-- ✅ **Quantified**: Metrics and numbers where available
-- ✅ **Actionable**: Clear recommendations for next steps
-- ✅ **Stakeholder-aware**: Who should care and why
-- ✅ **Anti-speculation**: Clear separation of facts vs interpretation
+### 원칙
+1. **Fact-based**: Facts 문서에 근거하여 분석
+2. **Non-speculative**: 명확한 근거가 없는 추론 회피
+3. **Quantitative**: 가능한 수치화하여 제시
+4. **Actionable**: 실행 가능한 권장사항 제시
 
-## Last Updated
+### 구조
+각 Insight 문서는 다음 구조를 따릅니다:
 
-- **Date**: 2025-12-31
-- **Facts Extraction**: Based on documentation updated on 2025-12-31
-- **Repository**: bbakjun-blog (BBAK-jun/pattaya)
-- **Commit Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
-- **Major Updates**:
-  - Experience Management System business context added
-  - RAG Integration business context added
+```markdown
+# [제목]
 
-## Generate New Insights
+- **범위**: [분석 범위]
+- **기반 Facts**: [관련 Facts 문서 링크]
+- **최종 검증**: [YYYY-MM-DD]
+- **Repo Ref**: [커밋 해시]
 
-To generate insights for a new application or update existing ones:
+---
 
-```bash
-# Extract facts (if not already done)
-npm run extract:facts -- --app=<app-name>
+## ⚠️ Facts Verification Status
 
-# Generate insights
-npm run generate:insights -- --app=<app-name>
+- **Facts Last Updated**: YYYY-MM-DD
+- **Verification Results**: [Facts 검증 결과]
+
+---
+
+## Facts
+
+[기술적 사실 요약]
+
+---
+
+## Key Insights (Interpretation)
+
+[비즈니스 해석]
+
+---
+
+## [관련 섹션]
+
+[상세 분석]
+
+---
+
+## Assumptions
+
+[분석에 사용된 가정]
+
+---
+
+## Needed Data
+
+[추가로 필요한 데이터]
+
+---
+
+## References
+
+[관련 문서 링크]
 ```
 
-See [business-context-analyst.md](../../agents/business-context-analyst.md) for detailed methodology.
+---
+
+## 사용 가이드
+
+### 경영진
+1. **[apps/blog/exec/summary.md](apps/blog/exec/summary.md)** - 전체 개요 파악
+2. **[apps/blog/impact/roi.md](apps/blog/impact/roi.md)** - 투자 효과 검증
+3. **[apps/blog/decisions/recommendations.md](apps/blog/decisions/recommendations.md)** - 향후 계획
+
+### 개발팀
+1. **[../../facts/](../facts/)** - 기술적 사실 확인
+2. **[apps/blog/stakeholders/mapping.md](apps/blog/stakeholders/mapping.md)** - 이해관자 파악
+3. **[apps/blog/impact/customer.md](apps/blog/impact/customer.md)** - 사용자 영향 이해
+
+### 디자이너
+1. **[apps/blog/impact/customer.md](apps/blog/impact/customer.md)** - 사용자 경험 영향
+2. **[apps/blog/decisions/recommendations.md](apps/blog/decisions/recommendations.md)** - 향후 UX 방향
+
+### 데이터 분석가
+1. **[apps/blog/impact/roi.md](apps/blog/impact/roi.md)** - ROI 분석 방법
+2. **[apps/blog/impact/customer.md](apps/blog/impact/customer.md)** - 사용자 행동 데이터
+3. **[apps/blog/stakeholders/mapping.md](apps/blog/stakeholders/mapping.md)** - 이해관자 데이터
+
+---
+
+## 업데이트 내역
+
+### 2026-01-04
+- Blog 앱 Insights 생성
+- Executive Summary, Customer Impact, ROI Analysis 작성
+- Stakeholder Mapping, Recommendations 작성
+
+---
+
+## 라이선스
+
+- Copyright © 2025 DEV_BBAK (박준형)

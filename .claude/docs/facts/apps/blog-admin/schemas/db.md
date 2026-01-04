@@ -2,22 +2,31 @@
 
 - **Scope**: Prisma 데이터베이스 모델 및 관계 정의
 - **Source of Truth**: `prisma/schema.prisma`
-- **Last Verified**: 2025-12-31
-- **Repo Ref**: c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
 
 ## 메타데이터
 
 ```yaml
 metadata:
-  version: "2.0.0"
+  version: "3.0.0"
   created_at: "2024-12-22T00:00:00Z"
-  last_verified: "2025-12-31T00:57:47Z"
-  git_commit: "c0049e1e70738fbbfaee84f1ebcf7964c7c7d62d"
+  last_verified: "2026-01-04T00:00:00Z"
+  git_commit: "628174858956a2b1ff3d7c33e4ae03c790ed3208"
 
   changed_files:
     - path: apps/blog-admin/prisma/schema.prisma
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "ADDED: Experience and Achievement models for career management"
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "ADDED: UploadHistory, Setting models for tracking and configuration"
+      source_exists: true
+    - path: apps/blog-admin/prisma/migrations/20250102141000_add_upload_history/migration.sql
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: UploadHistory model migration (CREATE, UPDATE, DELETE tracking)"
+      source_exists: true
+    - path: apps/blog-admin/prisma/migrations/20260102130251_add_settings_model/migration.sql
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Setting model for system-wide configuration"
+      source_exists: true
 
   deleted_files: []
 ```
@@ -178,6 +187,90 @@ metadata:
 - **Evidence**:
   - `prisma/schema.prisma`: `pathname String @unique // File path (unique identifier)`
 
+## UploadHistory 모델 (NEW)
+
+- **Location**: `prisma/schema.prisma` (L192-L218)
+- **Purpose**: 파일 업로드/수정/삭제 이력 추적
+- **source_exists**: true
+- **git_hash**: "6281748"
+- **last_modified**: "2026-01-04T00:00:00Z"
+- **Migration**: `20250102141000_add_upload_history`
+- **Key Details**:
+  - `actionType`: 작업 유형 (CREATE, UPDATE, DELETE)
+  - `pathname`: 파일 경로
+  - `fileUrl`: 파일 URL (삭제 시 null)
+  - `fileSize`: 파일 크기 (삭제 시 null)
+  - `contentType`: MIME 타입 (삭제 시 null)
+  - `uploadedBy`: 작업자 email
+- **Indexes**:
+  - `pathname` 인덱스 (파일별 이력 조회)
+  - `createdAt` 인덱스 (최신 이력 정렬)
+  - `actionType` 인덱스 (작업 유형별 필터링)
+- **Usage Pattern**:
+  - 파일 생성/수정/삭제 시 자동 기록 (Server Actions)
+  - 관리자 대시보드에서 이력 조회 및 필터링
+- **Evidence**:
+  - `prisma/schema.prisma`: L192-L218
+  - `src/app/actions/files.ts`: `onBlobUpload()`, `onBlobDelete()` 훅에서 기록
+  - `src/app/actions/upload-history.ts`: 이력 조회 Server Actions
+  - `src/rpc/routes/upload-history/upload-history.routes.ts`: Hono RPC 엔드포인트
+
+## Setting 모델 (NEW)
+
+- **Location**: `prisma/schema.prisma` (L224-L237)
+- **Purpose**: 시스템 전체 설정 관리 (블로그, 시스템, 콘텐츠)
+- **source_exists**: true
+- **git_hash**: "6281748"
+- **last_modified**: "2026-01-04T00:00:00Z"
+- **Migration**: `20260102130251_add_settings_model`
+- **Key Details**:
+  - `key`: 설정 키 (고유, e.g., "blog.title", "blog.author")
+  - `value`: 설정 값 (Text, JSON 지원)
+  - `category`: 카테고리 (blog, system, content)
+  - `type`: 데이터 타입 (string, number, boolean, json)
+  - `label`: 사람이 읽을 수 있는 라벨
+  - `updatedBy`: 마지막 수정자 email
+- **Indexes**:
+  - `category` 인덱스 (카테고리별 설정 조회)
+  - `key` 인덱스 (키로 빠른 조회)
+- **Default Settings**:
+  ```typescript
+  DEFAULT_SETTINGS = [
+    { key: 'blog.title', value: 'DEV_BBAK 블로그', category: 'blog', type: 'string' },
+    { key: 'blog.description', value: '기술 블로그', category: 'blog', type: 'string' },
+    { key: 'blog.author', value: 'bbakjun', category: 'blog', type: 'string' },
+    { key: 'blog.url', value: 'https://your-blog.com', category: 'blog', type: 'string' },
+    { key: 'system.blobSyncInterval', value: '30', category: 'system', type: 'number' },
+    { key: 'system.cacheTTL', value: '300', category: 'system', type: 'number' },
+    { key: 'content.defaultStatus', value: 'draft', category: 'content', type: 'string' },
+    { key: 'content.relatedPostsCount', value: '4', category: 'content', type: 'number' },
+  ]
+  ```
+- **Server Actions**:
+  - `getSettingsByCategory()`: 카테고리별 설정 조회
+  - `getAllSettings()`: 전체 설정 조회
+  - `getSetting()`: 단일 설정 조회
+  - `upsertSetting()`: 설정 생성/업데이트
+  - `deleteSetting()`: 설정 삭제
+  - `updateSettings()`: 일괄 업데이트
+  - `seedDefaultSettings()`: 초기 데이터 시딩
+- **Evidence**:
+  - `prisma/schema.prisma`: L224-L237
+  - `src/app/actions/settings.ts`: 전체 Server Actions 구현
+  - `src/app/dashboard/settings/page.tsx`: 설정 관리 UI
+
+## ActionType 열거형 (NEW)
+
+- **Location**: `prisma/schema.prisma` (L192-L196)
+- **Purpose**: 파일 작업 유형 정의
+- **source_exists**: true
+- **Values**:
+  - `CREATE`: 파일 생성
+  - `UPDATE`: 파일 수정 (URL이 변경됨)
+  - `DELETE`: 파일 삭제
+- **Evidence**:
+  - `prisma/schema.prisma`: `enum ActionType { CREATE; UPDATE; DELETE }`
+
 ## UserRole 열거형
 
 - **Location**: `prisma/schema.prisma` (L15-L19)
@@ -222,7 +315,8 @@ metadata:
    - BlobFile pathname을 유니크로 변경
    - 중복 pathname 정리 (최신 파일 유지)
    - url 유니크 제약조건 제거
-6. ** TBD**: Experience, Achievement 모델 추가 (2025-12-31)
+6. **20250102141000_add_upload_history**: UploadHistory 모델 추가 (이력 추적)
+7. **20260102130251_add_settings_model**: Setting 모델 추가 (시스템 설정)
 
 ## 관계 다이어그램
 
@@ -230,7 +324,9 @@ metadata:
 User (1) ←→ (N) Account
 User (1) ←→ (N) Session
 Subscriber (독립)
-Experience (1) ←→ (N) Achievement (NEW)
+Experience (1) ←→ (N) Achievement
 BlobFile (독립, CDC 캐시)
+UploadHistory (독립, 이력 추적) (NEW)
+Setting (독립, 시스템 설정) (NEW)
 VerificationToken (독립)
 ```
