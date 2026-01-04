@@ -5,9 +5,10 @@ import { getLLMService } from '@/services/llm';
 import { getQdrantService } from '@/services/qdrant';
 import { z } from '@hono/zod-openapi';
 import { QueryProcessor } from '../../lib/rag/core';
+import { IngestionPipeline, getJobStatus, getAllJobs, getIngestionStats, startIngestion, type IngestionStats } from '../../lib/rag/ingestion';
+import { generateDocumentId } from '../../lib/rag/types';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './rag.routes';
-import { IngestionPipeline, getJobStatus, getAllJobs, getIngestionStats, startIngestion, type IngestionStats } from '../../lib/rag/ingestion';
 import { env } from '@/env';
 import { sanitizeInput } from '@/middleware/input-validation';
 import { filterRAGResponse } from '@/middleware/output-filter';
@@ -111,7 +112,7 @@ export const search: AppRouteHandler<typeof routes.search> = async c => {
 };
 
 export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
-  const { force, batchSize, collections } = c.req.valid('json');
+  const { documents, force, batchSize } = c.req.valid('json');
 
   try {
     // Fetch blob files from blog-admin
@@ -142,7 +143,6 @@ export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
     const jobId = await startIngestion({
       force,
       batchSize,
-      collections,
       blobFiles: markdownFiles,
     });
 
@@ -167,7 +167,7 @@ export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
 };
 
 export const ingestStatus: AppRouteHandler<typeof routes.ingestStatus> = async c => {
-  const jobId = c.req.query('jobId');
+  const jobId = c.req.valid('query').jobId;
 
   if (!jobId) {
     return c.json(

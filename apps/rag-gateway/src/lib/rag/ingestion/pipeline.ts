@@ -28,8 +28,7 @@ export interface IngestionOptions {
   force?: boolean;
   batchSize?: number;
   chunking?: ChunkingOptions;
-  collections?: string[];
-  blobFiles?: BlobFileInfo[]; // 외부에서 BlobFiles 전달
+  documents?: Document[]; // Direct documents to ingest
 }
 
 export interface IngestionProgress {
@@ -132,9 +131,16 @@ export class IngestionPipeline {
       // Initialize Qdrant collection
       await this.qdrantService.initializeCollection();
 
-      // Collect documents from various sources
-      const documents = await this.collectDocuments(job, options);
+      // Use provided documents or empty array
+      const documents = options.documents || [];
       job.progress.total = documents.length;
+
+      if (documents.length === 0) {
+        job.status = 'completed';
+        job.completedAt = new Date().toISOString();
+        job.progress.current = 'No documents to process';
+        return;
+      }
 
       // Process documents in batches
       const batchSize = options.batchSize || 10;
@@ -161,132 +167,6 @@ export class IngestionPipeline {
   }
 
   /**
-   * Collect documents from all sources
-   */
-  private async collectDocuments(
-    job: IngestionJob,
-    options: IngestionOptions
-  ): Promise<Document[]> {
-    const documents: Document[] = [];
-
-    try {
-      // 1. Collect from Vercel Blob (MDX posts)
-      job.progress.current = 'Collecting posts from Vercel Blob...';
-
-      const blobFiles = options.blobFiles || [];
-      const posts = this.parsePostsFromBlobFiles(blobFiles);
-
-      for (const post of posts) {
-        if (post.slug && post.content) {
-          // Parse front matter
-          const { data, content } = matter(post.content);
-
-          const document: Document = {
-            id: await generateDocumentId('blob', post.slug),
-            content,
-            metadata: {
-              title: data.title || post.slug,
-              slug: `/blog/${post.slug}`,
-              author: data.author || 'bbakjun',
-              category: this.extractCategoryFromSlug(post.slug),
-              tags: data.tags || [],
-              publishedAt: data.date || new Date().toISOString(),
-              wordCount: content.split(/\s+/).length,
-              language: 'ko',
-              source: 'blob' as DocumentSource,
-              sourceUrl: post.frontMatter.sourceUrl || '',
-              uploadedAt: post.frontMatter.uploadedAt || new Date().toISOString(),
-              lastModified: post.frontMatter.uploadedAt || new Date().toISOString(),
-            },
-          };
-
-          documents.push(document);
-        }
-      }
-
-      // 2. Collect facts.md, context.md, FEATURE_SPEC.md if they exist
-      job.progress.current = 'Collecting RAG documentation...';
-
-      const ragDocs = ['facts.md', 'context.md', 'FEATURE_SPEC.md'];
-      for (const docName of ragDocs) {
-        try {
-          // These files would be at the root of the project
-          const content = await this.readProjectFile(docName);
-          if (content) {
-            const document: Document = {
-              id: await generateDocumentId('api', docName),
-              content,
-              metadata: {
-                title: docName.replace('.md', '').toUpperCase(),
-                slug: `/${docName}`,
-                author: 'system',
-                category: 'RAG',
-                tags: ['documentation', 'rag'],
-                publishedAt: new Date().toISOString(),
-                wordCount: content.split(/\s+/).length,
-                language: 'ko',
-                source: 'api' as DocumentSource,
-                uploadedAt: new Date().toISOString(),
-                lastModified: new Date().toISOString(),
-              },
-            };
-
-            documents.push(document);
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.warn(`⚠️ Could not read ${docName}:`, message);
-        }
-      }
-
-      console.log(`📚 Collected ${documents.length} documents for ingestion`);
-      return documents;
-    } catch (error) {
-      console.error('❌ Failed to collect documents:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Parse posts from blob files
-   */
-  private parsePostsFromBlobFiles(blobFiles: BlobFileInfo[]): PostWithFileInfo[] {
-    const posts: PostWithFileInfo[] = [];
-
-    for (const file of blobFiles) {
-      // Only process markdown files
-      if (!file.pathname.match(/\.(md|mdx)$/)) {
-        continue;
-      }
-
-      // Skip hidden files
-      if (file.pathname.includes('/.')) {
-        continue;
-      }
-
-      // Convert pathname to slug
-      let slug = file.pathname;
-      slug = slug.replace(/\.(md|mdx)$/, '');
-      if (slug.endsWith('/index')) {
-        slug = slug.replace(/\/index$/, '');
-      }
-
-      // For now, we'll store the metadata but can't download content
-      // The actual content download will happen when ingestPosts is called
-      posts.push({
-        slug,
-        content: '', // Will be downloaded later
-        frontMatter: {
-          sourceUrl: file.url,
-          uploadedAt: new Date().toISOString(),
-        },
-      });
-    }
-
-    return posts;
-  }
-
-  /**
    * Process a batch of documents
    */
   private async processBatch(
@@ -309,7 +189,7 @@ export class IngestionPipeline {
 
         // Delete existing document if updating
         if (options.force) {
-          await this.qdrantService.deletePoint(document.id);
+          await this.qdrantService.deletePoints({ documentId: document.id });
         }
 
         // Chunk the document
@@ -360,27 +240,6 @@ export class IngestionPipeline {
     } catch (error) {
       console.error('❌ Failed to check document existence:', error);
       return false;
-    }
-  }
-
-  /**
-   * Extract category from slug
-   */
-  private extractCategoryFromSlug(slug: string): string {
-    const parts = slug.split('/');
-    return parts[0]?.toUpperCase() || 'BLOG';
-  }
-
-  /**
-   * Read file from project root
-   */
-  private async readProjectFile(filename: string): Promise<string | null> {
-    try {
-      // This would need to be implemented based on your environment
-      // For now, return null
-      return null;
-    } catch (error) {
-      return null;
     }
   }
 

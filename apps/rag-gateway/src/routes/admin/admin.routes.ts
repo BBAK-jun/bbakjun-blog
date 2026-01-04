@@ -67,48 +67,6 @@ const LogsResponseSchema = z.object({
   }),
 });
 
-// Reindex schemas
-const ReindexRequestSchema = z.object({
-  force: z.boolean().default(false),
-  batchSize: z.number().min(1).max(100).default(10),
-  collections: z.array(z.string()).optional(),
-});
-
-const ReindexConfigSchema = z.object({
-  force: z.boolean(),
-  batchSize: z.number(),
-  collections: z.array(z.string()),
-});
-
-const ReindexResponseSchema = z.object({
-  jobId: z.string(),
-  status: z.literal('started'),
-  config: ReindexConfigSchema,
-  estimatedTime: z.string(),
-});
-
-const JobProgressSchema = z.object({
-  total: z.number(),
-  processed: z.number(),
-  failed: z.number(),
-  percentage: z.number(),
-});
-
-const JobErrorSchema = z.object({
-  documentId: z.string(),
-  error: z.string(),
-  timestamp: z.string(),
-});
-
-const ReindexStatusResponseSchema = z.object({
-  jobId: z.string(),
-  status: z.enum(['running', 'completed', 'failed']),
-  progress: JobProgressSchema,
-  startedAt: z.string(),
-  completedAt: z.string().optional(),
-  errors: z.array(JobErrorSchema),
-});
-
 // Cache schemas
 const CacheSizesSchema = z.object({
   embedding: z.string(),
@@ -194,37 +152,6 @@ export const getLogs = createRoute({
       InternalServerErrorSchema,
       'Failed to get logs'
     ),
-  },
-});
-
-export const createReindex = createRoute({
-  path: '/admin/reindex',
-  method: 'post',
-  tags,
-  request: {
-    body: jsonContentRequired(ReindexRequestSchema, 'Reindex request'),
-  },
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(ReindexResponseSchema, 'Reindex started successfully'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContentRequired(
-      InternalServerErrorSchema,
-      'Failed to start reindex'
-    ),
-  },
-});
-
-export const getReindexStatus = createRoute({
-  path: '/admin/reindex/{jobId}',
-  method: 'get',
-  tags,
-  request: {
-    params: z.object({
-      jobId: z.string(),
-    }),
-  },
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(ReindexStatusResponseSchema, 'Reindex status retrieved'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Job not found'),
   },
 });
 
