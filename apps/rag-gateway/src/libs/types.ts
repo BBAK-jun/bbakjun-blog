@@ -12,3 +12,6 @@ export interface AppBindings {
 export type AppOpenAPI<S extends Schema = {}> = OpenAPIHono<AppBindings, S>;
 
 export type AppRouteHandler<R extends RouteConfig> = RouteHandler<R, AppBindings>;
+
+// Export AppType for route modules
+export type AppType = AppOpenAPI;

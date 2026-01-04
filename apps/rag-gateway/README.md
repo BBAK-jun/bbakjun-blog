@@ -63,6 +63,25 @@ LLM 응답 없이 순수 의미론적 검색만 수행합니다.
 - 문서 삭제
 - 청크 단위 조회
 
+### 4. 인제스트 모니터링 (`/monitoring/*`)
+
+문서 인덱싱 작업의 상태를 모니터링하고 알림을 받을 수 있습니다.
+
+**기능:**
+
+- 실시간 진행률 추적
+- 작업 통계 조회
+- Slack/이메일 알림 (완료/실패 시)
+
+**API 엔드포인트:**
+
+- `POST /rag/ingest` - 인제스트 시작
+- `GET /rag/ingest/status?jobId={id}` - 작업 상태 조회
+- `GET /monitoring/jobs` - 모든 작업 목록
+- `GET /monitoring/stats` - 통계 요약
+- `GET /monitoring/current` - 현재 실행 중인 작업
+- `GET /monitoring/jobs/:id` - 특정 작업 조회
+
 ## 아키텍처 (Architecture)
 
 ```mermaid
@@ -170,6 +189,12 @@ REDIS_URL=redis://localhost:6379
 
 # CORS
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# 알림 설정 (선택사항)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+SLACK_CHANNEL=#notifications
+NOTIFICATION_EMAILS=user1@example.com,user2@example.com
+RESEND_API_KEY=re_xxxxxxxxxxxxx
 
 # Blog-Admin 연동
 BLOG_ADMIN_URL=http://localhost:3001

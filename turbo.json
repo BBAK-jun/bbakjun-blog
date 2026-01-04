@@ -20,7 +20,10 @@
     "REVALIDATION_SECRET",
     "JWT_SECRET",
     "REDIS_URL",
-    "RESEND_API_KEY"
+    "RESEND_API_KEY",
+    "SLACK_WEBHOOK_URL",
+    "SLACK_CHANNEL",
+    "NOTIFICATION_EMAILS"
   ],
   "tasks": {
     "build": {
@@ -50,7 +53,11 @@
         "EMBEDDING_PROVIDER",
         "EMBEDDING_MODEL",
         "RAG_GATEWAY_API_KEY",
-        "BLOG_ADMIN_URL"
+        "BLOG_ADMIN_URL",
+        "SLACK_WEBHOOK_URL",
+        "SLACK_CHANNEL",
+        "NOTIFICATION_EMAILS",
+        "RESEND_API_KEY"
       ]
     },
     "generate:prisma": {

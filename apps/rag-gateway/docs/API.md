@@ -9,6 +9,162 @@ RAG Gateway의 REST API 엔드포인트 설명입니다.
 
 ---
 
+## Ingestion API
+
+### 문서 인제스트 시작
+
+### `POST /rag/ingest`
+
+블로그 포스트를 Qdrant 벡터 데이터베이스에 인덱싱합니다.
+
+**Request Body:**
+
+```typescript
+{
+  "force?: boolean,       // 기존 문서 강제 재인덱싱 (기본값: false)
+  "batchSize?: number,    // 배치 크기 (기본값: 10, 최대: 100)
+  "collections?: string[]" // 대상 컬렉션 (선택)
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "jobId": string,        // ingestion job ID
+  "status": "started",
+  "message": string,
+  "filesCount": number    // 처리할 파일 수
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:3002/rag/ingest \
+  -H "Content-Type: application/json" \
+  -H "X-RAG-API-Key: your_api_key" \
+  -d '{
+    "force": false,
+    "batchSize": 10
+  }'
+```
+
+### 인제스트 상태 조회
+
+### `GET /rag/ingest/status?jobId={jobId}`
+
+**Query Parameters:**
+
+| 파라미터 | 타입   | 설명              |
+| -------- | ------ | ----------------- |
+| `jobId`  | string | ingestion job ID |
+
+**Response:**
+
+```typescript
+{
+  "id": string,
+  "status": "running" | "completed" | "failed",
+  "progress": {
+    "total": number,
+    "processed": number,
+    "failed": number,
+    "percentage": number,
+    "current": string
+  },
+  "startedAt": string,      // ISO 8601 datetime
+  "completedAt"?: string,   // ISO 8601 datetime
+  "error"?: string
+} | null
+```
+
+---
+
+## Monitoring API
+
+### 모든 인제스트 작업 조회
+
+### `GET /monitoring/jobs`
+
+모든 인제스트 작업 목록을 반환합니다.
+
+**Response:**
+
+```typescript
+{
+  "jobs": [
+    {
+      "id": string,
+      "status": "running" | "completed" | "failed",
+      "progress": {
+        "total": number,
+        "processed": number,
+        "failed": number,
+        "percentage": number,
+        "current": string
+      },
+      "startedAt": string,
+      "completedAt"?: string,
+      "error"?: string
+    }
+  ]
+}
+```
+
+### 인제스트 통계 조회
+
+### `GET /monitoring/stats`
+
+인제스트 작업 통계를 반환합니다.
+
+**Response:**
+
+```typescript
+{
+  "totalJobs": number,
+  "runningJobs": number,
+  "completedJobs": number,
+  "failedJobs": number,
+  "currentJob": IngestionJob | null,
+  "recentJobs": IngestionJob[]
+}
+```
+
+### 현재 실행 중인 작업 조회
+
+### `GET /monitoring/current`
+
+현재 실행 중인 인제스트 작업을 반환합니다.
+
+**Response:**
+
+```typescript
+{
+  "job": IngestionJob | null
+}
+```
+
+### 특정 작업 조회
+
+### `GET /monitoring/jobs/:id`
+
+**Path Parameters:**
+
+| 파라미터 | 타입   | 설명          |
+| -------- | ------ | ------------- |
+| `id`     | string | ingestion job ID |
+
+**Response:**
+
+```typescript
+{
+  "job": IngestionJob | null
+}
+```
+
+---
+
 ## RAG Query API
 
 문서를 검색하고 LLM으로 답변을 생성합니다.

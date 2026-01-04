@@ -40,6 +40,12 @@ export const env = createEnv({
 
     // API Key Authentication
     RAG_GATEWAY_API_KEY: z.string().min(1),
+
+    // Notification Configuration
+    SLACK_WEBHOOK_URL: z.string().url().optional(),
+    SLACK_CHANNEL: z.string().optional(),
+    NOTIFICATION_EMAILS: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -55,6 +61,10 @@ export const env = createEnv({
     REDIS_URL: process.env.REDIS_URL,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     RAG_GATEWAY_API_KEY: process.env.RAG_GATEWAY_API_KEY,
+    SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL,
+    SLACK_CHANNEL: process.env.SLACK_CHANNEL,
+    NOTIFICATION_EMAILS: process.env.NOTIFICATION_EMAILS,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
