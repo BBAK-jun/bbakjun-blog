@@ -28,8 +28,8 @@ interface UseScrollSyncOptions {
  * ```
  */
 export function useScrollSync(
-  editorRef: React.RefObject<HTMLElement>,
-  previewRef: React.RefObject<HTMLElement>,
+  editorRef: React.RefObject<HTMLElement | null>,
+  previewRef: React.RefObject<HTMLElement | null>,
   options: UseScrollSyncOptions = {}
 ) {
   const { enabled = true } = options;

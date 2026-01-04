@@ -10,8 +10,8 @@ import { useScrollSync } from '@/shared/hooks/use-scroll-sync';
 import { RefObject, useRef } from 'react';
 
 describe('useScrollSync', () => {
-  let editorRef: RefObject<HTMLElement>;
-  let previewRef: RefObject<HTMLElement>;
+  let editorRef: RefObject<HTMLElement | null>;
+  let previewRef: RefObject<HTMLElement | null>;
   let editorEl: HTMLDivElement;
   let previewEl: HTMLDivElement;
 
@@ -80,22 +80,22 @@ describe('useScrollSync', () => {
       // 스크롤 설정 감지
       Object.defineProperty(editorEl, 'scrollTop', {
         get() {
-          return originalEditorScroll?.get.call(this) ?? 0;
+          return originalEditorScroll?.get?.call(this) ?? 0;
         },
         set(value) {
           syncCount++;
-          originalEditorScroll?.set.call(this, value);
+          originalEditorScroll?.set?.call(this, value);
         },
         configurable: true,
       });
 
       Object.defineProperty(previewEl, 'scrollTop', {
         get() {
-          return originalPreviewScroll?.get.call(this) ?? 0;
+          return originalPreviewScroll?.get?.call(this) ?? 0;
         },
         set(value) {
           syncCount++;
-          originalPreviewScroll?.set.call(this, value);
+          originalPreviewScroll?.set?.call(this, value);
         },
         configurable: true,
       });
@@ -144,7 +144,7 @@ describe('useScrollSync', () => {
 
     it('ref가 null일 때 에러가 발생하지 않아야 함', () => {
       // Given: null ref
-      const nullRef = { current: null };
+      const nullRef: RefObject<HTMLElement | null> = { current: null };
 
       // When & Then: 에러 없이 렌더링
       expect(() => {
