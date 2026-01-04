@@ -123,7 +123,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const seriesNav = series ? getSeriesNavigation(series, slugString) : null;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <article>
         {/* 포스트 헤더 */}
         <header className="mb-12">

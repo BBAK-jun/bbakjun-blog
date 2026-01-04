@@ -11,7 +11,7 @@ const navLinks = [
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/15 bg-background">
-      <div className="max-w-3xl mx-auto py-5">
+      <div className="max-w-3xl mx-auto px-4 py-5">
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <Link href="/" className="text-xl font-bold text-foreground">

@@ -19,7 +19,7 @@ export default async function SeriesPage() {
 
   if (series.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div>
         <h1 className="text-4xl font-bold mb-8">시리즈</h1>
         <div className="text-center py-16">
           <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
@@ -30,7 +30,7 @@ export default async function SeriesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div>
       <div className="mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">시리즈</h1>
         <p className="text-xl text-muted-foreground">주제별로 정리된 포스트 시리즈를 확인하세요</p>
