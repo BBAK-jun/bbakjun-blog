@@ -2,8 +2,116 @@
 
 - **Scope**: Common patterns and conventions for components
 - **Source of Truth**: Implementation patterns across layers
-- **Last Verified**: 2025-12-22
-- **Repo Ref**: blog-admin (monorepo)
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
+
+## 메타데이터
+
+```yaml
+metadata:
+  version: "2.0.0"
+  created_at: "2025-12-22T00:00:00Z"
+  last_verified: "2026-01-04T00:00:00Z"
+  git_commit: "628174858956a2b1ff3d7c33e4ae03c790ed3208"
+
+  changed_files:
+    - path: apps/blog-admin/src/shared/hooks/use-scroll-sync.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Scroll synchronization hook for split-view editor/preview"
+      source_exists: true
+    - path: apps/blog-admin/src/widgets/file-creator/ui/file-creator-widget.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "ENHANCED: Integrated scroll sync in split view mode"
+      source_exists: true
+
+  deleted_files: []
+```
+
+## Scroll Synchronization Pattern (NEW)
+
+### Overview
+
+에디터와 프리뷰 화면 간 스크롤 위치를 동기화하는 패턴입니다. 백분율 기반 계산으로 컨텐츠 길이 차이를 극복하고, 무한 루프 방지 메커니즘을 포함합니다.
+
+### useScrollSync Hook Pattern
+
+- **Location**: `src/shared/hooks/use-scroll-sync.ts` (L1-L88)
+- **Purpose**: 두 스크롤 컨테이너 간 양방향 스크롤 동기화
+- **source_exists**: true
+- **Pattern**:
+
+```typescript
+// 1. Ref 생성
+const editorRef = useRef<HTMLDivElement>(null);
+const previewRef = useRef<HTMLDivElement>(null);
+
+// 2. 훅 호출 (조건부 활성화)
+useScrollSync(editorRef, previewRef, {
+  enabled: viewMode === 'split'
+});
+
+// 3. UI에 ref 연결
+<div ref={editorRef} className="editor">...</div>
+<div ref={previewRef} className="preview">...</div>
+```
+
+### Key Implementation Details
+
+1. **백분율 기반 계산**:
+   ```typescript
+   const scrollPercentage =
+     source.scrollTop / (source.scrollHeight - source.clientHeight);
+   target.scrollTop =
+     scrollPercentage * (target.scrollHeight - target.clientHeight);
+   ```
+
+2. **무한 루프 방지**:
+   ```typescript
+   const isSyncingRef = useRef(false);
+
+   const handleScroll = () => {
+     if (isSyncingRef.current) {
+       isSyncingRef.current = false;
+       return;  // 순환 참조 방지
+     }
+     isSyncingRef.current = true;
+     // 동기화 로직...
+   };
+   ```
+
+3. **조건부 활성화**:
+   ```typescript
+   useScrollSync(editorRef, previewRef, {
+     enabled: viewMode === 'split'  // 필요할 때만 활성화
+   });
+   ```
+
+### Usage in FileCreatorWidget
+
+- **Location**: `src/widgets/file-creator/ui/file-creator-widget.tsx` (L47-L52)
+- **source_exists**: true
+- **Implementation**:
+  ```typescript
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+
+  useScrollSync(editorScrollRef, previewScrollRef, {
+    enabled: viewMode === 'split'
+  });
+  ```
+
+### Benefits
+
+1. **정확성**: 컨텐츠 길이가 다른 경우에도 정확히 동기화
+2. **성능**: 플래그 기반 무한 루프 방지
+3. **메모리 효율**: 조건부 활성화로 불필요한 이벤트 리스너 방지
+4. **자동 정리**: useEffect cleanup으로 메모리 누수 방지
+
+### Testing Pattern
+
+- **Unit Tests**: `tests/use-scroll-sync.component.test.ts`
+- **Integration Tests**: `tests/scroll-sync.component.test.tsx` (588 lines)
+- **Widget Tests**: `tests/file-creator-scroll.component.test.tsx`
 
 ## Form Patterns
 

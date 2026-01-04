@@ -125,8 +125,9 @@ Content-Type: application/json
 ### POST /api/rag/ingest
 
 **Location**: `src/routes/rag/rag.routes.ts` (L63-L93)
+**Source Exists**: true
 
-**Purpose**: 블로그 콘텐츠 인제스트 시작 (Vercel Blob에서 MDX 파일 가져오기)
+**Purpose**: 직접 제공된 문서 배열 인제스트 시작 (배치 처리)
 
 **Request Headers**:
 ```
@@ -137,26 +138,44 @@ Content-Type: application/json
 **Request Body**:
 ```typescript
 {
+  documents: Array<{
+    id?: string;              // Optional: Auto-generated if missing
+    title: string;            // Required
+    content: string;          // Required: Markdown/MDX content
+    slug: string;             // Required: Document slug
+    metadata?: {
+      category?: string;      // Document category
+      tags?: string[];        // Document tags
+      author?: string;        // Default: "claude-code"
+      githubUrl?: string;     // Optional: GitHub source URL
+    };
+  }>;
   force?: boolean;            // Default: false - 강제 재인덱싱
   batchSize?: number;         // Default: 10, Min: 1, Max: 100
-  collections?: string[];     // Optional: 특정 컬렉션만 인제스트
 }
 ```
 
 **Response** (200 OK):
 ```typescript
 {
-  jobId: string;              // Job ID for status tracking
+  jobId: string;              // Job ID for status tracking (format: ingest_<timestamp>)
   status: 'started';
-  message: string;
-  filesCount: number;         // Number of markdown files found
+  message: 'Document ingestion started';
+  documentsCount: number;     // Number of documents provided
 }
 ```
 
-**Handler**: `src/routes/rag/rag.handlers.ts` (L113-L174)
-- Fetches blob files from `BLOG_ADMIN_URL/api/rpc/blob-files`
-- Filters for `.md` and `.mdx` files
-- Creates IngestionPipeline and starts ingestion
+**Error Responses**:
+- 401 Unauthorized: Missing/invalid API key
+- 422 Unprocessable Entity: Validation error (missing required fields)
+- 500 Internal Server Error: Ingestion failed to start
+
+**Handler**: `src/routes/rag/rag.handlers.ts` (L113-L171)
+- **Auto-generates document IDs** using `generateDocumentId()` if not provided
+- **Converts request format** to internal Document schema
+- **Creates IngestionPipeline** with QdrantService and EmbeddingService
+- **Starts background ingestion** with batch processing
+- **Supports force reindexing**: Deletes existing documents before re-indexing
 
 ---
 
@@ -187,7 +206,10 @@ jobId: string     # Required
 }
 ```
 
-**Handler**: `src/routes/rag/rag.handlers.ts` (L176-L217)
+**Handler**: `src/routes/rag/rag.handlers.ts` (L173-L212)
+- **Job Status Polling**: Retrieve ingestion progress by jobId
+- **Returns null** for non-existent job IDs (404 response)
+- **Tracks progress**: total, processed, failed, percentage
 
 ---
 
@@ -204,7 +226,10 @@ jobId: string     # Required
 }
 ```
 
-**Handler**: `src/routes/rag/rag.handlers.ts` (L219-L243)
+**Handler**: `src/routes/rag/rag.handlers.ts` (L214-L238)
+- **Basic health check**: Verifies service initialization
+- **No authentication required**: Public endpoint
+- **Always returns 200 OK**: Status field indicates health
 
 ---
 

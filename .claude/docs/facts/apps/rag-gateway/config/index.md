@@ -2,7 +2,8 @@
 
 - **Scope**: 환경 변수, 앱 설정, 보안 설정
 - **Source of Truth**: `src/env.ts`, `src/libs/create-app.ts`, `src/middleware/security-headers.ts`
-- **Last Verified**: 2024-12-26
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
 
 ---
 
@@ -34,11 +35,14 @@
 
 **Location**: `src/env.ts` (L4-L64)
 
-**Important Changes** (2025-12-29):
-- `GLM_API_KEY`: Changed from optional to **required**
-- `EMBEDDING_PROVIDER`: Removed `siliconflow` option (now `openai` \| `glm`)
-- `NEXT_PUBLIC_RAG_URL`: Removed (client-side variable no longer needed)
-- `SILICONFLOW_API_KEY`: Removed (SiliconFlow provider deprecated)
+**Important Changes**:
+- **2026-01-04**: Added comprehensive test suite with Vitest
+- **2025-12-29**: `GLM_API_KEY`: Changed from optional to **required**
+- **2025-12-29**: `EMBEDDING_PROVIDER`: Removed `siliconflow` option (now `openai` \| `glm`)
+- **2025-12-29**: `NEXT_PUBLIC_RAG_URL`: Removed (client-side variable no longer needed)
+- **2025-12-29**: `SILICONFLOW_API_KEY`: Removed (SiliconFlow provider deprecated)
+
+**Source Exists**: true
 
 ---
 
@@ -61,9 +65,16 @@
 
 **Location**: `src/services/embedding.ts` (L7-L20)
 
-**Important Changes** (2025-12-29):
-- Removed SiliconFlow models (`BAAI/bge-m3`, `BAAI/bge-large-zh-v1.5`, `zephyr-embedding`)
-- GLM embedding models retained for Korean/multilingual support
+**Additional Supported Models** (NEW):
+- `BAAI/bge-m3` - Multilingual embedding (1024 dims)
+- `BAAI/bge-large-zh-v1.5` - Chinese optimized (1024 dims)
+- `zephyr-embedding` - Zephyr model (2048 dims)
+- `zephyr-embedding-large` - Zephyr large (4096 dims)
+
+**Important Changes**:
+- **2026-01-04**: Added support for BAAI and Zephyr embedding models
+- **2025-12-29**: Removed SiliconFlow models (`BAAI/bge-m3`, `BAAI/bge-large-zh-v1.5`, `zephyr-embedding`)
+- **2025-12-29**: GLM embedding models retained for Korean/multilingual support
 
 ---
 

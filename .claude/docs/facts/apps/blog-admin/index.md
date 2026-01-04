@@ -2,67 +2,121 @@
 
 - **Scope**: Blog-admin 애플리케이션의 전체 구조와 기술 문서
 - **Source of Truth**: Feature-Sliced Design (FSD) 아키텍처 기반 파일 구조
-- **Last Verified**: 2026-01-02
-- **Repo Ref**: 9e42367
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
 
 ## 메타데이터
 
 ```yaml
 metadata:
-  version: "3.0.0"
+  version: "4.0.0"
   created_at: "2024-12-22T00:00:00Z"
-  last_verified: "2026-01-02T00:00:00Z"
-  git_commit: "9e42367"
-  git_branch: "BBAK-jun/paris"
+  last_verified: "2026-01-04T00:00:00Z"
+  git_commit: "628174858956a2b1ff3d7c33e4ae03c790ed3208"
+  git_branch: "BBAK-jun/vaduz"
 
   changed_files:
-    # Image Upload Enhancements (2026-01-02)
-    - path: apps/blog-admin/src/shared/ui/image-uploader/image-uploader.tsx
-      changed_at: "2026-01-02T00:00:00Z"
-      reason: "ENHANCED: Multiple file upload, drag-drop, paste support, client-side upload"
-    - path: apps/blog-admin/src/app/dashboard/upload/page.tsx
-      changed_at: "2026-01-02T00:00:00Z"
-      reason: "ENHANCED: Multiple images upload tab with progress tracking"
-    - path: apps/blog-admin/src/app/dashboard/files/edit/page.tsx
-      changed_at: "2026-01-02T00:00:00Z"
-      reason: "ENHANCED: Cursor position insertion, paste image upload, drag-drop support"
-    - path: apps/blog-admin/src/app/actions/files.ts
-      changed_at: "2026-01-01T00:00:00Z"
-      reason: "IMPROVED: Image upload with retry logic, unique filename, better error messages"
-    - path: apps/blog-admin/src/rpc/routes/upload/upload.routes.ts
-      changed_at: "2026-01-02T00:00:00Z"
-      reason: "ADDED: Client token endpoint for direct-to-blob uploads"
+    # Scroll Sync Feature (TDD 완료, 2026-01-04)
+    - path: apps/blog-admin/src/shared/hooks/use-scroll-sync.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Scroll synchronization hook for split-view editor/preview"
+      source_exists: true
+    - path: apps/blog-admin/src/widgets/file-creator/ui/file-creator-widget.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "ENHANCED: Integrated scroll sync in split view mode"
+      source_exists: true
+    - path: apps/blog-admin/tests/scroll-sync.component.test.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Comprehensive scroll sync component tests (588 lines)"
+      source_exists: true
+    - path: apps/blog-admin/tests/use-scroll-sync.component.test.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Hook-level unit tests for scroll sync"
+      source_exists: true
+    - path: apps/blog-admin/tests/file-creator-scroll.component.test.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Integration tests for FileCreator scroll sync"
+      source_exists: true
 
-    # RAG Gateway Integration (2025-12-31)
-    - path: apps/blog-admin/src/app/dashboard/rag/page.tsx
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG query interface for documentation search"
-    - path: apps/blog-admin/src/lib/rag.rpc.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG Gateway Hono RPC client"
+    # Upload History Tracking (2026-01-04)
+    - path: apps/blog-admin/prisma/migrations/20250102141000_add_upload_history/migration.sql
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: UploadHistory model migration (CREATE, UPDATE, DELETE tracking)"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/history/page.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Upload history listing page with filters"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/history/history-widget.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Client-side history widget with pagination and search"
+      source_exists: true
+    - path: apps/blog-admin/src/rpc/routes/upload-history/upload-history.routes.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Hono RPC endpoints for upload history (paginated, filtered)"
+      source_exists: true
+    - path: apps/blog-admin/src/rpc/routes/upload-history/upload-history.handlers.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Query handlers for upload history with action type filtering"
+      source_exists: true
+    - path: apps/blog-admin/src/app/actions/upload-history.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Server actions for upload history CRUD operations"
+      source_exists: true
+    - path: apps/blog-admin/src/shared/api/upload-history.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Type-safe API client for upload history"
+      source_exists: true
 
-    # RAG Gateway App (NEW)
-    - path: apps/rag-gateway/src/app.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG Gateway Hono app entry point"
-    - path: apps/rag-gateway/src/lib/rag/core/query.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: RAG query processor with vector search"
-    - path: apps/rag-gateway/src/lib/rag/ingestion/pipeline.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Document ingestion pipeline for vector embeddings"
-    - path: apps/rag-gateway/src/routes/documents/documents.handlers.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Document ingestion and query API endpoints"
-    - path: apps/rag-gateway/src/services/embedding.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Embedding service for vector generation"
-    - path: apps/rag-gateway/Dockerfile
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Docker container configuration for RAG Gateway"
-    - path: apps/rag-gateway/tsup.config.ts
-      changed_at: "2025-12-31T00:00:00Z"
-      reason: "NEW: Build configuration for RPC client export"
+    # Settings Management System (2026-01-04)
+    - path: apps/blog-admin/prisma/migrations/20260102130251_add_settings_model/migration.sql
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Setting model for system-wide configuration"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/settings/page.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Settings page with tabbed interface (system, users, API keys)"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/settings/components/system-settings.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: System settings management (blog, system, content configs)"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/settings/components/user-management.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: User role management (SUPER_ADMIN, ADMIN, GUEST)"
+      source_exists: true
+    - path: apps/blog-admin/src/app/dashboard/settings/components/api-keys.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: API keys display and management"
+      source_exists: true
+    - path: apps/blog-admin/src/app/actions/settings.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Server actions for settings CRUD, user management, seeding"
+      source_exists: true
+
+    # RAG Gateway Tests (2026-01-04)
+    - path: apps/rag-gateway/src/tests/handlers/rag.test.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: RAG query handler integration tests"
+      source_exists: true
+    - path: apps/rag-gateway/src/tests/ingestion/pipeline.test.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Document ingestion pipeline tests"
+      source_exists: true
+    - path: apps/rag-gateway/src/tests/integration/batch-ingest.test.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Batch document ingestion integration tests"
+      source_exists: true
+
+    # Test Infrastructure (2026-01-04)
+    - path: apps/blog-admin/vitest.component.config.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Component testing configuration for Vitest"
+      source_exists: true
+    - path: apps/blog-admin/__mocks__/next-themes.tsx
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Mock for next-themes in component tests"
+      source_exists: true
 
   deleted_files: []
 ```
@@ -126,8 +180,11 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 
 ### Features (NEW)
 
-- [Experience Management](features/experience-management.md) - 경력 타임라인 관리 (NEW)
-- [RAG Integration](features/rag-integration.md) - RAG Gateway 연동 (NEW)
+- [Scroll Sync Feature](features/scroll-sync.md) - 스크롤 동기화 (TDD 완료) (NEW)
+- [Upload History Tracking](features/upload-history.md) - 업로드 이력 추적 (NEW)
+- [Settings Management](features/settings.md) - 시스템 설정 관리 (NEW)
+- [Experience Management](features/experience-management.md) - 경력 타임라인 관리
+- [RAG Integration](features/rag-integration.md) - RAG Gateway 연동
 
 ### Config
 
@@ -161,9 +218,51 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - **빌드**: `pnpm --filter=blog-admin build`
 - **개발 서버**: `pnpm --filter=blog-admin dev`
 
-## 새로운 기능 (2026-01-02)
+## 새로운 기능 (2026-01-04)
 
-### Image Upload Enhancements (Multiple Files, Drag-Drop, Paste, Cursor Insertion)
+### Scroll Sync Feature (TDD 완료)
+
+- **위치**: `src/shared/hooks/use-scroll-sync.ts`, FileCreator Widget
+- **기능**: 에디터와 프리뷰 화면의 스크롤 위치 동기화 (분할 모드)
+- **특징**:
+  1. **백분율 기반 동기화**: 컨텐츠 길이가 다른 경우에도 정확히 동기화
+  2. **양방향 동기화**: 에디터 ↔ 프리뷰 양방향 스크롤 연동
+  3. **무한 루프 방지**: `isSyncingRef` 플래그로 순환 참조 방지
+  4. **성능 최적화**: 이벤트 리스너 자동 정리, 디바운싱
+  5. **활성화 제어**: `enabled` 옵션으로 분할 모드에서만 동작
+- **테스트 커버리지**:
+  - 단위 테스트: `use-scroll-sync.component.test.ts`
+  - 통합 테스트: `scroll-sync.component.test.tsx` (588 lines)
+  - 위젯 테스트: `file-creator-scroll.component.test.tsx`
+- **상세**: [Scroll Sync Feature](features/scroll-sync.md)
+
+### Upload History Tracking
+
+- **위치**: `/dashboard/history`, UploadHistory 모델
+- **기능**: 파일 업로드/수정/삭제 이력 추적 및 조회
+- **특징**:
+  1. **작업 유형 추적**: CREATE, UPDATE, DELETE 기록
+  2. **파일 정보 스냅샷**: URL, 크기, contentType 저장 (삭제 시 null)
+  3. **작업자 추적**: 사용자 email 기록
+  4. **페이지네이션**: 50개/페이지 기본 설정
+  5. **검색 및 필터**: 경로 검색, 작업 유형 필터링
+- **API**: Hono RPC 엔드포인트 (`/rpc/upload-history`)
+- **상세**: [Upload History](features/upload-history.md)
+
+### Settings Management System
+
+- **위치**: `/dashboard/settings`, Setting 모델
+- **기능**: 시스템 전체 설정 관리 (블로그, 시스템, 콘텐츠)
+- **특징**:
+  1. **카테고리별 설정**: blog, system, content 분류
+  2. **타입 지원**: string, number, boolean, json
+  3. **사용자 관리**: 역할 기반 권한 (SUPER_ADMIN, ADMIN, GUEST)
+  4. **API 키 관리**: 인증 정보 확인 및 관리
+  5. **초기 데이터 시딩**: `DEFAULT_SETTINGS` 상수로 기본값 제공
+- **Server Actions**: `getSettingsByCategory`, `upsertSetting`, `updateSettings`, `updateUserRole`, `seedDefaultSettings`
+- **상세**: [Settings Management](features/settings.md)
+
+### Image Upload Enhancements (2026-01-02)
 
 - **위치**: `ImageUploader` 컴포넌트, Upload 페이지, Edit 페이지
 - **개선사항**:
@@ -180,6 +279,7 @@ FSD (Feature-Sliced Design) 기반의 계층형 아키텍처 구조:
 - **위치**: `/dashboard/rag`, RAG Gateway 앱
 - **기능**: 블로그 콘텐츠 지능형 검색 및 질문 답변
 - **연동**: RAG Gateway (Hono RPC)
+- **테스트**: 핸들러, 파이프라인, 배치 인제스트 통합 테스트
 - **상세**: [RAG Integration](features/rag-integration.md)
 
 ## 이전 기능 (2026-01-01)

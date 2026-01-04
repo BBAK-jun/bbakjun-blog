@@ -15,12 +15,21 @@ RAG Gateway는 DEV_BBAK 블로그의 콘텐츠를 지능적으로 검색하고 �
 
 ## Feature Specifications (기능 명세서)
 
-### Core Features (핵심 기능)
+### Core Features (핵심 기능) - 2026-01-04 Update
+
+| 명세서 | 설명 | 상태 |
+|--------|------|------|
+| [comprehensive-test-suite.md](./comprehensive-test-suite.md) | 종합 테스트 스위트 (Vitest, 50+ 테스트 케이스) | ✅ New (2026-01-04) |
+| [enhanced-ingestion-pipeline.md](./enhanced-ingestion-pipeline.md) | 향상된 인제스트 파이프라인 (배치 처리, 작업 추적) | ✅ Updated (2026-01-04) |
+| [multi-model-architecture.md](./multi-model-architecture.md) | 다중 모델 아키텍처 (10+ 임베딩 모델, LLM 전략) | ✅ Updated (2026-01-04) |
+| [admin-monitoring.md](./admin-monitoring.md) | 관리자 모니터링 기능 (통계, 헬스 체크, 캐시/컬렉션 관리) | ✅ New (2026-01-04) |
+
+### Legacy Features (레거시 기능)
 
 | 명세서 | 설명 | 상태 |
 |--------|------|------|
 | [rag-query-pipeline.md](./rag-query-pipeline.md) | RAG 질의응답 파이프라인 (시맨틱 검색 + AI 응답) | As-Is |
-| [document-ingestion.md](./document-ingestion.md) | 문서 수집, 청킹, 임베딩, Qdrant 인덱싱 | As-Is |
+| [document-ingestion.md](./document-ingestion.md) | 문서 수집, 청킹, 임베딩, Qdrant 인덱싱 | As-Is (Enhanced) |
 | [vector-search.md](./vector-search.md) | Qdrant 벡터 데이터베이스 통합 | As-Is |
 
 ### Infrastructure & Security (인프라 및 보안)
@@ -307,6 +316,13 @@ pnpm start:rag-gateway
 ---
 
 ## Changelog (변경 로그)
+
+### 2026-01-04
+- **New**: 종합 테스트 스위트 명세서 추가 (comprehensive-test-suite.md)
+- **New**: 관리자 모니터링 기능 명세서 추가 (admin-monitoring.md)
+- **Updated**: 향상된 인제스트 파이프라인 명세서 (enhanced-ingestion-pipeline.md)
+- **Updated**: 다중 모델 아키텍처 명세서 (multi-model-architecture.md)
+- **Updated**: 2026-01-04 업데이트 반영 (테스트 커버리지, 운영 효율, 비용 최적화)
 
 ### 2025-12-29
 - **New**: Render 무료 플랜 배포 전략 명세서 추가

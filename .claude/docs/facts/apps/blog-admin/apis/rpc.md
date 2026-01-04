@@ -2,8 +2,30 @@
 
 - **Scope**: Hono OpenAPI 기반의 타입 세이프 RPC 엔드포인트
 - **Source of Truth**: apps/blog-admin/src/rpc/routes/ 디렉토리
-- **Last Verified**: 2025-12-22
-- **Repo Ref**: 2c541823391c87ad23934193eddd21e2335f0b09
+- **Last Verified**: 2026-01-04
+- **Repo Ref**: 628174858956a2b1ff3d7c33e4ae03c790ed3208
+
+## 메타데이터
+
+```yaml
+metadata:
+  version: "3.0.0"
+  created_at: "2025-12-22T00:00:00Z"
+  last_verified: "2026-01-04T00:00:00Z"
+  git_commit: "628174858956a2b1ff3d7c33e4ae03c790ed3208"
+
+  changed_files:
+    - path: apps/blog-admin/src/rpc/routes/upload-history/upload-history.routes.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Hono RPC endpoints for upload history (paginated, filtered)"
+      source_exists: true
+    - path: apps/blog-admin/src/rpc/routes/upload-history/upload-history.handlers.ts
+      changed_at: "2026-01-04T00:00:00Z"
+      reason: "NEW: Query handlers for upload history with action type filtering"
+      source_exists: true
+
+  deleted_files: []
+```
 
 ## Blob Files RPC
 
@@ -139,6 +161,118 @@
   - Hono 경로 파라미터: slug 추출
 - **Evidence**:
   - `<apps/blog-admin/src/rpc/routes/views/index.ts>`: :slug 동적 경로 정의
+
+## Upload History RPC (NEW)
+
+### GET /api/rpc/upload-history
+
+- **Location**: `apps/blog-admin/src/rpc/routes/upload-history/upload-history.routes.ts` (L36-L51)
+- **Purpose**: 업로드 이력 조회 (관리자 전용)
+- **source_exists**: true
+- **git_hash**: "6281748"
+- **Key Details**:
+  - **Query Parameters**:
+    - `limit`: 1~100 (기본값: 50)
+    - `offset`: 0~ (기본값: 0)
+    - `search`: pathname 검색어 (선택사항, case-insensitive)
+    - `actionType`: CREATE|UPDATE|DELETE (선택사항)
+  - **Response Schema**:
+    ```typescript
+    {
+      history: Array<{
+        id: string;
+        actionType: 'CREATE' | 'UPDATE' | 'DELETE';
+        pathname: string;
+        fileUrl: string | null;
+        fileSize: number | null;
+        contentType: string | null;
+        uploadedBy: string | null;
+        createdAt: string;  // ISO 8601
+      }>;
+      total: number;
+      hasMore: boolean;
+    }
+    ```
+  - **OpenAPI Documentation**:
+    - Tag: `UploadHistory`
+    - Summary: "Get upload history (admin only)"
+    - Description: "Retrieve upload history with pagination and filters"
+    - Responses: 200 (OK), 400 (Bad Request), 401 (Unauthorized), 500 (Server Error)
+- **Authentication**: RequireSession middleware
+- **Features**:
+  - 페이지네이션 (limit + offset)
+  - pathname 검색 (LIKE 쿼리)
+  - 작업 유형 필터링 (정확히 일치)
+  - 최신 순 정렬 (createdAt DESC)
+- **Dependencies**:
+  - uploadHistoryQuerySchema: Zod 스키마 검증
+  - uploadHistoryResponseSchema: 응답 스키마
+  - getUploadHistoryHandler: 쿼리 핸들러
+- **Evidence**:
+  - `src/rpc/routes/upload-history/upload-history.routes.ts`: L36-L51
+  - `src/rpc/routes/upload-history/upload-history.handlers.ts`: 쿼리 로직
+  - `src/app/actions/upload-history.ts`: Server Actions
+
+### Upload History Query Schema
+
+- **Location**: `apps/blog-admin/src/rpc/routes/upload-history/upload-history.routes.ts` (L12-L17)
+- **Purpose**: 요청 쿼리 파라미터 검증
+- **source_exists**: true
+- **Schema**:
+  ```typescript
+  export const uploadHistoryQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    offset: z.coerce.number().int().min(0).default(0),
+    search: z.string().min(1).optional(),
+    actionType: z.enum(['CREATE', 'UPDATE', 'DELETE']).optional(),
+  });
+  ```
+- **Evidence**:
+  - `src/rpc/routes/upload-history/upload-history.routes.ts`: L12-L17
+
+### Upload History Response Schema
+
+- **Location**: `apps/blog-admin/src/rpc/routes/upload-history/upload-history.routes.ts` (L19-L34)
+- **Purpose**: 응답 데이터 스키마 정의
+- **source_exists**: true
+- **Schema**:
+  ```typescript
+  export const uploadHistoryItemSchema = z.object({
+    id: z.string(),
+    actionType: z.enum(['CREATE', 'UPDATE', 'DELETE']),
+    pathname: z.string(),
+    fileUrl: z.string().nullable(),
+    fileSize: z.number().nullable(),
+    contentType: z.string().nullable(),
+    uploadedBy: z.string().nullable(),
+    createdAt: z.string(),
+  });
+
+  export const uploadHistoryResponseSchema = z.object({
+    history: z.array(uploadHistoryItemSchema),
+    total: z.number(),
+    hasMore: z.boolean(),
+  });
+  ```
+- **Evidence**:
+  - `src/rpc/routes/upload-history/upload-history.routes.ts`: L19-L34
+
+### Upload History Handlers
+
+- **Location**: `apps/blog-admin/src/rpc/routes/upload-history/upload-history.handlers.ts`
+- **Purpose**: 업로드 이력 쿼리 핸들러
+- **source_exists**: true
+- **Key Functions**:
+  1. **필터링 로직**:
+     - `search`: pathname LIKE 쿼리 (case-insensitive)
+     - `actionType`: 정확히 일치
+  2. **페이지네이션**:
+     - `limit` + `offset` 기반
+     - `hasMore` 계산 (total > offset + limit)
+  3. **정렬**:
+     - `createdAt DESC` (최신 순)
+- **Evidence**:
+  - `src/rpc/routes/upload-history/upload-history.handlers.ts`: 전체 파일
 
 ### POST /api/rpc/incrementViewsBySlug/:slug
 
