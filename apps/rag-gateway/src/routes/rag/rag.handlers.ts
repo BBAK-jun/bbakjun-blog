@@ -5,10 +5,10 @@ import { getLLMService } from '@/services/llm';
 import { getQdrantService } from '@/services/qdrant';
 import { z } from '@hono/zod-openapi';
 import { QueryProcessor } from '../../lib/rag/core';
+import { IngestionPipeline } from '../../lib/rag/ingestion';
+import { generateDocumentId } from '../../lib/rag/types';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import * as routes from './rag.routes';
-import { IngestionPipeline } from '../../lib/rag/ingestion';
-import { env } from '@/env';
 import { sanitizeInput } from '@/middleware/input-validation';
 import { filterRAGResponse } from '@/middleware/output-filter';
 
@@ -111,53 +111,50 @@ export const search: AppRouteHandler<typeof routes.search> = async c => {
 };
 
 export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
-  const { force, batchSize, collections } = c.req.valid('json');
+  const { documents, force, batchSize } = c.req.valid('json');
 
   try {
     // Initialize services
     const qdrantService = getQdrantService();
     const embeddingService = getEmbeddingService();
 
-    // Fetch blob files from blog-admin
-    const blobFilesResponse = await fetch(`${env.BLOG_ADMIN_URL}/api/rpc/blob-files`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!blobFilesResponse.ok) {
-      throw new Error(`Failed to fetch blob files: ${blobFilesResponse.statusText}`);
-    }
-
-    const blobFilesData = (await blobFilesResponse.json()) as {
-      files: Array<{ pathname: string; url: string; contentType: string | null }>;
-    };
-    const blobFiles = blobFilesData.files || [];
-
-    // Filter for markdown files only
-    const markdownFiles = blobFiles.filter((f: { pathname: string }) =>
-      f.pathname.match(/\.(md|mdx)$/)
+    // Convert request documents to Document format
+    const docs = await Promise.all(
+      documents.map(async (doc) => ({
+        id: doc.id || (await generateDocumentId('claude-docs', doc.slug)),
+        content: doc.content,
+        metadata: {
+          title: doc.title,
+          slug: doc.slug,
+          author: doc.metadata.author || 'claude-code',
+          category: doc.metadata.category,
+          tags: doc.metadata.tags || [],
+          publishedAt: new Date().toISOString(),
+          wordCount: doc.content.split(/\s+/).length,
+          language: 'ko',
+          source: 'upload' as const,
+          sourceUrl: doc.metadata.githubUrl,
+          uploadedAt: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+        },
+      }))
     );
-
-    console.log(`📁 Found ${markdownFiles.length} markdown files for ingestion`);
 
     // Create ingestion pipeline
     const pipeline = new IngestionPipeline(qdrantService, embeddingService);
 
-    // Start ingestion with blob files
+    // Start ingestion with documents
     const jobId = await pipeline.startIngestion({
       force,
       batchSize,
-      collections,
-      blobFiles: markdownFiles,
+      documents: docs,
     });
 
     const response = {
       jobId,
       status: 'started' as const,
       message: 'Document ingestion started',
-      filesCount: markdownFiles.length,
+      documentsCount: documents.length,
     };
 
     return c.json(response, HttpStatusCodes.OK);
@@ -174,7 +171,7 @@ export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
 };
 
 export const ingestStatus: AppRouteHandler<typeof routes.ingestStatus> = async c => {
-  const jobId = c.req.query('jobId');
+  const jobId = c.req.valid('query').jobId;
 
   if (!jobId) {
     return c.json(
@@ -187,23 +184,21 @@ export const ingestStatus: AppRouteHandler<typeof routes.ingestStatus> = async c
   }
 
   try {
-    // Get job status from pipeline (would need to store pipeline instance)
-    // For now, return a mock response
-    return c.json(
-      {
-        jobId,
-        status: 'running' as const,
-        progress: {
-          total: 100,
-          processed: 50,
-          failed: 0,
-          percentage: 50,
-          current: 'Processing batch 1/2...',
+    // Get job status from pipeline
+    const pipeline = new IngestionPipeline(getQdrantService(), getEmbeddingService());
+    const job = pipeline.getJobStatus(jobId);
+
+    if (!job) {
+      return c.json(
+        {
+          error: 'Job not found',
+          message: `Job ${jobId} not found`,
         },
-        startedAt: new Date().toISOString(),
-      },
-      HttpStatusCodes.OK
-    );
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
+
+    return c.json(job, HttpStatusCodes.OK);
   } catch (error) {
     console.error('❌ Failed to get ingestion status:', error);
     return c.json(

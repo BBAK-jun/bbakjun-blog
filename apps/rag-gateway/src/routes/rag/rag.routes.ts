@@ -67,9 +67,23 @@ export const ingest = createRoute({
   request: {
     body: jsonContentRequired(
       z.object({
+        documents: z.array(
+          z.object({
+            id: z.string().optional(),
+            title: z.string(),
+            content: z.string(),
+            slug: z.string(),
+            metadata: z.object({
+              category: z.string(),
+              tags: z.array(z.string()).optional(),
+              author: z.string().optional(),
+              description: z.string().optional(),
+              githubUrl: z.string().url().optional(),
+            }),
+          })
+        ),
         force: z.boolean().default(false),
         batchSize: z.number().min(1).max(100).default(10),
-        collections: z.array(z.string()).optional(),
       }),
       'RAG ingest request'
     ),
@@ -80,7 +94,7 @@ export const ingest = createRoute({
         jobId: z.string(),
         status: z.literal('started'),
         message: z.string(),
-        filesCount: z.number(),
+        documentsCount: z.number(),
       }),
       'RAG ingest response'
     ),
