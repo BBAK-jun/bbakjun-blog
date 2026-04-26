@@ -42,7 +42,7 @@ BLOG_MCP_API_KEYS='[
 | `blog:read` | `list_posts`, `get_post`, `validate_post` |
 | `blog:write` | `upsert_post`, `upload_image` |
 | `blog:delete` | `delete_post` |
-| `blog:publish` | `revalidate_post`, `index_post_for_rag`, `publish_post` |
+| `blog:publish` | `revalidate_post`, `index_post_for_rag`; with `blog:write`, also `publish_post` |
 
 ## Tools
 
