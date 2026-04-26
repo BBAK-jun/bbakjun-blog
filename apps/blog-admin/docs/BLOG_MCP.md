@@ -185,32 +185,51 @@ Blob post를 읽어 RAG Gateway 문서 인덱스에 전달합니다.
 }
 ```
 
-## Local stdio MCP adapter
+## Local stdio adapter
 
-로컬 MCP client는 HTTP API를 직접 구현하지 않고 thin adapter를 실행합니다.
+Hermes/Claude Desktop-style MCP clients can use the checked-in adapter:
 
 ```bash
 BLOG_MCP_ENDPOINT="http://localhost:3001/api/rpc/blog-mcp" \
-BLOG_MCP_API_KEY="REPLACE_WITH_SECRET" \
+BLOG_MCP_API_KEY="<BLOG_MCP_API_KEY>" \
+node scripts/blog-mcp-server.js
+```
+
+Package script:
+
+```bash
 pnpm --filter @apps/blog-admin mcp
 ```
 
-adapter 위치:
-
-```txt
-scripts/blog-mcp-server.js
-```
-
-Hermes/native MCP 설정 예시:
+Hermes client config example (`~/.hermes/config.yaml`):
 
 ```yaml
 mcp_servers:
   bbak_blog:
-    command: "pnpm"
+    command: node
+    args:
+      - /home/bbakjun/projects/bbakjun-blog/scripts/blog-mcp-server.js
+    env:
+      BLOG_MCP_ENDPOINT: ${BLOG_MCP_ENDPOINT}
+      BLOG_MCP_API_KEY: ${BLOG_MCP_API_KEY}
+    timeout: 60
+    connect_timeout: 15
+```
+
+Keep the actual endpoint/key values in `~/.hermes/.env` or another local secret store, not in the repository.
+
+Alternative config using the package script:
+
+```yaml
+mcp_servers:
+  bbak_blog:
+    command: pnpm
     args: ["--dir", "/home/bbakjun/projects/bbakjun-blog", "--filter", "@apps/blog-admin", "mcp"]
     env:
-      BLOG_MCP_ENDPOINT: "http://localhost:3001/api/rpc/blog-mcp"
-      BLOG_MCP_API_KEY: "${BLOG_MCP_API_KEY}"
+      BLOG_MCP_ENDPOINT: ${BLOG_MCP_ENDPOINT}
+      BLOG_MCP_API_KEY: ${BLOG_MCP_API_KEY}
+    timeout: 60
+    connect_timeout: 15
 ```
 
 ## Smoke test checklist

@@ -1,11 +1,16 @@
 import matter from 'gray-matter';
 import { z } from 'zod';
 
+const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD')
+  .refine(value => !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`)), 'date must be valid');
+
 const frontMatterSchema = z.object({
   title: z.string().min(1),
   date: z.preprocess(
     value => value instanceof Date ? value.toISOString().slice(0, 10) : value,
-    z.string().min(1)
+    isoDateSchema
   ),
   description: z.string().min(1),
   tags: z.array(z.string().min(1)).min(1),

@@ -33,13 +33,13 @@ type ToolName =
 const BLOG_MCP_TOOLS: Array<{
   name: ToolName;
   description: string;
-  requiredScope: BlogMcpScope;
+  requiredScopes: BlogMcpScope[];
   inputSchema: Record<string, unknown>;
 }> = [
   {
     name: 'list_posts',
     description: 'List markdown/MDX posts known by the Blob CDC cache',
-    requiredScope: 'blog:read',
+    requiredScopes: ['blog:read'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -55,7 +55,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'get_post',
     description: 'Fetch a raw markdown/MDX post from Vercel Blob and return its hash',
-    requiredScope: 'blog:read',
+    requiredScopes: ['blog:read'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -66,7 +66,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'validate_post',
     description: 'Validate post pathname and required front matter without writing',
-    requiredScope: 'blog:read',
+    requiredScopes: ['blog:read'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -81,7 +81,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'upsert_post',
     description: 'Create or update a markdown/MDX post in Vercel Blob, then sync CDC',
-    requiredScope: 'blog:write',
+    requiredScopes: ['blog:write'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -98,7 +98,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'delete_post',
     description: 'Delete a post from Vercel Blob with expectedHash and exact confirmation guard',
-    requiredScope: 'blog:delete',
+    requiredScopes: ['blog:delete'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -114,7 +114,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'upload_image',
     description: 'Upload a base64 image to Vercel Blob and return markdown image syntax',
-    requiredScope: 'blog:write',
+    requiredScopes: ['blog:write'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -130,7 +130,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'revalidate_post',
     description: 'Request public blog ISR revalidation for a slug',
-    requiredScope: 'blog:publish',
+    requiredScopes: ['blog:publish'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -141,7 +141,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'index_post_for_rag',
     description: 'Read a Blob post and send it to the RAG Gateway document index',
-    requiredScope: 'blog:publish',
+    requiredScopes: ['blog:publish'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -152,7 +152,7 @@ const BLOG_MCP_TOOLS: Array<{
   {
     name: 'publish_post',
     description: 'Validate, upsert, revalidate, and index a post in one guarded workflow',
-    requiredScope: 'blog:publish',
+    requiredScopes: ['blog:write', 'blog:publish'],
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -178,11 +178,13 @@ function authorize(c: { req: { header: (name: string) => string | undefined }; j
   return actor;
 }
 
-function requireScope(actor: BlogMcpActor, scope: BlogMcpScope) {
-  try {
-    assertBlogMcpScope(actor, scope);
-  } catch (error) {
-    throw new BlogMcpError(error instanceof Error ? error.message : 'Forbidden', 403);
+function requireScopes(actor: BlogMcpActor, scopes: BlogMcpScope[]) {
+  for (const scope of scopes) {
+    try {
+      assertBlogMcpScope(actor, scope);
+    } catch (error) {
+      throw new BlogMcpError(error instanceof Error ? error.message : 'Forbidden', 403);
+    }
   }
 }
 
@@ -205,12 +207,27 @@ function getString(args: Record<string, unknown>, key: string): string {
   return value;
 }
 
+function normalizeBlogSlug(slugInput: string): string {
+  const slug = slugInput.trim().replace(/^\/+|\/+$/g, '').replace(/^blog\//, '');
+  if (!slug || slug.includes('..') || slug.includes('\\')) {
+    throw new BlogMcpError('Invalid slug', 400);
+  }
+  if (!/^[a-zA-Z0-9/_-]+$/.test(slug)) {
+    throw new BlogMcpError('Invalid slug characters', 400);
+  }
+  return slug;
+}
+
+function sanitizeUpstreamError(prefix: string, response: Response): BlogMcpError {
+  return new BlogMcpError(`${prefix} failed with status ${response.status}`, 502);
+}
+
 async function revalidatePost(slugInput: string) {
   if (!env.REVALIDATION_SECRET) {
     throw new BlogMcpError('REVALIDATION_SECRET is not configured', 500);
   }
 
-  const slug = slugInput.replace(/^\/+|\/+$/g, '').replace(/^blog\//, '');
+  const slug = normalizeBlogSlug(slugInput);
   const path = `/blog/${slug}`;
   const url = new URL('/api/revalidate', env.NEXT_PUBLIC_BLOG_URL);
   url.searchParams.set('secret', env.REVALIDATION_SECRET);
@@ -219,7 +236,7 @@ async function revalidatePost(slugInput: string) {
   const response = await fetch(url, { method: 'POST' });
   const body = await response.text();
   if (!response.ok) {
-    throw new BlogMcpError(`Revalidation failed: ${response.status} ${body}`, 502);
+    throw sanitizeUpstreamError('Revalidation', response);
   }
 
   return { path, status: response.status, response: body };
@@ -254,7 +271,7 @@ async function indexPostForRag(pathname: string) {
 
   const body = await response.text();
   if (!response.ok) {
-    throw new BlogMcpError(`RAG indexing failed: ${response.status} ${body}`, 502);
+    throw sanitizeUpstreamError('RAG indexing', response);
   }
 
   return { pathname: post.pathname, slug, status: response.status, response: body };
@@ -266,7 +283,7 @@ async function invoke(tool: ToolName, args: Record<string, unknown>, actor: Blog
     throw new BlogMcpError(`Tool not found: ${tool}`, 404);
   }
 
-  requireScope(actor, toolDefinition.requiredScope);
+  requireScopes(actor, toolDefinition.requiredScopes);
 
   switch (tool) {
     case 'list_posts':
@@ -315,7 +332,6 @@ async function invoke(tool: ToolName, args: Record<string, unknown>, actor: Blog
     case 'index_post_for_rag':
       return indexPostForRag(getString(args, 'pathname'));
     case 'publish_post': {
-      requireScope(actor, 'blog:write');
       const upserted = await upsertAgentPost({
         pathname: getString(args, 'pathname'),
         content: getString(args, 'content'),
@@ -343,7 +359,7 @@ export const listTools: AppRouteHandler<typeof routes.listTools> = async (c: any
   }
 
   const visibleTools = BLOG_MCP_TOOLS.filter(tool =>
-    actorOrResponse.scopes.includes(tool.requiredScope)
+    tool.requiredScopes.every(scope => actorOrResponse.scopes.includes(scope))
   );
 
   return c.json({ tools: visibleTools, protocol: 'blog-mcp', version: '1.0.0' }, HttpStatusCodes.OK);

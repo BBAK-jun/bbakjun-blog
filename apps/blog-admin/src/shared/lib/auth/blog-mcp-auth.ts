@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { env } from '@/env';
 
 export const BLOG_MCP_SCOPES = ['blog:read', 'blog:write', 'blog:delete', 'blog:publish'] as const;
@@ -61,6 +62,12 @@ export function parseBlogMcpApiKeys(raw: string | undefined | null): BlogMcpApiK
   }
 }
 
+function safeEqual(a: string, b: string): boolean {
+  const left = createHash('sha256').update(a).digest();
+  const right = createHash('sha256').update(b).digest();
+  return timingSafeEqual(left, right);
+}
+
 export function verifyBlogMcpApiKey(authHeader: string | null | undefined): BlogMcpActor | null {
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -71,7 +78,7 @@ export function verifyBlogMcpApiKey(authHeader: string | null | undefined): Blog
     return null;
   }
 
-  const matched = parseBlogMcpApiKeys(env.BLOG_MCP_API_KEYS).find(config => config.key === token);
+  const matched = parseBlogMcpApiKeys(env.BLOG_MCP_API_KEYS).find(config => safeEqual(config.key, token));
   if (!matched) {
     return null;
   }

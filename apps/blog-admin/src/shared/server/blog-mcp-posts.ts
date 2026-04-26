@@ -52,12 +52,56 @@ export function sha256(content: string | ArrayBuffer | Buffer): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const allowedImageExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
+
+function normalizeOrBadRequest(pathname: string): string {
+  try {
+    return normalizeBlogPostPath(pathname);
+  } catch (error) {
+    throw new BlogMcpError(error instanceof Error ? error.message : 'Invalid path', 400);
+  }
+}
+
 function isMarkdownPath(pathname: string): boolean {
   return /\.(md|mdx)$/i.test(pathname);
 }
 
 function extensionToContentType(pathname: string): string {
   return pathname.toLowerCase().endsWith('.mdx') ? 'text/mdx; charset=utf-8' : 'text/markdown; charset=utf-8';
+}
+
+function coerceLimit(value: number | undefined): number {
+  if (!Number.isFinite(value)) return 50;
+  return Math.min(Math.max(Math.trunc(value ?? 50), 1), 100);
+}
+
+function coerceOffset(value: number | undefined): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(Math.trunc(value ?? 0), 0);
+}
+
+function trimOptionalFilter(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function escapeMarkdownAlt(value: string): string {
+  return value.replace(/\r?\n/g, ' ').replace(/]/g, '\\]');
+}
+
+function decodeBase64Image(contentBase64: string): Buffer {
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(contentBase64.trim())) {
+    throw new BlogMcpError('contentBase64 must be valid base64', 400);
+  }
+  const buffer = Buffer.from(contentBase64, 'base64');
+  if (buffer.byteLength === 0) {
+    throw new BlogMcpError('Image content is empty', 400);
+  }
+  if (buffer.byteLength > MAX_IMAGE_BYTES) {
+    throw new BlogMcpError(`Image exceeds ${MAX_IMAGE_BYTES} byte limit`, 400);
+  }
+  return buffer;
 }
 
 async function findBlobFile(pathname: string) {
@@ -74,17 +118,19 @@ async function downloadText(url: string): Promise<string> {
 }
 
 export async function listAgentPosts(input: ListAgentPostsInput = {}) {
-  const limit = Math.min(input.limit ?? 50, 100);
-  const offset = input.offset ?? 0;
+  const limit = coerceLimit(input.limit);
+  const offset = coerceOffset(input.offset);
+  const category = trimOptionalFilter(input.category);
+  const tag = trimOptionalFilter(input.tag);
   const result = await getCachedBlobFiles({
     limit,
     offset,
-    searchTerm: input.category ? `${input.category.replace(/^\/+|\/+$/g, '')}/` : undefined,
+    searchTerm: category ? `${category.replace(/^\/+|\/+$/g, '')}/` : undefined,
   });
 
   const files = result.files.filter(file => isMarkdownPath(file.pathname));
 
-  if (!input.tag && input.draft === undefined) {
+  if (!tag && input.draft === undefined) {
     return {
       files: files.map(file => ({
         pathname: file.pathname,
@@ -112,7 +158,7 @@ export async function listAgentPosts(input: ListAgentPostsInput = {}) {
 
   const filtered = enriched.filter(({ validation }) => {
     if (!validation?.frontMatter) return false;
-    if (input.tag && !validation.frontMatter.tags.includes(input.tag)) return false;
+    if (tag && !validation.frontMatter.tags.includes(tag)) return false;
     if (input.draft !== undefined && (validation.frontMatter.draft ?? false) !== input.draft) return false;
     return true;
   });
@@ -132,7 +178,7 @@ export async function listAgentPosts(input: ListAgentPostsInput = {}) {
 }
 
 export async function getAgentPost(pathnameInput: string) {
-  const pathname = normalizeBlogPostPath(pathnameInput);
+  const pathname = normalizeOrBadRequest(pathnameInput);
   const file = await findBlobFile(pathname);
 
   if (!file) {
@@ -156,7 +202,7 @@ export async function getAgentPost(pathnameInput: string) {
 }
 
 export async function upsertAgentPost(input: UpsertAgentPostInput) {
-  const pathname = normalizeBlogPostPath(input.pathname);
+  const pathname = normalizeOrBadRequest(input.pathname);
   const validation = validateBlogPost({ pathname, content: input.content, draft: input.draft });
 
   if (!validation.valid) {
@@ -172,6 +218,10 @@ export async function upsertAgentPost(input: UpsertAgentPostInput) {
 
   if (input.expectedHash && previousHash && input.expectedHash !== previousHash) {
     throw new BlogMcpError('Post changed since expectedHash was produced', 409);
+  }
+
+  if (existing && !input.expectedHash && !input.dryRun) {
+    throw new BlogMcpError('expectedHash is required when updating an existing post', 409);
   }
 
   const nextHash = sha256(input.content);
@@ -222,7 +272,7 @@ export async function upsertAgentPost(input: UpsertAgentPostInput) {
 }
 
 export async function deleteAgentPost(input: DeleteAgentPostInput) {
-  const pathname = normalizeBlogPostPath(input.pathname);
+  const pathname = normalizeOrBadRequest(input.pathname);
   if (input.confirm !== `DELETE ${pathname}`) {
     throw new BlogMcpError(`Confirmation must equal "DELETE ${pathname}"`, 400);
   }
@@ -249,6 +299,9 @@ export async function deleteAgentPost(input: DeleteAgentPostInput) {
 export async function uploadAgentImage(input: UploadAgentImageInput) {
   const safeName = input.filename.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
   const extension = safeName.split('.').pop()?.toLowerCase() || 'png';
+  if (!safeName || !allowedImageExtensions.has(extension)) {
+    throw new BlogMcpError('filename must end with png, jpg, jpeg, webp, or gif', 400);
+  }
   const contentType =
     extension === 'jpg' || extension === 'jpeg'
       ? 'image/jpeg'
@@ -258,7 +311,8 @@ export async function uploadAgentImage(input: UploadAgentImageInput) {
           ? 'image/webp'
           : 'image/png';
   const pathname = `images/agent-${Date.now()}-${randomUUID().split('-')[0]}-${safeName}`;
-  const buffer = Buffer.from(input.contentBase64, 'base64');
+  const buffer = decodeBase64Image(input.contentBase64);
+  const alt = escapeMarkdownAlt(input.alt || safeName);
 
   if (input.dryRun) {
     return {
@@ -266,12 +320,12 @@ export async function uploadAgentImage(input: UploadAgentImageInput) {
       url: null,
       size: buffer.byteLength,
       contentType,
-      markdown: `![${input.alt || safeName}](${pathname})`,
+      markdown: `![${alt}](${pathname})`,
       dryRun: true,
     };
   }
 
-  const blob = await put(pathname, new Blob([buffer], { type: contentType }), {
+  const blob = await put(pathname, new Blob([new Uint8Array(buffer)], { type: contentType }), {
     access: 'public',
     token: env.BLOB_READ_WRITE_TOKEN,
     addRandomSuffix: false,
@@ -291,7 +345,7 @@ export async function uploadAgentImage(input: UploadAgentImageInput) {
     url: blob.url,
     size: buffer.byteLength,
     contentType,
-    markdown: `![${input.alt || safeName}](${blob.url})`,
+    markdown: `![${alt}](${blob.url})`,
     dryRun: false,
   };
 }
