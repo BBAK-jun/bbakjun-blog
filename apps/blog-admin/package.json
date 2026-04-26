@@ -20,6 +20,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "mcp": "node ../../scripts/blog-mcp-server.js",
     "test:component": "vitest --config vitest.component.config.ts",
     "test:component:run": "vitest run --config vitest.component.config.ts"
   },

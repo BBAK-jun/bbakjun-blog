@@ -74,6 +74,9 @@
     "type-check": {
       "dependsOn": ["^type-check"]
     },
+    "@apps/blog#type-check": {
+      "dependsOn": ["@apps/blog-admin#build:rpc", "^type-check"]
+    },
     "test": {
       "dependsOn": ["^test"]
     }

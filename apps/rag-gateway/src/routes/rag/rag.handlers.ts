@@ -150,7 +150,7 @@ export const ingest: AppRouteHandler<typeof routes.ingest> = async c => {
       jobId,
       status: 'started' as const,
       message: 'Document ingestion started',
-      filesCount: markdownFiles.length,
+      documentsCount: markdownFiles.length,
     };
 
     return c.json(response, HttpStatusCodes.OK);

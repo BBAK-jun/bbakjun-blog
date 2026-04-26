@@ -29,6 +29,7 @@ export interface IngestionOptions {
   batchSize?: number;
   chunking?: ChunkingOptions;
   documents?: Document[]; // Direct documents to ingest
+  blobFiles?: BlobFileInfo[]; // Blob-backed markdown files selected by callers
 }
 
 export interface IngestionProgress {

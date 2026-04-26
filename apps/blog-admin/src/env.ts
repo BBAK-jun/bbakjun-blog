@@ -26,6 +26,7 @@ export const env = createEnv({
 
     // API Keys
     BACKOFFICE_API_KEY: z.string().min(1),
+    BLOG_MCP_API_KEYS: z.string().optional(),
     RESEND_API_KEY: z.string().min(1).optional(),
 
     // Blog Revalidation (uses same secret as blog app)
@@ -67,6 +68,7 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     BLOB_STORE_ID: process.env.BLOB_STORE_ID,
     BACKOFFICE_API_KEY: process.env.BACKOFFICE_API_KEY,
+    BLOG_MCP_API_KEYS: process.env.BLOG_MCP_API_KEYS,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     REVALIDATION_SECRET: process.env.REVALIDATION_SECRET,
     BLOB_SYNC_INTERVAL_MINUTES: process.env.BLOB_SYNC_INTERVAL_MINUTES,

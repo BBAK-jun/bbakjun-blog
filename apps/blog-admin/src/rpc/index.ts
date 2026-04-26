@@ -7,6 +7,7 @@ import uploadRouter from './routes/upload/upload.index';
 import viewsRouter from './routes/views/views.index';
 import experienceRouter from './routes/experience/experience.index';
 import uploadHistoryRouter from './routes/upload-history/upload-history.index';
+import blogMcpRouter from './routes/blog-mcp/blog-mcp.index';
 
 const app = createApp();
 
@@ -19,6 +20,7 @@ const routers = [
   viewsRouter,
   experienceRouter,
   uploadHistoryRouter,
+  blogMcpRouter,
 ] as const;
 
 routers.forEach(router => {
