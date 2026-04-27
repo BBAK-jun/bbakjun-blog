@@ -38,6 +38,17 @@ describe('blog MCP auth', () => {
     ]);
   });
 
+  it('accepts JSON wrapped in env-file quotes', async () => {
+    const { parseBlogMcpApiKeys } = await loadModule();
+    const raw = JSON.stringify([
+      { name: 'local-agent', key: 'secret-key', scopes: ['blog:read', 'blog:write'] },
+    ]);
+
+    expect(parseBlogMcpApiKeys(`'${raw}'`)).toEqual([
+      { name: 'local-agent', key: 'secret-key', scopes: ['blog:read', 'blog:write'] },
+    ]);
+  });
+
   it('rejects malformed config instead of granting access', async () => {
     const { parseBlogMcpApiKeys } = await loadModule();
 

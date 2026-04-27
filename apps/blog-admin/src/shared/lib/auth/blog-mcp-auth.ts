@@ -23,12 +23,19 @@ function isBlogMcpScope(scope: unknown): scope is BlogMcpScope {
 }
 
 export function parseBlogMcpApiKeys(raw: string | undefined | null): BlogMcpApiKeyConfig[] {
-  if (!raw?.trim()) {
+  const normalizedRaw = raw?.trim();
+  if (!normalizedRaw) {
     return [];
   }
 
+  const jsonText =
+    (normalizedRaw.startsWith("'") && normalizedRaw.endsWith("'")) ||
+    (normalizedRaw.startsWith('"') && normalizedRaw.endsWith('"'))
+      ? normalizedRaw.slice(1, -1).trim()
+      : normalizedRaw;
+
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(jsonText) as unknown;
     if (!Array.isArray(parsed)) {
       return [];
     }
