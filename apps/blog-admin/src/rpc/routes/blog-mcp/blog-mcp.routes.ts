@@ -13,7 +13,7 @@ const tags = ['Blog MCP'];
 const BlogMcpToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string(),
-  requiredScope: z.string(),
+  requiredScopes: z.array(z.string()),
   inputSchema: z.record(z.string(), z.unknown()),
 });
 

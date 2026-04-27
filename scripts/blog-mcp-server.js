@@ -68,9 +68,15 @@ async function blogMcpFetch(path, options = {}) {
 }
 
 function toMcpTool(tool) {
+  const requiredScopes = Array.isArray(tool.requiredScopes)
+    ? tool.requiredScopes
+    : tool.requiredScope
+      ? [tool.requiredScope]
+      : [];
+
   return {
     name: tool.name,
-    description: `${tool.description} (required scope: ${tool.requiredScope})`,
+    description: `${tool.description} (required scopes: ${requiredScopes.join(', ') || 'none'})`,
     inputSchema:
       tool.inputSchema && typeof tool.inputSchema === 'object'
         ? tool.inputSchema

@@ -47,13 +47,19 @@ describe('validateBlogPost', () => {
   });
 
   it('rejects invalid calendar dates', () => {
-    const result = validateBlogPost({
-      pathname: 'career/bad-date.mdx',
+    const impossibleMonth = validateBlogPost({
+      pathname: 'career/bad-month.mdx',
       content: validContent.replace('date: "2026-04-26"', 'date: "2026-99-99"'),
     });
+    const impossibleDay = validateBlogPost({
+      pathname: 'career/bad-day.mdx',
+      content: validContent.replace('date: "2026-04-26"', 'date: "2026-02-30"'),
+    });
 
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain('frontMatter.date: date must be valid');
+    expect(impossibleMonth.valid).toBe(false);
+    expect(impossibleMonth.errors).toContain('frontMatter.date: date must be valid');
+    expect(impossibleDay.valid).toBe(false);
+    expect(impossibleDay.errors).toContain('frontMatter.date: date must be valid');
   });
 
   it('reports missing required front matter fields', () => {
