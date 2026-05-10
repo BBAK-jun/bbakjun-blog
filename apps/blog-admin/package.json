@@ -89,6 +89,7 @@
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "4.0.16",
     "@vitest/ui": "^4.0.16",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",

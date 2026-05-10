@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateBlogPost, normalizeBlogPostPath } from './validate-post';
+import { setBlogPostDraftStatus, validateBlogPost, normalizeBlogPostPath } from './validate-post';
 
 const validContent = `---
 title: "AI가 나를 대체할 수 있게 일하기"
@@ -22,13 +22,18 @@ describe('normalizeBlogPostPath', () => {
 
   it('rejects path traversal and non-markdown extensions', () => {
     expect(() => normalizeBlogPostPath('../secret.mdx')).toThrow('Path must not contain traversal');
-    expect(() => normalizeBlogPostPath('career/post.txt')).toThrow('Path must end with .md or .mdx');
+    expect(() => normalizeBlogPostPath('career/post.txt')).toThrow(
+      'Path must end with .md or .mdx'
+    );
   });
 });
 
 describe('validateBlogPost', () => {
   it('accepts valid front matter and pathname', () => {
-    const result = validateBlogPost({ pathname: 'career/ai-coding-harness-delegation.mdx', content: validContent });
+    const result = validateBlogPost({
+      pathname: 'career/ai-coding-harness-delegation.mdx',
+      content: validContent,
+    });
 
     expect(result.valid).toBe(true);
     expect(result.normalizedPathname).toBe('career/ai-coding-harness-delegation.mdx');
@@ -63,7 +68,10 @@ describe('validateBlogPost', () => {
   });
 
   it('reports missing required front matter fields', () => {
-    const result = validateBlogPost({ pathname: 'career/post.mdx', content: '---\ntitle: Only title\n---\nBody' });
+    const result = validateBlogPost({
+      pathname: 'career/post.mdx',
+      content: '---\ntitle: Only title\n---\nBody',
+    });
 
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('frontMatter.date is required');
@@ -73,9 +81,46 @@ describe('validateBlogPost', () => {
   });
 
   it('warns when front matter draft disagrees with explicit draft argument', () => {
-    const result = validateBlogPost({ pathname: 'career/post.mdx', content: validContent, draft: true });
+    const result = validateBlogPost({
+      pathname: 'career/post.mdx',
+      content: validContent,
+      draft: true,
+    });
 
     expect(result.valid).toBe(true);
     expect(result.warnings).toContain('Input draft=true differs from front matter draft=false');
+  });
+});
+
+describe('setBlogPostDraftStatus', () => {
+  it('updates an existing draft front matter value', () => {
+    const content = validContent.replace('draft: false', 'draft: true');
+
+    const result = setBlogPostDraftStatus(content, false);
+
+    expect(result.changed).toBe(true);
+    expect(result.content).toContain('draft: false');
+    expect(
+      validateBlogPost({ pathname: 'career/post.mdx', content: result.content }).frontMatter?.draft
+    ).toBe(false);
+  });
+
+  it('adds draft front matter when it is missing', () => {
+    const content = validContent.replace('draft: false\n', '');
+
+    const result = setBlogPostDraftStatus(content, true);
+
+    expect(result.changed).toBe(true);
+    expect(result.content).toContain('draft: true');
+    expect(
+      validateBlogPost({ pathname: 'career/post.mdx', content: result.content }).frontMatter?.draft
+    ).toBe(true);
+  });
+
+  it('reports no change when draft front matter already matches', () => {
+    const result = setBlogPostDraftStatus(validContent, false);
+
+    expect(result.changed).toBe(false);
+    expect(result.content).toBe(validContent);
   });
 });
