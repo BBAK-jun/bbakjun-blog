@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { client } from '@/lib/rpc';
 import { formatFileSize, formatDate } from '@/shared/lib/format';
@@ -35,6 +35,13 @@ export function HistoryWidget({ initialData }: HistoryWidgetProps) {
   const [data, setData] = useState<HistoryData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
 
   const actionTypeLabels = {
     CREATE: { label: '생성', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
@@ -92,13 +99,20 @@ export function HistoryWidget({ initialData }: HistoryWidgetProps) {
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    if (page === 1) {
-      fetchHistory(1, value, actionTypeFilter);
-    } else {
-      router.push(`?page=1&search=${encodeURIComponent(value)}${actionTypeFilter !== 'ALL' ? `&actionType=${actionTypeFilter}` : ''}`, {
-        scroll: false,
-      });
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
+
+    searchDebounceRef.current = setTimeout(() => {
+      if (page === 1) {
+        fetchHistory(1, value, actionTypeFilter);
+      } else {
+        router.push(`?page=1&search=${encodeURIComponent(value)}${actionTypeFilter !== 'ALL' ? `&actionType=${actionTypeFilter}` : ''}`, {
+          scroll: false,
+        });
+      }
+    }, 300);
   };
 
   const handleActionTypeChange = (value: string) => {

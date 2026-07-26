@@ -44,6 +44,11 @@ export function useLocalStorage<T>(
 ): [T, (value: T | ((prev: T) => T)) => void] {
   const updateTimeoutRef = useRef<number | null>(null);
 
+  // Refs to keep setValue stable — prevents infinite re-render loops when
+  // callers pass a fresh initialValue object every render (e.g. getDefaultDraftData())
+  const initialValueRef = useRef(initialValue);
+  initialValueRef.current = initialValue;
+
   const subscribe = useCallback(
     (callback: () => void) => {
       const handleStorageChange = (e: StorageEvent) => {
@@ -75,6 +80,7 @@ export function useLocalStorage<T>(
     [key]
   );
 
+  // Depend only on [key] — initialValue via ref avoids new callback every render
   const getSnapshot = useCallback(() => {
     try {
       const item = window.localStorage.getItem(key);
@@ -88,7 +94,7 @@ export function useLocalStorage<T>(
       }
 
       // Parse new value
-      const newValue = item ? (JSON.parse(item) as T) : initialValue;
+      const newValue = item ? (JSON.parse(item) as T) : initialValueRef.current;
 
       // Update cache
       snapshotCache.set(key, { value: newValue, serialized });
@@ -96,21 +102,29 @@ export function useLocalStorage<T>(
       return newValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
+      return initialValueRef.current;
     }
-  }, [key, initialValue]);
+  }, [key]);
 
-  const getServerSnapshot = useCallback(() => initialValue, [initialValue]);
+  const getServerSnapshot = useCallback(() => initialValueRef.current, []);
 
   const store = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
+  // Refs so setValue can read latest values without depending on them
+  const storeRef = useRef(store);
+  storeRef.current = store;
+  const getSnapshotRef = useRef(getSnapshot);
+  getSnapshotRef.current = getSnapshot;
+
+  // Stable: depends only on [key]. Unstable setValue causes infinite loops in
+  // consumers that use it in useEffect dependency arrays (e.g. useFileCreator)
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       try {
-        const valueToStore = value instanceof Function ? value(store) : value;
+        const valueToStore = value instanceof Function ? value(storeRef.current) : value;
 
         // Check if value actually changed using deep equality
-        const currentValue = getSnapshot();
+        const currentValue = getSnapshotRef.current();
         if (deepEqual(currentValue, valueToStore)) {
           // Value hasn't changed, don't update
           return;
@@ -137,7 +151,7 @@ export function useLocalStorage<T>(
         console.warn(`Error setting localStorage key "${key}":`, error);
       }
     },
-    [key, store, getSnapshot]
+    [key]
   );
 
   return [store, setValue];
