@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBA크 블로그 백오피스 — 디자인 시스템</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — light mode defaults
+   ============================================================ */
+:root {
+  /* brand — indigo */
+  --brand-50:  239 100% 97%;
+  --brand-100: 236 100% 94%;
+  --brand-200: 236 100% 89%;
+  --brand-300: 238  91% 81%;
+  --brand-400: 241  82% 71%;
+  --brand-500: 243  76% 59%;
+  --brand-600: 245  76% 51%;
+  --brand-700: 248  73% 43%;
+  --brand-800: 252  70% 35%;
+  --brand-900: 255  68% 28%;
+  --brand-950: 264  80% 19%;
+
+  /* neutral — slate (slight cool tint) */
+  --neutral-50:  214  20% 98%;
+  --neutral-100: 222  33% 96%;
+  --neutral-200: 217  33% 91%;
+  --neutral-300: 216  34% 83%;
+  --neutral-400: 217  33% 69%;
+  --neutral-500: 217  33% 56%;
+  --neutral-600: 218  35% 44%;
+  --neutral-700: 216  37% 35%;
+  --neutral-800: 216  34% 26%;
+  --neutral-900: 222  47% 16%;
+  --neutral-950: 224  64%  7%;
+
+  /* semantic */
+  --success: 160  84% 39%;
+  --success-light: 160  84% 94%;
+  --warning:  38  92% 50%;
+  --warning-light:  38  92% 93%;
+  --error:      0  84% 60%;
+  --error-light:  0  84% 94%;
+  --info:     217  91% 60%;
+  --info-light: 217  91% 93%;
+
+  /* surfaces */
+  --bg:              var(--neutral-50);
+  --bg-card:         0  0% 100%;
+  --bg-muted:        var(--neutral-100);
+  --bg-accent:       var(--brand-50);
+  --fg:              var(--neutral-900);
+  --fg-muted:        var(--neutral-500);
+  --fg-on-brand:     0  0% 100%;
+  --border:          var(--neutral-200);
+  --border-strong:   var(--neutral-300);
+  --ring:            var(--brand-500);
+  --ring-offset:     var(--bg-card);
+
+  /* component tokens (shadcn mapping) */
+  --primary:        var(--brand-600);
+  --primary-hover:  var(--brand-700);
+  --secondary:      var(--neutral-100);
+  --secondary-fg:   var(--fg);
+  --muted:          var(--neutral-100);
+  --muted-fg:       var(--neutral-500);
+  --accent:         var(--brand-50);
+  --accent-fg:      var(--brand-900);
+  --destructive:    var(--error);
+  --destructive-fg: 0  0% 100%;
+  --input:          var(--neutral-200);
+  --sidebar-bg:     var(--neutral-950);
+  --sidebar-fg:     var(--neutral-100);
+  --sidebar-accent: var(--brand-500);
+
+  /* spacing */
+  --space-0:   0;
+  --space-px:  1px;
+  --space-0-5: 2px;
+  --space-1:   4px;
+  --space-1-5: 6px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-7:   28px;
+  --space-8:   32px;
+  --space-9:   36px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+
+  /* radius */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* shadows */
+  --shadow-xs:  0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-sm:  0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-md:  0 4px 6px -1px oklch(0 0 0 / 0.07), 0 2px 4px -2px oklch(0 0 0 / 0.05);
+  --shadow-lg:  0 10px 15px -3px oklch(0 0 0 / 0.08), 0 4px 6px -4px oklch(0 0 0 / 0.04);
+  --shadow-xl:  0 20px 25px -5px oklch(0 0 0 / 0.10), 0 8px 10px -6px oklch(0 0 0 / 0.06);
+
+  /* containers */
+  --container-sm:  640px;
+  --container-md:  768px;
+  --container-lg:  1024px;
+  --container-xl:  1280px;
+  --container-2xl: 1440px;
+}
+
+/* ============================================================
+   GLOBALS
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  color: hsl(var(--fg));
+  background: hsl(var(--bg));
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.ds-page { max-width: 1120px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+
+.ds-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-10);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.ds-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: hsl(var(--fg));
+}
+.ds-header .subtitle {
+  font-size: 0.875rem;
+  color: hsl(var(--fg-muted));
+}
+
+.ds-section {
+  margin-bottom: var(--space-12);
+}
+.ds-section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: hsl(var(--fg));
+  margin-bottom: var(--space-2);
+}
+.ds-section h3 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: hsl(var(--fg-muted));
+  margin-bottom: var(--space-3);
+}
+.ds-section .desc {
+  font-size: 0.875rem;
+  color: hsl(var(--fg-muted));
+  margin-bottom: var(--space-4);
+  max-width: 60ch;
+}
+
+.ds-token-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  color: hsl(var(--fg-muted));
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   COLOR PALETTE
+   ============================================================ */
+.palette-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+.palette-swatch {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--bg-card));
+}
+.palette-swatch .color-block {
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-2);
+}
+.palette-swatch .color-block span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1;
+}
+.palette-swatch .info {
+  padding: var(--space-2) var(--space-3);
+}
+.palette-swatch .info .name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--fg));
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.palette-swatch .info .token {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  color: hsl(var(--fg-muted));
+  margin-top: 2px;
+  word-break: break-all;
+}
+.palette-swatch .info .hsl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+  opacity: 0.65;
+  margin-top: 1px;
+}
+.palette-swatch .info .oklch {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+  opacity: 0.65;
+}
+.palette-swatch .info .contrast {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+  opacity: 0.65;
+}
+
+/* contrast helpers */
+.contrast-w { color: #fff; }
+.contrast-b { color: #000; }
+
+/* semantic row */
+.semantic-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.semantic-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--border));
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.semantic-card .label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--fg-muted));
+}
+.semantic-card .pair {
+  display: flex;
+  gap: var(--space-2);
+}
+.semantic-card .pair .chip {
+  flex: 1;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.semantic-card .pair .chip span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.type-ramp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.type-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.type-row:last-child { border-bottom: none; }
+.type-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  color: hsl(var(--fg-muted));
+  white-space: nowrap;
+}
+.type-sample {
+  color: hsl(var(--fg));
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.type-hangul {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: hsl(var(--fg-muted));
+  font-size: 0.75rem;
+}
+
+.font-specimen {
+  margin-top: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--bg-card));
+}
+.font-specimen h4 {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--fg-muted));
+  margin-bottom: var(--space-3);
+}
+.font-specimen .body-text {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: hsl(var(--fg));
+  max-width: 60ch;
+}
+.font-specimen .mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  background: hsl(var(--neutral-100));
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  display: inline-block;
+  margin-top: var(--space-2);
+}
+
+/* ============================================================
+   SPACING / RADIUS
+   ============================================================ */
+.spacing-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+.spacing-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.spacing-block {
+  background: hsl(var(--brand-200));
+  border-radius: 2px;
+}
+.spacing-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+  text-align: center;
+}
+
+.radius-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  align-items: flex-end;
+}
+.radius-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.radius-box {
+  width: 56px;
+  height: 56px;
+  border: 2px solid hsl(var(--brand-400));
+}
+.radius-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+}
+
+/* ============================================================
+   SHADOWS
+   ============================================================ */
+.shadow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+.shadow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.shadow-box {
+  width: 80px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: hsl(var(--bg-card));
+}
+.shadow-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5625rem;
+  color: hsl(var(--fg-muted));
+}
+
+/* ============================================================
+   COMPONENT ANATOMY
+   ============================================================ */
+.anatomy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-5);
+}
+.anatomy-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--bg-card));
+  padding: var(--space-5);
+}
+.anatomy-card h4 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: hsl(var(--fg));
+  margin-bottom: var(--space-3);
+}
+.anatomy-card .parts {
+  list-style: none;
+}
+.anatomy-card .parts li {
+  font-size: 0.75rem;
+  color: hsl(var(--fg-muted));
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid hsl(var(--neutral-100));
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.anatomy-card .parts li:last-child { border-bottom: none; }
+.anatomy-card .parts .part-name {
+  font-weight: 500;
+  color: hsl(var(--fg));
+}
+.anatomy-card .parts .part-token {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  color: hsl(--brand-600);
+  color: hsl(var(--brand-600));
+  white-space: nowrap;
+}
+
+/* button anatomy demo */
+.btn-demo {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--fg-on-brand));
+}
+.btn-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-fg));
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--fg));
+}
+.btn-ghost {
+  background: transparent;
+  color: hsl(var(--fg-muted));
+}
+.btn-destructive {
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-fg));
+}
+.btn-sm { height: 30px; font-size: 0.75rem; padding: 0 var(--space-3); }
+.btn-lg { height: 42px; font-size: 0.875rem; padding: 0 var(--space-5); }
+
+.input-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.input {
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid hsl(var(--input));
+  background: hsl(var(--bg-card));
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: hsl(var(--fg));
+  width: 100%;
+  max-width: 320px;
+}
+.input::placeholder { color: hsl(var(--muted-fg)); }
+.input:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+  border-color: hsl(var(--ring));
+}
+
+.badge-demo {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+.badge-default { background: hsl(var(--neutral-100)); color: hsl(var(--fg-muted)); }
+.badge-brand   { background: hsl(var(--brand-50)); color: hsl(var(--brand-700)); }
+.badge-success { background: hsl(var(--success-light)); color: hsl(var(--success)); }
+.badge-warning { background: hsl(var(--warning-light)); color: hsl(38 92% 35%); }
+.badge-error   { background: hsl(var(--error-light)); color: hsl(var(--error)); }
+
+/* ============================================================
+   TOKEN TABLE
+   ============================================================ */
+.token-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.token-table th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid hsl(var(--border));
+  font-weight: 600;
+  color: hsl(var(--fg-muted));
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.token-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid hsl(var(--neutral-100));
+  color: hsl(var(--fg));
+}
+.token-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  color: hsl(var(--brand-600));
+  white-space: nowrap;
+}
+.token-table td:nth-child(2) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  color: hsl(var(--fg-muted));
+}
+.token-table tr:hover {
+  background: hsl(var(--neutral-50));
+}
+
+.token-table-scroll {
+  overflow-x: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+}
+
+/* ============================================================
+   DARK MODE SWATCH (inline demonstration)
+   ============================================================ */
+.dark-demo {
+  background: hsl(var(--neutral-950));
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-top: var(--space-4);
+}
+.dark-demo .palette-row .palette-swatch {
+  border-color: hsl(var(--neutral-800));
+  background: hsl(var(--neutral-900));
+}
+.dark-demo .palette-swatch .info .name { color: hsl(var(--neutral-100)); }
+.dark-demo .palette-swatch .info .token { color: hsl(var(--neutral-400)); }
+.dark-demo .palette-swatch .info .hsl,
+.dark-demo .palette-swatch .info .oklch,
+.dark-demo .palette-swatch .info .contrast { color: hsl(var(--neutral-500)); }
+.dark-demo .ds-section h2 { color: hsl(var(--neutral-100)); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  .ds-page { padding: var(--space-5) var(--space-4); }
+  .ds-header h1 { font-size: 1.25rem; }
+  .palette-row { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .type-row { grid-template-columns: 1fr; gap: var(--space-1); }
+  .type-meta { font-size: 0.625rem; }
+  .anatomy-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="ds-page">
+
+  <!-- ========== HEADER ========== -->
+  <header class="ds-header">
+    <h1>BBA크 백오피스 — 디자인 시스템</h1>
+    <span class="subtitle">Pretendard Variable · Indigo + Slate · Light/Dark · shadcn/ui</span>
+  </header>
+
+  <!-- ==========================================================
+       1. COLOR PALETTE
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>색상 팔레트</h2>
+    <p class="desc">모든 색상은 HSL·OKLCH·WCAG 대비율 기준. 어두운 텍스트(<code>#fff</code>) 또는 밝은 텍스트(<code>#000</code>) 대비 등급 표시.</p>
+
+    <h3>Brand — Indigo</h3>
+    <div class="palette-row">
+      <!-- 50 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(239 100% 97%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">50 <span class="oklch">oklch(.97 .02 268)</span></div><div class="token">--brand-50</div><div class="hsl">hsl(239 100% 97%)</div><div class="contrast">vs #fff 1.10 · vs #000 20.8</div></div>
+      </div>
+      <!-- 100 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(236 100% 94%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">100 <span class="oklch">oklch(.94 .04 268)</span></div><div class="token">--brand-100</div><div class="hsl">hsl(236 100% 94%)</div><div class="contrast">vs #fff 1.36 · vs #000 16.2</div></div>
+      </div>
+      <!-- 200 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(236 100% 89%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">200 <span class="oklch">oklch(.88 .08 268)</span></div><div class="token">--brand-200</div><div class="hsl">hsl(236 100% 89%)</div><div class="contrast">vs #fff 1.68 · vs #000 12.1</div></div>
+      </div>
+      <!-- 300 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(238 91% 81%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">300 <span class="oklch">oklch(.80 .14 268)</span></div><div class="token">--brand-300</div><div class="hsl">hsl(238 91% 81%)</div><div class="contrast">vs #fff 2.32 · vs #000 8.7</div></div>
+      </div>
+      <!-- 400 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(241 82% 71%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">400 <span class="oklch">oklch(.70 .19 268)</span></div><div class="token">--brand-400</div><div class="hsl">hsl(241 82% 71%)</div><div class="contrast">vs #fff 3.38 · vs #000 6.0</div></div>
+      </div>
+      <!-- 500 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(243 76% 59%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">500 <span class="oklch">oklch(.60 .23 269)</span></div><div class="token">--brand-500</div><div class="hsl">hsl(243 76% 59%)</div><div class="contrast">vs #fff 5.06 · AA ✓</div></div>
+      </div>
+      <!-- 600 ★ -->
+      <div class="palette-swatch" style="box-shadow: 0 0 0 2px hsl(var(--brand-600));">
+        <div class="color-block" style="background:hsl(245 76% 51%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">600 ★ <span class="oklch">oklch(.54 .24 269)</span></div><div class="token">--brand-600 = --primary</div><div class="hsl">hsl(245 76% 51%)</div><div class="contrast">vs #fff 6.49 · AA ✓</div></div>
+      </div>
+      <!-- 700 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(248 73% 43%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">700 <span class="oklch">oklch(.47 .23 269)</span></div><div class="token">--brand-700</div><div class="hsl">hsl(248 73% 43%)</div><div class="contrast">vs #fff 8.65 · AA ✓</div></div>
+      </div>
+      <!-- 800 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(252 70% 35%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">800 <span class="oklch">oklch(.40 .21 269)</span></div><div class="token">--brand-800</div><div class="hsl">hsl(252 70% 35%)</div><div class="contrast">vs #fff 11.6 · AA ✓</div></div>
+      </div>
+      <!-- 900 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(255 68% 28%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">900 <span class="oklch">oklch(.34 .19 269)</span></div><div class="token">--brand-900</div><div class="hsl">hsl(255 68% 28%)</div><div class="contrast">vs #fff 14.8 · AA ✓</div></div>
+      </div>
+      <!-- 950 -->
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(264 80% 19%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">950 <span class="oklch">oklch(.25 .19 270)</span></div><div class="token">--brand-950</div><div class="hsl">hsl(264 80% 19%)</div><div class="contrast">vs #fff 19.5 · AA ✓</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:var(--space-6);">Neutral — Slate</h3>
+    <div class="palette-row">
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(214 20% 98%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">50 <span class="oklch">oklch(.98 .005 250)</span></div><div class="token">--neutral-50</div><div class="hsl">hsl(214 20% 98%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(222 33% 96%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">100 <span class="oklch">oklch(.96 .01 250)</span></div><div class="token">--neutral-100</div><div class="hsl">hsl(222 33% 96%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(217 33% 91%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">200 <span class="oklch">oklch(.91 .02 250)</span></div><div class="token">--neutral-200</div><div class="hsl">hsl(217 33% 91%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(216 34% 83%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">300 <span class="oklch">oklch(.83 .03 250)</span></div><div class="token">--neutral-300</div><div class="hsl">hsl(216 34% 83%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(217 33% 69%);"><span class="contrast-b">Aa</span></div>
+        <div class="info"><div class="name">400 <span class="oklch">oklch(.70 .04 250)</span></div><div class="token">--neutral-400</div><div class="hsl">hsl(217 33% 69%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(217 33% 56%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">500 <span class="oklch">oklch(.56 .04 250)</span></div><div class="token">--neutral-500</div><div class="hsl">hsl(217 33% 56%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(218 35% 44%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">600 <span class="oklch">oklch(.44 .04 250)</span></div><div class="token">--neutral-600</div><div class="hsl">hsl(218 35% 44%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(216 37% 35%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">700 <span class="oklch">oklch(.35 .04 250)</span></div><div class="token">--neutral-700</div><div class="hsl">hsl(216 37% 35%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(216 34% 26%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">800 <span class="oklch">oklch(.27 .04 250)</span></div><div class="token">--neutral-800</div><div class="hsl">hsl(216 34% 26%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(222 47% 16%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">900 <span class="oklch">oklch(.18 .04 250)</span></div><div class="token">--neutral-900</div><div class="hsl">hsl(222 47% 16%)</div></div>
+      </div>
+      <div class="palette-swatch">
+        <div class="color-block" style="background:hsl(224 64% 7%);"><span class="contrast-w">Aa</span></div>
+        <div class="info"><div class="name">950 <span class="oklch">oklch(.10 .04 255)</span></div><div class="token">--neutral-950</div><div class="hsl">hsl(224 64% 7%)</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:var(--space-6);">시맨틱 — Semantic</h3>
+    <div class="semantic-row">
+      <div class="semantic-card">
+        <div class="label">Success</div>
+        <div class="pair">
+          <div class="chip" style="background:hsl(160 84% 94%); color:hsl(160 84% 39%);">상태 정상 <span>light</span></div>
+          <div class="chip" style="background:hsl(160 60% 20%); color:hsl(160 84% 70%);">상태 정상 <span>dark</span></div>
+        </div>
+        <div class="ds-token-note">--success: hsl(160 84% 39%)</div>
+      </div>
+      <div class="semantic-card">
+        <div class="label">Warning</div>
+        <div class="pair">
+          <div class="chip" style="background:hsl(38 92% 93%); color:hsl(38 92% 35%);">검토 필요 <span>light</span></div>
+          <div class="chip" style="background:hsl(38 60% 18%); color:hsl(38 92% 70%);">검토 필요 <span>dark</span></div>
+        </div>
+        <div class="ds-token-note">--warning: hsl(38 92% 50%)</div>
+      </div>
+      <div class="semantic-card">
+        <div class="label">Error</div>
+        <div class="pair">
+          <div class="chip" style="background:hsl(0 84% 94%); color:hsl(0 84% 60%);">삭제 불가 <span>light</span></div>
+          <div class="chip" style="background:hsl(0 50% 18%); color:hsl(0 84% 70%);">삭제 불가 <span>dark</span></div>
+        </div>
+        <div class="ds-token-note">--error: hsl(0 84% 60%)</div>
+      </div>
+      <div class="semantic-card">
+        <div class="label">Info</div>
+        <div class="pair">
+          <div class="chip" style="background:hsl(217 91% 93%); color:hsl(217 91% 45%);">참고사항 <span>light</span></div>
+          <div class="chip" style="background:hsl(217 50% 18%); color:hsl(217 91% 70%);">참고사항 <span>dark</span></div>
+        </div>
+        <div class="ds-token-note">--info: hsl(217 91% 60%)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       2. TYPOGRAPHY
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>타이포그래피</h2>
+    <p class="desc">한국어: Pretendard Variable (본문·제목) / 영문·숫자: JetBrains Mono (코드·토큰 값). 8단계 타입 램프.</p>
+
+    <h3>타입 램프 — 데스크톱</h3>
+    <div class="type-ramp">
+      <div class="type-row">
+        <span class="type-meta">display<br>48/56 · -0.03</span>
+        <span class="type-sample" style="font-size:3rem;font-weight:700;letter-spacing:-0.03em;line-height:1.17;">백오피스 대시보드</span>
+        <span class="type-hangul">가나다라마바사</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">h1<br>32/40 · -0.025</span>
+        <span class="type-sample" style="font-size:2rem;font-weight:700;letter-spacing:-0.025em;">포스트 목록</span>
+        <span class="type-hangul">게시글 관리</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">h2<br>24/32 · -0.02</span>
+        <span class="type-sample" style="font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;">파일 업로드</span>
+        <span class="type-hangul">이미지 업로드</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">h3<br>20/28 · -0.015</span>
+        <span class="type-sample" style="font-size:1.25rem;font-weight:600;letter-spacing:-0.015em;">최근 활동</span>
+        <span class="type-hangul">작업 기록</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">h4<br>16/24 · -0.01</span>
+        <span class="type-sample" style="font-size:1rem;font-weight:600;letter-spacing:-0.01em;">카테고리 필터</span>
+        <span class="type-hangul">태그 관리</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">body<br>15/24</span>
+        <span class="type-sample" style="font-size:0.9375rem;">이 블로그는 개발 경험과 기술 노트를 공유합니다.</span>
+        <span class="type-hangul">본문 텍스트</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">body-sm<br>13/20</span>
+        <span class="type-sample" style="font-size:0.8125rem;">최종 수정: 2026년 3월 15일 · 김지수</span>
+        <span class="type-hangul">부가 정보</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">caption<br>12/16</span>
+        <span class="type-sample" style="font-size:0.75rem;color:hsl(var(--fg-muted));">필수 항목 · 파일 크기 제한: 5MB</span>
+        <span class="type-hangul">도움말 텍스트</span>
+      </div>
+    </div>
+
+    <div class="font-specimen">
+      <h4>Pretendard Variable — 한글 본문 예시</h4>
+      <div class="body-text">
+        좋은 개발 블로그는 단순한 코드 복사가 아니라, 문제를 발견하고 해결한 과정을 기록하는 데 있습니다.
+        Next.js 15의 서버 컴포넌트와 shadcn/ui 컴포넌트를 활용하면 타입 안전한 관리자 인터페이스를 빠르게 구축할 수 있습니다.
+        한국어 타이포그래피는 라틴 알파벳과 달리 자모 결합 특성이 있으므로, 행간과 글자 간격을 직접 조정해야 합니다.
+      </div>
+    </div>
+    <div class="font-specimen" style="margin-top:var(--space-3);">
+      <h4>JetBrains Mono — 코드 예시</h4>
+      <div class="mono">
+        <code>const posts = await fetch('/api/posts?status=published');</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       3. SPACING
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>간격 (Spacing)</h2>
+    <p class="desc">Tailwind 기본 스케일 기반. 컴포넌트 내부 패딩, 요소 간 간격, 레이아웃 마진에 사용.</p>
+    <div class="spacing-grid">
+      <div class="spacing-item"><div class="spacing-block" style="width:1px;height:4px;"></div><div class="spacing-label">0-5<br>2px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:4px;height:4px;"></div><div class="spacing-label">1<br>4px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:8px;height:8px;"></div><div class="spacing-label">2<br>8px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:12px;height:12px;"></div><div class="spacing-label">3<br>12px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:16px;height:16px;"></div><div class="spacing-label">4<br>16px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:20px;height:20px;"></div><div class="spacing-label">5<br>20px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:24px;height:24px;"></div><div class="spacing-label">6<br>24px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:32px;height:32px;"></div><div class="spacing-label">8<br>32px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:40px;height:40px;"></div><div class="spacing-label">10<br>40px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:48px;height:48px;"></div><div class="spacing-label">12<br>48px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:64px;height:64px;"></div><div class="spacing-label">16<br>64px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:80px;height:80px;"></div><div class="spacing-label">20<br>80px</div></div>
+      <div class="spacing-item"><div class="spacing-block" style="width:96px;height:96px;"></div><div class="spacing-label">24<br>96px</div></div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       4. RADIUS
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>모서리 반경 (Radius)</h2>
+    <p class="desc">Tailwind v4 기본 radius 토큰. <code>rounded-full</code>은 아바타·배지 전용.</p>
+    <div class="radius-grid">
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-sm);"></div><div class="radius-label">sm<br>4px</div></div>
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-md);"></div><div class="radius-label">md<br>6px</div></div>
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-lg);"></div><div class="radius-label">lg<br>8px</div></div>
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-xl);"></div><div class="radius-label">xl<br>12px</div></div>
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-2xl);"></div><div class="radius-label">2xl<br>16px</div></div>
+      <div class="radius-item"><div class="radius-box" style="border-radius:var(--radius-full);"></div><div class="radius-label">full<br>pill</div></div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       5. SHADOWS
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>그림자 (Shadows)</h2>
+    <p class="desc">elevation 단계별. <code>xs</code>는 입력 필드, <code>sm</code>은 카드, <code>md</code>는 드롭다운, <code>lg</code>는 모달, <code>xl</code>은 툴팁/팝업.</p>
+    <div class="shadow-grid">
+      <div class="shadow-item"><div class="shadow-box" style="box-shadow:var(--shadow-xs);"></div><div class="shadow-label">xs</div></div>
+      <div class="shadow-item"><div class="shadow-box" style="box-shadow:var(--shadow-sm);"></div><div class="shadow-label">sm</div></div>
+      <div class="shadow-item"><div class="shadow-box" style="box-shadow:var(--shadow-md);"></div><div class="shadow-label">md</div></div>
+      <div class="shadow-item"><div class="shadow-box" style="box-shadow:var(--shadow-lg);"></div><div class="shadow-label">lg</div></div>
+      <div class="shadow-item"><div class="shadow-box" style="box-shadow:var(--shadow-xl);"></div><div class="shadow-label">xl</div></div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       6. COMPONENT ANATOMY
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>컴포넌트 해부 (Component Anatomy)</h2>
+    <p class="desc">shadcn/ui 컴포넌트에 매핑되는 토큰 참조. 컴포넌트별 필수 파트와 권장 토큰.</p>
+
+    <div style="margin-bottom:var(--space-5);">
+      <h3>데모 — 버튼 변형</h3>
+      <div class="btn-demo">
+        <button class="btn btn-primary">_primary_ 저장</button>
+        <button class="btn btn-secondary">_secondary_ 취소</button>
+        <button class="btn btn-outline">_outline_ 내보내기</button>
+        <button class="btn btn-ghost">_ghost_更多</button>
+        <button class="btn btn-destructive">_destructive_ 삭제</button>
+      </div>
+      <div class="btn-demo">
+        <button class="btn btn-primary btn-sm">작은 버튼</button>
+        <button class="btn btn-primary">기본 버튼</button>
+        <button class="btn btn-primary btn-lg">큰 버튼</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:var(--space-5);">
+      <h3>데모 — 입력 필드</h3>
+      <div class="input-demo">
+        <input class="input" placeholder="포스트 제목을 입력하세요..." />
+        <input class="input" placeholder="URL slug (예: my-first-post)" />
+        <input class="input" type="file" style="padding-top:6px;padding-bottom:6px;" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:var(--space-5);">
+      <h3>데모 — 배지 (Badge)</h3>
+      <div class="badge-demo">
+        <span class="badge badge-default"> draft </span>
+        <span class="badge badge-brand"> 발행됨 </span>
+        <span class="badge badge-success"> 완료 </span>
+        <span class="badge badge-warning"> 검토중 </span>
+        <span class="badge badge-error"> 오류 </span>
+      </div>
+    </div>
+
+    <div class="anatomy-grid">
+      <!-- Button -->
+      <div class="anatomy-card">
+        <h4>Button</h4>
+        <ul class="parts">
+          <li><span class="part-name">배경</span> <span class="part-token">--primary</span></li>
+          <li><span class="part-name">텍스트</span> <span class="part-token">--fg-on-brand</span></li>
+          <li><span class="part-name">호버 배경</span> <span class="part-token">--primary-hover</span></li>
+          <li><span class="part-name">포커스 링</span> <span class="part-token">--ring · 2px</span></li>
+          <li><span class="part-name">높이</span> <span class="part-token">36px (기본)</span></li>
+          <li><span class="part-name">반경</span> <span class="part-token">--radius-md</span></li>
+          <li><span class="part-name">horizontal padding</span> <span class="part-token">--space-4</span></li>
+        </ul>
+      </div>
+      <!-- Input -->
+      <div class="anatomy-card">
+        <h4>Input / TextField</h4>
+        <ul class="parts">
+          <li><span class="part-name">테두리</span> <span class="part-token">--input</span></li>
+          <li><span class="part-name">배경</span> <span class="part-token">--bg-card</span></li>
+          <li><span class="part-name">텍스트</span> <span class="part-token">--fg</span></li>
+          <li><span class="part-name">플레이스홀더</span> <span class="part-token">--muted-fg</span></li>
+          <li><span class="part-name">포커스 링</span> <span class="part-token">--ring · 2px outline</span></li>
+          <li><span class="part-name">높이</span> <span class="part-token">36px</span></li>
+          <li><span class="part-name">반경</span> <span class="part-token">--radius-md</span></li>
+        </ul>
+      </div>
+      <!-- Card -->
+      <div class="anatomy-card">
+        <h4>Card</h4>
+        <ul class="parts">
+          <li><span class="part-name">배경</span> <span class="part-token">--bg-card</span></li>
+          <li><span class="part-name">테두리</span> <span class="part-token">--border</span></li>
+          <li><span class="part-name">그림자</span> <span class="part-token">--shadow-sm</span></li>
+          <li><span class="part-name">반경</span> <span class="part-token">--radius-lg</span></li>
+          <li><span class="part-name">padding</span> <span class="part-token">--space-5 (20px)</span></li>
+          <li><span class="part-name">제목 텍스트</span> <span class="part-token">--fg · h4 weight</span></li>
+        </ul>
+      </div>
+      <!-- Table -->
+      <div class="anatomy-card">
+        <h4>Table</h4>
+        <ul class="parts">
+          <li><span class="part-name">헤더 배경</span> <span class="part-token">--bg-muted</span></li>
+          <li><span class="part-name">헤더 텍스트</span> <span class="part-token">--fg-muted · caption weight</span></li>
+          <li><span class="part-name">행 테두리</span> <span class="part-token">--border (bottom)</span></li>
+          <li><span class="part-name">호버 행</span> <span class="part-token">--bg-muted · 4% opacity</span></li>
+          <li><span class="part-name">셀 padding</span> <span class="part-token">--space-3 · --space-4</span></li>
+        </ul>
+      </div>
+      <!-- Badge -->
+      <div class="anatomy-card">
+        <h4>Badge</h4>
+        <ul class="parts">
+          <li><span class="part-name">배경</span> <span class="part-token">--neutral-100 (기본)</span></li>
+          <li><span class="part-name">텍스트</span> <span class="part-token">--fg-muted</span></li>
+          <li><span class="part-name">높이</span> <span class="part-token">22px</span></li>
+          <li><span class="part-name">반경</span> <span class="part-token">--radius-full</span></li>
+          <li><span class="part-name">padding</span> <span class="part-token">0 --space-2</span></li>
+          <li><span class="part-name">폰트</span> <span class="part-token">caption size · 500 weight</span></li>
+        </ul>
+      </div>
+      <!-- Avatar -->
+      <div class="anatomy-card">
+        <h4>Avatar</h4>
+        <ul class="parts">
+          <li><span class="part-name">배경</span> <span class="part-token">--brand-100 (이미지 없음)</span></li>
+          <li><span class="part-name">텍스트</span> <span class="part-token">--brand-600</span></li>
+          <li><span class="part-name">크기</span> <span class="part-token">32px / 40px / 48px</span></li>
+          <li><span class="part-name">반경</span> <span class="part-token">--radius-full</span></li>
+          <li><span class="part-name">테두리</span> <span class="part-token">--bg-card · 2px</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       7. TOKEN REFERENCE TABLE
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>shadcn/ui 토큰 매핑 참조</h2>
+    <p class="desc"><code>globals.css</code>에서 정의할 CSS 변수 이름과 실제 HSL 값 매핑. shadcn/ui의 <code>Theme</code> 컴포넌트와 일치.</p>
+    <div class="token-table-scroll">
+      <table class="token-table">
+        <thead>
+          <tr><th>CSS 변수 (shadcn)</th><th>HSL 값</th><th>참조</th><th>용도</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>--background</td><td>hsl(214 20% 98%)</td><td>neutral-50</td><td>페이지 배경</td></tr>
+          <tr><td>--foreground</td><td>hsl(222 47% 16%)</td><td>neutral-900</td><td>기본 텍스트</td></tr>
+          <tr><td>--card</td><td>hsl(0 0% 100%)</td><td>white</td><td>카드/컨테이너 배경</td></tr>
+          <tr><td>--card-foreground</td><td>hsl(222 47% 16%)</td><td>neutral-900</td><td>카드 내 텍스트</td></tr>
+          <tr><td>--popover</td><td>hsl(0 0% 100%)</td><td>white</td><td>드롭다운 배경</td></tr>
+          <tr><td>--popover-foreground</td><td>hsl(222 47% 16%)</td><td>neutral-900</td><td>드롭다운 텍스트</td></tr>
+          <tr><td>--primary</td><td>hsl(245 76% 51%)</td><td>brand-600</td><td>주요 버튼/링크</td></tr>
+          <tr><td>--primary-foreground</td><td>hsl(0 0% 100%)</td><td>white</td><td>버튼 내 텍스트</td></tr>
+          <tr><td>--secondary</td><td>hsl(222 33% 96%)</td><td>neutral-100</td><td>보조 버튼</td></tr>
+          <tr><td>--secondary-foreground</td><td>hsl(222 47% 16%)</td><td>neutral-900</td><td>보조 버튼 텍스트</td></tr>
+          <tr><td>--muted</td><td>hsl(222 33% 96%)</td><td>neutral-100</td><td>배경 뮤트</td></tr>
+          <tr><td>--muted-foreground</td><td>hsl(217 33% 56%)</td><td>neutral-500</td><td>보조 텍스트</td></tr>
+          <tr><td>--accent</td><td>hsl(239 100% 97%)</td><td>brand-50</td><td>하이라이트 배경</td></tr>
+          <tr><td>--accent-foreground</td><td>hsl(255 68% 28%)</td><td>brand-900</td><td>하이라이트 텍스트</td></tr>
+          <tr><td>--destructive</td><td>hsl(0 84% 60%)</td><td>error</td><td>위험/삭제</td></tr>
+          <tr><td>--destructive-foreground</td><td>hsl(0 0% 100%)</td><td>white</td><td>삭제 버튼 텍스트</td></tr>
+          <tr><td>--border</td><td>hsl(217 33% 91%)</td><td>neutral-200</td><td>기본 테두리</td></tr>
+          <tr><td>--input</td><td>hsl(217 33% 91%)</td><td>neutral-200</td><td>입력 필드 테두리</td></tr>
+          <tr><td>--ring</td><td>hsl(245 76% 51%)</td><td>brand-600</td><td>포커스 링</td></tr>
+          <tr><td>--sidebar-background</td><td>hsl(224 64% 7%)</td><td>neutral-950</td><td>사이드바 배경</td></tr>
+          <tr><td>--sidebar-foreground</td><td>hsl(222 33% 96%)</td><td>neutral-100</td><td>사이드바 텍스트</td></tr>
+          <tr><td>--sidebar-primary</td><td>hsl(243 76% 59%)</td><td>brand-500</td><td>사이드바 활성</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       8. DARK MODE — 인라인 데모
+       ========================================================== -->
+  <section class="ds-section">
+    <h2>다크 모드 — 팔레트 대비 (인라인 데모)</h2>
+    <p class="desc">다크 모드에서의 브랜드·중립·시맨틱 색상. 실제 <code>:root.dark</code> 토큰은 <code>notes.md</code> 참조.</p>
+    <div class="dark-demo">
+      <div class="palette-row">
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(243 76% 59%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">brand-500 <span class="oklch" style="color:hsl(var(--neutral-500));">primary</span></div><div class="token" style="color:hsl(var(--neutral-400));">--primary (dark)</div></div>
+        </div>
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(245 76% 51%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">brand-600 <span class="oklch" style="color:hsl(var(--neutral-500));">hover</span></div><div class="token" style="color:hsl(var(--neutral-400));">--primary-hover (dark)</div></div>
+        </div>
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(216 34% 26%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">neutral-800 <span class="oklch" style="color:hsl(var(--neutral-500));">surface</span></div><div class="token" style="color:hsl(var(--neutral-400));">--bg-card (dark)</div></div>
+        </div>
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(224 64% 7%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">neutral-950 <span class="oklch" style="color:hsl(var(--neutral-500));">bg</span></div><div class="token" style="color:hsl(var(--neutral-400));">--background (dark)</div></div>
+        </div>
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(160 60% 20%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">success-dark <span class="oklch" style="color:hsl(var(--neutral-500));">✓</span></div><div class="token" style="color:hsl(var(--neutral-400));">--success (dark)</div></div>
+        </div>
+        <div class="palette-swatch">
+          <div class="color-block" style="background:hsl(0 50% 18%);"><span class="contrast-w">Aa</span></div>
+          <div class="info"><div class="name">error-dark <span class="oklch" style="color:hsl(var(--neutral-500));">✗</span></div><div class="token" style="color:hsl(var(--neutral-400));">--error (dark)</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding-top:var(--space-6);border-top:1px solid hsl(var(--border));font-size:0.75rem;color:hsl(var(--fg-muted));">
+    BBA크 블로그 백오피스 디자인 시스템 v0.1 — Pretendard Variable · Indigo + Slate · shadcn/ui · Tailwind CSS v4
+  </footer>
+
+</div>
+</body>
+</html>

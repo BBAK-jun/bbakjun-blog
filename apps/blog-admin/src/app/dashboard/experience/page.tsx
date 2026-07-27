@@ -69,11 +69,13 @@ const Button = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+    className={`inline-flex items-center justify-center min-h-[44px] md:min-h-[40px] px-4 py-2 rounded-lg font-medium transition-colors ${
       variant === 'outline'
-        ? 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
-        : 'bg-blue-600 hover:bg-blue-700 text-white'
-    } ${size === 'sm' ? 'px-3 py-1.5 text-sm' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+        ? 'border border-border bg-card hover:bg-muted text-foreground'
+        : variant === 'ghost'
+          ? 'hover:bg-muted text-foreground'
+          : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+    } ${size === 'sm' ? 'min-h-[44px] md:min-h-[36px] px-3 py-1.5 text-sm' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
   >
     {children}
   </button>
@@ -81,18 +83,18 @@ const Button = ({
 
 const Card = ({ children, className = '' }: any) => (
   <div
-    className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}
+    className={`bg-card rounded-lg border border-border ${className}`}
   >
     {children}
   </div>
 );
 
-const CardHeader = ({ children }: any) => <div className="p-6 pb-4">{children}</div>;
+const CardHeader = ({ children }: any) => <div className="p-4 md:p-6 pb-4">{children}</div>;
 
-const CardContent = ({ children }: any) => <div className="p-6 pt-0">{children}</div>;
+const CardContent = ({ children }: any) => <div className="p-4 md:p-6 pt-0">{children}</div>;
 
 const CardTitle = ({ children, className = '' }: any) => (
-  <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`}>{children}</h3>
+  <h3 className={`text-base md:text-lg font-semibold text-foreground ${className}`}>{children}</h3>
 );
 
 const Input = ({ id, value, onChange, placeholder, type = 'text', className = '' }: any) => (
@@ -102,14 +104,14 @@ const Input = ({ id, value, onChange, placeholder, type = 'text', className = ''
     value={value}
     onChange={onChange}
     placeholder={placeholder}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${className}`}
+    className={`w-full min-h-[44px] px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-card text-foreground placeholder:text-muted-foreground ${className}`}
   />
 );
 
 const Label = ({ htmlFor, children }: any) => (
   <label
     htmlFor={htmlFor}
-    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+    className="block text-sm font-medium text-foreground mb-1"
   >
     {children}
   </label>
@@ -122,7 +124,7 @@ const Textarea = ({ id, value, onChange, placeholder, rows = 3, className = '' }
     onChange={onChange}
     placeholder={placeholder}
     rows={rows}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${className}`}
+    className={`w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-card text-foreground placeholder:text-muted-foreground ${className}`}
   />
 );
 
@@ -132,8 +134,10 @@ const Switch = ({ id, checked, onCheckedChange }: any) => (
     type="button"
     onClick={() => onCheckedChange(!checked)}
     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-      checked ? 'bg-blue-600' : 'bg-gray-200'
+      checked ? 'bg-primary' : 'bg-muted-foreground/30'
     }`}
+    role="switch"
+    aria-checked={checked}
   >
     <span
       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -147,33 +151,13 @@ const Badge = ({ children, variant = 'default', className = '' }: any) => (
   <span
     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
       variant === 'default'
-        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+        ? 'bg-accent text-accent-foreground'
+        : 'bg-muted text-muted-foreground'
     } ${className}`}
   >
     {children}
   </span>
 );
-
-interface Experience {
-  id: string;
-  company: string;
-  position: string;
-  team?: string;
-  period: string;
-  isCurrent: boolean;
-  description?: string;
-  sortOrder: number;
-  achievements: Achievement[];
-}
-
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  tags?: string;
-  sortOrder: number;
-}
 
 export default function ExperiencePage() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -348,30 +332,33 @@ export default function ExperiencePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">경력 관리</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Briefcase className="w-5 h-5 md:w-6 md:h-6" />
+            경력 관리
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
             소개 페이지에 표시될 경력 정보를 관리합니다
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {experiences.length === 0 && (
-            <Button onClick={handleSeedData} variant="outline" className="flex items-center gap-2">
+            <Button onClick={handleSeedData} variant="outline" className="gap-2">
               <Database className="h-4 w-4" />
               초기 데이터 생성
             </Button>
           )}
-          <Button onClick={() => openExperienceModal()}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => openExperienceModal()} className="gap-2">
+            <Plus className="h-4 w-4" />
             경력 추가
           </Button>
         </div>
@@ -382,71 +369,73 @@ export default function ExperiencePage() {
         {experiences.map((experience, index) => (
           <Card key={experience.id}>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">{experience.company}</CardTitle>
-                    {experience.isCurrent && <Badge variant="default">재직중</Badge>}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle>{experience.company}</CardTitle>
+                      {experience.isCurrent && <Badge variant="default">재직중</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {experience.position}
+                      {experience.team && ` · ${experience.team}`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{experience.period}</p>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {experience.position}
-                    {experience.team && ` · ${experience.team}`}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => moveExperience(index, 'up')}
+                      disabled={index === 0}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => moveExperience(index, 'down')}
+                      disabled={index === experiences.length - 1}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openExperienceModal(experience)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteExperience(experience.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {experience.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {experience.description}
                   </p>
-                  <p className="text-sm text-gray-500">{experience.period}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => moveExperience(index, 'up')}
-                    disabled={index === 0}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => moveExperience(index, 'down')}
-                    disabled={index === experiences.length - 1}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openExperienceModal(experience)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteExperience(experience.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                )}
               </div>
-              {experience.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  {experience.description}
-                </p>
-              )}
             </CardHeader>
             {experience.achievements && experience.achievements.length > 0 && (
               <CardContent>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Star className="h-4 w-4" />
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm text-foreground">
+                  <Star className="h-4 w-4 text-warning-500" />
                   주요 성과
                 </h4>
                 <div className="space-y-2">
                   {experience.achievements.map(achievement => (
                     <div
                       key={achievement.id}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="p-3 bg-muted rounded-lg"
                     >
-                      <h5 className="font-medium">{achievement.title}</h5>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <h5 className="font-medium text-sm text-foreground">{achievement.title}</h5>
+                      <p className="text-sm text-muted-foreground mt-1">
                         {achievement.description}
                       </p>
                       {achievement.tags && (
@@ -469,11 +458,11 @@ export default function ExperiencePage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">
+        <div className="fixed inset-0 bg-neutral-950/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-card rounded-t-2xl sm:rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-4 sticky top-0 bg-card pb-3 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground">
                   {editingExperience ? '경력 수정' : '새 경력 추가'}
                 </h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowModal(false)}>
@@ -481,8 +470,8 @@ export default function ExperiencePage() {
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="company">회사명 *</Label>
                     <Input
@@ -531,7 +520,7 @@ export default function ExperiencePage() {
                   />
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 min-h-[44px]">
                   <Switch
                     id="isCurrent"
                     checked={experienceForm.isCurrent}
@@ -571,7 +560,7 @@ export default function ExperiencePage() {
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
+                <div className="flex justify-end gap-2 pt-4 pb-[env(safe-area-inset-bottom)]">
                   <Button variant="outline" onClick={() => setShowModal(false)}>
                     취소
                   </Button>
@@ -590,8 +579,8 @@ export default function ExperiencePage() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white ${
-            toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          className={`fixed bottom-20 md:bottom-4 right-4 left-4 md:left-auto px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-[70] ${
+            toast.type === 'success' ? 'bg-success-600' : 'bg-error-600'
           }`}
         >
           {toast.message}

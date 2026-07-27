@@ -2,48 +2,139 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* ── Brand: Indigo ── */
+    --brand-50: 232 90% 97%;
+    --brand-100: 231 85% 93%;
+    --brand-200: 232 80% 86%;
+    --brand-300: 232 75% 76%;
+    --brand-400: 233 70% 64%;
+    --brand-500: 234 72% 56%;
+    --brand-600: 235 76% 51%;
+    --brand-700: 238 80% 46%;
+    --brand-800: 241 76% 38%;
+    --brand-900: 243 68% 32%;
+    --brand-950: 244 76% 20%;
+
+    /* ── Neutral: Slate ── */
+    --neutral-50: 220 14% 96%;
+    --neutral-100: 220 13% 91%;
+    --neutral-200: 218 14% 83%;
+    --neutral-300: 218 12% 70%;
+    --neutral-400: 219 10% 56%;
+    --neutral-500: 219 9% 44%;
+    --neutral-600: 220 9% 36%;
+    --neutral-700: 220 10% 28%;
+    --neutral-800: 222 14% 19%;
+    --neutral-900: 222 18% 13%;
+    --neutral-950: 224 24% 7%;
+
+    /* ── Semantic ── */
+    --success-50: 142 76% 97%;
+    --success-500: 142 71% 45%;
+    --success-600: 142 76% 36%;
+    --success-700: 142 80% 28%;
+
+    --warning-50: 38 92% 95%;
+    --warning-500: 38 92% 50%;
+    --warning-600: 32 95% 44%;
+    --warning-700: 26 90% 37%;
+
+    --error-50: 0 86% 97%;
+    --error-500: 0 84% 60%;
+    --error-600: 0 72% 51%;
+    --error-700: 0 74% 42%;
+
+    --info-50: 210 100% 97%;
+    --info-500: 210 100% 56%;
+    --info-600: 210 100% 46%;
+    --info-700: 210 100% 36%;
+
+    /* ── Surface ── */
+    --bg: 214 20% 98%;
+    --bg-card: 0 0% 100%;
+    --bg-elevated: 0 0% 100%;
+    --bg-inset: 214 18% 95%;
+    --fg: 222 20% 14%;
+    --fg-muted: 219 12% 46%;
+    --fg-subtle: 218 12% 60%;
+    --border: 218 14% 83%;
+    --border-subtle: 220 14% 91%;
+    --ring: 235 76% 51%;
+
+    /* ── shadcn/ui mapping ── */
+    --background: 214 20% 98%;
+    --foreground: 222 20% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 20% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --popover-foreground: 222 20% 14%;
+    --primary: 235 76% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 20% 14%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 219 9% 44%;
+    --accent: 231 85% 93%;
+    --accent-foreground: 238 80% 46%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --input: 218 14% 83%;
+    --chart-1: 235 76% 51%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 210 100% 56%;
+    --chart-5: 324 78% 58%;
+    --sidebar-background: 222 24% 7%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 235 76% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 18% 14%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 224 14% 14%;
+    --sidebar-ring: 235 76% 51%;
+
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    /* ── Surface (override) ── */
+    --bg: 224 24% 7%;
+    --bg-card: 224 18% 13%;
+    --bg-elevated: 222 14% 19%;
+    --bg-inset: 224 24% 5%;
+    --fg: 220 14% 96%;
+    --fg-muted: 219 12% 56%;
+    --fg-subtle: 218 12% 46%;
+    --border: 224 14% 19%;
+    --border-subtle: 224 14% 14%;
+    --ring: 235 76% 51%;
+
+    /* ── shadcn/ui mapping (dark override) ── */
+    --background: 224 24% 7%;
+    --foreground: 220 14% 96%;
+    --card: 224 18% 13%;
+    --card-foreground: 220 14% 96%;
+    --popover: 224 18% 13%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 235 76% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 18% 16%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 224 18% 16%;
+    --muted-foreground: 219 9% 56%;
+    --accent: 243 68% 32%;
+    --accent-foreground: 232 85% 93%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --input: 224 14% 19%;
+    --sidebar-background: 224 24% 7%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 235 76% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 18% 14%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 224 14% 14%;
+    --sidebar-ring: 235 76% 51%;
   }
 }
 
@@ -54,11 +145,30 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family:
+      "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+      system-ui, "Segoe UI", Roboto, sans-serif;
   }
 }
 
 @layer components {
   .container {
     @apply px-4 sm:px-6 lg:px-8; /* Removed max-width for full-screen layout */
+  }
+}
+
+/* Mobile: prevent iOS zoom on input focus (16px text baseline) */
+@layer base {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: inherit;
+    }
   }
 }

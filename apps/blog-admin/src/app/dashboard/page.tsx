@@ -5,24 +5,26 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">대시보드</h1>
+      <h1 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-6">
+        대시보드
+      </h1>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+      <div className="bg-card border border-border rounded-lg p-5 md:p-6 shadow-sm">
+        <h2 className="text-base md:text-lg font-semibold text-foreground mb-3 md:mb-4">
           환영합니다, {session?.user?.name || session?.user?.email}님!
         </h2>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-600 dark:text-slate-400">역할:</span>
-            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+        <div className="space-y-3 md:space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">역할:</span>
+            <span className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-xs font-medium">
               {session?.user?.role}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-slate-600 dark:text-slate-400">이메일:</span>
-            <span className="text-slate-900 dark:text-white">{session?.user?.email}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">이메일:</span>
+            <span className="text-sm text-foreground">{session?.user?.email}</span>
           </div>
         </div>
       </div>

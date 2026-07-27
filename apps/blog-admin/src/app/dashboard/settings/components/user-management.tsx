@@ -6,7 +6,7 @@ import {
   Users,
   Shield,
   Crown,
-  User,
+  User as UserIcon,
   RefreshCw,
   Mail,
   Calendar,
@@ -29,24 +29,21 @@ const ROLE_CONFIG = {
     label: '최고 관리자',
     description: '모든 권한 + 사용자 역할 관리',
     icon: Crown,
-    color: 'text-purple-600 dark:text-purple-400',
-    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+    badgeClass: 'bg-primary/10 text-primary',
   },
   ADMIN: {
     label: '관리자',
     description: '콘텐츠 관리 (CRUD)',
     icon: Shield,
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    badgeClass: 'bg-info-50 dark:bg-info-950/40 text-info-700 dark:text-info-400',
   },
   GUEST: {
     label: '게스트',
     description: '읽기 전용',
-    icon: User,
-    color: 'text-slate-600 dark:text-slate-400',
-    bgColor: 'bg-slate-50 dark:bg-slate-800',
+    icon: UserIcon,
+    badgeClass: 'bg-muted text-muted-foreground',
   },
-};
+} as const;
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -95,7 +92,6 @@ export default function UserManagement() {
       const result = await updateUserRole({ userId, role: newRole });
       if (result.success) {
         toast.success('역할이 변경되었습니다');
-        // 사용자 목록 갱신
         await loadUsers();
       } else {
         toast.error(result.error || '역할 변경에 실패했습니다');
@@ -109,9 +105,7 @@ export default function UserManagement() {
 
   const canModifyUser = (user: User): boolean => {
     if (!currentUser) return false;
-    // SUPER_ADMIN만 역할 변경 가능
     if (currentUser.role !== 'SUPER_ADMIN') return false;
-    // 자신은 변경 불가
     if (user.id === currentUser.id) return false;
     return true;
   };
@@ -127,25 +121,23 @@ export default function UserManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
+        <RefreshCw className="w-8 h-8 text-muted-foreground animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            사용자 관리
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h2 className="text-lg md:text-xl font-semibold text-foreground">사용자 관리</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             사용자 역할 및 권한을 관리합니다
           </p>
         </div>
         <button
           onClick={loadUsers}
-          className="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-foreground hover:bg-muted rounded-lg transition-colors self-start"
         >
           <RefreshCw className="w-4 h-4" />
           새로고침
@@ -153,27 +145,21 @@ export default function UserManagement() {
       </div>
 
       {/* 권한 안내 */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          역할별 권한
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+        <h3 className="text-base md:text-lg font-semibold text-foreground mb-4">역할별 권한</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {Object.entries(ROLE_CONFIG).map(([role, config]) => {
             const Icon = config.icon;
             return (
               <div
                 key={role}
-                className={`${config.bgColor} rounded-lg p-4 border border-slate-200 dark:border-slate-700`}
+                className={`${config.badgeClass} rounded-lg p-4 border border-border`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className={`w-5 h-5 ${config.color}`} />
-                  <h4 className={`font-semibold ${config.color}`}>
-                    {config.label}
-                  </h4>
+                  <Icon className="w-5 h-5" />
+                  <h4 className="font-semibold">{config.label}</h4>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {config.description}
-                </p>
+                <p className="text-sm opacity-90">{config.description}</p>
               </div>
             );
           })}
@@ -181,17 +167,17 @@ export default function UserManagement() {
       </div>
 
       {/* 사용자 목록 */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="px-4 md:px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <Users className="w-5 h-5 text-foreground" />
+            <h3 className="text-base md:text-lg font-semibold text-foreground">
               사용자 목록 ({users.length})
             </h3>
           </div>
         </div>
 
-        <div className="divide-y divide-slate-200 dark:divide-slate-700">
+        <div className="divide-y divide-border">
           {users.map(user => {
             const roleConfig = ROLE_CONFIG[user.role];
             const RoleIcon = roleConfig.icon;
@@ -201,42 +187,38 @@ export default function UserManagement() {
             return (
               <div
                 key={user.id}
-                className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="px-4 md:px-6 py-4 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
                       {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {user.name || '이름 없음'}
-                        </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-foreground">{user.name || '이름 없음'}</p>
                         {isCurrentUser && (
-                          <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                          <span className="text-xs px-2 py-1 bg-accent text-accent-foreground rounded-full">
                             나
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                        <Mail className="w-3 h-3" />
-                        {user.email}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{user.email}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
+                    <div className="text-left md:text-right">
                       <div
-                        className={`flex items-center gap-2 px-3 py-1 rounded-full ${roleConfig.bgColor}`}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${roleConfig.badgeClass}`}
                       >
-                        <RoleIcon className={`w-4 h-4 ${roleConfig.color}`} />
-                        <span className={`text-sm font-medium ${roleConfig.color}`}>
-                          {roleConfig.label}
-                        </span>
+                        <RoleIcon className="w-4 h-4" />
+                        <span className="text-sm font-medium">{roleConfig.label}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <Calendar className="w-3 h-3" />
                         {formatDate(user.createdAt)}
                       </div>
@@ -245,11 +227,9 @@ export default function UserManagement() {
                     {canModify && (
                       <select
                         value={user.role}
-                        onChange={e =>
-                          handleRoleChange(user.id, e.target.value as UserRole)
-                        }
+                        onChange={e => handleRoleChange(user.id, e.target.value as UserRole)}
                         disabled={updating === user.id}
-                        className="px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="min-h-[44px] px-3 py-2 bg-card border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="SUPER_ADMIN">최고 관리자</option>
                         <option value="ADMIN">관리자</option>
@@ -264,19 +244,17 @@ export default function UserManagement() {
         </div>
 
         {users.length === 0 && (
-          <div className="px-6 py-12 text-center">
-            <Users className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-600 dark:text-slate-400">
-              사용자가 없습니다
-            </p>
+          <div className="px-4 md:px-6 py-12 text-center">
+            <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+            <p className="text-muted-foreground">사용자가 없습니다</p>
           </div>
         )}
       </div>
 
       {/* 안내 메시지 */}
       {currentUser?.role !== 'SUPER_ADMIN' && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+        <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-900 rounded-lg p-4">
+          <p className="text-sm text-warning-800 dark:text-warning-400">
             <Shield className="w-4 h-4 inline mr-1" />
             사용자 역할을 변경하려면 최고 관리자(SUPER_ADMIN) 권한이 필요합니다.
           </p>

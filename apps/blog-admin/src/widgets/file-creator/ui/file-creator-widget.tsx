@@ -14,7 +14,6 @@ import {
   AlertCircle,
   CheckCircle,
   Eye,
-  PanelLeftClose,
   PanelLeft,
   X,
 } from 'lucide-react';
@@ -44,11 +43,9 @@ export function FileCreatorWidget() {
   const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'split'>('editor');
   const [showDraftNotice, setShowDraftNotice] = useState(false);
 
-  // Scroll sync refs
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
 
-  // 스크롤 동기화 훅 사용 (분할 모드에서만 활성화)
   useScrollSync(editorScrollRef, previewScrollRef, { enabled: viewMode === 'split' });
 
   const handleImageUploaded = (url: string, filename: string) => {
@@ -84,7 +81,6 @@ export function FileCreatorWidget() {
     }
   };
 
-  // Check for saved draft on mount
   useEffect(() => {
     if (formData.content || formData.title) {
       setShowDraftNotice(true);
@@ -100,26 +96,28 @@ export function FileCreatorWidget() {
     formData.author.trim() &&
     formData.content.trim();
 
+  const inputClass =
+    'w-full min-h-[44px] px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring';
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Plus className="w-6 h-6" />새 파일 생성
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Plus className="w-5 h-5 md:w-6 md:h-6" />
+            새 파일 생성
           </h1>
           <div className="flex items-center gap-3 mt-1">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              새로운 마크다운 파일을 생성합니다
-            </p>
+            <p className="text-sm text-muted-foreground">새로운 마크다운 파일을 생성합니다</p>
             {isSaving ? (
-              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
-                <div className="animate-spin w-3 h-3 border-2 border-amber-600 dark:border-amber-500 border-t-transparent rounded-full"></div>
+              <div className="flex items-center gap-1 text-xs text-warning-600 dark:text-warning-500">
+                <div className="animate-spin w-3 h-3 border-2 border-warning-600 dark:border-warning-500 border-t-transparent rounded-full"></div>
                 <span>저장 중...</span>
               </div>
             ) : (
               lastSavedAt && (
-                <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
+                <div className="flex items-center gap-1 text-xs text-success-600 dark:text-success-500">
                   <CheckCircle className="w-3 h-3" />
                   <span>
                     {new Date(lastSavedAt).toLocaleTimeString('ko-KR', {
@@ -136,7 +134,7 @@ export function FileCreatorWidget() {
         <button
           onClick={() => create()}
           disabled={isCreating || !isFormValid}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
         >
           <Save className="w-4 h-4" />
           <span>{isCreating ? '생성 중...' : '생성'}</span>
@@ -145,26 +143,26 @@ export function FileCreatorWidget() {
 
       {/* Draft Notice */}
       {showDraftNotice && (
-        <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-accent border border-border rounded-lg">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0" />
+            <p className="text-sm text-accent-foreground">
               저장된 초안이 복구되었습니다. 계속 작성하거나 새로 시작할 수 있습니다.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => {
                 clearDraft();
                 setShowDraftNotice(false);
               }}
-              className="text-sm px-3 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
+              className="text-sm px-3 py-2 min-h-[44px] text-primary hover:bg-background/50 rounded transition-colors"
             >
               새로 시작
             </button>
             <button
               onClick={() => setShowDraftNotice(false)}
-              className="text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded p-1 transition-colors"
+              className="text-primary hover:bg-background/50 rounded p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -174,53 +172,46 @@ export function FileCreatorWidget() {
 
       {/* Success Message */}
       {isSuccess && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-          <p className="text-sm text-green-600 dark:text-green-400">
-            파일이 성공적으로 생성되었습니다
-          </p>
+        <div className="flex items-center gap-2 p-3 bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-900 rounded-lg">
+          <CheckCircle className="w-4 h-4 text-success-600 dark:text-success-400 flex-shrink-0" />
+          <p className="text-sm text-success-700 dark:text-success-400">파일이 성공적으로 생성되었습니다</p>
         </div>
       )}
 
       {/* Error Message */}
       {createError && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-3 bg-error-50 dark:bg-error-950/30 border border-error-200 dark:border-error-900 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-error-600 dark:text-error-400 flex-shrink-0" />
+          <p className="text-sm text-error-700 dark:text-error-400">
             {createError instanceof Error ? createError.message : '파일 생성 실패'}
           </p>
         </div>
       )}
 
       {/* Front Matter Form */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">메타데이터</h2>
+      <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+        <h2 className="text-base md:text-lg font-semibold text-foreground mb-4">메타데이터</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Category Selector */}
           <div className="md:col-span-2">
             <CategorySelector value={category} onChange={setCategory} />
             <PathPreview category={category} title={formData.title} customSlug={formData.slug} />
           </div>
 
-          {/* Title */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              제목 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">제목 *</label>
             <input
               type="text"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder="새 포스트의 제목"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
 
-          {/* Custom Slug (Filename) */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               파일명 (선택사항)
             </label>
             <input
@@ -228,74 +219,61 @@ export function FileCreatorWidget() {
               value={formData.slug || ''}
               onChange={e => setFormData({ ...formData, slug: e.target.value || undefined })}
               placeholder="비워두면 제목에서 자동 생성됩니다"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               영문, 숫자, 한글, 하이픈(-) 사용 가능 (예: my-custom-post)
             </p>
           </div>
 
-          {/* Description */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              설명 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">설명 *</label>
             <textarea
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               placeholder="포스트의 간단한 설명"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
 
-          {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              날짜 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">날짜 *</label>
             <input
               type="date"
               value={formData.date}
               onChange={e => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
 
-          {/* Author */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              작성자 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">작성자 *</label>
             <input
               type="text"
               value={formData.author}
               onChange={e => setFormData({ ...formData, author: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
 
-          {/* Tags */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              태그 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">태그 *</label>
             <TagInput
               value={formData.tags}
               onChange={tags => setFormData({ ...formData, tags })}
               placeholder="태그를 입력하고 Enter를 누르세요 (예: nextjs, react, typescript)"
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Enter 또는 쉼표로 태그 추가, Backspace로 삭제
             </p>
           </div>
 
-          {/* Series */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               시리즈 (선택사항)
             </label>
             <input
@@ -303,16 +281,13 @@ export function FileCreatorWidget() {
               value={formData.series || ''}
               onChange={e => setFormData({ ...formData, series: e.target.value || undefined })}
               placeholder="예: react-deep-dive"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              시리즈 slug (영문, 소문자, 하이픈)
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">시리즈 slug (영문, 소문자, 하이픈)</p>
           </div>
 
-          {/* Series Order */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               시리즈 순서 (선택사항)
             </label>
             <input
@@ -326,25 +301,20 @@ export function FileCreatorWidget() {
                 })
               }
               placeholder="1"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              시리즈 내 순서 (1부터 시작)
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">시리즈 내 순서 (1부터 시작)</p>
           </div>
 
-          {/* Draft */}
           <div className="md:col-span-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
               <input
                 type="checkbox"
                 checked={formData.draft || false}
                 onChange={e => setFormData({ ...formData, draft: e.target.checked })}
-                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-primary border-border rounded focus:ring-ring"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                임시 저장 (draft)
-              </span>
+              <span className="text-sm font-medium text-foreground">임시 저장 (draft)</span>
             </label>
           </div>
         </div>
@@ -352,12 +322,12 @@ export function FileCreatorWidget() {
 
       {/* Image Uploader */}
       {showImageUploader && (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+        <div className="bg-card rounded-lg border border-border p-4 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">이미지 업로드</h2>
+            <h2 className="text-base md:text-lg font-semibold text-foreground">이미지 업로드</h2>
             <button
               onClick={() => setShowImageUploader(false)}
-              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
             >
               ✕
             </button>
@@ -367,25 +337,27 @@ export function FileCreatorWidget() {
       )}
 
       {/* Editor & Preview */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         {/* Toolbar */}
-        <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">마크다운 편집</h2>
+        <div className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between gap-2">
+          <h2 className="text-base md:text-lg font-semibold text-foreground flex-shrink-0">
+            마크다운 편집
+          </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowImageUploader(!showImageUploader)}
-              className="text-sm px-3 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-600 rounded"
+              className="text-sm px-3 py-2 min-h-[44px] text-foreground hover:bg-muted border border-border rounded"
             >
               + 이미지
             </button>
-            <div className="flex items-center gap-1 border border-slate-300 dark:border-slate-600 rounded overflow-hidden">
+            <div className="flex items-center gap-1 border border-border rounded overflow-hidden">
               <button
                 onClick={() => setViewMode('editor')}
                 title="편집 모드"
-                className={`px-3 py-1 text-sm ${
+                className={`px-3 py-2 min-h-[44px] text-sm ${
                   viewMode === 'editor'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-muted'
                 }`}
               >
                 편집
@@ -396,10 +368,10 @@ export function FileCreatorWidget() {
                   handlePreview();
                 }}
                 title="분할 보기"
-                className={`px-3 py-1 text-sm ${
+                className={`hidden md:inline-flex px-3 py-2 min-h-[44px] text-sm ${
                   viewMode === 'split'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-muted'
                 }`}
               >
                 <PanelLeft className="w-4 h-4" />
@@ -410,10 +382,10 @@ export function FileCreatorWidget() {
                   handlePreview();
                 }}
                 title="미리보기"
-                className={`px-3 py-1 text-sm ${
+                className={`px-3 py-2 min-h-[44px] text-sm ${
                   viewMode === 'preview'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-muted'
                 }`}
               >
                 <Eye className="w-4 h-4" />
@@ -422,18 +394,24 @@ export function FileCreatorWidget() {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className={`grid ${viewMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'} gap-0`}>
-          {/* Editor */}
+        {/* Content Area - split mode only on md+ */}
+        <div
+          className={`grid ${viewMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'} gap-0`}
+        >
           {(viewMode === 'editor' || viewMode === 'split') && (
             <div
-              className={`${viewMode === 'split' ? 'border-r border-slate-200 dark:border-slate-700' : ''}`}
+              className={`${viewMode === 'split' ? 'border-r border-border' : ''}`}
             >
-              <div ref={editorScrollRef} data-testid="markdown-editor-scroll" className="p-4 overflow-auto" style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}>
+              <div
+                ref={editorScrollRef}
+                data-testid="markdown-editor-scroll"
+                className="p-4 overflow-auto"
+                style={{ height: '500px' }}
+              >
                 <MarkdownEditor
                   value={formData.content}
                   onChange={value => setFormData({ ...formData, content: value })}
-                  height="calc(100vh - 400px)"
+                  height="500px"
                   onImageClick={() => setShowImageUploader(true)}
                   onImageDrop={handleImageDrop}
                 />
@@ -441,27 +419,26 @@ export function FileCreatorWidget() {
             </div>
           )}
 
-          {/* Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div className="p-4">
               <div
                 ref={previewScrollRef}
                 data-testid="preview-scroll"
-                className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-auto"
-                style={{ height: 'calc(100vh - 400px)', minHeight: '500px' }}
+                className="border border-border rounded-lg overflow-auto"
+                style={{ height: '500px' }}
               >
                 {isPreviewLoading ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-slate-600 dark:text-slate-400">미리보기 처리 중...</p>
+                    <p className="text-muted-foreground">미리보기 처리 중...</p>
                   </div>
                 ) : previewHtml ? (
                   <article
-                    className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
+                    className="prose prose-slate dark:prose-invert max-w-none px-4 md:px-8 py-4 md:py-8"
                     dangerouslySetInnerHTML={{ __html: previewHtml }}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-slate-400 dark:text-slate-500 text-sm">
+                    <p className="text-muted-foreground text-sm">
                       내용을 입력하면 미리보기가 표시됩니다
                     </p>
                   </div>

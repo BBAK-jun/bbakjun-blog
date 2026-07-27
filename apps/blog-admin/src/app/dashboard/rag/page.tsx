@@ -64,7 +64,6 @@ export default function RAGQueryPage() {
 
     setMessages(prev => [...prev, userMessage]);
 
-    // Reset query input only, preserve settings
     const queryInput = values.query;
     form.setValue('query', '');
 
@@ -131,22 +130,22 @@ export default function RAGQueryPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">RAG Query</h1>
-          <p className="text-muted-foreground mt-2">
-            블로그 콘텐츠에 대한 AI 기반 검색 및 질문응답
-          </p>
-        </div>
+      <div>
+        <h1 className="text-xl md:text-3xl font-bold tracking-tight text-foreground">RAG Query</h1>
+        <p className="text-sm text-muted-foreground mt-1 md:mt-2">
+          블로그 콘텐츠에 대한 AI 기반 검색 및 질문응답
+        </p>
       </div>
 
       {/* Settings */}
       <Card className="p-4">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Temperature:</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-2 min-h-[44px]">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap">
+              Temperature:
+            </label>
             <input
               type="range"
               min={0}
@@ -154,16 +153,18 @@ export default function RAGQueryPage() {
               step={0.1}
               {...register('temperature', { valueAsNumber: true })}
               onChange={e => form.setValue('temperature', parseFloat(e.target.value))}
-              className="w-24"
+              className="w-24 accent-primary"
             />
-            <span className="text-sm text-muted-foreground w-8">{Number(temperature).toFixed(1)}</span>
+            <span className="text-sm text-muted-foreground w-8 tabular-nums">
+              {Number(temperature).toFixed(1)}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Results:</label>
+          <div className="flex items-center gap-2 min-h-[44px]">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap">Results:</label>
             <select
               {...register('limit', { valueAsNumber: true })}
               onChange={e => form.setValue('limit', parseInt(e.target.value))}
-              className="rounded border border-input bg-background px-2 py-1 text-sm"
+              className="min-h-[44px] rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value={3}>3</option>
               <option value={5}>5</option>
@@ -181,8 +182,10 @@ export default function RAGQueryPage() {
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-3xl rounded-lg p-4 ${
-                message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              className={`max-w-[90%] md:max-w-3xl rounded-lg p-3 md:p-4 ${
+                message.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-foreground'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -197,7 +200,7 @@ export default function RAGQueryPage() {
                   </span>
                 )}
               </div>
-              <div className={message.role === 'user' ? 'text-white' : 'text-foreground'}>
+              <div>
                 {message.role === 'assistant' ? (
                   <ReactMarkdown
                     components={{
@@ -212,14 +215,16 @@ export default function RAGQueryPage() {
                       code: ({ children, className }) => (
                         <code
                           className={`rounded px-1 py-0.5 text-sm ${
-                            className ? 'bg-gray-800 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                            className
+                              ? 'bg-neutral-900 text-neutral-50'
+                              : 'bg-muted-foreground/20'
                           }`}
                         >
                           {children}
                         </code>
                       ),
                       pre: ({ children }) => (
-                        <pre className="bg-gray-800 text-white rounded p-3 overflow-x-auto mb-2">
+                        <pre className="bg-neutral-900 text-neutral-50 rounded p-3 overflow-x-auto mb-2">
                           {children}
                         </pre>
                       ),
@@ -235,7 +240,7 @@ export default function RAGQueryPage() {
               {/* Sources */}
               {message.sources && message.sources.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-border/50">
-                  <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                  <p className="text-xs font-medium mb-2 flex items-center gap-1 text-foreground">
                     <FileText className="h-3 w-3" />
                     Sources:
                   </p>
@@ -246,13 +251,13 @@ export default function RAGQueryPage() {
                         href={source.githubUrl || `/blog/${source.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 rounded hover:bg-background/50"
+                        className="flex items-center justify-between gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 rounded hover:bg-background/50 min-h-[44px]"
                       >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-primary">{idx + 1}.</span>
-                          <span>{source.title}</span>
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-primary flex-shrink-0">{idx + 1}.</span>
+                          <span className="truncate">{source.title}</span>
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 flex-shrink-0">
                           <TrendingUp className="h-3 w-3" />
                           {(source.score * 100).toFixed(0)}%
                         </span>
@@ -267,10 +272,10 @@ export default function RAGQueryPage() {
 
         {isPending && (
           <div className="flex justify-start">
-            <div className="max-w-3xl rounded-lg bg-muted p-4">
+            <div className="max-w-[90%] md:max-w-3xl rounded-lg bg-muted p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Thinking...</span>
+                <span className="text-sm text-foreground">Thinking...</span>
               </div>
             </div>
           </div>
@@ -278,13 +283,16 @@ export default function RAGQueryPage() {
       </div>
 
       {/* Input Form */}
-      <form onSubmit={handleRHFSumbit(onSubmit)} className="sticky bottom-0">
-        <Card className="p-4">
-          <div className="flex gap-2">
+      <form
+        onSubmit={handleRHFSumbit(onSubmit)}
+        className="sticky bottom-20 md:bottom-4 z-30"
+      >
+        <Card className="p-3 md:p-4 bg-card/95 backdrop-blur border-border shadow-lg">
+          <div className="flex flex-col md:flex-row gap-2">
             <Textarea
               {...register('query')}
               placeholder="질문을 입력하세요... (예: Next.js의 ISR은 어떻게 작동하나요?)"
-              className="min-h-[100px] resize-none"
+              className="min-h-[80px] md:min-h-[100px] resize-none border-border"
               onKeyDown={handleKeyDown}
               disabled={isPending}
             />
@@ -292,7 +300,7 @@ export default function RAGQueryPage() {
               type="submit"
               size="icon"
               disabled={!form.watch('query').trim() || isPending}
-              className="h-auto self-end"
+              className="min-h-[44px] min-w-[44px] md:self-end"
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -301,7 +309,9 @@ export default function RAGQueryPage() {
               )}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Enter로 전송, Shift + Enter로 줄바꿈</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Enter로 전송, Shift + Enter로 줄바꿈
+          </p>
         </Card>
       </form>
     </div>
