@@ -382,7 +382,7 @@ export function FileCreatorWidget() {
                   handlePreview();
                 }}
                 title="미리보기"
-                className={`px-3 py-2 min-h-[44px] text-sm ${
+                className={`px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-sm ${
                   viewMode === 'preview'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-card text-foreground hover:bg-muted'
