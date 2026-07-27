@@ -114,7 +114,7 @@ export default function DashboardNav() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 min-h-[44px] px-3 md:min-h-[40px] md:px-4 text-sm text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors"
+                className="flex items-center gap-2 min-h-[44px] min-w-[44px] px-3 md:min-h-[40px] md:min-w-[40px] md:px-4 text-sm text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">로그아웃</span>

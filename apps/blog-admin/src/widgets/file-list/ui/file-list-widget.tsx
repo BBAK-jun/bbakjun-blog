@@ -228,7 +228,7 @@ export function FileListWidget({
                             `/dashboard/files/view?pathname=${encodeURIComponent(file.pathname)}`
                           )
                         }
-                        className="text-left text-foreground font-medium hover:text-primary block truncate w-full"
+                        className="text-left text-foreground font-medium hover:text-primary flex items-center min-h-[44px] truncate w-full rounded-lg -mx-1 px-1 transition-colors"
                       >
                         {filename}
                       </button>

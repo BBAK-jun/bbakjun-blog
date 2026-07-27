@@ -231,13 +231,13 @@ export function MarkdownEditor({
 
   return (
     <div
-      className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden relative"
+      className="border border-border rounded-lg overflow-hidden relative"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Toolbar */}
-      <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600">
+      <div className="bg-muted border-b border-border">
         <div className="flex items-center gap-1 p-2 flex-wrap">
           {toolbarButtons.map((button, index) => {
             const Icon = button.icon;
@@ -247,24 +247,24 @@ export function MarkdownEditor({
                 onClick={button.action}
                 type="button"
                 title={button.label}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] text-muted-foreground hover:bg-muted hover:text-foreground rounded transition-colors"
               >
                 <Icon className="w-4 h-4" />
               </button>
             );
           })}
         </div>
-        <div className="px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="px-2 pb-2 text-xs text-muted-foreground">
           💡 단축키:{' '}
-          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded">
+          <kbd className="px-1 py-0.5 bg-card border border-border rounded">
             ⌘/Ctrl+B
           </kbd>{' '}
           굵게,
-          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">
+          <kbd className="px-1 py-0.5 bg-card border border-border rounded ml-1">
             ⌘/Ctrl+I
           </kbd>{' '}
           기울임,
-          <kbd className="px-1 py-0.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded ml-1">
+          <kbd className="px-1 py-0.5 bg-card border border-border rounded ml-1">
             ⌘/Ctrl+K
           </kbd>{' '}
           링크
@@ -296,10 +296,10 @@ export function MarkdownEditor({
 
       {/* Drag Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-500 bg-opacity-10 border-4 border-dashed border-blue-500 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg">
-            <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-            <p className="text-slate-900 dark:text-white font-semibold">
+        <div className="absolute inset-0 bg-primary/10 border-4 border-dashed border-primary flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg p-6 shadow-lg">
+            <Upload className="w-12 h-12 text-primary mx-auto mb-2" />
+            <p className="text-foreground font-semibold">
               이미지를 여기에 드롭하세요
             </p>
           </div>
@@ -308,10 +308,10 @@ export function MarkdownEditor({
 
       {/* Upload Overlay */}
       {isUploading && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-slate-900 dark:text-white font-semibold">이미지 업로드 중...</p>
+        <div className="absolute inset-0 bg-neutral-950/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg p-6 shadow-lg">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+            <p className="text-foreground font-semibold">이미지 업로드 중...</p>
           </div>
         </div>
       )}
