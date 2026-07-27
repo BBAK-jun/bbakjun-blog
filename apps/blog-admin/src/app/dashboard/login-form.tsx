@@ -9,25 +9,25 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-lg shadow-xl p-8 border border-slate-200 dark:border-slate-700">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-card rounded-xl shadow-lg p-8 border border-border">
         <div className="flex items-center justify-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-            <FileText className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+            <FileText className="w-6 h-6 text-primary-foreground" />
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-2 text-slate-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-center mb-2 text-foreground tracking-tight">
           블로그 백오피스
         </h1>
-        <p className="text-center text-slate-600 dark:text-slate-400 mb-8">
+        <p className="text-center text-muted-foreground mb-8">
           마크다운 파일 관리 시스템
         </p>
 
         <div className="space-y-4">
           <button
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm"
+            className="w-full min-h-[44px] flex items-center justify-center gap-3 bg-background hover:bg-accent border border-border text-foreground font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -51,7 +51,7 @@ export default function LoginForm() {
           </button>
         </div>
 
-        <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-6">
+        <p className="text-xs text-center text-muted-foreground mt-6">
           첫 번째 로그인 사용자는 자동으로 슈퍼 관리자가 됩니다.
         </p>
       </div>
