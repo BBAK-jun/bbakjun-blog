@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@giscus/react": "^3.1.0",
@@ -54,6 +55,7 @@
     "eslint-config-next": "16.0.3",
     "openapi-typescript": "^7.9.1",
     "tailwindcss": "catalog:tailwindcss",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.16"
   }
 }
