@@ -1,103 +1,44 @@
-import BlogPostsList from '@/features/posts/ui/blog-posts-list';
-import SearchBarClient from '@/features/post-search/ui/search-bar-client';
+import PostsView from '@/features/post-search/ui/posts-view';
+import SearchablePostsClient from '@/features/post-search/ui/searchable-posts-client';
 import { getBlobFiles } from '@/shared/lib/blob';
-import { searchParamsCache } from '@/shared/lib/searchParams';
-import { getAllPosts, getAllTags } from '@repo/content';
-import { Post } from '@repo/content';
+import { getAllPosts } from '@repo/content';
 import { Metadata } from 'next';
-import Link from 'next/link';
+import { Suspense } from 'react';
+
+// ISR: 60초마다 재검증 — 검색은 클라이언트에서 수행하므로
+// searchParams를 읽지 않고 이 페이지는 완전히 정적으로 캐시된다.
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: '포스트 | 박준형',
   description: '프론트엔드 개발자 박준형의 블로그 포스트',
 };
 
-type PageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+/** 콘텐츠 검색에 사용되는 길이 (서버 검색 시절과 동일한 의미) */
+const SEARCH_CONTENT_PREVIEW_LENGTH = 1000;
 
-// 서버에서 검색 필터링 수행
-function filterPosts(posts: Post[], query: string): Post[] {
-  if (!query.trim()) {
-    return posts;
-  }
-
-  const lowerQuery = query.toLowerCase();
-  return posts.filter(post => {
-    // 제목 검색
-    if (post.frontMatter.title?.toLowerCase().includes(lowerQuery)) {
-      return true;
-    }
-    // 설명 검색
-    if (post.frontMatter.description?.toLowerCase().includes(lowerQuery)) {
-      return true;
-    }
-    // 태그 검색
-    if (post.frontMatter.tags?.some(tag => tag?.toLowerCase().includes(lowerQuery))) {
-      return true;
-    }
-    // 콘텐츠 검색 (첫 1000자)
-    if (post.content?.slice(0, 1000).toLowerCase().includes(lowerQuery)) {
-      return true;
-    }
-    return false;
-  });
-}
-
-export default async function PostsPage({ searchParams }: PageProps) {
-  // nuqs로 타입세이프한 searchParams 파싱
-  const { q: searchQuery } = await searchParamsCache.parse(searchParams);
-
+export default async function PostsPage() {
   // getBlobFiles는 React.cache로 중복 호출 방지
   const blobFiles = await getBlobFiles();
 
-  // 병렬 데이터 페칭
-  const [allPosts, tags] = await Promise.all([getAllPosts(blobFiles), getAllTags(blobFiles)]);
+  // getAllTags()는 내부적으로 getAllPosts()를 다시 실행해 blob 전체를
+  // 한 번 더 다운로드하므로, 여기서는 이미 받은 포스트에서 태그를 유도한다.
+  const allPosts = await getAllPosts(blobFiles);
+  const tags = Array.from(
+    new Set(allPosts.flatMap(post => post.frontMatter.tags ?? []))
+  ).sort();
 
-  const filteredPosts = filterPosts(allPosts, searchQuery);
+  // 목록/검색에 필요한 만큼만 전달 — 전체 본문은 내려보내지 않는다.
+  const posts = allPosts.map(post => ({
+    ...post,
+    content: post.content?.slice(0, SEARCH_CONTENT_PREVIEW_LENGTH) ?? '',
+  }));
 
   return (
-    <div className="space-y-12">
-      {/* 페이지 헤더 */}
-      <header>
-        <h1 className="text-4xl font-bold mb-2">포스트</h1>
-        <p className="text-muted-foreground">
-          {searchQuery
-            ? `${filteredPosts.length}개의 결과`
-            : `${allPosts.length}개의 포스트`}
-        </p>
-      </header>
-
-      {/* 검색 바 (클라이언트 컴포넌트) */}
-      <section>
-        <SearchBarClient placeholder="검색..." />
-      </section>
-
-      {/* 태그 필터 */}
-      {tags.length > 0 && !searchQuery && (
-        <section>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <Link
-              href="/blog"
-              className="text-foreground hover:underline decoration-1 underline-offset-2"
-            >
-              전체
-            </Link>
-            {tags.map(tag => (
-              <Link
-                key={tag}
-                href={`/tags/${tag}`}
-                className="text-muted-foreground hover:text-foreground hover:underline decoration-1 underline-offset-2"
-              >
-                #{tag}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 포스트 목록 */}
-      <BlogPostsList posts={filteredPosts} searchQuery={searchQuery} />
-    </div>
+    // 정적 프리렌더 시 nuqs(useSearchParams)가 suspend하므로 Suspense 필수.
+    // fallback도 같은 뷰를 서버 렌더링해 링크가 HTML에 그대로 남는다(SEO).
+    <Suspense fallback={<PostsView posts={posts} tags={tags} searchQuery="" />}>
+      <SearchablePostsClient posts={posts} tags={tags} />
+    </Suspense>
   );
 }
