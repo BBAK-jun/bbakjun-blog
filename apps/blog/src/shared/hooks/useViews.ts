@@ -10,6 +10,34 @@ interface ViewData {
   error: string | null;
 }
 
+const VIEW_SESSION_ID_KEY = 'view-session-id';
+
+/**
+ * 브라우저별 조회수 중복 집계 방지용 세션 ID 반환.
+ * localStorage에 영속 저장되어 24시간 서버 세션 TTL과 함께 dedup를 구성한다.
+ * localStorage 접근 불가 환경(시크릿 모드 등)에서는 빈 문자열을 반환하며,
+ * 서버는 빈 세션 ID를 미전송과 동일하게 취급해 일반 increment로 처리한다.
+ */
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return '';
+
+  try {
+    let sessionId = window.localStorage.getItem(VIEW_SESSION_ID_KEY);
+
+    if (!sessionId) {
+      sessionId =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `view-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      window.localStorage.setItem(VIEW_SESSION_ID_KEY, sessionId);
+    }
+
+    return sessionId;
+  } catch {
+    return '';
+  }
+}
+
 export function useViews(slug: string, increment: boolean = false): ViewData {
   const queryClient = useQueryClient();
 
@@ -35,10 +63,15 @@ export function useViews(slug: string, increment: boolean = false): ViewData {
   // 조회수 증가 mutation
   const incrementMutation = useMutation({
     mutationFn: async () => {
-      // Query parameter approach for nested paths like "DEV/my-post"
+      // sessionId: 서버 24h 세션 dedup의 키.
+      // userAgent: 서버 봇/크롤러 필터의 판별 소스.
+      // 둘 다 누락되면 dedup·봇 필터가 무력화되어 새로고침마다 +1 된다.
       const response = await client.rpc.incrementViewsBySlug.$post({
         query: { slug },
-        json: {},
+        json: {
+          sessionId: getOrCreateSessionId(),
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        },
       });
 
       if (!response.ok) {
