@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: '주제별로 정리된 포스트 시리즈를 확인하세요',
 };
 
-export const revalidate = 300; // 5 minutes
+export const revalidate = 3600; // 1 hour (quota burn reduction)
 
 export default async function SeriesPage() {
   const blobFiles = await getBlobFiles();

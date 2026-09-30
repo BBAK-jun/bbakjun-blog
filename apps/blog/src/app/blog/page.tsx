@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 
 // ISR: 60초마다 재검증 — 검색은 클라이언트에서 수행하므로
 // searchParams를 읽지 않고 이 페이지는 완전히 정적으로 캐시된다.
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: '포스트 | 박준형',

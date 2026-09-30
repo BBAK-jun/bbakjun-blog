@@ -23,7 +23,7 @@ export async function generateStaticParams() {
   }));
 }
 
-export const revalidate = 300; // 5 minutes
+export const revalidate = 3600; // 1 hour (quota burn reduction)
 export const dynamicParams = true;
 
 export async function generateMetadata({ params }: SeriesPageProps): Promise<Metadata> {
