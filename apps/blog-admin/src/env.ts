@@ -33,7 +33,7 @@ export const env = createEnv({
     REVALIDATION_SECRET: z.string().min(1).optional(),
 
     // Blob CDC Sync Interval (in minutes)
-    BLOB_SYNC_INTERVAL_MINUTES: z.coerce.number().min(1).optional().default(30),
+    BLOB_SYNC_INTERVAL_MINUTES: z.coerce.number().min(1).optional().default(360),
 
     // Redis (optional - for API response caching)
     REDIS_URL: z.string().url().optional(),

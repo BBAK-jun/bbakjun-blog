@@ -37,7 +37,7 @@ export async function generateStaticParams() {
 }
 
 // ISR 설정: 60초마다 재검증
-export const revalidate = 60;
+export const revalidate = 3600;
 
 // 동적 경로 처리 방식
 export const dynamicParams = true;
