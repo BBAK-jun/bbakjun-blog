@@ -11,8 +11,8 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
-    "build:rpc": "tsup --config tsup.config.ts",
+    "build": "prisma generate && prisma generate --schema prisma/schema.d1.prisma && next build",
+    "build:rpc": "prisma generate && prisma generate --schema prisma/schema.d1.prisma && tsup --config tsup.config.ts",
     "generate:prisma": "prisma generate && prisma generate --schema prisma/schema.d1.prisma",
     "start": "next start -p 3001",
     "lint": "eslint",
