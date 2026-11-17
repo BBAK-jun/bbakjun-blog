@@ -2,7 +2,9 @@
 // This schema is preparation only; no D1 database or migration is created here.
 
 generator client {
-  provider = "prisma-client-js"
+  // Prisma 7 의 query compiler WASM 을 런타임에 base64 로 컴파일하면 workerd 가 막는다
+  // ("Wasm code generation disallowed by embedder"). workerd 런타임 + .wasm 모듈 import 로 생성한다.
+  provider = "prisma-client"
   runtime  = "cloudflare"
   output   = "../src/generated/d1"
 }
