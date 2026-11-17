@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { upload } from '@vercel/blob/client';
 import { Upload, X, Loader2 } from 'lucide-react';
 
 interface ImageUploaderProps {
@@ -28,6 +27,23 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
     return null;
   };
 
+  const uploadToServer = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/rpc/upload/direct', {
+      method: 'POST',
+      body: formData,
+    });
+    const result = (await response.json()) as { success?: boolean; url?: string; error?: string };
+
+    if (!response.ok || !result.success || !result.url) {
+      throw new Error(result.error ?? 'Upload failed');
+    }
+
+    return result.url;
+  };
+
   const uploadImage = async (file: File) => {
     setIsUploading(true);
     setError(null);
@@ -40,18 +56,9 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
         return;
       }
 
-      // Upload directly to Vercel Blob from client using Hono RPC endpoint
-      // Pass file size and type via clientPayload to server callback
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/rpc/upload/client-token',
-        clientPayload: JSON.stringify({
-          size: file.size,
-          contentType: file.type,
-        }),
-      });
+      const url = await uploadToServer(file);
 
-      onImageUploaded(blob.url, file.name);
+      onImageUploaded(url, file.name);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
       setError(errorMessage);
@@ -80,17 +87,9 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
         }
 
         try {
-          // Upload directly to Vercel Blob from client using Hono RPC endpoint
-          const blob = await upload(file.name, file, {
-            access: 'public',
-            handleUploadUrl: '/api/rpc/upload/client-token',
-            clientPayload: JSON.stringify({
-              size: file.size,
-              contentType: file.type,
-            }),
-          });
+          const url = await uploadToServer(file);
 
-          onImageUploaded(blob.url, file.name);
+          onImageUploaded(url, file.name);
           successCount++;
         } catch (err) {
           console.error(`[Image Upload] Error uploading ${file.name}:`, err);
@@ -131,21 +130,24 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      if (multiple || files.length > 1) {
-        uploadImages(files);
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        if (multiple || files.length > 1) {
+          uploadImages(files);
+        } else {
+          uploadImage(files[0]);
+        }
       } else {
-        uploadImage(files[0]);
+        setError('Please drop an image file');
       }
-    } else {
-      setError('Please drop an image file');
-    }
-  }, [multiple]);
+    },
+    [multiple]
+  );
 
   return (
     <div className="space-y-4">
@@ -177,7 +179,9 @@ export default function ImageUploader({ onImageUploaded, multiple = false }: Ima
           <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full">
             <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              {multiple ? 'Click to upload or drag and drop (multiple files)' : 'Click to upload or drag and drop'}
+              {multiple
+                ? 'Click to upload or drag and drop (multiple files)'
+                : 'Click to upload or drag and drop'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500">
               PNG, JPG, GIF, WebP up to 25MB{multiple ? ' each' : ''}

@@ -3,10 +3,10 @@
  * Vercel Blob list API 호출을 최소화하기 위한 캐싱 레이어
  */
 
-import { list } from '@vercel/blob';
 import { prisma } from '@/shared/lib/db';
 import { env } from '@/env';
 import { invalidateCache, CacheKeys } from '@repo/cache';
+import { listAllStorageObjects } from '@/shared/storage';
 
 /**
  * Blob 파일 목록을 DB와 동기화
@@ -19,7 +19,7 @@ export async function syncBlobToDatabase() {
 
   try {
     // Vercel Blob에서 실제 파일 목록 가져오기
-    const { blobs } = await list();
+    const blobs = await listAllStorageObjects();
     console.log(`📦 Found ${blobs.length} files in Vercel Blob`);
 
     // DB의 현재 파일 목록

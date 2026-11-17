@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import matter from 'gray-matter';
-import { del, put } from '@vercel/blob';
-import { env } from '@/env';
+import { storage } from '@/shared/storage';
 import { getCachedBlobFiles, onBlobDelete, onBlobUpload } from '@/shared/server/blob-cdc';
 import {
   normalizeBlogPostPath,
@@ -333,11 +332,7 @@ async function findBlobFile(pathname: string) {
 }
 
 async function downloadText(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new BlogMcpError(`Failed to download blob content: ${response.status}`, 502);
-  }
-  return response.text();
+  return storage.getObjectText(url);
 }
 
 export async function listAgentPosts(input: ListAgentPostsInput = {}) {
@@ -587,14 +582,10 @@ export async function upsertAgentPost(input: UpsertAgentPostInput) {
     };
   }
 
-  const blob = await put(
+  const blob = await storage.putObject(
     pathname,
     new Blob([input.content], { type: extensionToContentType(pathname) }),
-    {
-      access: 'public',
-      token: env.BLOB_READ_WRITE_TOKEN,
-      addRandomSuffix: false,
-    }
+    { addRandomSuffix: false }
   );
 
   await onBlobUpload(
@@ -701,7 +692,7 @@ export async function deleteAgentPost(input: DeleteAgentPostInput) {
     return { pathname, hash: currentHash, deleted: false, dryRun: true };
   }
 
-  await del(existing.url, { token: env.BLOB_READ_WRITE_TOKEN });
+  await storage.deleteObject(existing.url);
   await onBlobDelete(pathname, input.actor);
   return { pathname, hash: currentHash, deleted: true, dryRun: false };
 }
@@ -735,11 +726,14 @@ export async function uploadAgentImage(input: UploadAgentImageInput) {
     };
   }
 
-  const blob = await put(pathname, new Blob([new Uint8Array(buffer)], { type: contentType }), {
-    access: 'public',
-    token: env.BLOB_READ_WRITE_TOKEN,
-    addRandomSuffix: false,
-  });
+  const blob = await storage.putObject(
+    pathname,
+    new Blob([new Uint8Array(buffer)], { type: contentType }),
+    {
+      contentType,
+      addRandomSuffix: false,
+    }
+  );
 
   await onBlobUpload({
     url: blob.url,

@@ -1,0 +1,238 @@
+// Prisma schema for Cloudflare D1 compatibility pre-work
+// This schema is preparation only; no D1 database or migration is created here.
+
+generator client {
+  provider = "prisma-client-js"
+  runtime  = "cloudflare"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==========================================
+// User Roles (역할 기반 접근 제어)
+// ==========================================
+enum UserRole {
+  SUPER_ADMIN  // 최고 관리자 - 모든 권한 + 사용자 역할 관리
+  ADMIN        // 일반 관리자 - 콘텐츠 관리 (CRUD)
+  GUEST        // 게스트 - 읽기 전용
+}
+
+// ==========================================
+// Auth.js Required Models
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Custom fields
+  role          UserRole  @default(GUEST)
+  username      String?   @unique  // 레거시 호환성 (선택)
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String  // e.g., "google"
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==========================================
+// Newsletter Subscription
+// ==========================================
+
+model Subscriber {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  subscribedAt    DateTime  @default(now())
+  unsubscribedAt  DateTime?
+  isActive        Boolean   @default(true)
+
+  // Unsubscribe token for secure unsubscribe links
+  unsubscribeToken String   @unique @default(cuid())
+
+  // Optional metadata
+  source          String?   // e.g., "footer", "popup", "blog-post"
+
+  @@index([email])
+  @@index([isActive])
+  @@map("subscribers")
+}
+
+// ==========================================
+// Professional Experience Management
+// ==========================================
+
+model Experience {
+  id            String   @id @default(cuid())
+  company       String               // 회사명
+  position      String               // 직책
+  team          String?              // 팀명 (선택사항)
+  period        String               // 근무 기간 (e.g., "2023.01 ~ 2024.12", "2024.01 ~ 재직중")
+  isCurrent     Boolean  @default(false)  // 재직중 여부
+  description   String?              // 회사/직무 설명 (선택사항)
+  sortOrder     Int      @default(0)     // 정렬 순서 (높을수록 최신)
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  achievements  Achievement[]        // 성과 목록
+
+  @@index([isCurrent])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("experiences")
+}
+
+model Achievement {
+  id            String   @id @default(cuid())
+  title         String               // 성과 제목
+  description   String               // 성과 상세 설명
+  tags          String?              // 기술 태그 (JSON 배열 형식으로 저장)
+  sortOrder     Int      @default(0) // 정렬 순서
+
+  // Foreign Key
+  experienceId  String
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  experience    Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@index([experienceId])
+  @@index([sortOrder])
+  @@map("achievements")
+}
+
+// ==========================================
+// Blob Storage CDC (Change Data Capture)
+// ==========================================
+
+model BlobFile {
+  id          String   @id @default(cuid())
+  url         String              // Blob URL (changes on re-upload)
+  pathname    String   @unique    // File path (unique identifier)
+  size        BigInt              // File size in bytes
+  uploadedAt  DateTime            // Upload timestamp from Blob
+  contentType String?             // MIME type
+
+  // CDC metadata
+  syncedAt    DateTime @default(now())
+  lastChecked DateTime @default(now())
+  isDeleted   Boolean  @default(false)
+
+  // Optional metadata
+  uploadedBy  String?             // User who uploaded (if tracked)
+
+  @@index([uploadedAt])
+  @@index([isDeleted])
+  @@index([lastChecked])
+  @@map("blob_files")
+}
+
+// ==========================================
+// Upload History Tracking
+// ==========================================
+
+enum ActionType {
+  CREATE   // 파일 생성
+  UPDATE   // 파일 수정 (URL이 변경됨)
+  DELETE   // 파일 삭제
+}
+
+model UploadHistory {
+  id            String      @id @default(cuid())
+  actionType    ActionType  // CREATE, UPDATE, DELETE
+  pathname      String              // 파일 경로
+
+  // 파일 정보 스냅샷
+  fileUrl       String?             // 삭제 시 null
+  fileSize      BigInt?             // 삭제 시 null
+  contentType   String?             // 삭제 시 null
+
+  // 작업자 정보
+  uploadedBy    String              // 사용자 email
+
+  // 타임스탬프
+  createdAt     DateTime @default(now())
+
+  @@index([pathname])
+  @@index([createdAt])
+  @@index([actionType])
+  @@map("upload_history")
+}
+
+// ==========================================
+// System Settings
+// ==========================================
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique     // Setting key (e.g., "blog.title", "blog.author")
+  value     String                 // Setting value (JSON string for complex values)
+  category  String                 // Category: "blog", "system", "content"
+  type      String                 // Type: "string", "number", "boolean", "json"
+  label     String                 // Human-readable label
+  updatedAt DateTime @updatedAt
+  updatedBy String?               // User who last updated
+
+  @@index([category])
+  @@index([key])
+  @@map("settings")
+}

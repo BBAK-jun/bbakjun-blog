@@ -1,16 +1,13 @@
 'use server';
 
-import { put, del } from '@vercel/blob';
 import { processMarkdown } from '@repo/content';
 import { revalidatePath } from 'next/cache';
 import matter from 'gray-matter';
 import { createFileSchema, updateFileSchema, deleteFileSchema } from '@/shared/lib/schemas';
 import { revalidateBlogPost } from '@/shared/lib/revalidate-blog';
 import { getCachedBlobFiles, onBlobUpload, onBlobDelete } from '@/shared/server/blob-cdc';
-import { env } from '@/shared/config';
+import { storage } from '@/shared/storage';
 import { auth } from '../../../auth';
-
-const BLOB_TOKEN = env.BLOB_READ_WRITE_TOKEN;
 
 /**
  * Get file content and metadata from Blob Storage
@@ -26,19 +23,7 @@ export async function getFileContent(pathname: string) {
       throw new Error(`File not found in Blob Storage: ${pathname}`);
     }
 
-    // Fetch content using the blob's URL with no-cache to ensure fresh data
-    const response = await fetch(blob.url, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.statusText}`);
-    }
-
-    const rawContent = await response.text();
+    const rawContent = await storage.getObjectText(blob.url);
 
     // Parse front matter
     const { data: frontMatter, content } = matter(rawContent);
@@ -119,11 +104,9 @@ export async function updateFile(input: UpdateFileInput) {
     const fullContent = frontMatter + '\n' + validatedData.content;
 
     // Upload to Blob Storage (overwrite existing file)
-    const blob = await put(validatedData.pathname, fullContent, {
-      access: 'public',
-      token: BLOB_TOKEN,
+    const blob = await storage.putObject(validatedData.pathname, fullContent, {
       contentType: 'text/markdown',
-      addRandomSuffix: false, // Ensure file is overwritten, not duplicated
+      addRandomSuffix: false,
     });
 
     // CDC: DB에 파일 정보 저장 + 사용자 정보 전달
@@ -191,7 +174,7 @@ export async function deleteFile(pathname: string) {
     const { files } = await getCachedBlobFiles({ limit: 1000 });
     const fileToDelete = files.find(f => f.pathname === validationResult.data.pathname);
 
-    await del(validationResult.data.pathname, { token: BLOB_TOKEN });
+    await storage.deleteObject(validationResult.data.pathname);
 
     // CDC: DB에서 파일 삭제 표시 + 사용자 정보 전달
     if (fileToDelete) {
@@ -240,18 +223,7 @@ export async function listFiles(limit = 100) {
     const filesWithMetadata = await Promise.all(
       markdownBlobs.map(async blob => {
         try {
-          // Fetch file content with no-cache to ensure fresh data
-          const response = await fetch(blob.url, {
-            cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-            },
-          });
-          if (!response.ok) {
-            throw new Error('Failed to fetch file');
-          }
-
-          const content = await response.text();
+          const content = await storage.getObjectText(blob.url);
           const { data: frontMatter } = matter(content);
 
           return {
@@ -350,9 +322,8 @@ export async function uploadMarkdown(formData: FormData) {
     const sanitizedPath = path.trim().replace(/^\/+|\/+$/g, '');
     const pathname = `${sanitizedPath}${fileExtension}`;
 
-    const blob = await put(pathname, file, {
-      access: 'public',
-      token: BLOB_TOKEN,
+    const blob = await storage.putObject(pathname, file, {
+      contentType: file.type,
     });
 
     // CDC: DB에 파일 정보 저장 + 사용자 정보 전달
@@ -460,7 +431,10 @@ export async function uploadImage(formData: FormData) {
     // crypto.randomUUID() 사용으로 고유한 파일명 보장 (동시 업로드 시 충돌 방지)
     const uniqueId = crypto.randomUUID().split('-')[0]; // 짧은 ID 사용
     const extension = file.name.split('.').pop() || 'jpg';
-    const sanitizedBaseName = file.name.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+    const sanitizedBaseName = file.name
+      .replace(`.${extension}`, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 50);
     const pathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
 
     // Vercel Blob 업로드 재시도 로직 (최대 3회)
@@ -470,9 +444,8 @@ export async function uploadImage(formData: FormData) {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         console.log(`[Image Upload] Attempt ${attempt}/3: ${pathname}`);
-        blob = await put(pathname, file, {
-          access: 'public',
-          token: BLOB_TOKEN,
+        blob = await storage.putObject(pathname, file, {
+          contentType: file.type,
           addRandomSuffix: false,
         });
         break; // 성공 시 루프 탈출
@@ -541,85 +514,6 @@ export async function uploadImage(formData: FormData) {
     return {
       success: false,
       error: errorMessage,
-    };
-  }
-}
-
-/**
- * Get upload credentials for client-side upload
- * This bypasses the 4.5MB serverless function payload limit
- * The client uploads directly to Vercel Blob using these credentials
- */
-export async function getUploadCredentials(filename: string) {
-  try {
-    if (!filename || typeof filename !== 'string') {
-      return {
-        success: false,
-        error: 'Filename is required',
-      };
-    }
-
-    // Generate unique pathname with timestamp and UUID
-    const uniqueId = crypto.randomUUID().split('-')[0];
-    const extension = filename.split('.').pop() || 'jpg';
-    const sanitizedBaseName = filename.replace(`.${extension}`, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
-    const pathname = `images/${Date.now()}-${uniqueId}-${sanitizedBaseName}.${extension}`;
-
-    // Return credentials for client-side upload
-    return {
-      success: true,
-      token: BLOB_TOKEN,
-      pathname,
-    };
-  } catch (error) {
-    console.error('[Get Upload Credentials] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get upload credentials',
-    };
-  }
-}
-
-/**
- * Sync uploaded file to CDC database
- * Called after successful client-side upload
- */
-export async function syncUploadedFile(input: {
-  url: string;
-  pathname: string;
-  size: number;
-  contentType: string;
-}) {
-  try {
-    // 세션 확인
-    const session = await auth();
-    if (!session?.user?.email) {
-      return {
-        success: false,
-        error: '인증이 필요합니다',
-      };
-    }
-
-    await onBlobUpload(
-      {
-        url: input.url,
-        pathname: input.pathname,
-        size: input.size,
-        uploadedAt: new Date(),
-        contentType: input.contentType,
-        uploadedBy: session.user.email,
-      },
-      { actionType: 'CREATE' }
-    );
-
-    return {
-      success: true,
-    };
-  } catch (error) {
-    console.error('[Sync Uploaded File] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to sync file',
     };
   }
 }
@@ -822,10 +716,7 @@ export async function createFile(input: CreateFileInput) {
     // Combine frontmatter and content
     const fullContent = frontMatter + '\n' + validatedData.content;
 
-    // Upload to Blob Storage
-    const blob = await put(finalPathname, fullContent, {
-      access: 'public',
-      token: BLOB_TOKEN,
+    const blob = await storage.putObject(finalPathname, fullContent, {
       contentType: 'text/markdown',
     });
 
