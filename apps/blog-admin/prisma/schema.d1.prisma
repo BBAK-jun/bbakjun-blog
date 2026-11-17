@@ -4,6 +4,7 @@
 generator client {
   provider = "prisma-client-js"
   runtime  = "cloudflare"
+  output   = "../src/generated/d1"
 }
 
 datasource db {

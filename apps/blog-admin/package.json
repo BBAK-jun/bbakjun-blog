@@ -13,7 +13,7 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "build:rpc": "tsup --config tsup.config.ts",
-    "generate:prisma": "prisma generate",
+    "generate:prisma": "prisma generate && prisma generate --schema prisma/schema.d1.prisma",
     "start": "next start -p 3001",
     "lint": "eslint",
     "type-check": "tsc --noEmit",

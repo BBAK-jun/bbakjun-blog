@@ -26,7 +26,6 @@
     "@tailwindcss/typography": "catalog:tailwindcss",
     "@tanstack/react-query": "^5.90.12",
     "@vercel/analytics": "^1.6.1",
-    "@vercel/kv": "^3.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.553.0",
@@ -43,13 +42,13 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@apps/blog-admin": "workspace:*",
     "@tailwindcss/postcss": "catalog:tailwindcss",
     "@tanstack/react-query-devtools": "^5.91.1",
     "@types/mdx": "^2.0.13",
     "@types/node": "^24",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
-    "@apps/blog-admin": "workspace:*",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "openapi-typescript": "^7.9.1",

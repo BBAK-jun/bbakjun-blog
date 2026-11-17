@@ -9,7 +9,7 @@ export default defineConfig({
     environment: 'jsdom', // DOM 환경 제공
     setupFiles: ['./tests/setup.ts'],
     include: ['**/*.test.{ts,tsx}'],
-    exclude: ['node_modules', '.next'],
+    exclude: ['node_modules', '.next', '.open-next', '.wrangler'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

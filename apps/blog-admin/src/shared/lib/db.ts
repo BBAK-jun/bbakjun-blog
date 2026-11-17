@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient as D1PrismaClient } from '../../generated/d1';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { env } from '@/env';
 
 type PrismaGlobal = {
-  prisma: PrismaClient | undefined;
+  prisma: unknown;
 };
 
 const globalForPrisma = globalThis as unknown as PrismaGlobal;
@@ -32,12 +33,12 @@ const createD1Client = () => {
   }
 
   const adapter = new PrismaD1(cloudflareEnv.DB);
-  return new PrismaClient({ adapter });
+  return new D1PrismaClient({ adapter });
 };
 
 const createPrismaClient = () => (env.DB_PROVIDER === 'd1' ? createD1Client() : createNeonClient());
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+export const prisma = (globalForPrisma.prisma ?? createPrismaClient()) as PrismaClient;
 
 if (env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;

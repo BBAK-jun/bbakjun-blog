@@ -58,12 +58,33 @@
 - 기존 Blob/upload 테스트 mock을 storage 인터페이스 mock으로 전환
 - R2 fake bucket 단위 테스트 추가
 
+### 단계 4: Content binding read 및 배포 설정
+
+- `packages/content/src/posts-blob.ts`에 `ReadPost(pathname)` 주입 경로 추가
+- 기존 URL `fetch` reader는 기본 fallback으로 유지
+- `apps/blog/src/lib/blob.ts`에서 `CONTENT_BUCKET.get(pathname)` 기반 reader 연결
+- Cloudflare context/binding이 없는 Vercel·Node 실행에서는 기존 Blob URL fetch로 fallback
+- `apps/blog-admin/open-next.config.ts` 및 `wrangler.jsonc` 추가
+  - D1 `DB`
+  - R2 `CONTENT_BUCKET`
+  - OpenNext incremental cache bucket
+- `apps/rag-gateway/wrangler.jsonc` 추가
+  - `main: src/index.ts`
+- blog/blog-admin `next.config.ts`에 `initOpenNextCloudflareForDev()` 추가
+- Cloudflare 배포 workflow 파일 추가
+- 실제 deploy는 실행하지 않음
+- 사용하지 않는 `@vercel/kv`, content package의 `@vercel/blob` 의존성 제거
+
 ## 이번 단계의 리스크 및 제한
 
 - 실제 R2 bucket 생성 및 데이터 이전은 수행하지 않았다.
 - 실제 D1 생성, migration, seed 실행은 수행하지 않았다.
 - `git push`, PR 생성·수정, `wrangler deploy`, DNS 변경은 수행하지 않았다.
 - OpenNext 빌드에서 `blog-admin proxy.ts`의 Node.js middleware support가 experimental이라는 경고가 계속 발생한다. Prisma 기반 middleware가 Cloudflare Worker preview에서 실제로 동작하는지는 별도 preview 검증이 필요하다.
+
+- OpenNext 로컬 preview는 Wrangler local runtime compatibility date를 `2026-10-13`으로 override해야 부팅됐다. 설정 파일의 `2026-11-01`은 현재 설치된 local workerd가 지원하지 않아 그대로 실행할 수 없었다.
+- compatibility date override 후 D1/R2 local bindings가 연결되고 `/unauthorized`는 `200 OK`를 반환했다.
+- 보호 경로 `/dashboard` 요청에서는 실제 workerd의 OpenNext middleware가 실행되었지만 `TypeError: Method Promise.prototype.then called on incompatible receiver #<Promise>`로 `500`이 발생했다. 이는 `proxy.ts` Node middleware 실험 경고가 실제 local runtime에서도 재현된 것이며, PR 4에서 해결하지 않고 차단 리스크로 남긴다.
 
 ## 검증
 
