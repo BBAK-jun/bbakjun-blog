@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Save, ImageIcon, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { markdown } from '@codemirror/lang-markdown';
 import { ViewPlugin, EditorView } from '@codemirror/view';
@@ -70,12 +70,10 @@ function EditPageContent() {
   }, [hasUnsavedChanges]);
 
   const handleImageUploaded = (url: string, filename: string) => {
-    // Insert markdown image syntax at cursor position
     const imageMarkdown = `\n![${filename}](${url})\n`;
     const view = editorViewRef.current;
 
     if (view) {
-      // CodeMirror의 transaction을 사용하여 커서 위치에 삽입
       const transaction = view.state.update({
         changes: {
           from: view.state.selection.main.head,
@@ -89,13 +87,11 @@ function EditPageContent() {
       });
       view.dispatch(transaction);
 
-      // 새로운 content 값으로 state 업데이트
       setFormData({
         ...formData,
         content: view.state.doc.toString(),
       });
     } else {
-      // Fallback: 끝에 추가
       setFormData({
         ...formData,
         content: formData.content + imageMarkdown,
@@ -104,84 +100,74 @@ function EditPageContent() {
     setShowImageUploader(false);
   };
 
-  // 이미지 붙여넣기 처리 (Paste 이벤트)
-  const handlePaste = useCallback(
-    async (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
+  const handlePaste = useCallback(async (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
 
-      // 이미지 파일 찾기
-      let imageFile: File | null = null;
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith('image/')) {
-          imageFile = item.getAsFile();
-          break;
-        }
+    let imageFile: File | null = null;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        imageFile = item.getAsFile();
+        break;
+      }
+    }
+
+    if (!imageFile) return;
+
+    e.preventDefault();
+    setIsPastingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const result = await uploadImageAction(formData);
+
+      if (!result.success || !result.url) {
+        throw new Error(result.error || '이미지 업로드에 실패했습니다');
       }
 
-      if (!imageFile) return;
+      const view = editorViewRef.current;
+      const imageMarkdown = `\n![${imageFile.name}](${result.url})\n`;
 
-      // 기본 붙여넣기 동작 방지 (이미지인 경우만)
-      e.preventDefault();
-
-      setIsPastingImage(true);
-
-      try {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-
-        const result = await uploadImageAction(formData);
-
-        if (!result.success || !result.url) {
-          throw new Error(result.error || '이미지 업로드에 실패했습니다');
-        }
-
-        // CodeMirror의 현재 커서 위치에 이미지 마크다운 삽입
-        const view = editorViewRef.current;
-        const imageMarkdown = `\n![${imageFile.name}](${result.url})\n`;
-
-        if (view) {
-          const transaction = view.state.update({
-            changes: {
-              from: view.state.selection.main.head,
-              to: view.state.selection.main.head,
-              insert: imageMarkdown,
-            },
-            selection: {
-              anchor: view.state.selection.main.head + imageMarkdown.length,
-              head: view.state.selection.main.head + imageMarkdown.length,
-            },
-          });
-          view.dispatch(transaction);
-
-          setFormData(prev => ({
-            ...prev,
-            content: view.state.doc.toString(),
-          }));
-        } else {
-          // Fallback: 끝에 추가
-          setFormData(prev => ({
-            ...prev,
-            content: prev.content + imageMarkdown,
-          }));
-        }
-
-        toast.success('이미지 업로드 완료', {
-          description: '이미지가 성공적으로 업로드되었습니다',
+      if (view) {
+        const transaction = view.state.update({
+          changes: {
+            from: view.state.selection.main.head,
+            to: view.state.selection.main.head,
+            insert: imageMarkdown,
+          },
+          selection: {
+            anchor: view.state.selection.main.head + imageMarkdown.length,
+            head: view.state.selection.main.head + imageMarkdown.length,
+          },
         });
-      } catch (error) {
-        console.error('이미지 업로드 실패:', error);
-        toast.error('이미지 업로드 실패', {
-          description: error instanceof Error ? error.message : '다시 시도해주세요',
-        });
-      } finally {
-        setIsPastingImage(false);
+        view.dispatch(transaction);
+
+        setFormData(prev => ({
+          ...prev,
+          content: view.state.doc.toString(),
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          content: prev.content + imageMarkdown,
+        }));
       }
-    },
-    []
-  );
 
-  // 붙여넣기 이벤트 리스너 등록
+      toast.success('이미지 업로드 완료', {
+        description: '이미지가 성공적으로 업로드되었습니다',
+      });
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      toast.error('이미지 업로드 실패', {
+        description: error instanceof Error ? error.message : '다시 시도해주세요',
+      });
+    } finally {
+      setIsPastingImage(false);
+    }
+  }, []);
+
   useEffect(() => {
     const container = editorContainerRef.current;
     if (!container) return;
@@ -198,7 +184,6 @@ function EditPageContent() {
     };
   }, [handlePaste]);
 
-  // 드래그 앤 드롭 핸들러
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -208,7 +193,6 @@ function EditPageContent() {
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // 에디터 영역을 벗어났는지 확인
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -252,7 +236,6 @@ function EditPageContent() {
           const imageMarkdown = `\n![${file.name}](${result.url})\n`;
 
           if (view) {
-            // 현재 커서 위치에 삽입
             const cursorPos = view.state.selection.main.head;
             const transaction = view.state.update({
               changes: {
@@ -267,7 +250,6 @@ function EditPageContent() {
             });
             view.dispatch(transaction);
           } else {
-            // Fallback: 끝에 추가
             setFormData(prev => ({
               ...prev,
               content: prev.content + imageMarkdown,
@@ -275,7 +257,6 @@ function EditPageContent() {
           }
         }
 
-        // CodeMirror view가 있는 경우 최종 content 업데이트
         if (view) {
           setFormData(prev => ({
             ...prev,
@@ -357,12 +338,15 @@ function EditPageContent() {
     };
   }, []);
 
+  const inputClass =
+    'w-full min-h-[44px] px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">파일 로딩 중...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">파일 로딩 중...</p>
         </div>
       </div>
     );
@@ -372,12 +356,12 @@ function EditPageContent() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">
+          <p className="text-error-600 dark:text-error-400">
             {error instanceof Error ? error.message : '파일을 찾을 수 없습니다'}
           </p>
           <button
             onClick={() => router.push('/dashboard/files')}
-            className="mt-4 text-blue-600 hover:underline"
+            className="mt-4 text-primary hover:underline min-h-[44px] inline-block"
           >
             파일 목록으로 돌아가기
           </button>
@@ -387,41 +371,41 @@ function EditPageContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center hover:bg-muted rounded-lg transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">파일 편집</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <div className="min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold text-foreground">파일 편집</h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 truncate">
               {fileData.metadata?.pathname || ''}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {hasUnsavedChanges && (
-            <span className="text-sm text-amber-600 dark:text-amber-500 flex items-center gap-1">
-              <span className="w-2 h-2 bg-amber-600 dark:bg-amber-500 rounded-full"></span>
+            <span className="text-sm text-warning-600 dark:text-warning-500 flex items-center gap-1">
+              <span className="w-2 h-2 bg-warning-600 dark:bg-warning-500 rounded-full"></span>
               저장되지 않은 변경사항
             </span>
           )}
           <button
             onClick={() => setShowImageUploader(!showImageUploader)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-2 px-3 md:px-4 py-2 min-h-[44px] bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
           >
             <ImageIcon className="w-4 h-4" />
-            <span>이미지 추가</span>
+            <span className="hidden sm:inline">이미지 추가</span>
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 md:px-4 py-2 min-h-[44px] bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? '저장 중...' : '저장'}</span>
@@ -430,72 +414,62 @@ function EditPageContent() {
       </div>
 
       {/* Front Matter Form */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">메타데이터</h2>
+      <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+        <h2 className="text-base md:text-lg font-semibold text-foreground mb-4">메타데이터</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              제목 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">제목 *</label>
             <input
               type="text"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              설명 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">설명 *</label>
             <textarea
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              날짜 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">날짜 *</label>
             <input
               type="date"
               value={formData.date}
               onChange={e => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              작성자 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">작성자 *</label>
             <input
               type="text"
               value={formData.author}
               onChange={e => setFormData({ ...formData, author: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
               required
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              태그 *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">태그 *</label>
             <TagInput
               value={formData.tags}
               onChange={tags => setFormData({ ...formData, tags })}
               placeholder="태그를 입력하고 Enter를 누르세요 (예: nextjs, react, typescript)"
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Enter 또는 쉼표로 태그 추가, Backspace로 삭제
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               시리즈 (선택사항)
             </label>
             <input
@@ -503,14 +477,12 @@ function EditPageContent() {
               value={formData.series || ''}
               onChange={e => setFormData({ ...formData, series: e.target.value || undefined })}
               placeholder="예: react-deep-dive"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              시리즈 slug (영문, 소문자, 하이픈)
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">시리즈 slug (영문, 소문자, 하이픈)</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               시리즈 순서 (선택사항)
             </label>
             <input
@@ -524,23 +496,19 @@ function EditPageContent() {
                 })
               }
               placeholder="1"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              시리즈 내 순서 (1부터 시작)
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">시리즈 내 순서 (1부터 시작)</p>
           </div>
           <div className="md:col-span-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
               <input
                 type="checkbox"
                 checked={formData.draft || false}
                 onChange={e => setFormData({ ...formData, draft: e.target.checked })}
-                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-primary border-border rounded focus:ring-ring"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                임시 저장 (draft)
-              </span>
+              <span className="text-sm font-medium text-foreground">임시 저장 (draft)</span>
             </label>
           </div>
         </div>
@@ -548,14 +516,14 @@ function EditPageContent() {
 
       {/* Image Uploader */}
       {showImageUploader && (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+        <div className="bg-card rounded-lg border border-border p-4 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">이미지 업로드</h2>
+            <h2 className="text-base md:text-lg font-semibold text-foreground">이미지 업로드</h2>
             <button
               onClick={() => setShowImageUploader(false)}
-              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
           <ImageUploader onImageUploaded={handleImageUploaded} />
@@ -563,26 +531,26 @@ function EditPageContent() {
       )}
 
       {/* Content Editor - Responsive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Editor Section */}
         <div
-          className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden relative transition-colors ${
-            isDragging ? 'border-blue-500 ring-2 ring-blue-500 ring-opacity-50' : ''
+          className={`bg-card rounded-lg border border-border overflow-hidden relative transition-colors ${
+            isDragging ? 'border-primary ring-2 ring-primary ring-opacity-50' : ''
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">마크다운 편집</h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between">
+            <h2 className="text-base md:text-lg font-semibold text-foreground">마크다운 편집</h2>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
               💡 이미지 복사(Ctrl+V) 또는 드래그 앤 드롭
             </span>
           </div>
           <div
             ref={editorScrollRef}
             className="p-0 overflow-auto relative"
-            style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}
+            style={{ height: '500px' }}
           >
             <div ref={editorContainerRef} className="h-full">
               <CodeMirror
@@ -620,13 +588,13 @@ function EditPageContent() {
 
           {/* 드래그 오버레이 */}
           {isDragging && (
-            <div className="absolute inset-0 bg-blue-500/10 border-4 border-dashed border-blue-500 flex items-center justify-center z-40 pointer-events-none">
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg">
-                <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                <p className="text-slate-900 dark:text-white font-semibold text-center">
+            <div className="absolute inset-0 bg-primary/10 border-4 border-dashed border-primary flex items-center justify-center z-40 pointer-events-none">
+              <div className="bg-card rounded-lg p-6 shadow-lg">
+                <Upload className="w-12 h-12 text-primary mx-auto mb-2" />
+                <p className="text-foreground font-semibold text-center">
                   이미지를 여기에 드롭하세요
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-1">
+                <p className="text-sm text-muted-foreground text-center mt-1">
                   PNG, JPG, GIF, WebP
                 </p>
               </div>
@@ -635,12 +603,12 @@ function EditPageContent() {
 
           {/* 붙여넣기/업로드 인디케이터 오버레이 */}
           {isPastingImage && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg flex items-center gap-3">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+            <div className="absolute inset-0 bg-neutral-950/50 flex items-center justify-center z-50">
+              <div className="bg-card rounded-lg p-6 shadow-lg flex items-center gap-3">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 <div>
-                  <p className="text-slate-900 dark:text-white font-semibold">이미지 업로드 중...</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">잠시만 기다려주세요</p>
+                  <p className="text-foreground font-semibold">이미지 업로드 중...</p>
+                  <p className="text-sm text-muted-foreground">잠시만 기다려주세요</p>
                 </div>
               </div>
             </div>
@@ -648,17 +616,17 @@ function EditPageContent() {
         </div>
 
         {/* Preview Section */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">미리보기</h2>
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="border-b border-border px-4 md:px-6 py-3">
+            <h2 className="text-base md:text-lg font-semibold text-foreground">미리보기</h2>
           </div>
           <div
             ref={previewScrollRef}
             className="overflow-auto"
-            style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}
+            style={{ height: '500px' }}
           >
             <article
-              className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"
+              className="prose prose-slate dark:prose-invert max-w-none px-4 md:px-8 py-4 md:py-8"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>
@@ -674,8 +642,8 @@ export default function EditPage() {
       fallback={
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-slate-600 dark:text-slate-400">로딩 중...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">로딩 중...</p>
           </div>
         </div>
       }

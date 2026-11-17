@@ -3,7 +3,7 @@ import { PopularPostsGrid } from '@/widgets/popular-posts';
 import { RecentPostsGrid } from '@/widgets/recent-posts';
 
 // ISR 설정: 60초마다 재검증 (최신글 자동 업데이트)
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default function Home() {
   return (

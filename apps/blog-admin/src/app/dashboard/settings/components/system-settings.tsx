@@ -43,6 +43,9 @@ const CATEGORY_LABELS = {
   content: '콘텐츠 설정',
 };
 
+const inputClass =
+  'w-full min-h-[44px] px-3 py-2 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent';
+
 export default function SystemSettings() {
   const [settings, setSettings] = useState<CategorySettings>({
     blog: [],
@@ -53,7 +56,6 @@ export default function SystemSettings() {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // 초기 설정 로드
   useEffect(() => {
     loadSettings();
   }, []);
@@ -75,11 +77,10 @@ export default function SystemSettings() {
         }
       }
 
-      // 설정이 없으면 초기 설정 생성
       if (Object.values(loadedSettings).every(arr => arr.length === 0)) {
         const seedResult = await seedDefaultSettings();
         if (seedResult.success) {
-          await loadSettings(); // 재로드
+          await loadSettings();
           return;
         }
       }
@@ -130,7 +131,7 @@ export default function SystemSettings() {
   };
 
   const renderSettingInput = (setting: Setting) => {
-    const { key, value, type, label } = setting;
+    const { key, value, type } = setting;
 
     switch (type) {
       case 'boolean':
@@ -144,7 +145,7 @@ export default function SystemSettings() {
                 e.target.value
               )
             }
-            className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={inputClass}
           >
             <option value="true">true</option>
             <option value="false">false</option>
@@ -164,17 +165,13 @@ export default function SystemSettings() {
                   e.target.value
                 )
               }
-              className="flex-1 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={inputClass}
             />
             {key.includes('Interval') && (
-              <span className="text-sm text-slate-600 dark:text-slate-400 w-16">
-                분
-              </span>
+              <span className="text-sm text-muted-foreground w-16">분</span>
             )}
             {key.includes('TTL') && (
-              <span className="text-sm text-slate-600 dark:text-slate-400 w-16">
-                초
-              </span>
+              <span className="text-sm text-muted-foreground w-16">초</span>
             )}
           </div>
         );
@@ -191,7 +188,7 @@ export default function SystemSettings() {
                 e.target.value
               )
             }
-            className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={inputClass}
           />
         );
     }
@@ -211,11 +208,11 @@ export default function SystemSettings() {
     return (
       <div
         key={categoryKey}
-        className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-6"
+        className="bg-card rounded-lg border border-border p-4 md:p-6"
       >
         <div className="flex items-center gap-2 mb-4">
-          <Icon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <Icon className="w-5 h-5 text-foreground" />
+          <h3 className="text-base md:text-lg font-semibold text-foreground">
             {CATEGORY_LABELS[category]}
           </h3>
         </div>
@@ -223,12 +220,10 @@ export default function SystemSettings() {
         <div className="space-y-4">
           {categorySettings.map(setting => (
             <div key={setting.id}>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 {setting.label}
               </label>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                {setting.key}
-              </p>
+              <p className="text-xs text-muted-foreground mb-2">{setting.key}</p>
               {renderSettingInput(setting)}
             </div>
           ))}
@@ -240,26 +235,24 @@ export default function SystemSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
+        <RefreshCw className="w-8 h-8 text-muted-foreground animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            시스템 설정
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h2 className="text-lg md:text-xl font-semibold text-foreground">시스템 설정</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             블로그 및 시스템 동작을 설정합니다
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={loadSettings}
-            className="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-foreground hover:bg-muted rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             새로고침
@@ -268,7 +261,7 @@ export default function SystemSettings() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 min-h-[44px] bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               {saving ? '저장 중...' : '저장'}
@@ -277,15 +270,15 @@ export default function SystemSettings() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {(Object.keys(settings) as (keyof CategorySettings)[]).map(
-          category => renderCategorySection(category, category)
+      <div className="space-y-5 md:space-y-6">
+        {(Object.keys(settings) as (keyof CategorySettings)[]).map(category =>
+          renderCategorySection(category, category)
         )}
       </div>
 
       {!hasChanges && (
-        <div className="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-lg p-4">
-          <p className="text-sm text-blue-800 dark:text-blue-300">
+        <div className="bg-accent border border-border rounded-lg p-4">
+          <p className="text-sm text-accent-foreground">
             <Clock className="w-4 h-4 inline mr-1" />
             설정이 저장되었습니다. 변경 사항이 없습니다.
           </p>

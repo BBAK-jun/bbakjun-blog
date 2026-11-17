@@ -19,6 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <head>
+        {/* Pretendard Variable (Korean) */}
+        <link
+          rel="stylesheet"
+          as="style"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -33,11 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased font-sans">
         <OverlayProvider>
           <NuqsAdapter>
             <QueryProvider>
-              <div className="min-h-screen bg-background">{children}</div>
+              <div className="min-h-screen bg-background text-foreground">
+                {children}
+              </div>
             </QueryProvider>
           </NuqsAdapter>
         </OverlayProvider>

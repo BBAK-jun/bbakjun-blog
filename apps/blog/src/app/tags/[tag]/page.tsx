@@ -21,7 +21,7 @@ export async function generateStaticParams() {
 }
 
 // ISR 설정: 300초(5분)마다 재검증
-export const revalidate = 300;
+export const revalidate = 3600;
 
 // 새 태그가 추가되면 런타임에 생성 후 캐싱
 export const dynamicParams = true;

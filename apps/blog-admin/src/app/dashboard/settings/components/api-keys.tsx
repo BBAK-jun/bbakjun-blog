@@ -2,7 +2,6 @@
 
 import { Key, Mail, Database, Copy, Check, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
-import { env } from '../../../../env';
 
 interface ApiKeyConfig {
   key: string;
@@ -123,7 +122,6 @@ export default function ApiKeys() {
     return `${value.substring(0, 4)}${'*'.repeat(value.length - 8)}${value.substring(value.length - 4)}`;
   };
 
-  // 카테고리별로 그룹화
   const groupedConfigs = API_KEY_CONFIGS.reduce((acc, config) => {
     if (!acc[config.category]) {
       acc[config.category] = [];
@@ -133,19 +131,17 @@ export default function ApiKeys() {
   }, {} as Record<string, ApiKeyConfig[]>);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-          API 키 관리
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        <h2 className="text-lg md:text-xl font-semibold text-foreground">API 키 관리</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           시스템에서 사용하는 API 키 및 인증 정보를 확인합니다
         </p>
       </div>
 
       {/* 안내 메시지 */}
-      <div className="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-lg p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-300">
+      <div className="bg-accent border border-border rounded-lg p-4">
+        <p className="text-sm text-accent-foreground">
           <Key className="w-4 h-4 inline mr-1" />
           API 키는 환경 변수로 관리됩니다. 키를 변경하려면 배포 플랫폼(Vercel 등)에서 환경 변수를
           수정해주세요.
@@ -153,19 +149,19 @@ export default function ApiKeys() {
       </div>
 
       {/* 카테고리별 API 키 목록 */}
-      <div className="space-y-6">
+      <div className="space-y-5 md:space-y-6">
         {Object.entries(groupedConfigs).map(([category, configs]) => (
           <div
             key={category}
-            className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+            className="bg-card rounded-lg border border-border overflow-hidden"
           >
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <div className="px-4 md:px-6 py-4 border-b border-border">
+              <h3 className="text-base md:text-lg font-semibold text-foreground">
                 {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS]}
               </h3>
             </div>
 
-            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="divide-y divide-border">
               {configs.map(config => {
                 const Icon = config.icon;
                 const envValue = process.env[`NEXT_PUBLIC_${config.key}`] || '';
@@ -173,35 +169,30 @@ export default function ApiKeys() {
                 return (
                   <div
                     key={config.key}
-                    className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    className="px-4 md:px-6 py-4 hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                          <Icon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-muted rounded-lg flex-shrink-0">
+                          <Icon className="w-5 h-5 text-foreground" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-slate-900 dark:text-white">
-                              {config.label}
-                            </h4>
-                            <code className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium text-foreground">{config.label}</h4>
+                            <code className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
                               {config.key}
                             </code>
                           </div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                            {config.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">{config.description}</p>
 
-                          {/* 설정 상태 */}
                           <div className="mt-2">
                             {config.isSet ? (
-                              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-success-100 dark:bg-success-950/40 text-success-700 dark:text-success-400 rounded-full">
                                 <Check className="w-3 h-3" />
                                 설정됨
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-warning-100 dark:bg-warning-950/40 text-warning-700 dark:text-warning-400 rounded-full">
                                 미설정
                               </span>
                             )}
@@ -209,15 +200,15 @@ export default function ApiKeys() {
                         </div>
                       </div>
 
-                      {/* 값 표시 및 복사 버튼 (설정된 경우만) */}
+                      {/* 값 표시 및 복사 버튼 */}
                       {config.isSet && envValue && (
-                        <div className="flex items-center gap-2">
-                          <div className="font-mono text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 min-w-[200px]">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="font-mono text-sm bg-muted px-3 py-2 rounded-lg text-foreground min-w-0 md:min-w-[200px] truncate">
                             {visibleKeys.has(config.key) ? envValue : maskValue(envValue)}
                           </div>
                           <button
                             onClick={() => toggleVisibility(config.key)}
-                            className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                             aria-label={visibleKeys.has(config.key) ? '값 숨기기' : '값 표시'}
                           >
                             {visibleKeys.has(config.key) ? (
@@ -228,11 +219,11 @@ export default function ApiKeys() {
                           </button>
                           <button
                             onClick={() => handleCopy(envValue, config.key)}
-                            className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                             aria-label="복사"
                           >
                             {copiedKey === config.key ? (
-                              <Check className="w-4 h-4 text-green-600" />
+                              <Check className="w-4 h-4 text-success-600" />
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
@@ -249,11 +240,9 @@ export default function ApiKeys() {
       </div>
 
       {/* 추가 안내 */}
-      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-3">
-          환경 변수 설정 방법
-        </h4>
-        <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
+      <div className="bg-muted/50 border border-border rounded-lg p-4 md:p-6">
+        <h4 className="font-medium text-foreground mb-3">환경 변수 설정 방법</h4>
+        <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
           <li>Vercel 대시보드에서 프로젝트 설정으로 이동</li>
           <li>Environment Variables 섹션 찾기</li>
           <li>새 환경 변수 추가 (Key-Value 쌍)</li>

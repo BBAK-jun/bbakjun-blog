@@ -1,6 +1,5 @@
-import { Post } from '@repo/content';
+import type { Post } from '@repo/content';
 import PostCard from '@/entities/post/ui/post-card';
-import Link from 'next/link';
 
 interface BlogPostsListProps {
   posts: Post[];

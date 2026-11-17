@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 // ISR: 5분마다 재검증
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function AboutPage() {
   // 블로그 통계 가져오기

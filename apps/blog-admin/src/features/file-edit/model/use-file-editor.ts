@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { parseFrontMatter, type EditorFormData } from '@/entities/frontmatter';
 import { getFileContent, updateFile, previewMarkdown } from '@/app/actions/files';
 import { fileKeys } from '@/entities/file';
@@ -25,19 +25,29 @@ export function useFileEditor(pathname: string | null) {
   // Track initial data for change detection
   const [initialFormData, setInitialFormData] = useState<EditorFormData | null>(null);
 
-  // Fetch file data
+  // Prevents formData overwrite when the query refetches after save.
+  // Without this, save → invalidateQueries → refetch → fileData changes →
+  // useEffect fires → setFormData(server data) overwrites any concurrent edits.
+  const hasInitializedRef = useRef(false);
+
+  // Reset initialization flag when pathname changes (navigating to a different file)
+  useEffect(() => {
+    hasInitializedRef.current = false;
+  }, [pathname]);
+
+  // Fetch file data — uses fileKeys.detail() to share cache with the view page,
+  // so invalidation after save refreshes both pages
   const {
     data: fileData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['file', pathname],
+    queryKey: fileKeys.detail(pathname || ''),
     queryFn: async () => {
       const result = await getFileContent(pathname!);
       if (!result.success) {
         throw new Error(result.error || '파일을 불러올 수 없습니다.');
       }
-      // Type guard: check if result has rawContent (success case)
       if (!('rawContent' in result)) {
         throw new Error('파일을 불러올 수 없습니다.');
       }
@@ -51,9 +61,11 @@ export function useFileEditor(pathname: string | null) {
     enabled: !!pathname,
   });
 
-  // Initialize form when file data is loaded
+  // Initialize form ONLY on first load, not on subsequent refetches after save
   useEffect(() => {
-    if (fileData?.rawContent) {
+    if (fileData?.rawContent && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+
       const { frontMatter, body } = parseFrontMatter(fileData.rawContent);
 
       const initialData = {
@@ -129,8 +141,8 @@ export function useFileEditor(pathname: string | null) {
       // Update initial data after successful save
       setInitialFormData(formData);
 
-      // Invalidate current file query to refetch
-      queryClient.invalidateQueries({ queryKey: ['file', pathname] });
+      // Invalidate shared detail query (refreshes both edit and view pages)
+      queryClient.invalidateQueries({ queryKey: fileKeys.detail(pathname!) });
       // Invalidate all file lists to show updated metadata
       queryClient.invalidateQueries({ queryKey: fileKeys.lists() });
     },

@@ -137,7 +137,9 @@ export function useFileCreator() {
 
     return () => {
       clearTimeout(timer);
-      setIsSaving(false);
+      // Don't setIsSaving(false) here — it causes the "저장 중..." indicator
+      // to flicker on every keystroke. isSaving is set to false when the
+      // timer fires (autosave completes) or on unmount via clearDraft.
     };
   }, [formData, category, setDraftData]);
 
