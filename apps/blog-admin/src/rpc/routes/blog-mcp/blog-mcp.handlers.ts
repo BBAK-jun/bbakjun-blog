@@ -6,13 +6,16 @@ import {
   type BlogMcpScope,
   verifyBlogMcpApiKey,
 } from '@/shared/lib/auth/blog-mcp-auth';
-import { validateBlogPost } from '@/shared/lib/blog-post/validate-post';
+import { validateBlogPost, setBlogPostDraftStatus } from '@/shared/lib/blog-post/validate-post';
 import { auditBlogMcpTool } from '@/shared/server/blog-mcp-audit';
 import {
   BlogMcpError,
+  changeAgentPostDraftStatus,
   deleteAgentPost,
   getAgentPost,
   listAgentPosts,
+  prepareAgentPostUpdate,
+  scanPostPublicSafety,
   uploadAgentImage,
   upsertAgentPost,
 } from '@/shared/server/blog-mcp-posts';
@@ -23,12 +26,15 @@ type ToolName =
   | 'list_posts'
   | 'get_post'
   | 'validate_post'
+  | 'scan_post_safety'
+  | 'prepare_post_update'
   | 'upsert_post'
   | 'delete_post'
   | 'upload_image'
   | 'revalidate_post'
   | 'index_post_for_rag'
-  | 'publish_post';
+  | 'publish_post'
+  | 'set_post_draft_status';
 
 const BLOG_MCP_TOOLS: Array<{
   name: ToolName;
@@ -75,6 +81,47 @@ const BLOG_MCP_TOOLS: Array<{
         pathname: { type: 'string' },
         content: { type: 'string' },
         draft: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'scan_post_safety',
+    description:
+      'Scan markdown/MDX content for company-sensitive details that should be removed or generalized before public publishing',
+    requiredScopes: ['blog:read'],
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['content'],
+      properties: {
+        pathname: { type: 'string' },
+        content: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'prepare_post_update',
+    description:
+      'Prepare a safe post update plan with expectedHash, preview diff, and suggested follow-up arguments without writing',
+    requiredScopes: ['blog:read'],
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['pathname'],
+      properties: {
+        pathname: { type: 'string' },
+        patch: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            title: { type: 'string' },
+            description: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
+            draft: { type: 'boolean' },
+          },
+        },
+        content: { type: 'string' },
+        publish: { type: 'boolean' },
       },
     },
   },
@@ -151,7 +198,8 @@ const BLOG_MCP_TOOLS: Array<{
   },
   {
     name: 'publish_post',
-    description: 'Validate, upsert, revalidate, and index a post in one guarded workflow',
+    description:
+      'Validate, force draft=false, upsert, revalidate, and index a post in one guarded workflow',
     requiredScopes: ['blog:write', 'blog:publish'],
     inputSchema: {
       type: 'object',
@@ -165,9 +213,29 @@ const BLOG_MCP_TOOLS: Array<{
       },
     },
   },
+  {
+    name: 'set_post_draft_status',
+    description:
+      'Change an existing post front matter draft status by expectedHash; draft=false publishes, draft=true moves to draft',
+    requiredScopes: ['blog:write', 'blog:publish'],
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['pathname', 'expectedHash', 'draft'],
+      properties: {
+        pathname: { type: 'string' },
+        expectedHash: { type: 'string' },
+        draft: { type: 'boolean' },
+        dryRun: { type: 'boolean' },
+      },
+    },
+  },
 ];
 
-function authorize(c: { req: { header: (name: string) => string | undefined }; json: (body: unknown, status: number) => Response }): BlogMcpActor | Response {
+function authorize(c: {
+  req: { header: (name: string) => string | undefined };
+  json: (body: unknown, status: number) => Response;
+}): BlogMcpActor | Response {
   const actor = verifyBlogMcpApiKey(c.req.header('authorization'));
   if (!actor) {
     return c.json(
@@ -207,8 +275,27 @@ function getString(args: Record<string, unknown>, key: string): string {
   return value;
 }
 
+function getPreparePostPatch(args: Record<string, unknown>) {
+  const value = args.patch;
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new BlogMcpError('patch must be an object', 400);
+  }
+
+  const patch = value as Record<string, unknown>;
+  return {
+    title: typeof patch.title === 'string' ? patch.title : undefined,
+    description: typeof patch.description === 'string' ? patch.description : undefined,
+    tags: Array.isArray(patch.tags) ? patch.tags.filter(tag => typeof tag === 'string') : undefined,
+    draft: typeof patch.draft === 'boolean' ? patch.draft : undefined,
+  };
+}
+
 function normalizeBlogSlug(slugInput: string): string {
-  const slug = slugInput.trim().replace(/^\/+|\/+$/g, '').replace(/^blog\//, '');
+  const slug = slugInput
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/^blog\//, '');
   if (!slug || slug.includes('..') || slug.includes('\\')) {
     throw new BlogMcpError('Invalid slug', 400);
   }
@@ -302,6 +389,18 @@ async function invoke(tool: ToolName, args: Record<string, unknown>, actor: Blog
         content: getString(args, 'content'),
         draft: typeof args.draft === 'boolean' ? args.draft : undefined,
       });
+    case 'scan_post_safety':
+      return scanPostPublicSafety({
+        pathname: typeof args.pathname === 'string' ? args.pathname : undefined,
+        content: getString(args, 'content'),
+      });
+    case 'prepare_post_update':
+      return prepareAgentPostUpdate({
+        pathname: getString(args, 'pathname'),
+        patch: getPreparePostPatch(args),
+        content: typeof args.content === 'string' ? args.content : undefined,
+        publish: args.publish === true,
+      });
     case 'upsert_post':
       return upsertAgentPost({
         pathname: getString(args, 'pathname'),
@@ -332,22 +431,67 @@ async function invoke(tool: ToolName, args: Record<string, unknown>, actor: Blog
     case 'index_post_for_rag':
       return indexPostForRag(getString(args, 'pathname'));
     case 'publish_post': {
+      const draftStatus = setBlogPostDraftStatus(getString(args, 'content'), false);
       const upserted = await upsertAgentPost({
         pathname: getString(args, 'pathname'),
-        content: getString(args, 'content'),
+        content: draftStatus.content,
         expectedHash: typeof args.expectedHash === 'string' ? args.expectedHash : undefined,
+        draft: false,
         dryRun: args.dryRun === true,
         actor: actor.name,
       });
       if (args.dryRun === true) {
-        return { upserted, revalidated: null, indexed: null, dryRun: true };
+        return {
+          upserted,
+          draft: draftStatus,
+          draftChanged: draftStatus.changed,
+          revalidated: null,
+          indexed: null,
+          dryRun: true,
+        };
       }
       const slug = upserted.pathname.replace(/\.(md|mdx)$/i, '');
       const [revalidated, indexed] = await Promise.all([
         revalidatePost(slug),
         indexPostForRag(upserted.pathname),
       ]);
-      return { upserted, revalidated, indexed, dryRun: false };
+      return {
+        upserted,
+        draft: draftStatus,
+        draftChanged: draftStatus.changed,
+        revalidated,
+        indexed,
+        dryRun: false,
+      };
+    }
+    case 'set_post_draft_status': {
+      const draft = args.draft;
+      if (typeof draft !== 'boolean') {
+        throw new BlogMcpError('draft is required', 400);
+      }
+      const updated = await changeAgentPostDraftStatus({
+        pathname: getString(args, 'pathname'),
+        expectedHash: getString(args, 'expectedHash'),
+        draft,
+        dryRun: args.dryRun === true,
+        actor: actor.name,
+      });
+      if (args.dryRun === true) {
+        return { updated, revalidated: null, indexed: null, dryRun: true };
+      }
+      if (!updated.statusChanged) {
+        return {
+          updated,
+          revalidated: null,
+          indexed: null,
+          dryRun: false,
+          skipped: 'draft_status_already_matches',
+        };
+      }
+      const slug = updated.pathname.replace(/\.(md|mdx)$/i, '');
+      const revalidated = await revalidatePost(slug);
+      const indexed = draft ? null : await indexPostForRag(updated.pathname);
+      return { updated, revalidated, indexed, dryRun: false };
     }
   }
 }
@@ -362,7 +506,10 @@ export const listTools: AppRouteHandler<typeof routes.listTools> = async (c: any
     tool.requiredScopes.every(scope => actorOrResponse.scopes.includes(scope))
   );
 
-  return c.json({ tools: visibleTools, protocol: 'blog-mcp', version: '1.0.0' }, HttpStatusCodes.OK);
+  return c.json(
+    { tools: visibleTools, protocol: 'blog-mcp', version: '1.0.0' },
+    HttpStatusCodes.OK
+  );
 };
 
 export const invokeTool: AppRouteHandler<typeof routes.invokeTool> = async (c: any) => {
@@ -400,7 +547,7 @@ export const invokeTool: AppRouteHandler<typeof routes.invokeTool> = async (c: a
 
     if (error instanceof BlogMcpError) {
       return c.json(
-        { error: error.name, message: error.message },
+        { error: error.name, message: error.message, details: error.details },
         error.status as 400 | 401 | 403 | 404 | 409 | 500 | 502
       );
     }

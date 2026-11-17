@@ -14,9 +14,7 @@ function isValidIsoCalendarDate(value: string): boolean {
   const date = new Date(Date.UTC(year, month - 1, day));
 
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
@@ -28,7 +26,7 @@ const isoDateSchema = z
 const frontMatterSchema = z.object({
   title: z.string().min(1),
   date: z.preprocess(
-    value => value instanceof Date ? value.toISOString().slice(0, 10) : value,
+    value => (value instanceof Date ? value.toISOString().slice(0, 10) : value),
     isoDateSchema
   ),
   description: z.string().min(1),
@@ -53,6 +51,13 @@ export interface ValidateBlogPostResult {
   body: string;
   errors: string[];
   warnings: string[];
+}
+
+export interface SetBlogPostDraftStatusResult {
+  content: string;
+  changed: boolean;
+  previousDraft: boolean;
+  draft: boolean;
 }
 
 export function normalizeBlogPostPath(pathname: string): string {
@@ -86,6 +91,26 @@ function formatZodIssue(path: (string | number)[], message: string): string {
   return `${name}: ${message}`;
 }
 
+export function setBlogPostDraftStatus(
+  content: string,
+  draft: boolean
+): SetBlogPostDraftStatusResult {
+  const parsed = matter(content);
+  const previousDraft = parsed.data.draft === true;
+
+  if (previousDraft === draft && typeof parsed.data.draft === 'boolean') {
+    return { content, changed: false, previousDraft, draft };
+  }
+
+  const nextContent = matter.stringify(parsed.content, { ...parsed.data, draft });
+  return {
+    content: nextContent.endsWith('\n') ? nextContent : `${nextContent}\n`,
+    changed: true,
+    previousDraft,
+    draft,
+  };
+}
+
 export function validateBlogPost(input: ValidateBlogPostInput): ValidateBlogPostResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -116,7 +141,9 @@ export function validateBlogPost(input: ValidateBlogPostInput): ValidateBlogPost
   if (input.draft !== undefined && frontMatterResult.success) {
     const frontMatterDraft = frontMatterResult.data.draft ?? false;
     if (frontMatterDraft !== input.draft) {
-      warnings.push(`Input draft=${input.draft} differs from front matter draft=${frontMatterDraft}`);
+      warnings.push(
+        `Input draft=${input.draft} differs from front matter draft=${frontMatterDraft}`
+      );
     }
   }
 

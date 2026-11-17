@@ -7,7 +7,8 @@ export const env = createEnv({
    * Only accessible on the server
    */
   server: {
-    DATABASE_URL: z.string().url(),
+    DB_PROVIDER: z.enum(['neon', 'd1']).default('neon'),
+    DATABASE_URL: z.string().url().optional(),
     DIRECT_URL: z.string().url().optional(),
 
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
@@ -58,6 +59,7 @@ export const env = createEnv({
    * Read from process.env
    */
   runtimeEnv: {
+    DB_PROVIDER: process.env.DB_PROVIDER,
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
     LOG_LEVEL: process.env.LOG_LEVEL,

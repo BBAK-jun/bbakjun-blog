@@ -52,5 +52,11 @@ apps/blog-admin/src/lib/**/*.d.ts
 */.turbo
 apps/blog/.next/
 
+apps/blog-admin/src/generated/
+
 # blog generated (OpenAPI types)
 apps/blog/src/generated/
+
+# OpenNext / Wrangler build output
+apps/*/.open-next/
+apps/*/.wrangler/

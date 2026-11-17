@@ -3,10 +3,10 @@
  * Vercel Blob list API 호출을 최소화하기 위한 캐싱 레이어
  */
 
-import { list } from '@vercel/blob';
 import { prisma } from '../lib/db';
 import { env } from '@/env';
 import { invalidateCache, CacheKeys } from '@repo/cache';
+import { listAllStorageObjects } from '@/shared/storage';
 
 /**
  * 업로드 이력 기록 (훅)
@@ -31,7 +31,9 @@ export async function recordUploadHistory(params: {
         uploadedBy: params.uploadedBy,
       },
     });
-    console.log(`[UploadHistory] Recorded ${params.actionType}: ${params.pathname} by ${params.uploadedBy}`);
+    console.log(
+      `[UploadHistory] Recorded ${params.actionType}: ${params.pathname} by ${params.uploadedBy}`
+    );
   } catch (error) {
     console.error('[UploadHistory] Failed to record history:', error);
     throw error;
@@ -49,7 +51,7 @@ export async function syncBlobToDatabase() {
 
   try {
     // Vercel Blob에서 실제 파일 목록 가져오기
-    const { blobs } = await list();
+    const blobs = await listAllStorageObjects();
     console.log(`📦 Found ${blobs.length} files in Vercel Blob`);
 
     // DB의 현재 파일 목록
@@ -64,16 +66,24 @@ export async function syncBlobToDatabase() {
     const newBlobs = blobs.filter(b => !dbFileUrlsSet.has(b.url));
     if (newBlobs.length > 0) {
       console.log(`➕ Adding ${newBlobs.length} new files to DB`);
-      await prisma.blobFile.createMany({
-        data: newBlobs.map(blob => ({
-          url: blob.url,
-          pathname: blob.pathname,
-          size: BigInt(blob.size),
-          uploadedAt: blob.uploadedAt,
-          contentType: (blob as any).contentType || null,
-        })),
-        skipDuplicates: true,
+      const existingPathnames = await prisma.blobFile.findMany({
+        where: { pathname: { in: newBlobs.map(blob => blob.pathname) } },
+        select: { pathname: true },
       });
+      const existingPathnameSet = new Set(existingPathnames.map(file => file.pathname));
+      const insertableBlobs = newBlobs.filter(blob => !existingPathnameSet.has(blob.pathname));
+
+      if (insertableBlobs.length > 0) {
+        await prisma.blobFile.createMany({
+          data: insertableBlobs.map(blob => ({
+            url: blob.url,
+            pathname: blob.pathname,
+            size: BigInt(blob.size),
+            uploadedAt: blob.uploadedAt,
+            contentType: blob.contentType || null,
+          })),
+        });
+      }
     }
 
     // 2. 삭제된 파일 표시
@@ -125,7 +135,7 @@ export async function getCachedBlobFiles(options?: {
   const where = {
     isDeleted: false,
     ...(searchTerm && {
-      pathname: { contains: searchTerm, mode: 'insensitive' as const },
+      pathname: { contains: searchTerm },
     }),
   };
 
@@ -295,7 +305,7 @@ export async function getUploadHistory(options?: {
 
   const where = {
     ...(searchTerm && {
-      pathname: { contains: searchTerm, mode: 'insensitive' as const },
+      pathname: { contains: searchTerm },
     }),
     ...(actionType && { actionType }),
   };

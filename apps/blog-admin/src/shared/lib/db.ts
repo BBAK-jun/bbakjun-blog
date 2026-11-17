@@ -1,19 +1,44 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { env } from '@/shared/config';
+import { PrismaClient as D1PrismaClient } from '../../generated/d1';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { env } from '@/env';
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+type PrismaGlobal = {
+  prisma: unknown;
 };
 
-const createPrismaClient = () => {
-  const connectionString = env.DATABASE_URL;
+const globalForPrisma = globalThis as unknown as PrismaGlobal;
 
-  const adapter = new PrismaPg({ connectionString });
+const createNeonClient = () => {
+  if (!env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required when DB_PROVIDER=neon');
+  }
+
+  const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
   return new PrismaClient({ adapter });
 };
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+const createD1Client = () => {
+  const cloudflareEnv = getCloudflareContext().env as typeof getCloudflareContext extends never
+    ? never
+    : typeof getCloudflareContext extends () => infer Context
+      ? Context extends { env: infer Environment }
+        ? Environment & { DB: ConstructorParameters<typeof PrismaD1>[0] }
+        : never
+      : never;
+  if (!cloudflareEnv.DB) {
+    throw new Error('Cloudflare D1 binding DB is required when DB_PROVIDER=d1');
+  }
+
+  const adapter = new PrismaD1(cloudflareEnv.DB);
+  return new D1PrismaClient({ adapter });
+};
+
+const createPrismaClient = () => (env.DB_PROVIDER === 'd1' ? createD1Client() : createNeonClient());
+
+export const prisma = (globalForPrisma.prisma ?? createPrismaClient()) as PrismaClient;
 
 if (env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;

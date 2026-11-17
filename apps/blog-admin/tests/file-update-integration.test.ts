@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { testPrisma } from './setup';
 import { updateFile, createFile, deleteFile } from '../src/app/actions/files';
 import { getCachedBlobFiles } from '../src/shared/server/blob-cdc';
-import * as blobModule from '@vercel/blob';
 
-// Mock @vercel/blob
-vi.mock('@vercel/blob', () => ({
-  put: vi.fn(),
-  del: vi.fn(),
-  list: vi.fn(),
+const storageMock = vi.hoisted(() => ({
+  putObject: vi.fn(),
+  deleteObject: vi.fn(),
+  listObjects: vi.fn(),
+  getObjectText: vi.fn(),
+  publicUrl: vi.fn(),
 }));
+
+vi.mock('../src/shared/storage', () => ({ storage: storageMock }));
 
 // Mock Next.js revalidatePath
 vi.mock('next/cache', () => ({
@@ -63,7 +65,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
     expect(record?.url).toBe(oldUrl);
 
     // 2. Vercel Blob put이 새 URL을 반환하도록 Mock
-    vi.mocked(blobModule.put).mockResolvedValue({
+    storageMock.putObject.mockResolvedValue({
       url: newUrl,
       pathname: testPathname,
       size: 2000,
@@ -106,7 +108,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
     const newUrl = 'https://blob.vercel-storage.com/new-url-789.mdx';
 
     // Vercel Blob put Mock
-    vi.mocked(blobModule.put).mockResolvedValue({
+    storageMock.putObject.mockResolvedValue({
       url: newUrl,
       pathname: testPathname,
       size: 3000,
@@ -145,7 +147,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
 
     // 업데이트된 blob Mock
     const newUploadDate = new Date('2025-01-10T12:00:00Z');
-    vi.mocked(blobModule.put).mockResolvedValue({
+    storageMock.putObject.mockResolvedValue({
       url: updatedUrl,
       pathname: testPathname,
       size: 5000,
@@ -196,7 +198,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
 
     // 3번 연속 업데이트
     for (let i = 1; i < urls.length; i++) {
-      vi.mocked(blobModule.put).mockResolvedValue({
+      storageMock.putObject.mockResolvedValue({
         url: urls[i],
         pathname: testPathname,
         size: 100 * (i + 1),
@@ -245,7 +247,7 @@ describe('파일 업데이트 통합 테스트 - CDC 동기화', () => {
       },
     });
 
-    vi.mocked(blobModule.put).mockResolvedValue({
+    storageMock.putObject.mockResolvedValue({
       url,
       pathname: testPathname,
       size: 150,
@@ -292,7 +294,7 @@ describe('파일 생성 통합 테스트 - CDC 동기화', () => {
   it('새 파일 생성 시 DB 레코드가 생성되어야 함', async () => {
     const newUrl = 'https://blob.vercel-storage.com/new-file.mdx';
 
-    vi.mocked(blobModule.put).mockResolvedValue({
+    storageMock.putObject.mockResolvedValue({
       url: newUrl,
       pathname: fullPathname,
       size: 1500,
@@ -389,7 +391,7 @@ describe('파일 삭제 통합 테스트 - CDC 동기화', () => {
       },
     });
 
-    vi.mocked(blobModule.del).mockResolvedValue(undefined);
+    storageMock.deleteObject.mockResolvedValue(undefined);
 
     const result = await deleteFile(testPathname);
 
@@ -425,7 +427,7 @@ describe('파일 삭제 통합 테스트 - CDC 동기화', () => {
     expect(found?.isDeleted).toBe(false);
 
     // 파일 삭제
-    vi.mocked(blobModule.del).mockResolvedValue(undefined);
+    storageMock.deleteObject.mockResolvedValue(undefined);
     await deleteFile(testPathname);
 
     // 삭제 후 파일이 나타나지 않는지 확인 (isDeleted 필터링)
@@ -477,7 +479,7 @@ describe('동시 작업 처리', () => {
     const updatePromises = testPathnames.map((pathname, i) => {
       const newUrl = `https://blob.vercel-storage.com/updated-${i}.mdx`;
 
-      vi.mocked(blobModule.put).mockResolvedValue({
+      storageMock.putObject.mockResolvedValue({
         url: newUrl,
         pathname,
         size: 200 * (i + 1),

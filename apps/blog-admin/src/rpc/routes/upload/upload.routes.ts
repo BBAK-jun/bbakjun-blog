@@ -18,46 +18,26 @@ import {
 
 const tags = ['Upload'];
 
-/**
- * Client upload token route
- * This route is used by @vercel/blob/client's upload() function
- * It generates tokens and handles callbacks for client-side uploads
- */
-export const clientUploadToken = createRoute({
-  path: '/rpc/upload/client-token',
+export const directUpload = createRoute({
+  path: '/rpc/upload/direct',
   method: 'post',
   tags,
-  summary: 'Client upload token handler',
-  description: 'Handles token generation and callbacks for client-side Vercel Blob uploads (bypasses 4.5MB limit)',
+  summary: 'Direct image upload',
+  description: 'Upload an image on the server and register it in the CDC database',
   request: {
     body: {
       content: {
-        'application/json': {
-          schema: z.object({
-            type: z.literal('blob.generate-client-token'),
-            payload: z.object({
-              pathname: z.string(),
-              clientPayload: z.string().optional(),
-            }),
-          }),
+        'multipart/form-data': {
+          schema: uploadImageRequestSchema,
         },
       },
     },
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.discriminatedUnion('type', [
-        z.object({
-          type: z.literal('blob.generate-client-token'),
-          clientToken: z.string(),
-        }),
-        z.object({
-          type: z.literal('blob.upload-completed'),
-          response: z.literal('ok'),
-        }),
-      ]),
-      'Upload token or completion response'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(uploadImageResponseSchema, 'Upload result'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(BadRequestErrorSchema, 'Invalid request'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(UnauthorizedErrorSchema, 'Unauthorized'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(InternalServerErrorSchema, 'Server error'),
   },
 });
 

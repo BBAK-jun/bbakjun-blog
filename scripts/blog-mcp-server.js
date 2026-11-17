@@ -23,9 +23,9 @@ const baseUrl = endpoint.replace(/\/+$/g, '');
 let inputBuffer = Buffer.alloc(0);
 
 function send(message) {
-  const payload = Buffer.from(JSON.stringify(message), 'utf8');
-  process.stdout.write(`Content-Length: ${payload.byteLength}\r\n\r\n`);
-  process.stdout.write(payload);
+  // Hermes' Python MCP SDK uses newline-delimited JSON-RPC over stdio.
+  // Keep stdout strictly machine-readable: one JSON message per line.
+  process.stdout.write(`${JSON.stringify(message)}\n`);
 }
 
 function sendResult(id, result) {
@@ -122,6 +122,36 @@ async function handleRequest(request) {
 
 function processBuffer() {
   while (true) {
+    const newlineIndex = inputBuffer.indexOf('\n');
+    if (newlineIndex !== -1) {
+      const rawLine = inputBuffer.subarray(0, newlineIndex).toString('utf8').trim();
+      inputBuffer = inputBuffer.subarray(newlineIndex + 1);
+      if (!rawLine) continue;
+
+      let request;
+      try {
+        request = JSON.parse(rawLine);
+      } catch (error) {
+        sendError(
+          null,
+          -32700,
+          'Parse error',
+          error instanceof Error ? error.message : String(error)
+        );
+        continue;
+      }
+
+      handleRequest(request).catch(error => {
+        sendError(request.id ?? null, -32000, error.message, {
+          status: error.status,
+          body: error.body,
+        });
+      });
+      continue;
+    }
+
+    // Backward-compatible fallback for clients that still speak LSP-style
+    // Content-Length framing.
     const headerEnd = inputBuffer.indexOf('\r\n\r\n');
     if (headerEnd === -1) return;
 
@@ -145,7 +175,12 @@ function processBuffer() {
     try {
       request = JSON.parse(rawMessage);
     } catch (error) {
-      sendError(null, -32700, 'Parse error', error instanceof Error ? error.message : String(error));
+      sendError(
+        null,
+        -32700,
+        'Parse error',
+        error instanceof Error ? error.message : String(error)
+      );
       continue;
     }
 

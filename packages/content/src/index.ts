@@ -1,6 +1,6 @@
 // Re-export types
 export type { Post, PostMatter, Series, SeriesSummary } from '@repo/types';
-export type { BlobFileInfo } from './posts-blob';
+export type { BlobFileInfo, BlobFileList, ReadPost } from './posts-blob';
 
 // Re-export everything from posts
 export {

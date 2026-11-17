@@ -1,6 +1,48 @@
 import { cache } from 'react';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { client } from '@/shared/lib/rpc';
-import type { BlobFileInfo } from '@repo/content';
+import type { BlobFileList, ReadPost } from '@repo/content';
+
+async function fetchPostContent(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch post content: ${response.status} ${response.statusText}`);
+  }
+  return response.text();
+}
+
+function createCloudflarePostReader(files: BlobFileList): ReadPost {
+  const urlsByPathname = new Map(files.map(file => [file.pathname, file.url]));
+
+  return async pathname => {
+    const fallbackUrl = urlsByPathname.get(pathname);
+
+    try {
+      const context = await getCloudflareContext({ async: true });
+      const bucket = (
+        context.env as typeof context.env & {
+          CONTENT_BUCKET?: {
+            get(key: string): Promise<{ text(): Promise<string> } | null>;
+          };
+        }
+      ).CONTENT_BUCKET;
+
+      if (bucket) {
+        const object = await bucket.get(pathname);
+        if (object) {
+          return object.text();
+        }
+      }
+    } catch {
+      // Vercel/Node builds and local non-Workers execution use the fallback URL.
+    }
+
+    if (!fallbackUrl) {
+      throw new Error(`Post content URL not found: ${pathname}`);
+    }
+    return fetchPostContent(fallbackUrl);
+  };
+}
 
 /**
  * CDC 캐시에서 BlobFiles 가져오기
@@ -10,12 +52,12 @@ import type { BlobFileInfo } from '@repo/content';
  * 빈 배열을 ISR이 캐싱하면 목록 페이지가 통째로 비워지는 사고(2026-09-27)를 막기 위함.
  * 프로세스 메모리 캐시라 서버리스 인스턴스 단위로만 유지된다(완벽하진 않지만 빈 목록보다는 낫다).
  */
-const lastGoodFiles: { files: BlobFileInfo[] | null; at: number } = { files: null, at: 0 };
+const lastGoodFiles: { files: BlobFileList | null; at: number } = { files: null, at: 0 };
 
 // 마지막 정상 응답의 최대 재사용 시간 (12시간)
 const LAST_GOOD_TTL_MS = 12 * 60 * 60 * 1000;
 
-export const getBlobFiles = cache(async (): Promise<BlobFileInfo[]> => {
+export const getBlobFiles = cache(async (): Promise<BlobFileList> => {
   try {
     const response = await client.rpc.getBlobFiles.$get({
       query: {},
@@ -31,9 +73,10 @@ export const getBlobFiles = cache(async (): Promise<BlobFileInfo[]> => {
       url: f.url,
       pathname: f.pathname,
       contentType: f.contentType,
-    }));
+    })) as BlobFileList;
 
     if (mapped.length > 0) {
+      mapped.readPost = createCloudflarePostReader(mapped);
       lastGoodFiles.files = mapped;
       lastGoodFiles.at = Date.now();
     } else if (lastGoodFiles.files) {
@@ -42,15 +85,15 @@ export const getBlobFiles = cache(async (): Promise<BlobFileInfo[]> => {
       return lastGood(lastGoodFiles);
     }
 
+    mapped.readPost = createCloudflarePostReader(mapped);
     return mapped;
   } catch (error) {
-    // 빌드 타임이나 서버가 없을 때 에러 처리
     console.error('Error fetching blob files:', error);
     return lastGood(lastGoodFiles);
   }
 });
 
-function lastGood(store: { files: BlobFileInfo[] | null; at: number }): BlobFileInfo[] {
+function lastGood(store: { files: BlobFileList | null; at: number }): BlobFileList {
   if (store.files && Date.now() - store.at < LAST_GOOD_TTL_MS) {
     return store.files;
   }

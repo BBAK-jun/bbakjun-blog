@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "main": "src/index.ts",
+  "name": "bbakjun-rag-gateway",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"]
+}

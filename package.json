@@ -21,18 +21,33 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "upload-posts": "node scripts/upload-posts.js",
     "upload-posts:prod": "NEXT_PUBLIC_ADMIN_URL=https://bbakjun-blog-admin.vercel.app node scripts/upload-posts.js",
-    "index-blog": "node scripts/index-blog.js"
+    "index-blog": "node scripts/index-blog.js",
+    "prepare": "husky",
+    "precommit": "lint-staged",
+    "verify:min": "pnpm exec lint-staged --diff=HEAD --no-stash && pnpm type-check"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.0",
+    "@opennextjs/cloudflare": "1.20.17",
     "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.7.4",
     "turbo": "^2.6.3",
     "typescript": "^5",
-    "typescript-eslint": "^8.50.1"
+    "typescript-eslint": "^8.50.1",
+    "wrangler": "4.148.0"
   },
   "packageManager": "pnpm@10.25.0",
   "engines": {
     "node": ">=24"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,mdx}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix --no-warn-ignored"
+    ]
   }
 }
