@@ -205,7 +205,7 @@ export async function updateSettings(settings: { key: string; value: string }[])
       return { success: false, error: '인증이 필요합니다' };
     }
 
-    await prisma.$transaction(
+    await Promise.all(
       settings.map(({ key, value }) =>
         prisma.setting.update({
           where: { key },
@@ -237,16 +237,15 @@ export async function seedDefaultSettings() {
     }
 
     // 초기 설정 생성
-    const createdSettings = await prisma.$transaction(
-      DEFAULT_SETTINGS.map(setting =>
-        prisma.setting.create({
-          data: {
-            ...setting,
-            updatedBy: session.user.email,
-          },
-        })
-      )
-    );
+    await prisma.setting.createMany({
+      data: DEFAULT_SETTINGS.map(setting => ({
+        ...setting,
+        updatedBy: session.user.email,
+      })),
+    });
+    const createdSettings = await prisma.setting.findMany({
+      where: { key: { in: DEFAULT_SETTINGS.map(setting => setting.key) } },
+    });
 
     revalidatePath('/dashboard/settings');
     return { success: true, data: createdSettings };

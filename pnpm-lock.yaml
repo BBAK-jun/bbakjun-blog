@@ -102,7 +102,7 @@ importers:
         version: 8.50.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       wrangler:
         specifier: 4.148.0
-        version: 4.148.0
+        version: 4.148.0(@types/node@24.10.3)
 
   apps/blog:
     dependencies:
@@ -260,6 +260,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.68.0(react@19.2.1))
+      '@opennextjs/cloudflare':
+        specifier: 1.20.17
+        version: 1.20.17(next@16.4.6(@opentelemetry/api@1.9.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(wrangler@4.148.0)
       '@prisma/adapter-d1':
         specifier: 7.1.0
         version: 7.1.0
@@ -9345,7 +9348,7 @@ snapshots:
       next: 16.4.6(@opentelemetry/api@1.9.0)(@types/node@24.10.3)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       resolve.exports: 2.0.4
       ts-tqdm: 0.8.6
-      wrangler: 4.148.0
+      wrangler: 4.148.0(@types/node@24.10.3)
       yargs: 18.2.0
     transitivePeerDependencies:
       - diff
@@ -13151,10 +13154,10 @@ snapshots:
 
   min-indent@1.0.1: {}
 
-  miniflare@5.20261006.0-alpha:
+  miniflare@5.20261006.0-alpha(@types/node@24.10.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
-      sharp: 0.35.4
+      sharp: 0.35.4(@types/node@24.10.3)
       undici: 7.29.1
       workerd: 1.20261006.1
       ws: 8.21.0
@@ -14069,7 +14072,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  sharp@0.35.4:
+  sharp@0.35.4(@types/node@24.10.3):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -14100,6 +14103,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.4
       '@img/sharp-win32-ia32': 0.35.4
       '@img/sharp-win32-x64': 0.35.4
+      '@types/node': 24.10.3
 
   sharp@0.35.5(@types/node@24.10.3):
     dependencies:
@@ -14989,13 +14993,13 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261006.1
       '@cloudflare/workerd-windows-64': 1.20261006.1
 
-  wrangler@4.148.0:
+  wrangler@4.148.0(@types/node@24.10.3):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261006.1)
       blake3-wasm: 2.1.5
       esbuild: 0.28.1
-      miniflare: 5.20261006.0-alpha
+      miniflare: 5.20261006.0-alpha(@types/node@24.10.3)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20261006.1

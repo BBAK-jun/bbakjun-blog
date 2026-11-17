@@ -35,6 +35,36 @@
 - `apps/blog/wrangler.jsonc` 추가
 - R2 incremental cache binding을 최소 설정으로 추가
 
+### 단계 3: 스토리지 추상화 및 D1 사전 호환성
+
+- `shared/storage`에 provider-neutral 인터페이스 추가
+  - 기본 구현: Vercel Blob
+  - 추가 구현: Cloudflare R2 bucket adapter
+  - R2 목록은 cursor 페이지를 반복 처리
+- Blob CDC, Server Actions, MCP post operations를 공통 storage API로 전환
+- Vercel Blob client `handleUpload`/client token 흐름 제거
+- `POST /api/rpc/upload/direct` 추가
+  - 세션 확인
+  - 서버 직접 업로드
+  - 업로드 후 CDC 동기화
+- 이미지 업로더를 `fetch` 기반 직접 업로드로 전환
+- `schema.d1.prisma` 추가
+  - SQLite provider
+  - Cloudflare generator runtime
+  - PostgreSQL 전용 `@db.Text` 제거
+- Prisma D1 adapter 의존성 추가
+- 기존 Neon 경로를 유지하면서 `DB_PROVIDER` 기반 provider 분기를 준비
+- `$transaction`, `skipDuplicates`, `mode: 'insensitive'` 사용 지점을 D1 호환 코드로 정리
+- 기존 Blob/upload 테스트 mock을 storage 인터페이스 mock으로 전환
+- R2 fake bucket 단위 테스트 추가
+
+## 이번 단계의 리스크 및 제한
+
+- 실제 R2 bucket 생성 및 데이터 이전은 수행하지 않았다.
+- 실제 D1 생성, migration, seed 실행은 수행하지 않았다.
+- `git push`, PR 생성·수정, `wrangler deploy`, DNS 변경은 수행하지 않았다.
+- OpenNext 빌드에서 `blog-admin proxy.ts`의 Node.js middleware support가 experimental이라는 경고가 계속 발생한다. Prisma 기반 middleware가 Cloudflare Worker preview에서 실제로 동작하는지는 별도 preview 검증이 필요하다.
+
 ## 검증
 
 - `pnpm --filter @apps/blog-admin generate:prisma` 통과

@@ -33,6 +33,7 @@
     "@hono/node-server": "catalog:hono",
     "@hono/zod-openapi": "catalog:hono",
     "@hookform/resolvers": "^5.2.2",
+    "@opennextjs/cloudflare": "1.20.17",
     "@prisma/adapter-d1": "7.1.0",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",

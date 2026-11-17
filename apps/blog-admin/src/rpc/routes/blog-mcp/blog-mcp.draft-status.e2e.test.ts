@@ -53,10 +53,23 @@ const onBlobUploadMock = vi.fn(async () => undefined);
 const onBlobDeleteMock = vi.fn(async () => undefined);
 const auditBlogMcpToolMock = vi.fn();
 
-vi.mock('@vercel/blob', () => ({
-  put: putMock,
-  del: vi.fn(async () => undefined),
-}));
+const storageMock = {
+  putObject: putMock,
+  deleteObject: vi.fn(async (pathnameOrUrl: string) => {
+    const pathname = pathnameOrUrl.replace('blob://', '');
+    blobContents.delete(`blob://${pathname}`);
+    blobFiles.delete(pathname);
+  }),
+  listObjects: vi.fn(),
+  getObjectText: vi.fn(async (pathnameOrUrl: string) => {
+    const content = blobContents.get(pathnameOrUrl);
+    if (content === undefined) throw new Error(`Missing blob: ${pathnameOrUrl}`);
+    return content;
+  }),
+  publicUrl: vi.fn((pathname: string) => `blob://${pathname}`),
+};
+
+vi.mock('@/shared/storage', () => ({ storage: storageMock }));
 
 vi.mock('@/shared/server/blob-cdc', () => ({
   getCachedBlobFiles: getCachedBlobFilesMock,

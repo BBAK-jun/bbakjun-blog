@@ -34,16 +34,24 @@ export async function syncBlobToDatabase() {
     const newBlobs = blobs.filter(b => !dbFileUrlsSet.has(b.url));
     if (newBlobs.length > 0) {
       console.log(`➕ Adding ${newBlobs.length} new files to DB`);
-      await prisma.blobFile.createMany({
-        data: newBlobs.map(blob => ({
-          url: blob.url,
-          pathname: blob.pathname,
-          size: BigInt(blob.size),
-          uploadedAt: blob.uploadedAt,
-          contentType: (blob as any).contentType || null,
-        })),
-        skipDuplicates: true,
+      const existingPathnames = await prisma.blobFile.findMany({
+        where: { pathname: { in: newBlobs.map(blob => blob.pathname) } },
+        select: { pathname: true },
       });
+      const existingPathnameSet = new Set(existingPathnames.map(file => file.pathname));
+      const insertableBlobs = newBlobs.filter(blob => !existingPathnameSet.has(blob.pathname));
+
+      if (insertableBlobs.length > 0) {
+        await prisma.blobFile.createMany({
+          data: insertableBlobs.map(blob => ({
+            url: blob.url,
+            pathname: blob.pathname,
+            size: BigInt(blob.size),
+            uploadedAt: blob.uploadedAt,
+            contentType: blob.contentType || null,
+          })),
+        });
+      }
     }
 
     // 2. 삭제된 파일 표시
@@ -95,7 +103,7 @@ export async function getCachedBlobFiles(options?: {
   const where = {
     isDeleted: false,
     ...(searchTerm && {
-      pathname: { contains: searchTerm, mode: 'insensitive' as const },
+      pathname: { contains: searchTerm },
     }),
   };
 

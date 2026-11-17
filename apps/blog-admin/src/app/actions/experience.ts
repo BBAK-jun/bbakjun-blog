@@ -270,13 +270,11 @@ export async function seedExperiences() {
       },
     ];
 
-    const createdExperiences = await prisma.$transaction(
-      initialData.map(exp =>
-        prisma.experience.create({
-          data: exp,
-        })
-      )
-    );
+    await prisma.experience.createMany({ data: initialData });
+    const createdExperiences = await prisma.experience.findMany({
+      where: { company: { in: initialData.map(exp => exp.company) } },
+      orderBy: { sortOrder: 'desc' },
+    });
 
     revalidatePath('/dashboard/experience');
     return { success: true, data: createdExperiences };
