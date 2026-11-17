@@ -2,9 +2,11 @@
 // This schema is preparation only; no D1 database or migration is created here.
 
 generator client {
-  // Prisma 7 의 query compiler WASM 을 런타임에 base64 로 컴파일하면 workerd 가 막는다
-  // ("Wasm code generation disallowed by embedder"). workerd 런타임 + .wasm 모듈 import 로 생성한다.
-  provider = "prisma-client"
+  // Prisma 7 의 prisma-client 제너레이터 + workerd 런타임으로 바꾸면 D1 쿼리는 살아나지만,
+  // tsup 이 만드는 @apps/blog-admin/rpc 번들에 query_compiler_bg.wasm?module import 가 끌려와
+  // blog(Vercel/CI) 빌드가 깨진다. 번들러에서 wasm 을 제대로 external 처리하기 전까지는
+  // 기존 제너레이터를 유지한다. (D1 런타임 이슈는 별도 과제)
+  provider = "prisma-client-js"
   runtime  = "cloudflare"
   output   = "../src/generated/d1"
 }

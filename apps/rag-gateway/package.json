@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "prebuild": "pnpm install --no-frozen-lockfile",
+    "prebuild": "pnpm -C ../.. exec turbo run build --filter='@repo/*'",
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",

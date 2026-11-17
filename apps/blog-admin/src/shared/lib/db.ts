@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient as D1PrismaClient } from '../../generated/d1/client';
+import { PrismaClient as D1PrismaClient } from '../../generated/d1';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { env } from '@/env';
 
