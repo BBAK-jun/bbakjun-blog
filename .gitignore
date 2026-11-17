@@ -54,3 +54,7 @@ apps/blog/.next/
 
 # blog generated (OpenAPI types)
 apps/blog/src/generated/
+
+# OpenNext / Wrangler build output
+apps/blog/.open-next/
+apps/blog/.wrangler/
