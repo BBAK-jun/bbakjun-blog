@@ -45,10 +45,22 @@ export class ViewCounter {
   // KV 백엔드
   // ----------------------------------------------------------------
 
-  private static async readKvViews(kv: KvBinding, slug: string): Promise<number> {
-    const raw = await kv.get(this.getViewKey(slug));
-    const views = raw ? Number(raw) : 0;
+  /**
+   * KV 값 → 조회수
+   *
+   * 조회수는 문자열 숫자만 유효하다. 같은 네임스페이스에 다른 종류의 값(캐시 JSON 등)이
+   * 섞여 있어도 0으로 처리해 목록이 오염되지 않게 한다.
+   */
+  private static parseKvViews(raw: string | null | undefined): number {
+    if (!raw) return 0;
+    const trimmed = raw.trim();
+    if (!/^\d+$/.test(trimmed)) return 0;
+    const views = Number(trimmed);
     return Number.isFinite(views) ? views : 0;
+  }
+
+  private static async readKvViews(kv: KvBinding, slug: string): Promise<number> {
+    return this.parseKvViews(await kv.get(this.getViewKey(slug)));
   }
 
   private static async writeKvViews(kv: KvBinding, slug: string, views: number): Promise<void> {
@@ -69,10 +81,22 @@ export class ViewCounter {
     }
 
     // 새 세션 (24시간 TTL) → 조회수 1 증가
-    await kv.put(sessionKey, '1', { expirationTtl: this.SESSION_TTL });
+    try {
+      await kv.put(sessionKey, '1', { expirationTtl: this.SESSION_TTL });
+    } catch (sessionError) {
+      console.warn('[ViewCounter] Failed to write KV session key:', sessionError);
+    }
 
-    const views = (await this.readKvViews(kv, slug)) + 1;
-    await this.writeKvViews(kv, slug, views);
+    const current = await this.readKvViews(kv, slug);
+    const views = current + 1;
+
+    try {
+      await this.writeKvViews(kv, slug, views);
+    } catch (writeError) {
+      // 같은 키 초당 1회 쓰기 제한 등으로 실패해도 응답은 현재 값으로 돌려준다.
+      console.warn('[ViewCounter] Failed to write KV view count:', writeError);
+      return [current, false];
+    }
 
     console.log(
       `[ViewCounter.incrementWithSession] New session (KV) - slug: ${slug}, sessionKey: ${sessionKey}, views after increment: ${views}`
@@ -204,8 +228,14 @@ export class ViewCounter {
     try {
       const kv = await this.getKv();
       if (kv) {
-        const views = (await this.readKvViews(kv, slug)) + 1;
-        await this.writeKvViews(kv, slug, views);
+        const current = await this.readKvViews(kv, slug);
+        const views = current + 1;
+        try {
+          await this.writeKvViews(kv, slug, views);
+        } catch (writeError) {
+          console.warn('[ViewCounter] Failed to write KV view count:', writeError);
+          return current;
+        }
         return views;
       }
 
@@ -321,11 +351,7 @@ export class ViewCounter {
 
         // KV get은 개별 호출이지만 병렬로 묶어 지연을 줄인다.
         const values = await Promise.all(
-          keys.map(async key => {
-            const raw = await kv.get(key);
-            const views = raw ? Number(raw) : 0;
-            return Number.isFinite(views) ? views : 0;
-          })
+          keys.map(async key => this.parseKvViews(await kv.get(key)))
         );
 
         return values.reduce((sum, views) => sum + views, 0);
@@ -363,14 +389,10 @@ export class ViewCounter {
         if (keys.length === 0) return [];
 
         const posts = await Promise.all(
-          keys.map(async key => {
-            const raw = await kv.get(key);
-            const views = raw ? Number(raw) : 0;
-            return {
-              slug: key.slice(this.VIEW_KEY_PREFIX.length),
-              views: Number.isFinite(views) ? views : 0,
-            };
-          })
+          keys.map(async key => ({
+            slug: key.slice(this.VIEW_KEY_PREFIX.length),
+            views: this.parseKvViews(await kv.get(key)),
+          }))
         );
 
         return posts.sort((a, b) => b.views - a.views).slice(0, limit);
