@@ -5,11 +5,14 @@
  * 네온 DB public network 요청량을 줄입니다.
  */
 
-import { closeRedisClient, getRedisClient, isRedisAvailable } from './redis';
+import { closeRedisClient, getRedisClient, isRedisAvailable, withTimeout } from './redis';
+
+/** Redis 명령 상한 시간 (workerd에서 소켓이 매달리는 경우 방어) */
+const REDIS_COMMAND_TIMEOUT_MS = 2_000;
 
 // Export Redis client functions for use in other packages (e.g., rate limiting)
 export type { RedisClient } from './redis';
-export { closeRedisClient, getRedisClient, isRedisAvailable };
+export { closeRedisClient, getRedisClient, isRedisAvailable, withTimeout };
 
 /**
  * 캐싱 옵션
@@ -65,7 +68,8 @@ export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedRe
     const redis = await getRedisClient();
 
     // 1. 캐시 확인
-    const cached = await redis.get(key);
+    // Redis 명령도 매달릴 수 있으므로 상한 시간을 건다(넘으면 catch → DB 직접 쿼리)
+    const cached = await withTimeout(redis.get(key), REDIS_COMMAND_TIMEOUT_MS, 'Redis GET');
 
     if (cached) {
       if (debug) console.log(`[Cache] HIT: ${key}`);
@@ -82,7 +86,11 @@ export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedRe
 
     // 3. 캐시 저장
     try {
-      await redis.set(key, JSON.stringify(data), { EX: ttl });
+      await withTimeout(
+        redis.set(key, JSON.stringify(data), { EX: ttl }),
+        REDIS_COMMAND_TIMEOUT_MS,
+        'Redis SET'
+      );
       if (debug) console.log(`[Cache] SET: ${key} (TTL: ${ttl}s)`);
     } catch (setError) {
       // 캐시 저장 실패는 쿼리 결과 반환에 영향을 주지 않음
@@ -125,7 +133,7 @@ export async function invalidateCache(pattern: string): Promise<number> {
 
     // 와일드카드가 없으면 직접 삭제
     if (!pattern.includes('*')) {
-      const result = await redis.del(pattern);
+      const result = await withTimeout(redis.del(pattern), REDIS_COMMAND_TIMEOUT_MS, 'Redis DEL');
       console.log(`[Cache] Deleted key: ${pattern}`);
       return result;
     }
@@ -135,16 +143,24 @@ export async function invalidateCache(pattern: string): Promise<number> {
     let deletedCount = 0;
 
     do {
-      const scanResult = await redis.scan(cursor, {
-        MATCH: pattern,
-        COUNT: 100,
-      });
+      const scanResult = await withTimeout(
+        redis.scan(cursor, {
+          MATCH: pattern,
+          COUNT: 100,
+        }),
+        REDIS_COMMAND_TIMEOUT_MS,
+        'Redis SCAN'
+      );
 
       cursor = scanResult.cursor;
       const keys = scanResult.keys;
 
       if (keys.length > 0) {
-        const deleted = await redis.del(keys);
+        const deleted = await withTimeout(
+          redis.del(keys),
+          REDIS_COMMAND_TIMEOUT_MS,
+          'Redis DEL'
+        );
         deletedCount += deleted;
       }
     } while (cursor !== '0');

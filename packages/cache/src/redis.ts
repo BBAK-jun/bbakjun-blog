@@ -54,6 +54,33 @@ function markRedisSuccess(): void {
 }
 
 /**
+ * 프라미스에 상한 시간을 건다.
+ *
+ * workerd(Cloudflare Workers)에서는 소켓 연결이 응답도 에러도 없이 매달리는 경우가 있어
+ * node-redis의 connect/ping이 영원히 settle되지 않는다. 그러면 라우트 핸들러가 응답을
+ * 만들지 못해 "Worker's code had hung" 으로 요청이 취소된다(2026-11-18 admin RPC 500).
+ * 시간 초과를 에러로 바꿔서 기존 fallback 경로(DB 직접 쿼리)로 내려가게 한다.
+ */
+export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+
+    promise.then(
+      value => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      error => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+/**
  * Redis 클라이언트 싱글톤 인스턴스 반환
  *
  * @returns 연결된 Redis 클라이언트
@@ -78,7 +105,7 @@ export async function getRedisClient(): Promise<RedisClient> {
 
   // 연결 시작
   isConnecting = true;
-  connectionPromise = (async () => {
+  const connectPromise = (async () => {
     try {
       const client = createClient({
         url: redisUrl,
@@ -118,6 +145,16 @@ export async function getRedisClient(): Promise<RedisClient> {
     }
   })();
 
+  connectionPromise = withTimeout(
+    connectPromise,
+    REDIS_CONNECT_TIMEOUT_MS,
+    'Redis connect'
+  ).catch(error => {
+    isConnecting = false;
+    connectionPromise = null;
+    throw error;
+  });
+
   return connectionPromise;
 }
 
@@ -145,7 +182,7 @@ export async function isRedisAvailable(): Promise<boolean> {
 
   try {
     const client = await getRedisClient();
-    await client.ping();
+    await withTimeout(client.ping(), REDIS_SOCKET_TIMEOUT_MS, 'Redis ping');
     markRedisSuccess();
     return true;
   } catch {
