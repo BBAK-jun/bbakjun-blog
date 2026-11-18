@@ -1,27 +1,37 @@
+import { getKvBinding, listAllKvKeys, type KvBinding } from '@repo/cache';
 import { getRedisClient, type RedisClient } from '@repo/cache/redis';
 
 /**
  * ViewCounter - 블로그 포스트 조회수 추적
  *
- * Redis 구조 (분리형):
- * - 조회수: views:DEV/my-post → 해시 { views: "100" } (영구 유지)
- * - 세션: sessions:DEV/my-post:user123 → "1" (24시간 TTL)
+ * 저장소는 두 가지를 지원한다.
+ * - Cloudflare Workers KV (운영): KV 바인딩이 등록되어 있으면 KV만 사용한다.
+ *   - 조회수: `views:{slug}` → "100" (영구 유지)
+ *   - 세션: `sessions:{slug}:{sessionId}` → "1" (24시간 TTL)
+ *   - workerd에서 외부 Redis(node-redis)가 매달려 요청이 취소되던 문제를 없앤다.
+ * - Redis (로컬 개발 · Vercel): KV 바인딩이 없을 때 기존 해시 구조를 그대로 쓴다.
+ *   - 조회수: views:DEV/my-post → 해시 { views: "100" } (영구 유지)
+ *   - 세션: sessions:DEV/my-post:user123 → "1" (24시간 TTL)
  *
- * 이 구조의 장점:
- * - 조회수는 영구적으로 유지
- * - 세션 데이터는 24시간 후 자동 삭제로 메모리 절약
- * - 중복 조회 방지는 24시간 동안 유효
+ * KV는 원자적 INCR을 제공하지 않으므로 증가는 read-modify-write로 처리한다.
+ * 같은 글에 대한 동시 증가가 겹치면 드물게 1건이 유실될 수 있고, 리전 간
+ * 전파 지연(최대 60초)으로 방금 늘어난 값이 바로 보이지 않을 수 있다.
+ * 조회수는 참고 지표라 이 정도 오차를 허용한다.
  */
 export class ViewCounter {
   private static readonly VIEW_KEY_PREFIX = 'views:';
   private static readonly SESSION_KEY_PREFIX = 'sessions:';
   private static readonly SESSION_TTL = 86400; // 24시간
 
+  private static getKv(): Promise<KvBinding | null> {
+    return getKvBinding();
+  }
+
   private static async getClient(): Promise<RedisClient> {
     return await getRedisClient();
   }
 
-  // 조회수 키 생성 (해시)
+  // 조회수 키 생성 (KV: 문자열 / Redis: 해시)
   private static getViewKey(slug: string): string {
     return `${this.VIEW_KEY_PREFIX}${slug}`;
   }
@@ -30,6 +40,49 @@ export class ViewCounter {
   private static getSessionKey(slug: string, sessionId: string): string {
     return `${this.SESSION_KEY_PREFIX}${slug}:${sessionId}`;
   }
+
+  // ----------------------------------------------------------------
+  // KV 백엔드
+  // ----------------------------------------------------------------
+
+  private static async readKvViews(kv: KvBinding, slug: string): Promise<number> {
+    const raw = await kv.get(this.getViewKey(slug));
+    const views = raw ? Number(raw) : 0;
+    return Number.isFinite(views) ? views : 0;
+  }
+
+  private static async writeKvViews(kv: KvBinding, slug: string, views: number): Promise<void> {
+    // 조회수 키는 만료 없이 영구 유지한다.
+    await kv.put(this.getViewKey(slug), String(views));
+  }
+
+  private static async incrementKvWithSession(
+    kv: KvBinding,
+    sessionId: string,
+    slug: string
+  ): Promise<[number, boolean]> {
+    const sessionKey = this.getSessionKey(slug, sessionId);
+
+    const seen = await kv.get(sessionKey);
+    if (seen) {
+      return [await this.readKvViews(kv, slug), false];
+    }
+
+    // 새 세션 (24시간 TTL) → 조회수 1 증가
+    await kv.put(sessionKey, '1', { expirationTtl: this.SESSION_TTL });
+
+    const views = (await this.readKvViews(kv, slug)) + 1;
+    await this.writeKvViews(kv, slug, views);
+
+    console.log(
+      `[ViewCounter.incrementWithSession] New session (KV) - slug: ${slug}, sessionKey: ${sessionKey}, views after increment: ${views}`
+    );
+    return [views, true];
+  }
+
+  // ----------------------------------------------------------------
+  // Redis 백엔드 (로컬 개발 · Vercel)
+  // ----------------------------------------------------------------
 
   // 기존 문자열 키를 해시로 마이그레이션
   private static async migrateToHash(redis: RedisClient, viewKey: string): Promise<number> {
@@ -79,52 +132,67 @@ export class ViewCounter {
     }
   }
 
-  // 세션 기반 조회수 증가 (원자적 연산으로 중복 방지)
+  private static async incrementRedisWithSession(
+    sessionId: string,
+    slug: string
+  ): Promise<[number, boolean]> {
+    const redis = await this.getClient();
+    const viewKey = this.getViewKey(slug);
+    const sessionKey = this.getSessionKey(slug, sessionId);
+
+    // 조회수 키 타입 확인 및 마이그레이션
+    try {
+      const keyType = await redis.type(viewKey);
+      if (keyType === 'string') {
+        await this.migrateToHash(redis, viewKey);
+      }
+    } catch (typeError) {
+      console.warn('Failed to check view key type:', typeError);
+    }
+
+    // 세션 키 확인 (기존 해시 기반 세션이 있으면 마이그레이션)
+    const sessionExists = await redis.exists(sessionKey);
+    if (!sessionExists) {
+      // 기존 해시 기반 세션 마이그레이션 시도
+      await this.migrateSessionToSeparateKey(redis, slug, sessionId);
+    }
+
+    // SET NX 옵션으로 원자적 세션 체크 및 설정
+    const isNewSession = !(await redis.exists(sessionKey));
+
+    if (isNewSession) {
+      // 새 세션 키 생성 (24시간 TTL)
+      await redis.set(sessionKey, '1', { EX: this.SESSION_TTL, NX: true });
+
+      // 조회수 증가 (영구 유지)
+      const views = await redis.hIncrBy(viewKey, 'views', 1);
+      console.log(
+        `[ViewCounter.incrementWithSession] New session - slug: ${slug}, viewKey: ${viewKey}, sessionKey: ${sessionKey}, views after increment: ${views}`
+      );
+      return [views, true];
+    } else {
+      // 이미 조회한 세션이면 조회수만 조회
+      console.log(
+        `[ViewCounter.incrementWithSession] Existing session - slug: ${slug}, sessionKey: ${sessionKey}`
+      );
+      const views = await this.get(slug);
+      return [views, false];
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // 공개 API
+  // ----------------------------------------------------------------
+
+  // 세션 기반 조회수 증가 (중복 방지)
   // 반환값: [조회수, 새로 증가시켰는지 여부]
   static async incrementWithSession(sessionId: string, slug: string): Promise<[number, boolean]> {
     try {
-      const redis = await this.getClient();
-      const viewKey = this.getViewKey(slug);
-      const sessionKey = this.getSessionKey(slug, sessionId);
-
-      // 조회수 키 타입 확인 및 마이그레이션
-      try {
-        const keyType = await redis.type(viewKey);
-        if (keyType === 'string') {
-          await this.migrateToHash(redis, viewKey);
-        }
-      } catch (typeError) {
-        console.warn('Failed to check view key type:', typeError);
+      const kv = await this.getKv();
+      if (kv) {
+        return await this.incrementKvWithSession(kv, sessionId, slug);
       }
-
-      // 세션 키 확인 (기존 해시 기반 세션이 있으면 마이그레이션)
-      const sessionExists = await redis.exists(sessionKey);
-      if (!sessionExists) {
-        // 기존 해시 기반 세션 마이그레이션 시도
-        await this.migrateSessionToSeparateKey(redis, slug, sessionId);
-      }
-
-      // SET NX 옵션으로 원자적 세션 체크 및 설정
-      const isNewSession = !(await redis.exists(sessionKey));
-
-      if (isNewSession) {
-        // 새 세션 키 생성 (24시간 TTL)
-        await redis.set(sessionKey, '1', { EX: this.SESSION_TTL, NX: true });
-
-        // 조회수 증가 (영구 유지)
-        const views = await redis.hIncrBy(viewKey, 'views', 1);
-        console.log(
-          `[ViewCounter.incrementWithSession] New session - slug: ${slug}, viewKey: ${viewKey}, sessionKey: ${sessionKey}, views after increment: ${views}`
-        );
-        return [views, true];
-      } else {
-        // 이미 조회한 세션이면 조회수만 조회
-        console.log(
-          `[ViewCounter.incrementWithSession] Existing session - slug: ${slug}, sessionKey: ${sessionKey}`
-        );
-        const views = await this.get(slug);
-        return [views, false];
-      }
+      return await this.incrementRedisWithSession(sessionId, slug);
     } catch (error) {
       console.error('Failed to increment view count with session:', error);
       return [0, false];
@@ -134,6 +202,13 @@ export class ViewCounter {
   // 조회수 증가 (세션 없이)
   static async increment(slug: string): Promise<number> {
     try {
+      const kv = await this.getKv();
+      if (kv) {
+        const views = (await this.readKvViews(kv, slug)) + 1;
+        await this.writeKvViews(kv, slug, views);
+        return views;
+      }
+
       const redis = await this.getClient();
       const viewKey = this.getViewKey(slug);
 
@@ -159,6 +234,11 @@ export class ViewCounter {
   // 조회수 조회
   static async get(slug: string): Promise<number> {
     try {
+      const kv = await this.getKv();
+      if (kv) {
+        return await this.readKvViews(kv, slug);
+      }
+
       const redis = await this.getClient();
       const viewKey = this.getViewKey(slug);
 
@@ -185,6 +265,14 @@ export class ViewCounter {
   // 여러 포스트의 조회수를 한번에 조회
   static async getMultiple(slugs: string[]): Promise<Record<string, number>> {
     try {
+      const kv = await this.getKv();
+      if (kv) {
+        const values = await Promise.all(
+          slugs.map(async slug => [slug, await this.readKvViews(kv, slug)] as const)
+        );
+        return Object.fromEntries(values);
+      }
+
       const redis = await this.getClient();
       const viewKeys = slugs.map(slug => this.getViewKey(slug));
       const pipeline = redis.multi();
@@ -226,6 +314,23 @@ export class ViewCounter {
   // 전체 조회수 통계
   static async getTotalViews(): Promise<number> {
     try {
+      const kv = await this.getKv();
+      if (kv) {
+        const keys = await listAllKvKeys(kv, this.VIEW_KEY_PREFIX);
+        if (keys.length === 0) return 0;
+
+        // KV get은 개별 호출이지만 병렬로 묶어 지연을 줄인다.
+        const values = await Promise.all(
+          keys.map(async key => {
+            const raw = await kv.get(key);
+            const views = raw ? Number(raw) : 0;
+            return Number.isFinite(views) ? views : 0;
+          })
+        );
+
+        return values.reduce((sum, views) => sum + views, 0);
+      }
+
       const redis = await this.getClient();
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return 0;
@@ -252,6 +357,25 @@ export class ViewCounter {
     limit: number = 10
   ): Promise<Array<{ slug: string; views: number }>> {
     try {
+      const kv = await this.getKv();
+      if (kv) {
+        const keys = await listAllKvKeys(kv, this.VIEW_KEY_PREFIX);
+        if (keys.length === 0) return [];
+
+        const posts = await Promise.all(
+          keys.map(async key => {
+            const raw = await kv.get(key);
+            const views = raw ? Number(raw) : 0;
+            return {
+              slug: key.slice(this.VIEW_KEY_PREFIX.length),
+              views: Number.isFinite(views) ? views : 0,
+            };
+          })
+        );
+
+        return posts.sort((a, b) => b.views - a.views).slice(0, limit);
+      }
+
       const redis = await this.getClient();
       const keys = await redis.keys(`${this.VIEW_KEY_PREFIX}*`);
       if (keys.length === 0) return [];

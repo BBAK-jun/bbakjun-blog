@@ -8,6 +8,8 @@ import { defaultHook as stokerDefaultHook } from 'stoker/openapi';
 
 import { logger } from '../middleware/logger';
 import { env } from '@/env';
+// Cloudflare KV 바인딩을 @repo/cache 에 등록한다 (부수효과 import).
+import '@/shared/lib/kv-binding';
 
 import type { AppBindings, AppOpenAPI } from './types';
 

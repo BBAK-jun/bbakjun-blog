@@ -15,6 +15,7 @@ export default defineConfig({
   external: [
     'next',
     'next-auth',
+    '@opennextjs/cloudflare',
     'hono',
     'hono/vercel',
     'hono-pino',
