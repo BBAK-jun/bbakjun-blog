@@ -313,11 +313,13 @@ export const CacheKeys = {
 
   blobFilesPattern: () => new CacheKeyBuilder('blob-files').pattern(),
 
-  viewsStats: () => 'views:stats',
+  // 주의: 조회수 원본(`views:{slug}`)과 같은 네임스페이스를 쓰면
+  // getTotalViews/getPopularPosts 의 prefix 순회에 캐시 키가 섞인다.
+  viewsStats: () => 'cache:views:stats',
 
-  viewsPopularPosts: (limit: number) => `views:popular:${limit}`,
+  viewsPopularPosts: (limit: number) => `cache:views:popular:${limit}`,
 
-  viewsTotal: () => 'views:total',
+  viewsTotal: () => 'cache:views:total',
 };
 
 /**
