@@ -36,12 +36,29 @@ function pathnameToSlug(pathname: string): string {
   return slug;
 }
 
+const CONTENT_FETCH_ATTEMPTS = 3;
+
 async function downloadBlobContent(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download blob: ${response.statusText}`);
+  let lastError: unknown;
+
+  // 빌드 머신에서 수십 개 본문을 동시에 받을 때 간헐적으로 ECONNRESET이 난다.
+  // 한 번 실패로 포스트가 목록·태그·사이트맵에서 통째로 빠지므로(2026-11-18) 짧게 재시도한다.
+  for (let attempt = 1; attempt <= CONTENT_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to download blob: ${response.status} ${response.statusText}`);
+      }
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      if (attempt < CONTENT_FETCH_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, attempt * 300));
+      }
+    }
   }
-  return response.text();
+
+  throw lastError instanceof Error ? lastError : new Error('Failed to download blob');
 }
 
 function createFetchReader(blobFiles: BlobFileInfo[]): ReadPost {

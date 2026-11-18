@@ -57,16 +57,41 @@ const lastGoodFiles: { files: BlobFileList | null; at: number } = { files: null,
 // 마지막 정상 응답의 최대 재사용 시간 (12시간)
 const LAST_GOOD_TTL_MS = 12 * 60 * 60 * 1000;
 
+const BLOB_FILES_ATTEMPTS = 3;
+
+// admin 워커 재배포 중이거나 순간적으로 500/타임아웃이 나면 목록이 비어
+// 프리렌더 결과가 404로 굳는다(2026-11-18 컷오버). 짧게 재시도한다.
+async function fetchBlobFilesResponse() {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= BLOB_FILES_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await client.rpc.getBlobFiles.$get({
+        query: {},
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      lastError = new Error(`Failed to fetch blob files: ${response.status}`);
+      console.error('Failed to fetch blob files:', response.status);
+    } catch (error) {
+      lastError = error;
+      console.error('Error fetching blob files:', error);
+    }
+
+    if (attempt < BLOB_FILES_ATTEMPTS) {
+      await new Promise(resolve => setTimeout(resolve, attempt * 500));
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Failed to fetch blob files');
+}
+
 export const getBlobFiles = cache(async (): Promise<BlobFileList> => {
   try {
-    const response = await client.rpc.getBlobFiles.$get({
-      query: {},
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch blob files:', response.status);
-      return lastGood(lastGoodFiles);
-    }
+    const response = await fetchBlobFilesResponse();
 
     const { files } = await response.json();
     const mapped = files.map(f => ({
