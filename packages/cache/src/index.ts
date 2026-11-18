@@ -1,18 +1,40 @@
 /**
  * API 응답 캐싱 유틸리티
  *
- * Redis를 사용하여 DB 쿼리 결과를 캐싱하고,
- * 네온 DB public network 요청량을 줄입니다.
+ * Cloudflare Workers KV(운영) 또는 Redis(로컬·Vercel)로 DB 쿼리 결과를 캐싱합니다.
+ * KV 바인딩이 등록되어 있으면 KV만 사용하고, 없으면 기존 Redis 경로로 내려갑니다.
+ * (workerd에서 node-redis가 매달리던 문제 때문에 2026-11-18 KV로 이전)
  */
 
+import {
+  chunk,
+  getKvBinding,
+  isKvAvailable,
+  listAllKvKeys,
+  setKvBindingResolver,
+  type KvBinding,
+} from './kv';
 import { closeRedisClient, getRedisClient, isRedisAvailable, withTimeout } from './redis';
 
 /** Redis 명령 상한 시간 (workerd에서 소켓이 매달리는 경우 방어) */
 const REDIS_COMMAND_TIMEOUT_MS = 2_000;
 
+/** KV 만료 시간 최소값 (Cloudflare KV 제약: 60초 이상) */
+const KV_MIN_EXPIRATION_TTL = 60;
+
 // Export Redis client functions for use in other packages (e.g., rate limiting)
 export type { RedisClient } from './redis';
-export { closeRedisClient, getRedisClient, isRedisAvailable, withTimeout };
+export {
+  closeRedisClient,
+  getKvBinding,
+  getRedisClient,
+  isKvAvailable,
+  isRedisAvailable,
+  listAllKvKeys,
+  setKvBindingResolver,
+  withTimeout,
+};
+export type { KvBinding } from './kv';
 
 /**
  * 캐싱 옵션
@@ -55,6 +77,13 @@ export interface CachedResult<T> {
 export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedResult<T>> {
   const { key, query, ttl = 300, fallback = true, debug = false } = options;
 
+  // 1순위: Cloudflare Workers KV 바인딩
+  const kv = await getKvBinding();
+  if (kv) {
+    return cachedQueryKv(kv, key, query, ttl, fallback, debug);
+  }
+
+  // 2순위: Redis (로컬 개발 · Vercel)
   try {
     // Redis 사용 가능 여부 확인
     const redisAvailable = await isRedisAvailable();
@@ -110,6 +139,53 @@ export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedRe
 }
 
 /**
+ * KV 백엔드용 cachedQuery
+ *
+ * KV는 리전 간 eventual consistency(최대 60초)가 있으므로 캐시 값이 잠깐 낡을 수 있다.
+ * 조회 실패는 DB 직접 쿼리로 폴백한다.
+ */
+async function cachedQueryKv<T>(
+  kv: KvBinding,
+  key: string,
+  query: () => Promise<T>,
+  ttl: number,
+  fallback: boolean,
+  debug: boolean
+): Promise<CachedResult<T>> {
+  try {
+    const cached = await kv.get(key);
+
+    if (cached) {
+      if (debug) console.log(`[Cache] KV HIT: ${key}`);
+      return { data: JSON.parse(cached) as T, fromCache: true };
+    }
+
+    if (debug) console.log(`[Cache] KV MISS: ${key}`);
+
+    const data = await query();
+
+    try {
+      await kv.put(key, JSON.stringify(data), {
+        expirationTtl: Math.max(KV_MIN_EXPIRATION_TTL, ttl),
+      });
+      if (debug) console.log(`[Cache] KV SET: ${key} (TTL: ${ttl}s)`);
+    } catch (setError) {
+      // 캐시 저장 실패는 쿼리 결과 반환에 영향을 주지 않음
+      console.warn(`[Cache] Failed to write KV cache for ${key}:`, setError);
+    }
+
+    return { data, fromCache: false };
+  } catch (error) {
+    if (fallback) {
+      console.warn(`[Cache] KV error, falling back to direct query: ${key}`, error);
+      const data = await query();
+      return { data, fromCache: false };
+    }
+    throw error;
+  }
+}
+
+/**
  * 캐시 무효화 (패턴 매칭)
  *
  * @example
@@ -122,6 +198,32 @@ export async function cachedQuery<T>(options: CacheOptions<T>): Promise<CachedRe
  * ```
  */
 export async function invalidateCache(pattern: string): Promise<number> {
+  // 1순위: Cloudflare Workers KV (list + delete)
+  const kv = await getKvBinding();
+  if (kv) {
+    try {
+      const keys = pattern.includes('*')
+        ? await listAllKvKeys(kv, pattern.slice(0, pattern.indexOf('*')))
+        : [pattern];
+
+      if (keys.length === 0) {
+        console.log(`[Cache] KV: no keys matching ${pattern}`);
+        return 0;
+      }
+
+      for (const batch of chunk(keys, 50)) {
+        await Promise.all(batch.map(name => kv.delete(name)));
+      }
+
+      console.log(`[Cache] KV: deleted ${keys.length} keys matching: ${pattern}`);
+      return keys.length;
+    } catch (error) {
+      console.error(`[Cache] KV: failed to invalidate ${pattern}`, error);
+      return 0;
+    }
+  }
+
+  // 2순위: Redis
   try {
     const redisAvailable = await isRedisAvailable();
     if (!redisAvailable) {

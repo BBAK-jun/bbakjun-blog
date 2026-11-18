@@ -14,6 +14,12 @@
       "service": "bbakjun-blog-admin"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "4a444e0f4db644339c2fbc08fdad9385"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
