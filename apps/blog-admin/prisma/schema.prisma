@@ -110,6 +110,23 @@ model Subscriber {
   @@map("subscribers")
 }
 
+model NewsletterBroadcast {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  title                 String
+  sentAt                DateTime?
+  recipientCount        Int      @default(0)
+  failedCount           Int      @default(0)
+  status                String   @default("pending")
+  lastSentSubscriberId  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("newsletter_broadcasts")
+}
+
 // ==========================================
 // Professional Experience Management
 // ==========================================

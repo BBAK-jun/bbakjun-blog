@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mail, Download, Users } from 'lucide-react';
+import { Mail, Download, Users, Send } from 'lucide-react';
 
 interface Subscriber {
   id: string;
@@ -11,14 +11,31 @@ interface Subscriber {
   isActive: boolean;
 }
 
+interface Broadcast {
+  id: string;
+  slug: string;
+  title: string;
+  sentAt: string | null;
+  recipientCount: number;
+  failedCount: number;
+  status: string;
+}
+
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-  });
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+  const [slug, setSlug] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{
+    status: string;
+    sent: number;
+    failed: number;
+    remaining: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchSubscribers();
@@ -27,15 +44,54 @@ export default function SubscribersPage() {
   const fetchSubscribers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/newsletter/subscribers');
+      const response = await fetch('/api/rpc/getNewsletterSubscribers');
       if (!response.ok) throw new Error('Failed to fetch subscribers');
       const data = await response.json();
       setSubscribers(data.subscribers);
       setStats(data.stats);
+      setBroadcasts(data.broadcasts || []);
     } catch (error) {
       console.error('Error fetching subscribers:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const sendBroadcast = async () => {
+    const normalizedSlug = slug.trim();
+    if (!normalizedSlug) {
+      alert('발행된 글 slug를 입력하세요.');
+      return;
+    }
+
+    const existing = broadcasts.find(broadcast => broadcast.slug === normalizedSlug);
+    const force = existing?.status === 'sent';
+    const confirmation = force
+      ? `이미 발송된 ${normalizedSlug}를 다시 발송할까요?`
+      : `${normalizedSlug} 글을 활성 구독자 ${stats.active}명에게 발송할까요?`;
+    if (!confirm(confirmation)) return;
+
+    setIsSending(true);
+    setSendResult(null);
+    try {
+      const response = await fetch('/api/rpc/sendNewsletterBroadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: normalizedSlug,
+          title: title.trim() || undefined,
+          description: description.trim() || undefined,
+          force,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || data.error || '발송에 실패했습니다');
+      setSendResult(data);
+      await fetchSubscribers();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '발송에 실패했습니다');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -89,6 +145,91 @@ export default function SubscribersPage() {
           CSV 내보내기
         </button>
       </div>
+
+      {/* Newsletter broadcast */}
+      <section className="bg-card border border-border rounded-lg p-4 md:p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Send className="w-5 h-5" /> 새 글 뉴스레터 발송
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              발행된 글만 선택하고, 확인 후 활성 구독자에게 발송합니다.
+            </p>
+          </div>
+          <span className="text-sm text-muted-foreground">대상: {stats.active}명</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <input
+            value={slug}
+            onChange={event => setSlug(event.target.value)}
+            placeholder="발행된 글 slug (예: DEV/my-post)"
+            className="min-h-[44px] rounded-lg border border-border bg-background px-3 text-sm"
+          />
+          <input
+            value={title}
+            onChange={event => setTitle(event.target.value)}
+            placeholder="제목 (비우면 글의 제목 사용)"
+            className="min-h-[44px] rounded-lg border border-border bg-background px-3 text-sm"
+          />
+          <input
+            value={description}
+            onChange={event => setDescription(event.target.value)}
+            placeholder="설명 (비우면 글의 설명 사용)"
+            className="min-h-[44px] rounded-lg border border-border bg-background px-3 text-sm"
+          />
+        </div>
+        {slug.trim() && (
+          <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+            <p>
+              <strong>미리보기 제목:</strong> {title.trim() || '발행된 글의 제목을 조회합니다'}
+            </p>
+            <p>
+              <strong>미리보기 링크:</strong>{' '}
+              {`${window.location.origin.replace('admin.', 'www.')}/blog/${slug.trim()}`}
+            </p>
+            <p>
+              <strong>대상 인원:</strong> {stats.active}명
+            </p>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={sendBroadcast}
+          disabled={isSending || !slug.trim()}
+          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
+        >
+          <Send className="w-4 h-4" />
+          {isSending
+            ? '발송 중...'
+            : broadcasts.find(item => item.slug === slug.trim())?.status === 'sent'
+              ? '재발송'
+              : '발송'}
+        </button>
+        {sendResult && (
+          <p className="text-sm text-foreground">
+            결과: {sendResult.status} · 성공 {sendResult.sent}명 · 실패 {sendResult.failed}명 · 남음{' '}
+            {sendResult.remaining}명
+          </p>
+        )}
+        {broadcasts.length > 0 && (
+          <div className="border-t border-border pt-4">
+            <h3 className="text-sm font-semibold mb-2">발송 이력</h3>
+            <div className="space-y-2">
+              {broadcasts.map(broadcast => (
+                <div key={broadcast.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="truncate">{broadcast.slug}</span>
+                  <span className="text-muted-foreground whitespace-nowrap">
+                    {broadcast.status === 'sent'
+                      ? `발송됨 · ${broadcast.sentAt ? new Date(broadcast.sentAt).toLocaleString('ko-KR') : ''}`
+                      : broadcast.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
@@ -160,9 +301,7 @@ export default function SubscribersPage() {
               {subscribers.map(subscriber => (
                 <tr key={subscriber.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">
-                      {subscriber.email}
-                    </div>
+                    <div className="text-sm font-medium text-foreground">{subscriber.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-muted-foreground">
