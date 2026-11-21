@@ -49,4 +49,34 @@ export const newsletterStatsSchema = z.object({
 export const newsletterSubscribersResponseSchema = z.object({
   subscribers: z.array(newsletterSubscriberSchema),
   stats: newsletterStatsSchema,
+  broadcasts: z
+    .array(
+      z.object({
+        id: z.string(),
+        slug: z.string(),
+        title: z.string(),
+        sentAt: z.coerce.date().nullable(),
+        recipientCount: z.number(),
+        failedCount: z.number(),
+        status: z.string(),
+        lastSentSubscriberId: z.string().nullable(),
+        createdAt: z.coerce.date(),
+      })
+    )
+    .default([]),
+});
+
+export const newsletterBroadcastBodySchema = z.object({
+  slug: z.string().trim().min(1),
+  title: z.string().trim().min(1).optional(),
+  description: z.string().trim().optional(),
+  force: z.boolean().default(false),
+});
+
+export const newsletterBroadcastResponseSchema = z.object({
+  broadcastId: z.string(),
+  status: z.string(),
+  sent: z.number(),
+  failed: z.number(),
+  remaining: z.number(),
 });

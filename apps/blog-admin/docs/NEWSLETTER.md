@@ -469,3 +469,47 @@ curl -X POST http://localhost:3001/api/newsletter/unsubscribe \
 curl http://localhost:3001/api/newsletter/subscribers?limit=10 \
   -H "Cookie: your-session-cookie"
 ```
+
+## Newsletter Broadcast
+
+### Send a published post
+
+**Endpoint**: `POST /api/rpc/sendNewsletterBroadcast`
+
+**Authentication**: Auth.js session with `ADMIN` or `SUPER_ADMIN` role
+
+**Request**:
+
+```json
+{
+  "slug": "DEV/my-post",
+  "title": "선택 제목",
+  "description": "선택 설명",
+  "force": false
+}
+```
+
+The title and description fall back to the published post front matter. A `sent` broadcast for the same slug returns `409` unless `force: true` is supplied. Active subscribers are sent in Resend batches of 50. Each successful batch updates `lastSentSubscriberId` and `recipientCount`, so a retry resumes after the last successful subscriber.
+
+The D1 migration is intentionally not applied remotely by this change. Apply it manually after review:
+
+```bash
+cd apps/blog-admin
+pnpm exec wrangler d1 execute bbakjun-blog-admin --remote --file=prisma/migrations/20261121120000_add_newsletter_broadcast/migration.sql
+```
+
+### Production configuration
+
+Set these values in the blog-admin Worker environment:
+
+```text
+ALLOWED_ORIGINS=https://www.dev-bbak.site,https://dev-bbak.site
+RESEND_API_KEY=[configured secret]
+NEXT_PUBLIC_BLOG_URL=https://www.dev-bbak.site
+```
+
+The existing CORS middleware already allows `OPTIONS`, `POST`, and `Content-Type`/`Authorization` headers. Verify that `dev-bbak.site` is authenticated in Resend with SPF, DKIM, and DMARC before enabling production sends.
+
+### RSS aliases
+
+`apps/blog/src/app/rss.xml/route.ts` now returns the same shared XML and headers as `/feed.xml`. The shared generator is in `apps/blog/src/lib/rss.ts`.
